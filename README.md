@@ -94,6 +94,14 @@ python test_api.py
 - `GET /resources/materials/{resource_type}`: Access material library and object materials
 - `GET /resources/constraints/{resource_type}`: Access geometric and assembly constraints
 - `POST /tools/primitives.create_box`: Create a box primitive
+- `POST /tools/model_manipulation.transform`: Transform objects (translate, rotate)
+- `POST /tools/model_manipulation.boolean_operation`: Perform boolean operations (union, difference, intersection)
+- `POST /tools/model_manipulation.fillet_edge`: Create fillets on object edges
+- `POST /tools/model_manipulation.chamfer_edge`: Create chamfers on object edges
+- `POST /tools/model_manipulation.mirror`: Mirror objects across planes
+- `POST /tools/model_manipulation.scale`: Scale objects uniformly or non-uniformly
+- `POST /tools/model_manipulation.offset`: Create offset surfaces
+- `POST /tools/model_manipulation.thicken`: Convert surfaces to solids with thickness
 - `POST /events/document_changed`: Trigger document changed event (for testing)
 
 ### Resource URI Scheme
@@ -104,6 +112,23 @@ The server uses a URI scheme for addressing resources:
 - `cad://measurements/[measurement_type]/[objects]` - Measurements
 - `cad://materials/[resource_type]/[object_or_material]` - Materials
 - `cad://constraints/[resource_type]/[object]` - Constraints
+
+### Tool Providers
+
+#### Primitives Tool Provider
+Creates basic 3D primitives such as boxes, cylinders, spheres, and cones.
+
+#### Model Manipulation Tool Provider
+Provides tools for manipulating and transforming CAD objects:
+
+- **Transform**: Translate and rotate objects
+- **Boolean Operations**: Union, difference, and intersection between objects
+- **Fillet**: Create rounded edges with a specified radius
+- **Chamfer**: Create beveled edges with specified distances
+- **Mirror**: Create mirrored copies of objects across planes
+- **Scale**: Resize objects uniformly or non-uniformly
+- **Offset**: Create offset surfaces from faces or shells
+- **Thicken**: Convert surfaces to solids with specified thickness
 
 ### Connecting with FreeCAD
 

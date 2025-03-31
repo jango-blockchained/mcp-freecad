@@ -11,6 +11,7 @@ from src.mcp_freecad.resources.measurement import MeasurementResourceProvider
 from src.mcp_freecad.resources.material import MaterialResourceProvider
 from src.mcp_freecad.resources.constraint import ConstraintResourceProvider
 from src.mcp_freecad.tools.primitives import PrimitiveToolProvider
+from src.mcp_freecad.tools.model_manipulation import ModelManipulationToolProvider
 from src.mcp_freecad.events.document_events import DocumentEventProvider
 from src.mcp_freecad.api.events import create_event_router
 from src.mcp_freecad.api.resources import create_resource_router
@@ -38,6 +39,7 @@ def create_app():
     
     # Register tool providers
     server.register_tool("primitives", PrimitiveToolProvider())
+    server.register_tool("model_manipulation", ModelManipulationToolProvider())
     logger.info(f"Registered tool providers: {server.tools.keys()}")
     
     # Create the FastAPI app directly instead of using server.create_app()
@@ -69,6 +71,33 @@ def create_app():
                     }
                 }
             }
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    # Add model manipulation tool endpoints
+    @app.post("/tools/model_manipulation.transform")
+    async def transform_object(tool_request: dict):
+        try:
+            if "model_manipulation" not in server.tools:
+                return {"status": "error", "message": "Model manipulation tool provider not found"}
+                
+            tool_provider = server.tools["model_manipulation"]
+            params = tool_request.get("parameters", {})
+            
+            return await tool_provider.execute_tool("transform", params)
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+            
+    @app.post("/tools/model_manipulation.boolean_operation")
+    async def boolean_operation(tool_request: dict):
+        try:
+            if "model_manipulation" not in server.tools:
+                return {"status": "error", "message": "Model manipulation tool provider not found"}
+                
+            tool_provider = server.tools["model_manipulation"]
+            params = tool_request.get("parameters", {})
+            
+            return await tool_provider.execute_tool("boolean_operation", params)
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
