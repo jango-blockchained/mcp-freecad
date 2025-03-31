@@ -1,8 +1,22 @@
-# MCP-FreeCAD Integration
+# 🛠️ MCP-FreeCAD Integration
 
 This project provides a robust integration between AI assistants and FreeCAD CAD software using the **Model Context Protocol (MCP)**. It allows external applications to interact with FreeCAD through a standardized interface, offering multiple connection methods and specialized tools.
 
-## Core Components
+## 🔄 MCP Flow Chart
+
+```mermaid
+graph TD
+    A[AI Assistant] -->|MCP Protocol| B[MCP Server]
+    B -->|Connection| C[FreeCAD Connection]
+    C -->|Method 1| D[Socket Server]
+    C -->|Method 2| E[CLI Bridge]
+    C -->|Method 3| F[Mock Connection]
+    D -->|Python API| G[FreeCAD]
+    E -->|Command Line| G
+    F -->|Testing| G
+```
+
+## 🏗️ Core Components
 
 ### 1. FreeCAD MCP Server (`freecad_mcp_server.py`)
 - **Description**: The main server implementing the Model Context Protocol. It acts as the central hub for AI assistants to communicate with FreeCAD.
@@ -38,7 +52,7 @@ This project provides a robust integration between AI assistants and FreeCAD CAD
 - **Description**: A command-line client utility for interacting directly with the `FreeCADConnection` interface (not the MCP server). Useful for basic testing and scripting outside the MCP context.
 - **Example**: `python freecad_client.py create-box --length 20`
 
-## Installation
+## ⚙️ Installation
 
 1.  **Install FreeCAD**: Ensure FreeCAD is installed on your system and accessible from the command line.
 2.  **Install Dependencies**:
@@ -47,7 +61,7 @@ This project provides a robust integration between AI assistants and FreeCAD CAD
     # Other dependencies might be listed in requirements.txt if available
     ```
 
-## Using the MCP Server
+## 🚀 Using the MCP Server
 
 This is the primary way to interact with FreeCAD using AI assistants like Claude.
 
@@ -100,11 +114,11 @@ uv run path/to/your/mcp_client.py ./freecad_mcp_server.py
 }
 ```
 
-## Available MCP Tools
+## 🛠️ Available MCP Tools
 
 The MCP server exposes various tools. Here are some highlights:
 
-### Smithery Tools (`smithery.*`)
+### 🔨 Smithery Tools (`smithery.*`)
 - Specialized tools for blacksmithing and metalwork design:
     - `smithery.create_anvil`: Generate an anvil model.
     - `smithery.create_hammer`: Generate a blacksmith hammer.
@@ -112,12 +126,12 @@ The MCP server exposes various tools. Here are some highlights:
     - `smithery.forge_blade`: Create knife/sword blade models.
     - `smithery.create_horseshoe`: Create a horseshoe model.
 
-### Basic FreeCAD Tools (`freecad.*`)
+### 📐 Basic FreeCAD Tools (`freecad.*`)
 - `freecad.create_document`: Create a new document.
 - `freecad.export_stl`: Export the model or specific objects to STL.
 - *(Other tools like primitive creation, manipulation etc., might be available if enabled in config and implemented)*
 
-## Example MCP Interactions
+## 📝 Example MCP Interactions
 
 Here are conceptual examples of using the MCP server with an AI assistant:
 
@@ -145,7 +159,7 @@ Assistant: Sure, I can create a hammer with a longer handle.
 Assistant: I've created the hammer with a 400mm handle and default head dimensions.
 ```
 
-## Troubleshooting
+## 🔍 Troubleshooting
 
 - **MCP Server Connection Issues**: Ensure the `freecad_mcp_server.py` script is running and executable. Check firewall settings if connecting remotely (though stdio is typical for local use).
 - **FreeCAD Connection Issues**:
@@ -155,6 +169,6 @@ Assistant: I've created the hammer with a 400mm handle and default head dimensio
 - **Missing MCP SDK**: Install via `pip install modelcontextprotocol-sdk`.
 - **Python Path Issues**: If FreeCAD modules aren't found, ensure FreeCAD's `lib` directory is in your `PYTHONPATH` environment variable, especially when running scripts directly.
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.

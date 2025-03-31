@@ -9,7 +9,13 @@
     "debug": false,
     "workers": 1,
     "name": "freecad-mcp-server",
-    "version": "0.1.0"
+    "version": "0.1.0",
+    "mcp": {
+      "transport": "stdio",
+      "protocol_version": "0.1.0",
+      "enable_tool_sampling": true,
+      "tool_sampling_rate": 1.0
+    }
   },
   "cache": {
     "default_ttl": 30.0,
@@ -55,6 +61,53 @@
     "enable_smithery": true,
     "enable_primitives": true,
     "enable_model_manipulation": true,
-    "enable_export_import": true
+    "enable_export_import": true,
+    "default_timeout": 30.0,
+    "max_concurrent_tools": 5,
+    "measurement": {
+      "enabled": true,
+      "units": "mm",
+      "precision": 3,
+      "supported_measurements": [
+        "distance",
+        "angle",
+        "area",
+        "volume",
+        "center_of_mass",
+        "bounding_box"
+      ]
+    },
+    "code_generation": {
+      "enabled": true,
+      "snippets_dir": "~/.freecad/mcp/snippets",
+      "max_history_size": 100,
+      "supported_operations": [
+        "generate_script",
+        "execute_script",
+        "save_snippet",
+        "load_snippet",
+        "get_script_history",
+        "generate_primitive_script",
+        "generate_transform_script",
+        "generate_boolean_script"
+      ],
+      "primitive_types": [
+        "box",
+        "cylinder",
+        "sphere",
+        "cone",
+        "torus"
+      ],
+      "transform_types": [
+        "translate",
+        "rotate",
+        "scale"
+      ],
+      "boolean_operations": [
+        "union",
+        "difference",
+        "intersection"
+      ]
+    }
   }
 } 
