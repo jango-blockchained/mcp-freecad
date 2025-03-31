@@ -47,3 +47,5 @@ logs/
 .Trashes
 ehthumbs.db
 Thumbs.db 
+
+squashfs-root/

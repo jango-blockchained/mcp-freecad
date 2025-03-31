@@ -12,6 +12,12 @@ Usage:
 
 Or run from command line:
    freecad -c /home/jango/Git/mcp-freecad/src/mcp_freecad/tools/freecad_server.py
+
+Command-line arguments:
+   --host HOST     Server hostname (default: localhost or from config)
+   --port PORT     Server port (default: 12345 or from config)
+   --debug         Enable debug logging
+   --config FILE   Path to config file (default: ~/.freecad_server.json)
 """
 
 try:
@@ -111,6 +117,7 @@ import sys
 import time
 import os
 import traceback
+import argparse
 
 # Default settings
 DEFAULT_HOST = 'localhost'
@@ -617,8 +624,29 @@ def start_server(host=None, port=None):
         print("FreeCAD server stopped")
 
 if __name__ == "__main__":
-    # Get host and port from command line arguments if provided
-    host = sys.argv[1] if len(sys.argv) > 1 else None
-    port = int(sys.argv[2]) if len(sys.argv) > 2 else None
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='FreeCAD Server')
+    parser.add_argument('--host', help='Server hostname')
+    parser.add_argument('--port', type=int, help='Server port')
+    parser.add_argument('--debug', action='store_true', help='Enable debug logging')
+    parser.add_argument('--config', help='Path to config file')
+    
+    args = parser.parse_args()
+    
+    # Update config with command line arguments
+    if args.config and os.path.exists(args.config):
+        try:
+            with open(args.config, 'r') as f:
+                config.update(json.load(f))
+        except Exception as e:
+            print(f"Error loading config file {args.config}: {e}")
+    
+    if args.debug:
+        config["debug"] = True
+        DEBUG = True
+    
+    # Use command line arguments if provided, otherwise use config values
+    host = args.host or config["host"]
+    port = args.port or config["port"]
     
     start_server(host, port) 
