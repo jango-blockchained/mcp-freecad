@@ -102,6 +102,12 @@ python test_api.py
 - `POST /tools/model_manipulation.scale`: Scale objects uniformly or non-uniformly
 - `POST /tools/model_manipulation.offset`: Create offset surfaces
 - `POST /tools/model_manipulation.thicken`: Convert surfaces to solids with thickness
+- `POST /tools/measurement.distance`: Measure distance between points, edges, or faces
+- `POST /tools/measurement.angle`: Measure angle between edges, faces, or vectors
+- `POST /tools/measurement.area`: Calculate area of faces or entire objects
+- `POST /tools/measurement.volume`: Calculate volume of solid objects
+- `POST /tools/measurement.center_of_mass`: Find object's center of mass
+- `POST /tools/measurement.bounding_box`: Get object dimensions and extents
 - `POST /events/document_changed`: Trigger document changed event (for testing)
 
 ### Resource URI Scheme
@@ -129,6 +135,16 @@ Provides tools for manipulating and transforming CAD objects:
 - **Scale**: Resize objects uniformly or non-uniformly
 - **Offset**: Create offset surfaces from faces or shells
 - **Thicken**: Convert surfaces to solids with specified thickness
+
+#### Measurement Tool Provider
+Provides tools for measuring geometric properties:
+
+- **Distance**: Measure distances between points, edges, or faces
+- **Angle**: Calculate angles between edges, faces, or vectors
+- **Area**: Measure surface area of faces or entire objects
+- **Volume**: Calculate volume of solid objects
+- **Center of Mass**: Determine center of mass coordinates
+- **Bounding Box**: Calculate object dimensions and extents
 
 ### Connecting with FreeCAD
 

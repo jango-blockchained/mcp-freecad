@@ -12,6 +12,7 @@ from src.mcp_freecad.resources.material import MaterialResourceProvider
 from src.mcp_freecad.resources.constraint import ConstraintResourceProvider
 from src.mcp_freecad.tools.primitives import PrimitiveToolProvider
 from src.mcp_freecad.tools.model_manipulation import ModelManipulationToolProvider
+from src.mcp_freecad.tools.measurement import MeasurementToolProvider
 from src.mcp_freecad.events.document_events import DocumentEventProvider
 from src.mcp_freecad.api.events import create_event_router
 from src.mcp_freecad.api.resources import create_resource_router
@@ -40,6 +41,7 @@ def create_app():
     # Register tool providers
     server.register_tool("primitives", PrimitiveToolProvider())
     server.register_tool("model_manipulation", ModelManipulationToolProvider())
+    server.register_tool("measurement", MeasurementToolProvider())
     logger.info(f"Registered tool providers: {server.tools.keys()}")
     
     # Create the FastAPI app directly instead of using server.create_app()
@@ -98,6 +100,46 @@ def create_app():
             params = tool_request.get("parameters", {})
             
             return await tool_provider.execute_tool("boolean_operation", params)
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    # Add measurement tool endpoints
+    @app.post("/tools/measurement.distance")
+    async def measure_distance(tool_request: dict):
+        try:
+            if "measurement" not in server.tools:
+                return {"status": "error", "message": "Measurement tool provider not found"}
+                
+            tool_provider = server.tools["measurement"]
+            params = tool_request.get("parameters", {})
+            
+            return await tool_provider.execute_tool("distance", params)
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+            
+    @app.post("/tools/measurement.angle")
+    async def measure_angle(tool_request: dict):
+        try:
+            if "measurement" not in server.tools:
+                return {"status": "error", "message": "Measurement tool provider not found"}
+                
+            tool_provider = server.tools["measurement"]
+            params = tool_request.get("parameters", {})
+            
+            return await tool_provider.execute_tool("angle", params)
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+            
+    @app.post("/tools/measurement.area")
+    async def measure_area(tool_request: dict):
+        try:
+            if "measurement" not in server.tools:
+                return {"status": "error", "message": "Measurement tool provider not found"}
+                
+            tool_provider = server.tools["measurement"]
+            params = tool_request.get("parameters", {})
+            
+            return await tool_provider.execute_tool("area", params)
         except Exception as e:
             return {"status": "error", "message": str(e)}
 

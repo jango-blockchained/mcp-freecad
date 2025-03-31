@@ -55,4 +55,20 @@ def create_tool_router(server: MCPServer) -> APIRouter:
             logger.error(f"Error executing model manipulation tool: {e}")
             raise HTTPException(status_code=500, detail=str(e))
     
+    @router.post("/measurement.{tool_id}")
+    async def execute_measurement_tool(tool_id: str, tool_request: Dict[str, Any]):
+        """Execute a measurement tool."""
+        logger.info(f"Tool request: measurement.{tool_id}")
+        
+        if "measurement" not in server.tools:
+            raise HTTPException(status_code=404, detail="Measurement tool provider not found")
+            
+        tool_provider = server.tools["measurement"]
+        
+        try:
+            return await tool_provider.execute_tool(tool_id, tool_request.get("parameters", {}))
+        except Exception as e:
+            logger.error(f"Error executing measurement tool: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+    
     return router 
