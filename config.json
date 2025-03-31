@@ -1,0 +1,13 @@
+{
+  "auth": {
+    "api_key": "development"
+  },
+  "server": {
+    "host": "localhost",
+    "port": 8080
+  },
+  "freecad": {
+    "path": "",
+    "auto_connect": true
+  }
+} 
