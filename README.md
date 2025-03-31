@@ -90,8 +90,20 @@ python test_api.py
 
 - `GET /`: Server status
 - `GET /resources/cad_model`: Get information about the current CAD model
+- `GET /resources/measurements/{measurement_type}`: Get measurements (distance, area, volume, etc.)
+- `GET /resources/materials/{resource_type}`: Access material library and object materials
+- `GET /resources/constraints/{resource_type}`: Access geometric and assembly constraints
 - `POST /tools/primitives.create_box`: Create a box primitive
 - `POST /events/document_changed`: Trigger document changed event (for testing)
+
+### Resource URI Scheme
+
+The server uses a URI scheme for addressing resources:
+
+- `cad://model/[document]/[resource]` - CAD model data
+- `cad://measurements/[measurement_type]/[objects]` - Measurements
+- `cad://materials/[resource_type]/[object_or_material]` - Materials
+- `cad://constraints/[resource_type]/[object]` - Constraints
 
 ### Connecting with FreeCAD
 

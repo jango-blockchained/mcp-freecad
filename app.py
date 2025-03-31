@@ -7,6 +7,9 @@ from fastapi import FastAPI
 
 from src.mcp_freecad.core.server import MCPServer
 from src.mcp_freecad.resources.cad_model import CADModelResourceProvider
+from src.mcp_freecad.resources.measurement import MeasurementResourceProvider
+from src.mcp_freecad.resources.material import MaterialResourceProvider
+from src.mcp_freecad.resources.constraint import ConstraintResourceProvider
 from src.mcp_freecad.tools.primitives import PrimitiveToolProvider
 from src.mcp_freecad.events.document_events import DocumentEventProvider
 from src.mcp_freecad.api.events import create_event_router
@@ -28,6 +31,9 @@ def create_app():
     
     # Register resource providers
     server.register_resource("cad_model", CADModelResourceProvider())
+    server.register_resource("measurements", MeasurementResourceProvider())
+    server.register_resource("materials", MaterialResourceProvider())
+    server.register_resource("constraints", ConstraintResourceProvider())
     logger.info(f"Registered resource providers: {server.resources.keys()}")
     
     # Register tool providers
