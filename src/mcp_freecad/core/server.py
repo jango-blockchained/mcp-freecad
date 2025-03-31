@@ -1,15 +1,19 @@
 import json
 import logging
 import time
-from typing import Dict, List, Any, Optional, Callable, TypeVar, Generic
+from typing import Dict, List, Any, Optional, Callable, TypeVar, Generic, AsyncIterator
+from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
+from fastapi.openapi.utils import get_openapi
 from loguru import logger
 
 from .cache import ResourceCache
-from .recovery import FreeCADConnectionManager, ConnectionRecovery
+from .recovery import FreeCADConnectionManager, ConnectionRecovery, RecoveryConfig
 from .diagnostics import PerformanceMonitor
+from ..tools.base import ToolProvider, ToolParams, ToolResult
+from ..tools.resource import ResourceProvider, ResourceParams, ResourceResult
 
 T = TypeVar('T')
 
@@ -36,19 +40,25 @@ class MCPServer:
             max_size=self.config.get("cache", {}).get("max_size", 100)
         )
         
-        self.recovery = ConnectionRecovery(
+        recovery_config = RecoveryConfig(
             max_retries=self.config.get("recovery", {}).get("max_retries", 5),
             retry_delay=self.config.get("recovery", {}).get("retry_delay", 2.0),
             backoff_factor=self.config.get("recovery", {}).get("backoff_factor", 1.5),
             max_delay=self.config.get("recovery", {}).get("max_delay", 30.0)
         )
+        self.recovery = ConnectionRecovery(config=recovery_config)
         
         self.connection_manager = FreeCADConnectionManager(
-            self.config.get("freecad", {}),
-            self.recovery
+            config=recovery_config,
+            recovery=self.recovery
         )
         
         self.performance_monitor = PerformanceMonitor()
+        
+        # Initialize FastAPI app
+        self.app = FastAPI()
+        self._setup_routes()
+        self._setup_middleware()
         
         logger.info("MCP Server initialized with optimization components")
         
@@ -167,51 +177,69 @@ class MCPServer:
         except Exception as e:
             logger.error(f"Error during server initialization: {e}")
             
-    def create_app(self) -> FastAPI:
-        """
-        Create the FastAPI application.
-        
-        Returns:
-            FastAPI application instance
-        """
-        app = FastAPI(
-            title="FreeCAD MCP Server",
-            description="Model Context Protocol server for FreeCAD",
-            version="0.1.0"
-        )
-        
-        # Add middleware for performance monitoring
-        @app.middleware("http")
-        async def performance_middleware(request: Request, call_next):
-            # Skip monitoring for static files
-            if request.url.path.startswith("/static"):
-                return await call_next(request)
-                
-            start_time = time.time()
-            path = request.url.path
-            method = request.method
-            metric_name = f"{method} {path}"
-            success = True
-            error = None
+    async def _emit_event(self, event_type: str, data: Dict[str, Any]) -> None:
+        """Emit an event to all registered handlers."""
+        if event_type in self.event_handlers:
+            for handler in self.event_handlers[event_type]:
+                try:
+                    await handler.handle_event(event_type, data)
+                except Exception as e:
+                    logger.error(f"Error in event handler for {event_type}: {e}")
+    
+    async def handle_tool_execution(self, tool_id: str, params: Dict[str, Any]) -> ToolResult:
+        """Handle tool execution with proper event emission and error handling."""
+        try:
+            # Validate tool exists
+            if tool_id not in self.tools:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Tool {tool_id} not found"
+                )
             
-            try:
-                response = await call_next(request)
-                return response
-            except Exception as e:
-                success = False
-                error = e
-                raise
-            finally:
-                duration = time.time() - start_time
-                
-                # Record the performance metric
-                if metric_name not in self.performance_monitor.metrics:
-                    self.performance_monitor.metrics[metric_name] = self.performance_monitor.track(metric_name)
-                    
-                self.performance_monitor.metrics[metric_name].record_sample(duration, success, error)
-                
-        # Add health check endpoints
-        @app.get("/health")
+            # Emit pre-execution event
+            await self._emit_event("tool.pre_execute", {"tool_id": tool_id, "params": params})
+            
+            # Execute tool
+            result = await self.tools[tool_id].execute_tool(tool_id, params)
+            
+            # Emit post-execution event
+            await self._emit_event("tool.post_execute", {"tool_id": tool_id, "result": result})
+            
+            return result
+        except Exception as e:
+            # Emit error event
+            await self._emit_event("tool.error", {"tool_id": tool_id, "error": str(e)})
+            raise
+    
+    async def handle_resource_access(self, resource_id: str, params: Dict[str, Any]) -> ResourceResult:
+        """Handle resource access with proper event emission and error handling."""
+        try:
+            # Validate resource exists
+            if resource_id not in self.resources:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Resource {resource_id} not found"
+                )
+            
+            # Emit pre-access event
+            await self._emit_event("resource.pre_access", {"resource_id": resource_id, "params": params})
+            
+            # Access resource
+            result = await self.resources[resource_id].get_resource(resource_id, params)
+            
+            # Emit post-access event
+            await self._emit_event("resource.post_access", {"resource_id": resource_id, "result": result})
+            
+            return result
+        except Exception as e:
+            # Emit error event
+            await self._emit_event("resource.error", {"resource_id": resource_id, "error": str(e)})
+            raise
+    
+    def _setup_routes(self):
+        """Set up FastAPI routes."""
+        
+        @self.app.get("/health")
         async def health_check():
             """Basic health check endpoint."""
             return {
@@ -219,47 +247,78 @@ class MCPServer:
                 "timestamp": time.time(),
                 "freecad_connected": self.connection_manager.connected
             }
-            
-        @app.get("/health/detailed")
+
+        @self.app.get("/health/detailed")
         async def detailed_health():
-            """Detailed health check with connection status."""
+            """Detailed health check endpoint."""
             return {
                 "status": "ok",
                 "timestamp": time.time(),
-                "freecad_connection": self.connection_manager.get_connection_status(),
-                "cache": self.resource_cache.get_stats() if hasattr(self.resource_cache, "get_stats") else None,
-                "server_uptime": time.time() - self.performance_monitor.start_time
+                "freecad_connection": self.connection_manager.get_status(),
+                "cache": self.resource_cache.get_stats(),
+                "server_uptime": time.time() - self.start_time
             }
-            
-        @app.get("/diagnostics")
-        async def diagnostics():
-            """Get server diagnostics information."""
+
+        @self.app.post("/tools/{tool_id}/execute")
+        async def execute_tool(tool_id: str, params: Dict[str, Any]):
+            """Execute a tool."""
+            return await self.handle_tool_execution(tool_id, params)
+
+        @self.app.post("/resources/{resource_id}/access")
+        async def access_resource(resource_id: str, params: Dict[str, Any]):
+            """Access a resource."""
+            if resource_id not in self.resources:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Resource {resource_id} not found"
+                )
+            return await self.resources[resource_id].get_resource(params)
+
+        @self.app.get("/diagnostics")
+        async def get_diagnostics():
+            """Get server diagnostics."""
             return self.performance_monitor.get_diagnostics_report()
-            
-        @app.post("/diagnostics/reset")
-        async def reset_diagnostics():
-            """Reset performance metrics."""
-            self.performance_monitor.reset_metrics()
-            return {"status": "ok", "message": "Performance metrics reset"}
-            
-        @app.post("/cache/clear")
+
+        @self.app.post("/cache/clear")
         async def clear_cache():
             """Clear the resource cache."""
             self.resource_cache.clear()
-            return {"status": "ok", "message": "Cache cleared"}
-            
-        @app.get("/cache/stats")
-        async def cache_stats():
-            """Get cache statistics."""
-            return self.resource_cache.get_stats()
-            
-        @app.get("/")
-        async def root():
-            """Server root endpoint."""
-            return {
-                "message": "FreeCAD MCP Server is running",
-                "version": "0.1.0",
-                "freecad_connected": self.connection_manager.connected
-            }
+            return {"status": "success"}
+
+    def _setup_middleware(self):
+        """Set up FastAPI middleware."""
         
-        return app 
+        @self.app.middleware("http")
+        async def auth_middleware(request: Request, call_next):
+            if request.url.path.startswith("/health"):
+                return await call_next(request)
+
+            token = request.headers.get("Authorization", "").replace("Bearer ", "")
+            if not await self.auth_manager.authenticate(token):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid authentication token"
+                )
+            return await call_next(request)
+
+        @self.app.middleware("http")
+        async def performance_middleware(request: Request, call_next):
+            start_time = time.time()
+            try:
+                response = await call_next(request)
+                duration = time.time() - start_time
+                self.performance_monitor.track(
+                    f"endpoint.{request.url.path}",
+                    duration,
+                    success=True
+                )
+                return response
+            except Exception as e:
+                duration = time.time() - start_time
+                self.performance_monitor.track(
+                    f"endpoint.{request.url.path}",
+                    duration,
+                    success=False,
+                    error=str(e)
+                )
+                raise

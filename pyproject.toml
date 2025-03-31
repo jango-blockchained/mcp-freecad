@@ -37,7 +37,8 @@ requires-python = ">=3.8"
 "Bug Tracker" = "https://github.com/yourusername/mcp-freecad/issues"
 
 [tool.setuptools]
-packages = ["src"]
+package-dir = {"" = "src"}
+packages = ["mcp_freecad"]
 
 [tool.black]
 line-length = 88

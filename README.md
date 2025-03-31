@@ -24,7 +24,7 @@ graph TD
     - Supports standard MCP requests (ListTools, ExecuteTool, ListResources, GetResource).
     - Connects to FreeCAD using various methods (see below).
     - Exposes specialized tools, including smithery operations.
-    - Configurable via `mcp_config.json`.
+    - Configurable via `config.json`.
 
 ### 2. FreeCAD Connection (`freecad_connection.py`)
 - **Description**: A unified Python interface for connecting to FreeCAD, used internally by the MCP server and available for direct use.
@@ -68,11 +68,11 @@ This is the primary way to interact with FreeCAD using AI assistants like Claude
 ### Starting the MCP Server
 
 ```bash
-# Start the server using the default mcp_config.json
+# Start the server using the default config.json
 ./freecad_mcp_server.py
 
 # Start with a specific configuration file
-./freecad_mcp_server.py --config /path/to/your_config.json
+./freecad_mcp_server.py --config /path/to/your/config.json
 ```
 The server will run and listen for connections from MCP clients.
 
@@ -91,7 +91,7 @@ Or using `uv` if you have a client script like the one in the MCP docs:
 uv run path/to/your/mcp_client.py ./freecad_mcp_server.py
 ```
 
-### MCP Server Configuration (`mcp_config.json`)
+### MCP Server Configuration (`config.json`)
 
 ```json
 {
@@ -109,27 +109,70 @@ uv run path/to/your/mcp_client.py ./freecad_mcp_server.py
         "enable_smithery": true,
         "enable_primitives": true,
         "enable_model_manipulation": true,
-        "enable_export_import": true
+        "enable_export_import": true,
+        "enable_measurement": true,
+        "enable_code_generator": true
     }
 }
 ```
 
 ## 🛠️ Available MCP Tools
 
-The MCP server exposes various tools. Here are some highlights:
+The MCP server exposes various tool groups. Here are all available tools:
 
 ### 🔨 Smithery Tools (`smithery.*`)
 - Specialized tools for blacksmithing and metalwork design:
-    - `smithery.create_anvil`: Generate an anvil model.
-    - `smithery.create_hammer`: Generate a blacksmith hammer.
-    - `smithery.create_tongs`: Generate blacksmith tongs.
-    - `smithery.forge_blade`: Create knife/sword blade models.
-    - `smithery.create_horseshoe`: Create a horseshoe model.
+    - `smithery.create_anvil`: Generate an anvil model with customizable dimensions
+    - `smithery.create_hammer`: Generate a blacksmith hammer with adjustable handle and head dimensions
+    - `smithery.create_tongs`: Generate blacksmith tongs with configurable handle and jaw parameters
+    - `smithery.forge_blade`: Create knife/sword blade models with customizable dimensions
+    - `smithery.create_horseshoe`: Create a horseshoe model with adjustable dimensions
 
 ### 📐 Basic FreeCAD Tools (`freecad.*`)
-- `freecad.create_document`: Create a new document.
-- `freecad.export_stl`: Export the model or specific objects to STL.
-- *(Other tools like primitive creation, manipulation etc., might be available if enabled in config and implemented)*
+- `freecad.create_document`: Create a new document
+- `freecad.export_stl`: Export the model or specific objects to STL
+- `freecad.import_stl`: Import STL files into the current document
+- `freecad.save_document`: Save the current document
+- `freecad.load_document`: Load an existing document
+
+### 🔧 Model Manipulation Tools (`model_manipulation.*`)
+- `model_manipulation.rotate`: Rotate objects around specified axes
+- `model_manipulation.translate`: Move objects in 3D space
+- `model_manipulation.scale`: Scale objects uniformly or non-uniformly
+- `model_manipulation.mirror`: Mirror objects across specified planes
+- `model_manipulation.union`: Combine multiple objects using boolean union
+- `model_manipulation.cut`: Cut objects using boolean difference
+- `model_manipulation.intersect`: Create intersection of multiple objects
+
+### 📏 Measurement Tools (`measurement.*`)
+- `measurement.distance`: Measure distance between two points
+- `measurement.angle`: Measure angle between three points
+- `measurement.area`: Calculate surface area of objects
+- `measurement.volume`: Calculate volume of solid objects
+- `measurement.mass`: Calculate mass of objects (requires material properties)
+
+### 📦 Primitives Tools (`primitives.*`)
+- `primitives.create_box`: Create a rectangular box
+- `primitives.create_cylinder`: Create a cylinder
+- `primitives.create_sphere`: Create a sphere
+- `primitives.create_cone`: Create a cone
+- `primitives.create_torus`: Create a torus
+- `primitives.create_polygon`: Create a regular polygon
+- `primitives.create_ellipse`: Create an ellipse
+
+### 🔄 Export/Import Tools (`export_import.*`)
+- `export_import.export_step`: Export to STEP format
+- `export_import.import_step`: Import from STEP format
+- `export_import.export_iges`: Export to IGES format
+- `export_import.import_iges`: Import from IGES format
+- `export_import.export_dxf`: Export to DXF format
+- `export_import.import_dxf`: Import from DXF format
+
+### 💻 Code Generation Tools (`code_generator.*`)
+- `code_generator.generate_python`: Generate Python code for the current model
+- `code_generator.generate_openscad`: Generate OpenSCAD code for the current model
+- `code_generator.generate_gcode`: Generate G-code for CNC machining
+- `code_generator.generate_3d_print`: Generate optimized 3D printing settings
 
 ## 📝 Example MCP Interactions
 
@@ -163,8 +206,8 @@ Assistant: I've created the hammer with a 400mm handle and default head dimensio
 
 - **MCP Server Connection Issues**: Ensure the `freecad_mcp_server.py` script is running and executable. Check firewall settings if connecting remotely (though stdio is typical for local use).
 - **FreeCAD Connection Issues**:
-    - **`auto` or `bridge` method**: Verify FreeCAD is installed and the `freecad` command works in your terminal. Check the `freecad_path` in `mcp_config.json`.
-    - **`server` method**: Ensure `freecad_server.py` is running inside an active FreeCAD instance, listening on the correct host/port configured in `mcp_config.json`.
+    - **`auto` or `bridge` method**: Verify FreeCAD is installed and the `freecad` command works in your terminal. Check the `freecad_path` in `config.json`.
+    - **`server` method**: Ensure `freecad_server.py` is running inside an active FreeCAD instance, listening on the correct host/port configured in `config.json`.
     - **General**: Check FreeCAD logs for errors.
 - **Missing MCP SDK**: Install via `pip install modelcontextprotocol-sdk`.
 - **Python Path Issues**: If FreeCAD modules aren't found, ensure FreeCAD's `lib` directory is in your `PYTHONPATH` environment variable, especially when running scripts directly.

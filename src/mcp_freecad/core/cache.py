@@ -46,6 +46,8 @@ class ResourceCache:
         self.max_size = max_size
         self.cache: Dict[str, CacheEntry] = {}
         self.lock = Lock()
+        self.hits = 0
+        self.misses = 0
         logger.info(f"Initialized resource cache with TTL={default_ttl}s, max_size={max_size}")
         
     def get(self, key: str) -> Optional[Any]:
@@ -64,10 +66,13 @@ class ResourceCache:
                 if entry.is_expired():
                     logger.debug(f"Cache entry for '{key}' is expired")
                     del self.cache[key]
+                    self.misses += 1
                     return None
                 logger.debug(f"Cache hit for '{key}'")
+                self.hits += 1
                 return entry.value
             logger.debug(f"Cache miss for '{key}'")
+            self.misses += 1
             return None
             
     def set(self, key: str, value: Any, ttl: Optional[float] = None) -> None:
@@ -139,14 +144,16 @@ class ResourceCache:
     def get_stats(self) -> Dict[str, Any]:
         """Get cache statistics."""
         with self.lock:
-            stats = {
+            total = self.hits + self.misses
+            hit_rate = self.hits / total if total > 0 else 0.0
+            return {
                 "size": len(self.cache),
                 "max_size": self.max_size,
-                "default_ttl": self.default_ttl,
-                "expired_entries": sum(1 for entry in self.cache.values() if entry.is_expired()),
-                "keys": list(self.cache.keys())
+                "hits": self.hits,
+                "misses": self.misses,
+                "hit_rate": hit_rate,
+                "default_ttl": self.default_ttl
             }
-            return stats
             
     def __len__(self) -> int:
         """Get the number of entries in the cache."""

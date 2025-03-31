@@ -1,0 +1,125 @@
+tools:
+  create_anvil:
+    description: Create a blacksmith anvil model
+    parameters:
+      length:
+        type: number
+        description: Length of the anvil in mm
+        default: 400.0
+      width:
+        type: number
+        description: Width of the anvil in mm
+        default: 120.0
+      height:
+        type: number
+        description: Height of the anvil in mm
+        default: 200.0
+      horn_length:
+        type: number
+        description: Length of the horn in mm
+        default: 150.0
+    returns:
+      status: string
+      object_id: string
+      object_type: string
+      properties: object
+
+  create_hammer:
+    description: Create a blacksmith hammer model
+    parameters:
+      handle_length:
+        type: number
+        description: Length of the handle in mm
+        default: 300.0
+      handle_diameter:
+        type: number
+        description: Diameter of the handle in mm
+        default: 25.0
+      head_length:
+        type: number
+        description: Length of the hammer head in mm
+        default: 100.0
+      head_width:
+        type: number
+        description: Width of the hammer head in mm
+        default: 40.0
+      head_height:
+        type: number
+        description: Height of the hammer head in mm
+        default: 30.0
+    returns:
+      status: string
+      object_id: string
+      object_type: string
+      properties: object
+
+  create_tongs:
+    description: Create blacksmith tongs model
+    parameters:
+      handle_length:
+        type: number
+        description: Length of the handles in mm
+        default: 300.0
+      jaw_length:
+        type: number
+        description: Length of the jaws in mm
+        default: 80.0
+      thickness:
+        type: number
+        description: Thickness of the tongs in mm
+        default: 10.0
+      width:
+        type: number
+        description: Width of the tongs in mm
+        default: 20.0
+      opening_angle:
+        type: number
+        description: Opening angle of the tongs in degrees
+        default: 15.0
+    returns:
+      status: string
+      object_id: string
+      object_type: string
+      properties: object
+
+  forge_blade:
+    description: Create a forged blade model
+    parameters:
+      blade_length:
+        type: number
+        description: Length of the blade in mm
+        default: 250.0
+      blade_width:
+        type: number
+        description: Width of the blade in mm
+        default: 40.0
+      thickness:
+        type: number
+        description: Thickness of the blade in mm
+        default: 4.0
+    returns:
+      status: string
+      object_id: string
+      object_type: string
+      properties: object
+
+  create_horseshoe:
+    description: Create a horseshoe model
+    parameters:
+      length:
+        type: number
+        description: Length of the horseshoe in mm
+        default: 200.0
+      width:
+        type: number
+        description: Width of the horseshoe in mm
+        default: 30.0
+      thickness:
+        type: number
+        description: Thickness of the horseshoe in mm
+        default: 10.0
+    returns:
+      status: string
+      object_id: string
+      object_type: string
+      properties: object 

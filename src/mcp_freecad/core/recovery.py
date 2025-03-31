@@ -7,155 +7,106 @@ import os
 import sys
 import subprocess
 from typing import Dict, Any, Optional, Callable, List, Coroutine
+from dataclasses import dataclass
+from loguru import logger
+
+from .exceptions import ConnectionError
 
 logger = logging.getLogger(__name__)
 
+@dataclass
+class RecoveryConfig:
+    """Configuration for connection recovery."""
+    max_retries: int = 5
+    retry_delay: float = 2.0
+    backoff_factor: float = 1.5
+    max_delay: float = 30.0
+
 class ConnectionRecovery:
-    """
-    Connection recovery mechanism for FreeCAD integration.
+    """Handle connection recovery with exponential backoff."""
     
-    This class provides functionality to recover from connection
-    losses or errors when communicating with FreeCAD.
-    """
-    
-    def __init__(
-        self, 
-        max_retries: int = 5, 
-        retry_delay: float = 2.0,
-        backoff_factor: float = 1.5,
-        max_delay: float = 30.0
-    ):
+    def __init__(self, config: RecoveryConfig):
+        self.config = config
+        self.retry_count = 0
+        self.current_delay = config.retry_delay
+        self.last_error: Optional[Exception] = None
+        self.connected = False
+        self._connection_callbacks: List[Callable[[bool], None]] = []
+        
+    def add_connection_callback(self, callback: Callable[[bool], None]) -> None:
+        """Add a callback to be called when connection status changes."""
+        self._connection_callbacks.append(callback)
+        
+    def _notify_connection_status(self, connected: bool) -> None:
+        """Notify all callbacks of connection status change."""
+        for callback in self._connection_callbacks:
+            try:
+                callback(connected)
+            except Exception as e:
+                logger.error(f"Error in connection callback: {e}")
+                
+    async def attempt_recovery(self, operation: Callable) -> Any:
         """
-        Initialize the connection recovery mechanism.
+        Attempt to recover from a connection error.
         
         Args:
-            max_retries: Maximum number of retry attempts
-            retry_delay: Initial delay between retries in seconds
-            backoff_factor: Factor by which to increase delay on each retry
-            max_delay: Maximum delay between retries in seconds
-        """
-        self.max_retries = max_retries
-        self.retry_delay = retry_delay
-        self.backoff_factor = backoff_factor
-        self.max_delay = max_delay
-        logger.info(
-            f"Initialized connection recovery (max_retries={max_retries}, " 
-            f"retry_delay={retry_delay}s, backoff_factor={backoff_factor})"
-        )
-        
-    async def with_retry(
-        self, 
-        operation: Callable[[], Coroutine[Any, Any, Any]], 
-        operation_name: str = "operation",
-        custom_max_retries: Optional[int] = None,
-        on_failure: Optional[Callable[[Exception, int], Coroutine[Any, Any, Any]]] = None
-    ) -> Any:
-        """
-        Execute an operation with retry logic.
-        
-        Args:
-            operation: Async function to execute
-            operation_name: Name of the operation for logging
-            custom_max_retries: Optional override for max retries
-            on_failure: Optional callback to execute on final failure
+            operation: The operation to retry
             
         Returns:
-            The result of the operation
+            Result of the operation if successful
             
         Raises:
-            Exception: The last exception encountered if all retries fail
+            ConnectionError: If all retry attempts fail
         """
-        retries = 0
-        max_retries = custom_max_retries if custom_max_retries is not None else self.max_retries
-        last_exception = None
-        delay = self.retry_delay
-        
-        while retries <= max_retries:
+        while self.retry_count < self.config.max_retries:
             try:
-                if retries > 0:
-                    logger.info(f"Retry {retries}/{max_retries} for {operation_name}")
-                return await operation()
+                result = await operation()
+                self.retry_count = 0
+                self.current_delay = self.config.retry_delay
+                self.last_error = None
+                if not self.connected:
+                    self.connected = True
+                    self._notify_connection_status(True)
+                return result
             except Exception as e:
-                retries += 1
-                last_exception = e
+                self.retry_count += 1
+                self.last_error = e
                 
-                if retries <= max_retries:
-                    logger.warning(
-                        f"Error in {operation_name} (attempt {retries}/{max_retries}): {e}. "
-                        f"Retrying in {delay:.1f}s"
+                if self.retry_count >= self.config.max_retries:
+                    self.connected = False
+                    self._notify_connection_status(False)
+                    raise ConnectionError(
+                        f"Failed to connect after {self.retry_count} attempts",
+                        "freecad",
+                        {"last_error": str(e)}
                     )
-                    await asyncio.sleep(delay)
-                    # Increase delay for next retry with exponential backoff
-                    delay = min(delay * self.backoff_factor, self.max_delay)
-                else:
-                    logger.error(f"Failed {operation_name} after {max_retries} retries: {e}")
-                    if on_failure:
-                        await on_failure(e, retries)
-                    raise e
                     
-        # This should not be reached, but just in case
-        if last_exception:
-            raise last_exception
-        
-        # This should also not be reached
-        return None
-    
-    def with_retry_sync(
-        self, 
-        operation: Callable[[], Any], 
-        operation_name: str = "operation",
-        custom_max_retries: Optional[int] = None,
-        on_failure: Optional[Callable[[Exception, int], Any]] = None
-    ) -> Any:
-        """
-        Execute a synchronous operation with retry logic.
-        
-        Args:
-            operation: Function to execute
-            operation_name: Name of the operation for logging
-            custom_max_retries: Optional override for max retries
-            on_failure: Optional callback to execute on final failure
-            
-        Returns:
-            The result of the operation
-            
-        Raises:
-            Exception: The last exception encountered if all retries fail
-        """
-        retries = 0
-        max_retries = custom_max_retries if custom_max_retries is not None else self.max_retries
-        last_exception = None
-        delay = self.retry_delay
-        
-        while retries <= max_retries:
-            try:
-                if retries > 0:
-                    logger.info(f"Retry {retries}/{max_retries} for {operation_name}")
-                return operation()
-            except Exception as e:
-                retries += 1
-                last_exception = e
+                logger.warning(
+                    f"Connection attempt {self.retry_count} failed: {e}. "
+                    f"Retrying in {self.current_delay} seconds..."
+                )
                 
-                if retries <= max_retries:
-                    logger.warning(
-                        f"Error in {operation_name} (attempt {retries}/{max_retries}): {e}. "
-                        f"Retrying in {delay:.1f}s"
-                    )
-                    time.sleep(delay)
-                    # Increase delay for next retry with exponential backoff
-                    delay = min(delay * self.backoff_factor, self.max_delay)
-                else:
-                    logger.error(f"Failed {operation_name} after {max_retries} retries: {e}")
-                    if on_failure:
-                        on_failure(e, retries)
-                    raise e
-                    
-        # This should not be reached, but just in case
-        if last_exception:
-            raise last_exception
+                await asyncio.sleep(self.current_delay)
+                self.current_delay = min(
+                    self.current_delay * self.config.backoff_factor,
+                    self.config.max_delay
+                )
+                
+    def reset(self) -> None:
+        """Reset the recovery state."""
+        self.retry_count = 0
+        self.current_delay = self.config.retry_delay
+        self.last_error = None
         
-        # This should also not be reached
-        return None
+    def get_status(self) -> Dict[str, Any]:
+        """Get the current recovery status."""
+        return {
+            "connected": self.connected,
+            "retry_count": self.retry_count,
+            "current_delay": self.current_delay,
+            "last_error": str(self.last_error) if self.last_error else None,
+            "max_retries": self.config.max_retries
+        }
 
 class FreeCADClient:
     """Client for communicating with FreeCAD server"""
@@ -208,196 +159,81 @@ class FreeCADClient:
             sock.close()
 
 class FreeCADConnectionManager:
-    """
-    Manager for FreeCAD connection with recovery capabilities.
+    """Manage FreeCAD connections with recovery support."""
     
-    This class manages the connection to FreeCAD and provides
-    methods to recover from connection failures.
-    """
-    
-    def __init__(self, config: Dict[str, Any], recovery: Optional[ConnectionRecovery] = None):
-        """
-        Initialize the FreeCAD connection manager.
-        
-        Args:
-            config: Configuration dictionary with FreeCAD settings
-            recovery: Optional recovery mechanism, will create one if not provided
-        """
+    def __init__(self, config: Dict[str, Any], recovery: ConnectionRecovery):
         self.config = config
-        self.recovery = recovery or ConnectionRecovery()
-        self.client = None
-        self.freecad_process = None
-        self.connected = False
-        self.last_connection_attempt = 0
-        self.connection_errors: List[Dict[str, Any]] = []
-        self.host = 'localhost'
-        self.port = 12345
-        if 'freecad' in config and 'server_port' in config['freecad']:
-            self.port = config['freecad']['server_port']
-        logger.info("Initialized FreeCAD connection manager")
+        self.recovery = recovery
+        self.connection = None
+        self._setup_connection_callbacks()
         
-    async def connect(self, force: bool = False) -> bool:
-        """
-        Connect to FreeCAD with retry logic.
+    def _setup_connection_callbacks(self) -> None:
+        """Setup connection status callbacks."""
+        self.recovery.add_connection_callback(self._handle_connection_status)
         
-        Args:
-            force: Force reconnection even if already connected
+    def _handle_connection_status(self, connected: bool) -> None:
+        """Handle connection status changes."""
+        if connected:
+            logger.info("Successfully connected to FreeCAD")
+        else:
+            logger.error("Lost connection to FreeCAD")
             
-        Returns:
-            True if connected successfully, False otherwise
-        """
-        if self.connected and not force:
-            return True
-            
-        self.last_connection_attempt = time.time()
+    async def connect(self) -> None:
+        """Connect to FreeCAD with recovery support."""
+        await self.recovery.attempt_recovery(self._connect_to_freecad)
         
+    async def _connect_to_freecad(self) -> None:
+        """Internal method to connect to FreeCAD."""
         try:
-            return await self.recovery.with_retry(
-                self._connect_impl,
-                "FreeCAD connection",
-                on_failure=self._on_connection_failure
-            )
-        except Exception as e:
-            logger.error(f"Failed to connect to FreeCAD: {e}")
-            return False
-            
-    async def _connect_impl(self) -> bool:
-        """
-        Implementation of FreeCAD connection.
-        
-        Returns:
-            True if connected successfully
-        
-        Raises:
-            Exception: If connection fails
-        """
-        try:
-            # Check if FreeCAD server is already running
-            try:
-                # Create client
-                self.client = FreeCADClient(self.host, self.port)
-                # Test connection
-                result = self.client.send_command("ping")
-                if result.get('pong'):
-                    logger.info("Connected to existing FreeCAD server")
-                    self.connected = True
-                    return True
-            except Exception:
-                # FreeCAD server not running, start it
-                pass
-                
-            # Start FreeCAD server
-            freecad_path = self.config.get('freecad', {}).get('path', '/usr/bin/freecad')
-            server_script = os.path.join(os.getcwd(), 'freecad_server.py')
-            
-            if not os.path.exists(server_script):
-                raise Exception(f"FreeCAD server script not found: {server_script}")
-                
-            if not os.path.exists(freecad_path):
-                raise Exception(f"FreeCAD executable not found: {freecad_path}")
-                
-            # Start FreeCAD process
-            logger.info(f"Starting FreeCAD server with: {freecad_path} -c {server_script}")
-            self.freecad_process = subprocess.Popen(
-                [freecad_path, "-c", server_script, self.host, str(self.port)],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+            import FreeCAD
+            self.connection = FreeCAD
+            logger.info("Connected to FreeCAD")
+        except ImportError as e:
+            raise ConnectionError(
+                "Failed to import FreeCAD",
+                "import",
+                {"error": str(e)}
             )
             
-            # Wait for server to start
-            logger.info("Waiting for FreeCAD server to start...")
-            await asyncio.sleep(5)
-            
-            # Connect to server
-            self.client = FreeCADClient(self.host, self.port)
-            
-            # Test connection
-            result = self.client.send_command("ping")
-            if result.get('pong'):
-                logger.info("Connected to FreeCAD server successfully")
-                self.connected = True
-                return True
-            else:
-                raise Exception("FreeCAD server did not respond with pong")
-        except Exception as e:
-            logger.warning(f"Failed to connect to FreeCAD server: {e}")
-            self.connected = False
-            raise e
-            
-    async def _on_connection_failure(self, exception: Exception, retries: int) -> None:
-        """
-        Handle connection failure after all retries.
+    async def disconnect(self) -> None:
+        """Disconnect from FreeCAD."""
+        self.connection = None
+        self.recovery.connected = False
+        self.recovery._notify_connection_status(False)
+        logger.info("Disconnected from FreeCAD")
         
-        Args:
-            exception: The exception that caused the failure
-            retries: Number of retries attempted
-        """
-        self.connection_errors.append({
-            "timestamp": time.time(),
-            "error": str(exception),
-            "retries": retries
-        })
-        logger.error(f"FreeCAD connection failed after {retries} retries: {exception}")
-        
-    async def execute_command(self, command_type: str, params: Dict[str, Any] = None, command_name: str = "command") -> Any:
-        """
-        Execute a command on the FreeCAD server with connection recovery.
-        
-        Args:
-            command_type: Type of command to execute
-            params: Parameters for the command
-            command_name: Name of the command for logging
-            
-        Returns:
-            Result of the command
-            
-        Raises:
-            Exception: If the command fails after retries
-        """
-        if not self.connected:
-            await self.connect()
-            
-        async def _execute_command_impl():
-            if not self.client:
-                raise Exception("FreeCAD client not initialized")
-                
-            return self.client.send_command(command_type, params)
-            
-        return await self.recovery.with_retry(
-            _execute_command_impl,
-            command_name,
-            on_failure=lambda e, r: self._on_command_failure(e, r, command_name)
-        )
-            
-    async def _on_command_failure(self, exception: Exception, retries: int, command_name: str) -> None:
-        """
-        Handle command failure after all retries.
-        
-        Args:
-            exception: The exception that caused the failure
-            retries: Number of retries attempted
-            command_name: Name of the command
-        """
-        logger.error(f"FreeCAD command '{command_name}' failed after {retries} retries: {exception}")
-        
-        # Try to reconnect if we get connection errors
-        if "Connection refused" in str(exception) or "Connection timed out" in str(exception):
-            logger.info("Attempting to reconnect to FreeCAD server...")
-            try:
-                await self.connect(force=True)
-            except Exception as e:
-                logger.error(f"Failed to reconnect: {e}")
-        
-    def get_connection_status(self) -> Dict[str, Any]:
-        """
-        Get the current connection status.
-        
-        Returns:
-            Dictionary with connection status information
-        """
+    @property
+    def connected(self) -> bool:
+        """Return whether we are currently connected to FreeCAD."""
+        return self.connection is not None and self.recovery.connected
+
+    def get_status(self) -> Dict[str, Any]:
+        """Get the current connection status."""
         return {
             "connected": self.connected,
-            "last_attempt": self.last_connection_attempt,
-            "errors": len(self.connection_errors),
-            "server_running": self.freecad_process is not None and self.freecad_process.poll() is None
-        } 
+            "recovery_status": self.recovery.get_status(),
+            "config": {
+                "max_retries": self.config.get("max_retries", 5),
+                "retry_delay": self.config.get("retry_delay", 2.0),
+                "backoff_factor": self.config.get("backoff_factor", 1.5),
+                "max_delay": self.config.get("max_delay", 30.0)
+            }
+        }
+        
+    async def execute_with_recovery(self, operation: Callable) -> Any:
+        """
+        Execute an operation with connection recovery.
+        
+        Args:
+            operation: The operation to execute
+            
+        Returns:
+            Result of the operation
+            
+        Raises:
+            ConnectionError: If connection cannot be established
+        """
+        if not self.connection:
+            await self.connect()
+            
+        return await self.recovery.attempt_recovery(operation) 

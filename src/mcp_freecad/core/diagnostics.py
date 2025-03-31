@@ -7,272 +7,150 @@ import sys
 import psutil
 import threading
 from typing import Dict, Any, List, Optional, Callable
-from collections import deque
+from collections import deque, defaultdict
 from functools import wraps
+from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
-class PerformanceMetric:
-    """
-    Performance metric for tracking response times and other metrics.
-    """
-    
-    def __init__(self, name: str, max_samples: int = 100):
-        """
-        Initialize a performance metric.
-        
-        Args:
-            name: Name of the metric
-            max_samples: Maximum number of samples to keep
-        """
-        self.name = name
-        self.max_samples = max_samples
-        self.samples = deque(maxlen=max_samples)
-        self.total_calls = 0
-        self.total_errors = 0
-        self.last_error = None
-        self.last_error_time = 0
-        
-    def record_sample(self, duration: float, success: bool = True, error: Optional[Exception] = None) -> None:
-        """
-        Record a new sample.
-        
-        Args:
-            duration: Duration of the operation in seconds
-            success: Whether the operation was successful
-            error: Exception if operation failed
-        """
-        self.samples.append({
-            "timestamp": time.time(),
-            "duration": duration,
-            "success": success
-        })
-        self.total_calls += 1
-        
-        if not success:
-            self.total_errors += 1
-            self.last_error = str(error) if error else "Unknown error"
-            self.last_error_time = time.time()
-            
-    def get_stats(self) -> Dict[str, Any]:
-        """
-        Get statistics for this metric.
-        
-        Returns:
-            Dictionary with metric statistics
-        """
-        if not self.samples:
-            return {
-                "name": self.name,
-                "total_calls": self.total_calls,
-                "total_errors": self.total_errors,
-                "error_rate": 0,
-                "avg_duration": 0,
-                "min_duration": 0,
-                "max_duration": 0,
-                "last_error": self.last_error,
-                "last_error_time": self.last_error_time
-            }
-            
-        durations = [s["duration"] for s in self.samples]
-        success_rate = sum(1 for s in self.samples if s["success"]) / len(self.samples)
-        
-        return {
-            "name": self.name,
-            "total_calls": self.total_calls,
-            "total_errors": self.total_errors,
-            "error_rate": 1.0 - success_rate,
-            "avg_duration": sum(durations) / len(durations),
-            "min_duration": min(durations),
-            "max_duration": max(durations),
-            "last_error": self.last_error,
-            "last_error_time": self.last_error_time,
-            "sample_count": len(self.samples),
-            "recent_calls": [
-                {
-                    "timestamp": s["timestamp"], 
-                    "duration": s["duration"], 
-                    "success": s["success"]
-                } 
-                for s in list(self.samples)[-5:]
-            ]
-        }
+@dataclass
+class MetricSample:
+    """A single sample of a performance metric."""
+    timestamp: float
+    duration: float
+    success: bool
+    error: Optional[str] = None
+
+@dataclass
+class Metric:
+    """A performance metric with samples."""
+    name: str
+    samples: List[MetricSample] = field(default_factory=list)
+    total_samples: int = 0
+    total_duration: float = 0.0
+    success_count: int = 0
+    error_count: int = 0
+    min_duration: float = float('inf')
+    max_duration: float = 0.0
+    avg_duration: float = 0.0
+
+    def record_sample(self, duration: float, success: bool, error: Optional[str] = None) -> None:
+        """Record a new sample for this metric."""
+        self.samples.append(MetricSample(
+            timestamp=time.time(),
+            duration=duration,
+            success=success,
+            error=error
+        ))
+        self.total_samples += 1
+        self.total_duration += duration
+        if success:
+            self.success_count += 1
+        else:
+            self.error_count += 1
+        self.min_duration = min(self.min_duration, duration)
+        self.max_duration = max(self.max_duration, duration)
+        self.avg_duration = self.total_duration / self.total_samples
 
 class PerformanceMonitor:
-    """
-    Performance monitoring for the MCP server.
-    
-    This class tracks performance metrics like response times,
-    error rates, and resource usage.
-    """
+    """Monitor and track performance metrics."""
     
     def __init__(self):
-        """Initialize the performance monitor."""
-        self.metrics: Dict[str, PerformanceMetric] = {}
         self.start_time = time.time()
-        self.request_count = 0
-        self.error_count = 0
-        logger.info("Initialized performance monitor")
+        self.metrics: Dict[str, Metric] = {}
+        self.error_counts: Dict[str, int] = defaultdict(int)
+        self.warning_counts: Dict[str, int] = defaultdict(int)
         
-    def track(self, name: str = None, max_samples: int = 100):
-        """
-        Decorator to track performance of a function.
+    def track(self, metric_name: str, duration: float, success: bool = True, error: Optional[str] = None) -> Metric:
+        """Get or create a metric tracker and record a sample."""
+        metric = self.metrics.get(metric_name)
+        if metric is None:
+            metric = Metric(name=metric_name)
+            self.metrics[metric_name] = metric
+        metric.record_sample(duration, success, error)
+        return metric
         
-        Args:
-            name: Optional custom name for the metric
-            max_samples: Maximum number of samples to keep
-            
-        Returns:
-            Decorator function
-        """
-        def decorator(func):
-            metric_name = name or f"{func.__module__}.{func.__name__}"
-            
-            if metric_name not in self.metrics:
-                self.metrics[metric_name] = PerformanceMetric(metric_name, max_samples)
-                
-            @wraps(func)
-            async def async_wrapper(*args, **kwargs):
-                start_time = time.time()
-                success = True
-                error = None
-                
-                try:
-                    result = await func(*args, **kwargs)
-                    return result
-                except Exception as e:
-                    success = False
-                    error = e
-                    self.error_count += 1
-                    raise
-                finally:
-                    duration = time.time() - start_time
-                    self.request_count += 1
-                    self.metrics[metric_name].record_sample(duration, success, error)
-                    
-            @wraps(func)
-            def sync_wrapper(*args, **kwargs):
-                start_time = time.time()
-                success = True
-                error = None
-                
-                try:
-                    result = func(*args, **kwargs)
-                    return result
-                except Exception as e:
-                    success = False
-                    error = e
-                    self.error_count += 1
-                    raise
-                finally:
-                    duration = time.time() - start_time
-                    self.request_count += 1
-                    self.metrics[metric_name].record_sample(duration, success, error)
-            
-            # Choose the appropriate wrapper based on whether the function is async
-            if asyncio.iscoroutinefunction(func):
-                return async_wrapper
-            else:
-                return sync_wrapper
-                
-        return decorator
+    def record_error(self, error_type: str, message: str) -> None:
+        """Record an error occurrence."""
+        self.error_counts[error_type] += 1
+        logger.error(f"{error_type}: {message}")
         
-    def get_system_stats(self) -> Dict[str, Any]:
-        """
-        Get system resource statistics.
-        
-        Returns:
-            Dictionary with system statistics
-        """
-        try:
-            process = psutil.Process(os.getpid())
-            mem_info = process.memory_info()
-            
-            return {
-                "cpu_percent": process.cpu_percent(),
-                "memory_usage": {
-                    "rss": mem_info.rss / (1024 * 1024),  # MB
-                    "vms": mem_info.vms / (1024 * 1024),  # MB
-                },
-                "thread_count": threading.active_count(),
-                "python_version": sys.version,
-                "platform": platform.platform(),
-                "system_memory": {
-                    "total": psutil.virtual_memory().total / (1024 * 1024),  # MB
-                    "available": psutil.virtual_memory().available / (1024 * 1024),  # MB
-                    "percent": psutil.virtual_memory().percent
-                }
-            }
-        except Exception as e:
-            logger.warning(f"Error getting system stats: {e}")
-            return {
-                "error": str(e)
-            }
-            
-    def get_server_stats(self) -> Dict[str, Any]:
-        """
-        Get server statistics.
-        
-        Returns:
-            Dictionary with server statistics
-        """
-        uptime = time.time() - self.start_time
-        
-        return {
-            "uptime": uptime,
-            "uptime_formatted": _format_duration(uptime),
-            "start_time": self.start_time,
-            "request_count": self.request_count,
-            "error_count": self.error_count,
-            "error_rate": self.error_count / max(1, self.request_count),
-            "metric_count": len(self.metrics)
-        }
-        
-    def get_metrics(self, include_details: bool = False) -> List[Dict[str, Any]]:
-        """
-        Get all tracked metrics.
-        
-        Args:
-            include_details: Whether to include detailed samples
-            
-        Returns:
-            List of metric statistics
-        """
-        metrics = []
-        
-        for name, metric in self.metrics.items():
-            stats = metric.get_stats()
-            
-            if not include_details:
-                # Remove detailed samples to reduce response size
-                if "recent_calls" in stats:
-                    del stats["recent_calls"]
-                    
-            metrics.append(stats)
-            
-        # Sort by average duration (slowest first)
-        return sorted(metrics, key=lambda m: m.get("avg_duration", 0), reverse=True)
+    def record_warning(self, warning_type: str, message: str) -> None:
+        """Record a warning occurrence."""
+        self.warning_counts[warning_type] += 1
+        logger.warning(f"{warning_type}: {message}")
         
     def get_diagnostics_report(self) -> Dict[str, Any]:
-        """
-        Get a comprehensive diagnostics report.
-        
-        Returns:
-            Dictionary with comprehensive diagnostics information
-        """
+        """Generate a diagnostics report."""
         return {
-            "server": self.get_server_stats(),
-            "system": self.get_system_stats(),
-            "metrics": self.get_metrics(include_details=False),
-            "timestamp": time.time()
+            "uptime": time.time() - self.start_time,
+            "metrics": {
+                name: {
+                    "total_samples": metric.total_samples,
+                    "success_count": metric.success_count,
+                    "error_count": metric.error_count,
+                    "min_duration": metric.min_duration,
+                    "max_duration": metric.max_duration,
+                    "avg_duration": metric.avg_duration
+                }
+                for name, metric in self.metrics.items()
+            },
+            "errors": dict(self.error_counts),
+            "warnings": dict(self.warning_counts),
+            "recent_samples": {
+                name: [
+                    {
+                        "timestamp": sample.timestamp,
+                        "duration": sample.duration,
+                        "success": sample.success,
+                        "error": sample.error
+                    }
+                    for sample in metric.samples[-10:]  # Last 10 samples
+                ]
+                for name, metric in self.metrics.items()
+            }
         }
         
     def reset_metrics(self) -> None:
-        """Reset all performance metrics."""
-        self.metrics = {}
-        self.request_count = 0
-        self.error_count = 0
-        logger.info("Reset all performance metrics")
+        """Reset all metrics."""
+        self.metrics.clear()
+        self.error_counts.clear()
+        self.warning_counts.clear()
+        self.start_time = time.time()
+        
+    def get_metric_summary(self, metric_name: str) -> Optional[Dict[str, Any]]:
+        """Get a summary of a specific metric."""
+        if metric_name not in self.metrics:
+            return None
+            
+        metric = self.metrics[metric_name]
+        return {
+            "name": metric.name,
+            "total_samples": metric.total_samples,
+            "success_count": metric.success_count,
+            "error_count": metric.error_count,
+            "min_duration": metric.min_duration,
+            "max_duration": metric.max_duration,
+            "avg_duration": metric.avg_duration,
+            "recent_samples": [
+                {
+                    "timestamp": sample.timestamp,
+                    "duration": sample.duration,
+                    "success": sample.success,
+                    "error": sample.error
+                }
+                for sample in metric.samples[-5:]  # Last 5 samples
+            ]
+        }
+        
+    def get_error_summary(self) -> Dict[str, Any]:
+        """Get a summary of all errors."""
+        return {
+            "total_errors": sum(self.error_counts.values()),
+            "error_types": dict(self.error_counts),
+            "total_warnings": sum(self.warning_counts.values()),
+            "warning_types": dict(self.warning_counts)
+        }
 
 def _format_duration(seconds: float) -> str:
     """
