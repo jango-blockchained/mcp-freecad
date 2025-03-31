@@ -11,10 +11,99 @@ Usage:
    exec(open("/path/to/freecad_server.py").read())
 
 Or run from command line:
-   freecad -c /path/to/freecad_server.py
+   freecad -c /home/jango/Git/mcp-freecad/src/mcp_freecad/tools/freecad_server.py
 """
 
-import FreeCAD
+try:
+    import FreeCAD
+    # FreeCAD module imported successfully
+    FREECAD_AVAILABLE = True
+except ImportError:
+    # FreeCAD module not available, mock it for development
+    print("WARNING: FreeCAD module not found. Using mock implementation.")
+    FREECAD_AVAILABLE = False
+    
+    # Create a mock FreeCAD module
+    class MockFreeCAD:
+        Version = ["0.21.0", "mock", "2025"]
+        BuildDate = "2025/03/31"
+        BuildVersionMajor = "mock"
+        GuiUp = False
+        ActiveDocument = None
+        
+        class Vector:
+            def __init__(self, x=0, y=0, z=0):
+                self.x = x
+                self.y = y
+                self.z = z
+                
+            def distanceToPoint(self, other):
+                return ((self.x - other.x)**2 + (self.y - other.y)**2 + (self.z - other.z)**2)**0.5
+        
+        def getDocument(self, name):
+            return MockDocument(name)
+            
+        def newDocument(self, name):
+            self.ActiveDocument = MockDocument(name)
+            return self.ActiveDocument
+            
+        def listDocuments(self):
+            return []
+            
+    class MockDocument:
+        def __init__(self, name):
+            self.Name = name
+            self.Label = name
+            self.Objects = []
+            self.Modified = False
+            
+        def addObject(self, obj_type, name):
+            obj = MockObject(obj_type, name)
+            self.Objects.append(obj)
+            return obj
+            
+        def removeObject(self, name):
+            self.Objects = [obj for obj in self.Objects if obj.Name != name]
+            
+        def recompute(self):
+            pass
+            
+        def getObject(self, name):
+            for obj in self.Objects:
+                if obj.Name == name:
+                    return obj
+            return None
+            
+    class MockObject:
+        def __init__(self, type_id, name):
+            self.TypeId = type_id
+            self.Name = name
+            self.Label = name
+            self.Visibility = True
+            self.PropertiesList = []
+            
+            # Add properties based on type
+            if type_id == "Part::Box":
+                self.Length = 10.0
+                self.Width = 10.0
+                self.Height = 10.0
+                self.PropertiesList = ["Length", "Width", "Height"]
+            elif type_id == "Part::Cylinder":
+                self.Radius = 5.0
+                self.Height = 10.0
+                self.PropertiesList = ["Radius", "Height"]
+            elif type_id == "Part::Sphere":
+                self.Radius = 5.0
+                self.PropertiesList = ["Radius"]
+                
+        def getTypeIdOfProperty(self, prop):
+            if prop in ["Length", "Width", "Height", "Radius"]:
+                return "App::PropertyLength"
+            return "App::PropertyString"
+    
+    # Create mock FreeCAD instance
+    FreeCAD = MockFreeCAD()
+
 import json
 import socket
 import threading
@@ -32,7 +121,7 @@ CONFIG_FILE = os.path.expanduser("~/.freecad_server.json")
 config = {
     "host": DEFAULT_HOST,
     "port": DEFAULT_PORT,
-    "debug": False
+    "debug": True
 }
 
 if os.path.exists(CONFIG_FILE):
@@ -120,7 +209,8 @@ def handle_ping(params):
     """Handle ping command"""
     return {
         "pong": True,
-        "timestamp": time.time()
+        "timestamp": time.time(),
+        "freecad_available": FREECAD_AVAILABLE
     }
 
 def handle_get_version(params):
@@ -128,7 +218,8 @@ def handle_get_version(params):
     return {
         "version": FreeCAD.Version,
         "build_date": FreeCAD.BuildDate,
-        "os_platform": sys.platform
+        "os_platform": sys.platform,
+        "freecad_available": FREECAD_AVAILABLE
     }
 
 def handle_get_model_info(params):
@@ -181,7 +272,8 @@ def handle_get_model_info(params):
             "modified": doc.Modified,
             "objects_count": len(doc.Objects)
         },
-        "objects": objects
+        "objects": objects,
+        "freecad_available": FREECAD_AVAILABLE
     }
 
 def handle_create_document(params):
@@ -200,7 +292,8 @@ def handle_create_document(params):
         "document": {
             "name": doc.Name,
             "label": doc.Label
-        }
+        },
+        "freecad_available": FREECAD_AVAILABLE
     }
 
 def handle_close_document(params):
@@ -218,7 +311,10 @@ def handle_close_document(params):
     
     FreeCAD.closeDocument(name)
     
-    return {"success": True}
+    return {
+        "success": True,
+        "freecad_available": FREECAD_AVAILABLE
+    }
 
 def handle_create_object(params):
     """Create a new object"""
@@ -281,7 +377,8 @@ def handle_create_object(params):
             "name": obj.Name,
             "label": obj.Label,
             "type": obj.TypeId
-        }
+        },
+        "freecad_available": FREECAD_AVAILABLE
     }
 
 def handle_modify_object(params):
@@ -329,7 +426,8 @@ def handle_modify_object(params):
     
     return {
         "success": True,
-        "modified_properties": modified_props
+        "modified_properties": modified_props,
+        "freecad_available": FREECAD_AVAILABLE
     }
 
 def handle_delete_object(params):
@@ -364,7 +462,10 @@ def handle_delete_object(params):
     # Delete object
     doc.removeObject(obj_name)
     
-    return {"success": True}
+    return {
+        "success": True,
+        "freecad_available": FREECAD_AVAILABLE
+    }
 
 def handle_execute_script(params):
     """Execute a Python script in FreeCAD context"""
@@ -393,7 +494,8 @@ def handle_execute_script(params):
         
         return {
             "success": True,
-            "environment": result_env
+            "environment": result_env,
+            "freecad_available": FREECAD_AVAILABLE
         }
     except Exception as e:
         return {
@@ -421,7 +523,8 @@ def handle_measure_distance(params):
         return {
             "success": True,
             "distance": distance,
-            "units": "mm"
+            "units": "mm",
+            "freecad_available": FREECAD_AVAILABLE
         }
     except Exception as e:
         return {
@@ -452,6 +555,14 @@ def handle_export_document(params):
     
     # Export based on file type
     try:
+        if not FREECAD_AVAILABLE:
+            return {
+                "success": True,
+                "path": file_path,
+                "mock": True,
+                "freecad_available": FREECAD_AVAILABLE
+            }
+            
         if file_type.lower() == "step":
             import ImportGui
             ImportGui.export(doc.Objects, file_path)
@@ -463,7 +574,8 @@ def handle_export_document(params):
         
         return {
             "success": True,
-            "path": file_path
+            "path": file_path,
+            "freecad_available": FREECAD_AVAILABLE
         }
     except Exception as e:
         return {
@@ -476,7 +588,7 @@ def start_server(host=None, port=None):
     host = host or config["host"]
     port = port or config["port"]
     
-    print(f"Starting FreeCAD server on {host}:{port}")
+    print(f"Starting FreeCAD server on {host}:{port} (FreeCAD {'available' if FREECAD_AVAILABLE else 'not available - using mock implementation'})")
     
     # Create socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

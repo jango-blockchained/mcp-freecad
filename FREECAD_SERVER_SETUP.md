@@ -134,3 +134,14 @@ You can create a `.freecad_server.json` file in your home directory to configure
 ```
 
 Setting `debug` to `true` will enable more verbose logging in the FreeCAD console. 
+
+```mermaid
+graph TD
+    A[Client Request] --> B[MCP Server]
+    B --> C{FreeCAD Connection?}
+    C -->|Yes| D[Execute Command]
+    C -->|No| E[Start FreeCAD Subprocess]
+    E --> F[Connect via Socket]
+    F --> D
+    D --> G[Return Response]
+``` 
