@@ -13,6 +13,8 @@ from src.mcp_freecad.resources.constraint import ConstraintResourceProvider
 from src.mcp_freecad.tools.primitives import PrimitiveToolProvider
 from src.mcp_freecad.tools.model_manipulation import ModelManipulationToolProvider
 from src.mcp_freecad.tools.measurement import MeasurementToolProvider
+from src.mcp_freecad.tools.export_import import ExportImportToolProvider
+from src.mcp_freecad.tools.code_generator import CodeGenerationToolProvider
 from src.mcp_freecad.events.document_events import DocumentEventProvider
 from src.mcp_freecad.api.events import create_event_router
 from src.mcp_freecad.api.resources import create_resource_router
@@ -42,6 +44,8 @@ def create_app():
     server.register_tool("primitives", PrimitiveToolProvider())
     server.register_tool("model_manipulation", ModelManipulationToolProvider())
     server.register_tool("measurement", MeasurementToolProvider())
+    server.register_tool("export_import", ExportImportToolProvider())
+    server.register_tool("code_generation", CodeGenerationToolProvider())
     logger.info(f"Registered tool providers: {server.tools.keys()}")
     
     # Create the FastAPI app directly instead of using server.create_app()
@@ -161,6 +165,164 @@ def create_app():
             "event_data": event_data
         }
     
+    # Add export/import tool endpoints
+    @app.post("/tools/export_import.export")
+    async def export_file(tool_request: dict):
+        try:
+            if "export_import" not in server.tools:
+                return {"status": "error", "message": "Export/Import tool provider not found"}
+                
+            tool_provider = server.tools["export_import"]
+            params = tool_request.get("parameters", {})
+            
+            return await tool_provider.execute_tool("export", params)
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+            
+    @app.post("/tools/export_import.import")
+    async def import_file(tool_request: dict):
+        try:
+            if "export_import" not in server.tools:
+                return {"status": "error", "message": "Export/Import tool provider not found"}
+                
+            tool_provider = server.tools["export_import"]
+            params = tool_request.get("parameters", {})
+            
+            return await tool_provider.execute_tool("import", params)
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+            
+    @app.post("/tools/export_import.list_formats")
+    async def list_formats(tool_request: dict):
+        try:
+            if "export_import" not in server.tools:
+                return {"status": "error", "message": "Export/Import tool provider not found"}
+                
+            tool_provider = server.tools["export_import"]
+            params = tool_request.get("parameters", {})
+            
+            return await tool_provider.execute_tool("list_formats", params)
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+            
+    @app.post("/tools/export_import.convert")
+    async def convert_file(tool_request: dict):
+        try:
+            if "export_import" not in server.tools:
+                return {"status": "error", "message": "Export/Import tool provider not found"}
+                
+            tool_provider = server.tools["export_import"]
+            params = tool_request.get("parameters", {})
+            
+            return await tool_provider.execute_tool("convert", params)
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+    
+    # Add code generation tool endpoints
+    @app.post("/tools/code_generation.generate_script")
+    async def generate_script(tool_request: dict):
+        try:
+            if "code_generation" not in server.tools:
+                return {"status": "error", "message": "Code generation tool provider not found"}
+                
+            tool_provider = server.tools["code_generation"]
+            params = tool_request.get("parameters", {})
+            
+            return await tool_provider.execute_tool("generate_script", params)
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+            
+    @app.post("/tools/code_generation.execute_script")
+    async def execute_script(tool_request: dict):
+        try:
+            if "code_generation" not in server.tools:
+                return {"status": "error", "message": "Code generation tool provider not found"}
+                
+            tool_provider = server.tools["code_generation"]
+            params = tool_request.get("parameters", {})
+            
+            return await tool_provider.execute_tool("execute_script", params)
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+            
+    @app.post("/tools/code_generation.save_snippet")
+    async def save_snippet(tool_request: dict):
+        try:
+            if "code_generation" not in server.tools:
+                return {"status": "error", "message": "Code generation tool provider not found"}
+                
+            tool_provider = server.tools["code_generation"]
+            params = tool_request.get("parameters", {})
+            
+            return await tool_provider.execute_tool("save_snippet", params)
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+            
+    @app.post("/tools/code_generation.load_snippet")
+    async def load_snippet(tool_request: dict):
+        try:
+            if "code_generation" not in server.tools:
+                return {"status": "error", "message": "Code generation tool provider not found"}
+                
+            tool_provider = server.tools["code_generation"]
+            params = tool_request.get("parameters", {})
+            
+            return await tool_provider.execute_tool("load_snippet", params)
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+            
+    @app.post("/tools/code_generation.get_script_history")
+    async def get_script_history(tool_request: dict):
+        try:
+            if "code_generation" not in server.tools:
+                return {"status": "error", "message": "Code generation tool provider not found"}
+                
+            tool_provider = server.tools["code_generation"]
+            params = tool_request.get("parameters", {})
+            
+            return await tool_provider.execute_tool("get_script_history", params)
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+            
+    @app.post("/tools/code_generation.generate_primitive_script")
+    async def generate_primitive_script(tool_request: dict):
+        try:
+            if "code_generation" not in server.tools:
+                return {"status": "error", "message": "Code generation tool provider not found"}
+                
+            tool_provider = server.tools["code_generation"]
+            params = tool_request.get("parameters", {})
+            
+            return await tool_provider.execute_tool("generate_primitive_script", params)
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+            
+    @app.post("/tools/code_generation.generate_transform_script")
+    async def generate_transform_script(tool_request: dict):
+        try:
+            if "code_generation" not in server.tools:
+                return {"status": "error", "message": "Code generation tool provider not found"}
+                
+            tool_provider = server.tools["code_generation"]
+            params = tool_request.get("parameters", {})
+            
+            return await tool_provider.execute_tool("generate_transform_script", params)
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+            
+    @app.post("/tools/code_generation.generate_boolean_script")
+    async def generate_boolean_script(tool_request: dict):
+        try:
+            if "code_generation" not in server.tools:
+                return {"status": "error", "message": "Code generation tool provider not found"}
+                
+            tool_provider = server.tools["code_generation"]
+            params = tool_request.get("parameters", {})
+            
+            return await tool_provider.execute_tool("generate_boolean_script", params)
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
     # Create the routers
     # NOTE: We're no longer including the routers that are causing issues
     # They are replaced by direct endpoint definitions above
