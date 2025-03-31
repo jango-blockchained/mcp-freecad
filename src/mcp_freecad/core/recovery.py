@@ -1,6 +1,11 @@
 import logging
 import time
 import asyncio
+import socket
+import json
+import os
+import sys
+import subprocess
 from typing import Dict, Any, Optional, Callable, List, Coroutine
 
 logger = logging.getLogger(__name__)
@@ -152,6 +157,56 @@ class ConnectionRecovery:
         # This should also not be reached
         return None
 
+class FreeCADClient:
+    """Client for communicating with FreeCAD server"""
+    
+    def __init__(self, host='localhost', port=12345, timeout=10.0):
+        """Initialize the client"""
+        self.host = host
+        self.port = port
+        self.timeout = timeout
+    
+    def send_command(self, command_type, params=None):
+        """Send a command to the FreeCAD server"""
+        if params is None:
+            params = {}
+            
+        command = {
+            "type": command_type,
+            "params": params
+        }
+        
+        # Create socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(self.timeout)
+        
+        try:
+            # Connect to server
+            sock.connect((self.host, self.port))
+            
+            # Send command
+            sock.sendall(json.dumps(command).encode())
+            
+            # Receive response
+            response = sock.recv(8192).decode()
+            
+            # Parse response
+            result = json.loads(response)
+            
+            # Check for errors
+            if 'error' in result:
+                raise Exception(result['error'])
+                
+            return result
+        except socket.timeout:
+            raise Exception(f"Connection timed out after {self.timeout} seconds")
+        except ConnectionRefusedError:
+            raise Exception(f"Connection refused. Is the FreeCAD server running on {self.host}:{self.port}?")
+        except Exception as e:
+            raise Exception(f"Error communicating with FreeCAD server: {str(e)}")
+        finally:
+            sock.close()
+
 class FreeCADConnectionManager:
     """
     Manager for FreeCAD connection with recovery capabilities.
@@ -170,10 +225,15 @@ class FreeCADConnectionManager:
         """
         self.config = config
         self.recovery = recovery or ConnectionRecovery()
-        self.app = None
+        self.client = None
+        self.freecad_process = None
         self.connected = False
         self.last_connection_attempt = 0
         self.connection_errors: List[Dict[str, Any]] = []
+        self.host = 'localhost'
+        self.port = 12345
+        if 'freecad' in config and 'server_port' in config['freecad']:
+            self.port = config['freecad']['server_port']
         logger.info("Initialized FreeCAD connection manager")
         
     async def connect(self, force: bool = False) -> bool:
@@ -212,25 +272,55 @@ class FreeCADConnectionManager:
             Exception: If connection fails
         """
         try:
-            # Add FreeCAD Python path to sys.path if provided
-            if 'python_path' in self.config.get('freecad', {}):
-                import sys
-                freecad_python_path = self.config['freecad']['python_path']
-                if freecad_python_path not in sys.path:
-                    logger.info(f"Adding FreeCAD Python path: {freecad_python_path}")
-                    sys.path.append(freecad_python_path)
+            # Check if FreeCAD server is already running
+            try:
+                # Create client
+                self.client = FreeCADClient(self.host, self.port)
+                # Test connection
+                result = self.client.send_command("ping")
+                if result.get('pong'):
+                    logger.info("Connected to existing FreeCAD server")
+                    self.connected = True
+                    return True
+            except Exception:
+                # FreeCAD server not running, start it
+                pass
+                
+            # Start FreeCAD server
+            freecad_path = self.config.get('freecad', {}).get('path', '/usr/bin/freecad')
+            server_script = os.path.join(os.getcwd(), 'freecad_server.py')
             
-            import FreeCAD
-            self.app = FreeCAD
-            self.connected = True
-            logger.info("Connected to FreeCAD successfully")
-            return True
-        except ImportError as e:
-            logger.warning(f"Could not import FreeCAD: {e}")
-            self.connected = False
-            raise e
+            if not os.path.exists(server_script):
+                raise Exception(f"FreeCAD server script not found: {server_script}")
+                
+            if not os.path.exists(freecad_path):
+                raise Exception(f"FreeCAD executable not found: {freecad_path}")
+                
+            # Start FreeCAD process
+            logger.info(f"Starting FreeCAD server with: {freecad_path} -c {server_script}")
+            self.freecad_process = subprocess.Popen(
+                [freecad_path, "-c", server_script, self.host, str(self.port)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            
+            # Wait for server to start
+            logger.info("Waiting for FreeCAD server to start...")
+            await asyncio.sleep(5)
+            
+            # Connect to server
+            self.client = FreeCADClient(self.host, self.port)
+            
+            # Test connection
+            result = self.client.send_command("ping")
+            if result.get('pong'):
+                logger.info("Connected to FreeCAD server successfully")
+                self.connected = True
+                return True
+            else:
+                raise Exception("FreeCAD server did not respond with pong")
         except Exception as e:
-            logger.error(f"Error connecting to FreeCAD: {e}")
+            logger.warning(f"Failed to connect to FreeCAD server: {e}")
             self.connected = False
             raise e
             
@@ -249,85 +339,65 @@ class FreeCADConnectionManager:
         })
         logger.error(f"FreeCAD connection failed after {retries} retries: {exception}")
         
-    async def execute_command(self, command: Callable[[], Any], command_name: str = "command") -> Any:
+    async def execute_command(self, command_type: str, params: Dict[str, Any] = None, command_name: str = "command") -> Any:
         """
-        Execute a FreeCAD command with connection recovery.
+        Execute a command on the FreeCAD server with connection recovery.
         
         Args:
-            command: Function that executes a FreeCAD command
+            command_type: Type of command to execute
+            params: Parameters for the command
             command_name: Name of the command for logging
             
         Returns:
             Result of the command
             
         Raises:
-            Exception: If command execution fails after retries
+            Exception: If the command fails after retries
         """
         if not self.connected:
             await self.connect()
             
-        try:
-            return await self.recovery.with_retry(
-                lambda: self._execute_command_impl(command),
-                command_name,
-                on_failure=lambda e, r: self._on_command_failure(e, r, command_name)
-            )
-        except Exception as e:
-            logger.error(f"Failed to execute {command_name}: {e}")
-            raise e
+        async def _execute_command_impl():
+            if not self.client:
+                raise Exception("FreeCAD client not initialized")
+                
+            return self.client.send_command(command_type, params)
             
-    async def _execute_command_impl(self, command: Callable[[], Any]) -> Any:
-        """
-        Implementation of command execution.
-        
-        Args:
-            command: Function that executes a FreeCAD command
-            
-        Returns:
-            Result of the command
-            
-        Raises:
-            Exception: If command execution fails
-        """
-        if not self.connected:
-            raise RuntimeError("Not connected to FreeCAD")
-            
-        try:
-            return command()
-        except Exception as e:
-            logger.error(f"Error executing FreeCAD command: {e}")
-            # Check if it's a connection issue
-            if "connection" in str(e).lower() or "not connected" in str(e).lower():
-                self.connected = False
-                await self.connect(force=True)
-            raise e
+        return await self.recovery.with_retry(
+            _execute_command_impl,
+            command_name,
+            on_failure=lambda e, r: self._on_command_failure(e, r, command_name)
+        )
             
     async def _on_command_failure(self, exception: Exception, retries: int, command_name: str) -> None:
         """
-        Handle command execution failure after all retries.
+        Handle command failure after all retries.
         
         Args:
             exception: The exception that caused the failure
             retries: Number of retries attempted
-            command_name: Name of the command that failed
+            command_name: Name of the command
         """
         logger.error(f"FreeCAD command '{command_name}' failed after {retries} retries: {exception}")
-        # If we suspect a connection issue, try to reconnect
-        if "connection" in str(exception).lower() or "not connected" in str(exception).lower():
-            logger.info("Attempting to reconnect to FreeCAD after command failure")
-            self.connected = False
-            await self.connect(force=True)
-            
+        
+        # Try to reconnect if we get connection errors
+        if "Connection refused" in str(exception) or "Connection timed out" in str(exception):
+            logger.info("Attempting to reconnect to FreeCAD server...")
+            try:
+                await self.connect(force=True)
+            except Exception as e:
+                logger.error(f"Failed to reconnect: {e}")
+        
     def get_connection_status(self) -> Dict[str, Any]:
         """
-        Get the status of the FreeCAD connection.
+        Get the current connection status.
         
         Returns:
             Dictionary with connection status information
         """
         return {
             "connected": self.connected,
-            "last_connection_attempt": self.last_connection_attempt,
-            "time_since_last_attempt": time.time() - self.last_connection_attempt if self.last_connection_attempt > 0 else None,
-            "connection_errors": self.connection_errors[-5:] if self.connection_errors else []
+            "last_attempt": self.last_connection_attempt,
+            "errors": len(self.connection_errors),
+            "server_running": self.freecad_process is not None and self.freecad_process.poll() is None
         } 

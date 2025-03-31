@@ -23,6 +23,7 @@
   "freecad": {
     "path": "/usr/bin/freecad",
     "python_path": "/usr/lib/freecad-python3/lib",
+    "server_port": 12345,
     "auto_connect": true,
     "reconnect_on_failure": true
   },
