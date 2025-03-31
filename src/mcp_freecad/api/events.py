@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Set
 import asyncio
 import json
 import logging
@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 
 # In-memory store of connected clients and their queues
 client_queues = {}
+# In-memory store of client subscriptions
+client_subscriptions = {}
 
 async def event_generator(client_id: str):
     """Generate SSE events for a specific client."""
@@ -48,6 +50,8 @@ async def event_generator(client_id: str):
         # Clean up when client disconnects
         if client_id in client_queues:
             del client_queues[client_id]
+        if client_id in client_subscriptions:
+            del client_subscriptions[client_id]
         logger.info(f"Cleaned up resources for client {client_id}")
 
 async def ping_client(client_id: str):
@@ -72,6 +76,10 @@ class EventResponse(BaseModel):
     success: bool
     message: str
 
+class EventSubscription(BaseModel):
+    event_types: List[str] = []
+    filters: Dict[str, Any] = {}
+
 def create_event_router(mcp_server):
     """Create a FastAPI router for events."""
     router = APIRouter()
@@ -93,12 +101,19 @@ def create_event_router(mcp_server):
         
         # Register this client with event handlers
         if types:
+            # Store subscription information
+            client_subscriptions[client_id] = types
+            
+            # Register with specific event handlers
             for event_type in types:
                 if event_type in mcp_server.event_handlers:
                     for handler in mcp_server.event_handlers[event_type]:
                         handler.add_listener(client_id)
         else:
             # Register for all event types if none specified
+            all_event_types = list(mcp_server.event_handlers.keys())
+            client_subscriptions[client_id] = all_event_types
+            
             for event_type, handlers in mcp_server.event_handlers.items():
                 for handler in handlers:
                     handler.add_listener(client_id)
@@ -142,15 +157,68 @@ def create_event_router(mcp_server):
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error triggering event: {str(e)}")
     
-    # Add a function to broadcast events
+    @router.post("/subscribe")
+    async def update_subscription(
+        subscription: EventSubscription,
+        authorization: Optional[str] = Header(None)
+    ) -> EventResponse:
+        """Update a client's event subscription."""
+        # Authenticate the request
+        if authorization:
+            token = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
+            if not await mcp_server.auth_manager.authenticate(token):
+                raise HTTPException(status_code=401, detail="Invalid authentication token")
+                
+        # Extract client ID from token or header
+        # This is a simplified example - in a real implementation, you would extract
+        # the client ID from the JWT token or a separate header
+        client_id = token
+        
+        if client_id not in client_queues:
+            raise HTTPException(status_code=404, detail="Client not found or not connected")
+            
+        # Update subscription
+        client_subscriptions[client_id] = subscription.event_types
+        
+        # Remove from all handlers first
+        for event_type, handlers in mcp_server.event_handlers.items():
+            for handler in handlers:
+                handler.remove_listener(client_id)
+                
+        # Add to requested handlers
+        for event_type in subscription.event_types:
+            if event_type in mcp_server.event_handlers:
+                for handler in mcp_server.event_handlers[event_type]:
+                    handler.add_listener(client_id)
+                    
+        return EventResponse(
+            success=True,
+            message=f"Subscription updated successfully"
+        )
+    
+    # Function to broadcast events to connected clients
     async def broadcast_event(event_type: str, event_data: Dict[str, Any]):
         """
         Broadcast an event to connected clients.
         This function is used internally by event providers.
+        
+        Args:
+            event_type: The type of event
+            event_data: The event data
         """
-        # In a real implementation, this would send the event to connected 
-        # WebSocket clients or other event subscribers
-        pass
+        logger.debug(f"Broadcasting event: {event_type}")
+        
+        # Send to all connected clients that have subscribed to this event type
+        for client_id, queue in client_queues.items():
+            # Check if client is subscribed to this event type
+            if client_id in client_subscriptions:
+                subscribed_events = client_subscriptions[client_id]
+                if event_type in subscribed_events or "*" in subscribed_events:
+                    event = {
+                        "event": event_type,
+                        "data": event_data
+                    }
+                    await queue.put(event)
     
     # Add the broadcast function to the router
     router.broadcast_event = broadcast_event
