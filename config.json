@@ -7,7 +7,9 @@
     "host": "0.0.0.0",
     "port": 8000,
     "debug": false,
-    "workers": 1
+    "workers": 1,
+    "name": "freecad-mcp-server",
+    "version": "0.1.0"
   },
   "cache": {
     "default_ttl": 30.0,
@@ -26,7 +28,11 @@
     "server_port": 12345,
     "auto_connect": false,
     "reconnect_on_failure": true,
-    "use_mock": true
+    "use_mock": true,
+    "connection_method": "auto",
+    "host": "localhost",
+    "port": 12345,
+    "freecad_path": "freecad"
   },
   "cors": {
     "origins": ["*"],
@@ -44,5 +50,11 @@
     "monitoring_enabled": true,
     "metrics_retention": 3600,
     "sample_rate": 1.0
+  },
+  "tools": {
+    "enable_smithery": true,
+    "enable_primitives": true,
+    "enable_model_manipulation": true,
+    "enable_export_import": true
   }
 } 
