@@ -29,8 +29,8 @@
     "max_delay": 30.0
   },
   "freecad": {
-    "path": "./squashfs-root/usr/bin/freecad",
-    "python_path": "./squashfs-root/usr/bin/python",
+    "path": "/home/jango/Git/mcp-freecad/squashfs-root/usr/bin/freecad",
+    "python_path": "/home/jango/Git/mcp-freecad/squashfs-root/usr/bin/python",
     "server_port": 12345,
     "auto_connect": true,
     "reconnect_on_failure": true,

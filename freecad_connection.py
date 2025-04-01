@@ -194,38 +194,58 @@ class FreeCADConnection:
         Returns:
             dict: Response from server
         """
+        sock = None # Define sock outside try for finally block
         try:
-            # Create socket
-            if self._socket is None:
-                self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self._socket.connect((self.host, self.port))
-            
-            # Send command
+            # Create a new socket for each command
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            # Set a timeout for connection and operations
+            sock.settimeout(10.0)
+            sock.connect((self.host, self.port))
+
+            # Send command with newline
             data = json.dumps(command).encode()
-            self._socket.sendall(data)
-            
+            sock.sendall(data + b'\n')
+
             # Receive response in chunks until newline delimiter
             response_data = b""
             while True:
-                chunk = self._socket.recv(4096)
+                chunk = sock.recv(4096)
                 if not chunk:
                     break # Connection closed prematurely
                 response_data += chunk
                 if response_data.endswith(b'\n'):
                     break # End of message found
-            
+
             # Remove trailing newline before parsing
             response_str = response_data.strip().decode()
+
+            if not response_str:
+                 # Handle case where only newline might have been received or connection closed early
+                 return {"error": "Received empty or incomplete response from server"}
 
             try:
                 return json.loads(response_str)
             except json.JSONDecodeError:
-                return {"error": f"Invalid JSON response: {response_str}"}
-            
+                # Log the actual invalid string received
+                print(f"DEBUG: Received invalid JSON data: '{response_str}'")
+                return {"error": f"Invalid JSON response received"} # Keep message simple for user
+
+        except socket.timeout:
+            return {"error": f"Connection to FreeCAD server timed out ({self.host}:{self.port})"}
+        except ConnectionRefusedError:
+             return {"error": f"Connection refused by FreeCAD server ({self.host}:{self.port}). Is it running?"}
         except Exception as e:
-            # Reset socket on error
-            self._socket = None
-            return {"error": str(e)}
+            # Log the specific exception
+            print(f"DEBUG: Error in _send_server_command: {type(e).__name__} - {e}")
+            return {"error": f"Communication error with FreeCAD server: {e}"}
+        finally:
+            # Ensure the socket is always closed
+            if sock:
+                try:
+                    sock.close()
+                except Exception as e_close:
+                    # Log if closing fails, but don't override original error
+                    print(f"DEBUG: Error closing socket: {e_close}")
     
     def _execute_mock_command(self, command_type: str, params: Dict[str, Any] = None) -> Dict[str, Any]:
         """

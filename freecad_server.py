@@ -2,31 +2,213 @@
 """
 FreeCAD Server Script
 
-This script runs inside FreeCAD and provides a socket-based interface
-for communicating with external applications like the MCP server.
+This script provides a socket-based interface for communicating with external applications
+like the MCP server.
 
 Usage:
-1. Run FreeCAD
-2. In the Python console in FreeCAD, execute:
-   exec(open("/path/to/freecad_server.py").read())
-
-Or run from command line:
-   freecad -c /home/jango/Git/mcp-freecad/src/mcp_freecad/tools/freecad_server.py
+   Run directly with Python: python3 freecad_server.py
 
 Command-line arguments:
    --host HOST     Server hostname (default: localhost or from config)
    --port PORT     Server port (default: 12345 or from config)
    --debug         Enable debug logging
    --config FILE   Path to config file (default: ~/.freecad_server.json)
+   --connect       Try to connect to a running FreeCAD instance instead of using mock mode
 """
 
+import json
+import socket
+import threading
+import sys
+import time
+import os
+import traceback
+import argparse
+
+# Default settings
+DEFAULT_HOST = 'localhost'
+DEFAULT_PORT = 12345
+CONFIG_FILE = os.path.expanduser("~/.freecad_server.json")
+
+# Load config and parse command line args first, so we can use the paths
+parser = argparse.ArgumentParser(description='FreeCAD Server')
+parser.add_argument('--host', help='Server hostname')
+parser.add_argument('--port', type=int, help='Server port')
+parser.add_argument('--debug', action='store_true', help='Enable debug logging')
+parser.add_argument('--config', help='Path to config file')
+parser.add_argument('--connect', action='store_true', help='Connect to running FreeCAD instead of using mock mode')
+
+args = parser.parse_args()
+
+# Load config
+config = {
+    "host": DEFAULT_HOST,
+    "port": DEFAULT_PORT,
+    "debug": True,
+    "connect_to_freecad": False
+}
+
+# First try explicitly provided config file
+if args.config and os.path.exists(args.config):
+    try:
+        with open(args.config, 'r') as f:
+            config.update(json.load(f))
+    except Exception as e:
+        print(f"Error loading config file {args.config}: {e}")
+# Then try default config file
+elif os.path.exists(CONFIG_FILE):
+    try:
+        with open(CONFIG_FILE, 'r') as f:
+            config.update(json.load(f))
+    except Exception as e:
+        print(f"Error loading config: {e}")
+
+# Also look for config.json in current directory
+if os.path.exists("config.json"):
+    try:
+        with open("config.json", 'r') as f:
+            loaded_config = json.load(f)
+            if "freecad" in loaded_config:
+                config["freecad"] = loaded_config["freecad"]
+    except Exception as e:
+        print(f"Error loading config.json: {e}")
+
+# Update config with command line arguments
+if args.debug:
+    config["debug"] = True
+    
+if args.connect:
+    config["connect_to_freecad"] = True
+    print("Running in connect mode - will try to connect to a running FreeCAD instance")
+
+# Configure logging
+DEBUG = config.get("debug", False)
+
+def log(message):
+    """Log message if debug is enabled"""
+    if DEBUG:
+        print(f"[FreeCAD Server] {message}")
+
+# Try to add FreeCAD module path before importing
+freecad_config = config.get("freecad", {})
+freecad_path = freecad_config.get("path", "freecad")
+freecad_python_path = freecad_config.get("python_path")
+
+# More robust method to find FreeCAD module
+found_freecad_module = False
+
+if freecad_path and os.path.exists(freecad_path):
+    log(f"Using FreeCAD executable from config: {freecad_path}")
+    # Try to locate the FreeCAD module directory based on the executable path
+    freecad_base_dir = os.path.dirname(os.path.dirname(freecad_path))
+    potential_module_paths = [
+        os.path.join(freecad_base_dir, "lib"),
+        os.path.join(freecad_base_dir, "lib", "freecad"),
+        os.path.join(freecad_base_dir, "Mod"),
+        os.path.join(freecad_base_dir, "usr", "lib"),
+        os.path.join(freecad_base_dir, "usr", "lib", "freecad"),
+        # Directly look in squashfs locations
+        os.path.join(freecad_base_dir, "usr", "lib", "python3"),
+        os.path.join(freecad_base_dir, "usr", "lib", "python3", "dist-packages"),
+        # For AppImage structure
+        freecad_base_dir
+    ]
+    
+    # More verbose debugging
+    print(f"Looking for FreeCAD module in directories based on executable: {freecad_path}")
+    print(f"Base directory: {freecad_base_dir}")
+    
+    for path in potential_module_paths:
+        if os.path.exists(path):
+            print(f"Found path: {path}")
+            log(f"Adding potential FreeCAD module path: {path}")
+            sys.path.append(path)
+            
+            # Check if we can now import FreeCAD
+            try:
+                import importlib
+                importlib.import_module("FreeCAD")
+                found_freecad_module = True
+                print(f"Successfully imported FreeCAD module from {path}")
+                break
+            except ImportError:
+                print(f"FreeCAD module not found in {path}")
+
+# If we still haven't found it, try a more direct approach - look for the Python executable's dist-packages
+if not found_freecad_module and freecad_python_path and os.path.exists(freecad_python_path):
+    print(f"Trying to use Python path from config: {freecad_python_path}")
+    # Get Python's site-packages directory
+    try:
+        # Run Python to get site-packages directory
+        import subprocess
+        result = subprocess.run(
+            [freecad_python_path, "-c", "import site; print(site.getsitepackages())"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            # Parse the output, which will be a list like "['path1', 'path2']"
+            import ast
+            site_packages = ast.literal_eval(result.stdout.strip())
+            for path in site_packages:
+                print(f"Adding site-packages path: {path}")
+                sys.path.append(path)
+                
+                # Also try dist-packages
+                dist_packages = path.replace("site-packages", "dist-packages")
+                if os.path.exists(dist_packages):
+                    print(f"Adding dist-packages path: {dist_packages}")
+                    sys.path.append(dist_packages)
+                
+            # Check if we can now import FreeCAD
+            try:
+                import importlib
+                importlib.import_module("FreeCAD")
+                found_freecad_module = True
+                print(f"Successfully imported FreeCAD module from site-packages")
+            except ImportError:
+                print(f"FreeCAD module not found in site-packages")
+    except Exception as e:
+        print(f"Error getting site-packages directory: {e}")
+
+# If we're using an AppImage or standalone FreeCAD executable, try to extract it
+if not found_freecad_module and os.path.exists(freecad_path):
+    print("Attempting to locate FreeCAD module in AppImage/standalone structure...")
+    # For AppImage, the Python module might be in a different location
+    # Check if we can run FreeCAD with --write-python-path
+    try:
+        import subprocess
+        result = subprocess.run(
+            [freecad_path, "--write-python-path"], 
+            capture_output=True, text=True
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            python_path = result.stdout.strip().split('\n')[0]
+            print(f"FreeCAD reported Python path: {python_path}")
+            if os.path.exists(python_path):
+                # Add the path to sys.path
+                sys.path.append(python_path)
+                # Try to import FreeCAD again
+                try:
+                    import importlib
+                    importlib.import_module("FreeCAD")
+                    found_freecad_module = True
+                    print(f"Successfully imported FreeCAD module from {python_path}")
+                except ImportError:
+                    print(f"FreeCAD module not found in {python_path}")
+    except Exception as e:
+        print(f"Error getting Python path from FreeCAD: {e}")
+
+# Try to import FreeCAD 
 try:
     import FreeCAD
     # FreeCAD module imported successfully
     FREECAD_AVAILABLE = True
-except ImportError:
+    print("FreeCAD module found and imported successfully.")
+except ImportError as e:
     # FreeCAD module not available, mock it for development
-    print("WARNING: FreeCAD module not found. Using mock implementation.")
+    print(f"WARNING: FreeCAD module not found ({e}). Using mock implementation.")
+    print(f"Current Python path: {sys.path}")
+    print(f"Current directory: {os.getcwd()}")
     FREECAD_AVAILABLE = False
     
     # Create a mock FreeCAD module
@@ -110,41 +292,18 @@ except ImportError:
     # Create mock FreeCAD instance
     FreeCAD = MockFreeCAD()
 
-import json
-import socket
-import threading
-import sys
-import time
-import os
-import traceback
-import argparse
+# Try to import FreeCADGui for GUI operations
+try:
+    import FreeCADGui
+    FREECADGUI_AVAILABLE = True
+    print("FreeCADGui module found and imported successfully.")
+except ImportError:
+    FREECADGUI_AVAILABLE = False
+    print("FreeCADGui module not available. GUI operations will not be possible.")
 
-# Default settings
-DEFAULT_HOST = 'localhost'
-DEFAULT_PORT = 12345
-CONFIG_FILE = os.path.expanduser("~/.freecad_server.json")
-
-# Load config if exists
-config = {
-    "host": DEFAULT_HOST,
-    "port": DEFAULT_PORT,
-    "debug": True
-}
-
-if os.path.exists(CONFIG_FILE):
-    try:
-        with open(CONFIG_FILE, 'r') as f:
-            config.update(json.load(f))
-    except Exception as e:
-        print(f"Error loading config: {e}")
-
-# Configure logging
-DEBUG = config.get("debug", False)
-
-def log(message):
-    """Log message if debug is enabled"""
-    if DEBUG:
-        print(f"[FreeCAD Server] {message}")
+# Use command line arguments if provided, otherwise use config values
+host = args.host or config["host"]
+port = args.port or config["port"]
 
 def handle_client(conn, addr):
     """Handle a client connection"""
@@ -217,7 +376,9 @@ def handle_ping(params):
     return {
         "pong": True,
         "timestamp": time.time(),
-        "freecad_available": FREECAD_AVAILABLE
+        "freecad_available": FREECAD_AVAILABLE,
+        "freecadgui_available": FREECADGUI_AVAILABLE,
+        "connect_mode": config.get("connect_to_freecad", False)
     }
 
 def handle_get_version(params):
@@ -226,7 +387,8 @@ def handle_get_version(params):
         "version": FreeCAD.Version,
         "build_date": FreeCAD.BuildDate,
         "os_platform": sys.platform,
-        "freecad_available": FREECAD_AVAILABLE
+        "freecad_available": FREECAD_AVAILABLE,
+        "freecadgui_available": FREECADGUI_AVAILABLE
     }
 
 def handle_get_model_info(params):
@@ -294,6 +456,12 @@ def handle_create_document(params):
     # Create document
     doc = FreeCAD.newDocument(name)
     
+    # If in connect mode and GUI is available, make the document visible
+    if config.get("connect_to_freecad", False) and FREECADGUI_AVAILABLE:
+        FreeCADGui.getDocument(name)
+        FreeCADGui.ActiveDocument = FreeCADGui.getDocument(name)
+        FreeCADGui.ActiveDocument.resetEdit()
+    
     return {
         "success": True,
         "document": {
@@ -336,11 +504,17 @@ def handle_create_object(params):
             doc = FreeCAD.getDocument(doc_name)
         else:
             doc = FreeCAD.newDocument(doc_name)
+            if config.get("connect_to_freecad", False) and FREECADGUI_AVAILABLE:
+                FreeCADGui.getDocument(doc_name)
+                FreeCADGui.ActiveDocument = FreeCADGui.getDocument(doc_name)
     else:
         if FreeCAD.ActiveDocument:
             doc = FreeCAD.ActiveDocument
         else:
             doc = FreeCAD.newDocument("Unnamed")
+            if config.get("connect_to_freecad", False) and FREECADGUI_AVAILABLE:
+                FreeCADGui.getDocument("Unnamed")
+                FreeCADGui.ActiveDocument = FreeCADGui.getDocument("Unnamed")
     
     # Create object based on type
     if obj_type == "box":
@@ -377,6 +551,14 @@ def handle_create_object(params):
     
     # Recompute document
     doc.recompute()
+    
+    # Update GUI if in connect mode
+    if config.get("connect_to_freecad", False) and FREECADGUI_AVAILABLE:
+        FreeCADGui.updateGui()
+        # Force view update
+        if FreeCADGui.ActiveDocument:
+            for view in FreeCADGui.getMainWindow().findChildren(FreeCADGui.View3DInventor):
+                view.update()
     
     return {
         "success": True,
@@ -431,6 +613,10 @@ def handle_modify_object(params):
     # Recompute document
     doc.recompute()
     
+    # Update GUI if in connect mode
+    if config.get("connect_to_freecad", False) and FREECADGUI_AVAILABLE:
+        FreeCADGui.updateGui()
+    
     return {
         "success": True,
         "modified_properties": modified_props,
@@ -469,6 +655,10 @@ def handle_delete_object(params):
     # Delete object
     doc.removeObject(obj_name)
     
+    # Update GUI if in connect mode
+    if config.get("connect_to_freecad", False) and FREECADGUI_AVAILABLE:
+        FreeCADGui.updateGui()
+    
     return {
         "success": True,
         "freecad_available": FREECAD_AVAILABLE
@@ -484,6 +674,10 @@ def handle_execute_script(params):
     # Create a local environment for the script
     local_env = {"FreeCAD": FreeCAD}
     
+    # Add FreeCADGui if available
+    if FREECADGUI_AVAILABLE:
+        local_env["FreeCADGui"] = FreeCADGui
+    
     # Execute script
     try:
         exec(script, {}, local_env)
@@ -491,7 +685,7 @@ def handle_execute_script(params):
         # Filter out non-serializable values from the environment
         result_env = {}
         for key, value in local_env.items():
-            if key != "FreeCAD" and not key.startswith("__"):
+            if key not in ["FreeCAD", "FreeCADGui"] and not key.startswith("__"):
                 try:
                     # Test if it's serializable
                     json.dumps({key: value})
@@ -595,7 +789,11 @@ def start_server(host=None, port=None):
     host = host or config["host"]
     port = port or config["port"]
     
-    print(f"Starting FreeCAD server on {host}:{port} (FreeCAD {'available' if FREECAD_AVAILABLE else 'not available - using mock implementation'})")
+    connect_mode = config.get("connect_to_freecad", False)
+    mode_text = "in connect mode" if connect_mode else "in standalone mode"
+    freecad_status = "available" if FREECAD_AVAILABLE else "not available - using mock implementation"
+    
+    print(f"Starting FreeCAD server on {host}:{port} {mode_text} (FreeCAD {freecad_status})")
     
     # Create socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -624,37 +822,11 @@ def start_server(host=None, port=None):
         print("FreeCAD server stopped")
 
 if __name__ == "__main__":
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(description='FreeCAD Server')
-    parser.add_argument('--host', help='Server hostname')
-    parser.add_argument('--port', type=int, help='Server port')
-    parser.add_argument('--debug', action='store_true', help='Enable debug logging')
-    parser.add_argument('--config', help='Path to config file')
-    
-    # Use parse_known_args to ignore unknown arguments potentially passed by FreeCAD GUI environment
-    args, unknown = parser.parse_known_args()
-    
-    # Update config with command line arguments
-    if args.config and os.path.exists(args.config):
-        try:
-            with open(args.config, 'r') as f:
-                config.update(json.load(f))
-        except Exception as e:
-            print(f"Error loading config file {args.config}: {e}")
-    
-    if args.debug:
-        config["debug"] = True
-        DEBUG = True
-    
-    # Use command line arguments if provided, otherwise use config values
-    host = args.host or config["host"]
-    port = args.port or config["port"]
-    
-    # Start the server in a background thread to avoid blocking FreeCAD GUI when run with exec()
-    server_thread = threading.Thread(target=start_server, args=(host, port))
-    server_thread.daemon = True  # Allow FreeCAD to exit even if this thread is running
-    server_thread.start()
-    print(f"FreeCAD server thread started on {host}:{port}")
-
-    # Note: If running via exec() in FreeCAD GUI, this script finishing doesn't stop the thread.
-    # The server will keep running in the background within the FreeCAD process. 
+    # Start the server directly (not as a background thread)
+    try:
+        start_server(host, port)
+    except KeyboardInterrupt:
+        print("Server stopped by user")
+    except Exception as e:
+        print(f"Error starting server: {e}")
+        traceback.print_exc() 
