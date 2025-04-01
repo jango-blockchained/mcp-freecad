@@ -57,7 +57,7 @@ graph TD
 1.  **Install FreeCAD**: Ensure FreeCAD is installed on your system and accessible from the command line.
 2.  **Install Dependencies**:
     ```bash
-    pip install modelcontextprotocol-sdk # For the MCP Server
+    pip install modelcontextprotocol # For the MCP Server
     # Other dependencies might be listed in requirements.txt if available
     ```
 
@@ -209,9 +209,263 @@ Assistant: I've created the hammer with a 400mm handle and default head dimensio
     - **`auto` or `bridge` method**: Verify FreeCAD is installed and the `freecad` command works in your terminal. Check the `freecad_path` in `config.json`.
     - **`server` method**: Ensure `freecad_server.py` is running inside an active FreeCAD instance, listening on the correct host/port configured in `config.json`.
     - **General**: Check FreeCAD logs for errors.
-- **Missing MCP SDK**: Install via `pip install modelcontextprotocol-sdk`.
+- **Missing MCP SDK**: Install via `pip install modelcontextprotocol`.
 - **Python Path Issues**: If FreeCAD modules aren't found, ensure FreeCAD's `lib` directory is in your `PYTHONPATH` environment variable, especially when running scripts directly.
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🖥️ Cursor Integration
+
+The MCP server is fully compatible with Cursor IDE integration. To use it with Cursor:
+
+1. Use the provided `cursor_config.json`:
+```bash
+./freecad_mcp_server.py --config cursor_config.json
+```
+
+2. The server uses stdio transport by default, which is compatible with Cursor's communication protocol.
+
+3. Error handling has been enhanced to use proper MCP error responses, ensuring better integration with Cursor's error display.
+
+4. Debug logging is enabled by default in the Cursor configuration to help with troubleshooting.
+
+### Cursor-Specific Features
+
+- Proper stdio transport handling for seamless integration
+- Enhanced error responses using MCP's ErrorResponse format
+- Debug mode for better visibility into server operations
+- Automatic capability detection
+- Improved logging for Cursor's console
+
+### Cursor Configuration
+
+The `cursor_config.json` file includes specific settings for Cursor integration:
+
+```json
+{
+    "cursor": {
+        "debug": true,
+        "log_level": "INFO",
+        "stdio_transport": true
+    }
+}
+```
+
+These settings ensure optimal performance when using the server with Cursor.
+
+## 📋 Available Options and Use Cases
+
+### 🔧 Connection Methods
+1. **Socket Server Connection**
+   - Use when running FreeCAD as a persistent server
+   - Best for high-performance, continuous operations
+   - Configuration:
+   ```json
+   {
+       "freecad": {
+           "connection_method": "server",
+           "host": "localhost",
+           "port": 12345
+       }
+   }
+   ```
+
+2. **CLI Bridge Connection**
+   - Use when you need to start/stop FreeCAD for each operation
+   - Good for occasional use or scripting
+   - Configuration:
+   ```json
+   {
+       "freecad": {
+           "connection_method": "bridge",
+           "freecad_path": "freecad"
+       }
+   }
+   ```
+
+3. **Mock Connection**
+   - Use for testing without FreeCAD
+   - Development and debugging
+   - Configuration:
+   ```json
+   {
+       "freecad": {
+           "connection_method": "mock"
+       }
+   }
+   ```
+
+4. **Auto Connection**
+   - Automatically selects the best available method
+   - Default option
+   - Configuration:
+   ```json
+   {
+       "freecad": {
+           "connection_method": "auto"
+       }
+   }
+   ```
+
+### 🛠️ Tool Categories and Use Cases
+
+1. **Smithery Tools**
+   - Creating blacksmithing equipment models
+   - Use cases:
+     * Design of anvils with custom dimensions
+     * Modeling hammers with specific handle lengths
+     * Creating tongs with adjustable jaw openings
+     * Forging blade designs
+     * Generating horseshoe models
+
+2. **Basic FreeCAD Operations**
+   - Essential document management
+   - Use cases:
+     * Creating new documents
+     * Saving and loading projects
+     * Exporting to various formats
+     * Managing document structure
+
+3. **Model Manipulation**
+   - Transforming and modifying objects
+   - Use cases:
+     * Rotating objects precisely
+     * Moving objects in 3D space
+     * Scaling models
+     * Creating mirrors and copies
+     * Boolean operations (union, cut, intersect)
+
+4. **Measurement Tools**
+   - Analysis and verification
+   - Use cases:
+     * Distance measurements
+     * Angle calculations
+     * Surface area analysis
+     * Volume calculations
+     * Mass properties
+
+5. **Primitive Creation**
+   - Basic shape generation
+   - Use cases:
+     * Creating boxes and cylinders
+     * Generating spheres
+     * Making cones and tori
+     * Creating regular polygons
+     * Drawing ellipses
+
+6. **Export/Import Operations**
+   - File format conversion
+   - Use cases:
+     * STEP file export/import
+     * IGES format handling
+     * DXF file processing
+     * STL export for 3D printing
+
+7. **Code Generation**
+   - Automated code creation
+   - Use cases:
+     * Python script generation
+     * OpenSCAD code export
+     * G-code generation for CNC
+     * 3D printer settings optimization
+
+### 💻 Integration Scenarios
+
+1. **Cursor IDE Integration**
+   - Development environment integration
+   - Use cases:
+     * Direct model manipulation from IDE
+     * Real-time feedback
+     * Debug logging
+     * Error tracking
+
+2. **AI Assistant Integration**
+   - AI-powered design automation
+   - Use cases:
+     * Natural language model creation
+     * Automated design modifications
+     * Parameter optimization
+     * Design validation
+
+3. **Command Line Usage**
+   - Scripting and automation
+   - Use cases:
+     * Batch processing
+     * Automated testing
+     * CI/CD integration
+     * Command-line tools
+
+### 🎯 Common Use Case Examples
+
+1. **Rapid Prototyping**
+```python
+# Create a new document
+freecad.create_document("Prototype")
+# Add basic shapes
+primitives.create_box(length=100, width=50, height=20)
+# Export for 3D printing
+export_import.export_stl("prototype.stl")
+```
+
+2. **Tool Design**
+```python
+# Create custom blacksmith tools
+smithery.create_hammer(handle_length=400, head_width=45)
+smithery.create_tongs(jaw_length=85, opening_angle=20)
+```
+
+3. **Model Analysis**
+```python
+# Measure object properties
+volume = measurement.volume("Part1")
+mass = measurement.mass("Part1", material="Steel")
+```
+
+4. **Automated Processing**
+```python
+# Import and modify multiple files
+for file in files:
+    import_step(file)
+    model_manipulation.scale(1.5)
+    export_stl(f"{file}_scaled.stl")
+```
+
+### ⚙️ Configuration Options
+
+1. **Server Configuration**
+```json
+{
+    "server": {
+        "name": "custom-server-name",
+        "version": "1.0.0",
+        "description": "Custom description"
+    }
+}
+```
+
+2. **Tool Enablement**
+```json
+{
+    "tools": {
+        "enable_smithery": true,
+        "enable_primitives": true,
+        "enable_model_manipulation": true,
+        "enable_export_import": true,
+        "enable_measurement": true,
+        "enable_code_generator": true
+    }
+}
+```
+
+3. **Debug Configuration**
+```json
+{
+    "cursor": {
+        "debug": true,
+        "log_level": "DEBUG",
+        "stdio_transport": true
+    }
+}
+```

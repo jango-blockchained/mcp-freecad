@@ -26,23 +26,15 @@ logger = logging.getLogger("freecad_mcp")
 
 # Import MCP SDK
 try:
-    from modelcontextprotocol.sdk.server import Server, StdioServerTransport
-    from modelcontextprotocol.sdk.server.requests import ListResourcesRequestSchema, GetResourceRequestSchema
-    from modelcontextprotocol.sdk.server.requests import ListToolsRequestSchema, ExecuteToolRequestSchema
+    from mcp_sdk.server import Server, StdioServerTransport
+    from mcp_sdk.server.requests import ListResourcesRequestSchema, GetResourceRequestSchema
+    from mcp_sdk.server.requests import ListToolsRequestSchema, ExecuteToolRequestSchema
+    from mcp_sdk.server.responses import ErrorResponse
     MCP_SDK_AVAILABLE = True
 except ImportError:
-    logger.warning("MCP SDK not found. Installing required packages...")
-    MCP_SDK_AVAILABLE = False
-    try:
-        import subprocess
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "modelcontextprotocol-sdk"])
-        from modelcontextprotocol.sdk.server import Server, StdioServerTransport
-        from modelcontextprotocol.sdk.server.requests import ListResourcesRequestSchema, GetResourceRequestSchema
-        from modelcontextprotocol.sdk.server.requests import ListToolsRequestSchema, ExecuteToolRequestSchema
-        MCP_SDK_AVAILABLE = True
-    except Exception as e:
-        logger.error(f"Failed to install MCP SDK: {e}")
-        logger.error("Please install the MCP SDK manually: pip install modelcontextprotocol-sdk")
+    logger.error("MCP SDK not found. Please install it manually:")
+    logger.error("  pip install modelcontextprotocol")
+    sys.exit(1) # Exit if MCP SDK is essential and not found
 
 # Import FreeCAD connection
 try:
@@ -364,16 +356,17 @@ class FreeCADMCPServer:
             
         server_config = self.config.get("server", {})
         
-        # Create MCP server
+        # Create MCP server with Cursor-compatible configuration
         self.server = Server(
             info={
                 "name": server_config.get("name", "freecad-mcp-server"),
-                "version": server_config.get("version", "0.1.0")
+                "version": server_config.get("version", "0.1.0"),
+                "description": "FreeCAD MCP Server for Cursor integration"
             },
             config={
                 "capabilities": {
-                    "resources": {},
-                    "tools": {}
+                    "resources": True,
+                    "tools": True
                 }
             }
         )
@@ -381,15 +374,16 @@ class FreeCADMCPServer:
         # Set up request handlers
         self._setup_request_handlers()
         
-        # Connect to transport
+        # Connect to transport using stdio for Cursor compatibility
         transport = StdioServerTransport()
-        logger.info("Starting FreeCAD MCP Server...")
+        logger.info("Starting FreeCAD MCP Server for Cursor...")
         
         try:
             await self.server.connect(transport)
-            logger.info("MCP Server connected to transport")
+            logger.info("MCP Server connected to Cursor via stdio transport")
         except Exception as e:
             logger.error(f"Error connecting to transport: {e}")
+            return ErrorResponse(message=f"Failed to start server: {str(e)}")
     
     def _setup_request_handlers(self):
         """Set up request handlers for the MCP server."""
@@ -429,7 +423,7 @@ class FreeCADMCPServer:
         logger.info(f"Executing tool: {tool_name} with arguments: {arguments}")
         
         if not tool_name or tool_name not in self.tools:
-            return {"error": f"Unknown tool: {tool_name}"}
+            return ErrorResponse(message=f"Unknown tool: {tool_name}")
         
         try:
             # Handle smithery tools
@@ -440,15 +434,15 @@ class FreeCADMCPServer:
             elif tool_name.startswith("freecad."):
                 return await self._execute_freecad_tool(tool_name, arguments)
             
-            return {"error": f"Tool not implemented: {tool_name}"}
+            return ErrorResponse(message=f"Tool not implemented: {tool_name}")
         except Exception as e:
             logger.error(f"Error executing tool {tool_name}: {e}")
-            return {"error": f"Error executing tool: {str(e)}"}
+            return ErrorResponse(message=f"Error executing tool: {str(e)}")
     
     async def _execute_smithery_tool(self, tool_name, arguments):
         """Execute a smithery tool."""
         if not self.freecad_connection or not self.freecad_connection.is_connected():
-            return {"error": "Not connected to FreeCAD"}
+            return ErrorResponse(message="Not connected to FreeCAD")
         
         # Create smithery provider
         try:
@@ -503,7 +497,7 @@ anvil_id = fusion.Name
 """
                 result = self.freecad_connection.execute_command("execute_script", {"script": script})
                 if "error" in result:
-                    return {"error": result["error"]}
+                    return ErrorResponse(message=result["error"])
                 
                 # Get the name of the created object from the environment
                 anvil_id = result.get("environment", {}).get("anvil_id", "Anvil")
@@ -559,7 +553,7 @@ hammer_id = fusion.Name
 """
                 result = self.freecad_connection.execute_command("execute_script", {"script": script})
                 if "error" in result:
-                    return {"error": result["error"]}
+                    return ErrorResponse(message=result["error"])
                 
                 # Get the name of the created object from the environment
                 hammer_id = result.get("environment", {}).get("hammer_id", "Hammer")
@@ -573,16 +567,16 @@ hammer_id = fusion.Name
             # Similarly implement other smithery tools
             
             else:
-                return {"error": f"Tool not yet implemented: {tool_name}"}
+                return ErrorResponse(message=f"Tool not yet implemented: {tool_name}")
                 
         except Exception as e:
             logger.error(f"Error executing smithery tool {tool_name}: {e}")
-            return {"error": f"Error executing tool: {str(e)}"}
+            return ErrorResponse(message=f"Error executing tool: {str(e)}")
     
     async def _execute_freecad_tool(self, tool_name, arguments):
         """Execute a basic FreeCAD tool."""
         if not self.freecad_connection or not self.freecad_connection.is_connected():
-            return {"error": "Not connected to FreeCAD"}
+            return ErrorResponse(message="Not connected to FreeCAD")
         
         try:
             if tool_name == "freecad.create_document":
@@ -600,7 +594,7 @@ hammer_id = fusion.Name
                 document = arguments.get("document")
                 
                 if not file_path:
-                    return {"error": "File path is required"}
+                    return ErrorResponse(message="File path is required")
                 
                 success = self.freecad_connection.export_stl(object_name, file_path, document)
                 
@@ -610,11 +604,11 @@ hammer_id = fusion.Name
                     "success": success
                 }
             
-            return {"error": f"Tool not implemented: {tool_name}"}
+            return ErrorResponse(message=f"Tool not implemented: {tool_name}")
             
         except Exception as e:
             logger.error(f"Error executing FreeCAD tool {tool_name}: {e}")
-            return {"error": f"Error executing tool: {str(e)}"}
+            return ErrorResponse(message=f"Error executing tool: {str(e)}")
     
     async def _handle_list_resources(self, request, extra):
         """Handle a request to list available resources."""
@@ -634,7 +628,7 @@ hammer_id = fusion.Name
         logger.info(f"Getting resource: {uri}")
         
         if not uri or uri not in self.resources:
-            return {"error": f"Unknown resource: {uri}"}
+            return ErrorResponse(message=f"Unknown resource: {uri}")
         
         try:
             if uri == "freecad://info":
@@ -651,10 +645,10 @@ hammer_id = fusion.Name
                         "content": "Not connected to FreeCAD"
                     }
             
-            return {"error": f"Resource not implemented: {uri}"}
+            return ErrorResponse(message=f"Resource not implemented: {uri}")
         except Exception as e:
             logger.error(f"Error getting resource {uri}: {e}")
-            return {"error": f"Error getting resource: {str(e)}"}
+            return ErrorResponse(message=f"Error getting resource: {str(e)}")
     
     def close(self):
         """Close the server and clean up resources."""

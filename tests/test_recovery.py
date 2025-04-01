@@ -135,10 +135,11 @@ async def test_connection_manager_execute(connection_manager):
 @pytest.mark.asyncio
 async def test_connection_manager_status(connection_manager):
     """Test FreeCAD connection manager status reporting."""
-    status = connection_manager.get_connection_status()
+    status = connection_manager.get_status()
     assert isinstance(status, dict)
     assert "connected" in status
     assert "recovery_status" in status
+    assert "config" in status
     assert isinstance(status["recovery_status"], dict)
     assert "retry_count" in status["recovery_status"]
     assert "current_delay" in status["recovery_status"]

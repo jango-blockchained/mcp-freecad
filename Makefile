@@ -9,14 +9,14 @@ help:
 	@echo "  make format   - Format code with black and isort"
 
 setup:
-	python -m venv venv
-	. venv/bin/activate && pip install -r requirements.txt
+	python -m venv .venv
+	. .venv/bin/activate && pip install -r requirements.txt
 
 test:
-	. venv/bin/activate && python -m pytest
+	. .venv/bin/activate && python -m pytest
 
 run:
-	. venv/bin/activate && PYTHONPATH=. python app.py
+	. .venv/bin/activate && PYTHONPATH=. python app.py
 
 clean:
 	rm -rf __pycache__
@@ -28,6 +28,6 @@ clean:
 	rm -rf *.egg-info
 
 format:
-	. venv/bin/activate && pip install black isort
-	. venv/bin/activate && black src tests app.py
-	. venv/bin/activate && isort src tests app.py 
+	. .venv/bin/activate && pip install black isort
+	. .venv/bin/activate && black src tests app.py
+	. .venv/bin/activate && isort src tests app.py 

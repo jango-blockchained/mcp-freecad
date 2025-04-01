@@ -1,0 +1,26 @@
+{
+    "server": {
+        "name": "freecad-mcp-server",
+        "version": "0.1.0",
+        "description": "FreeCAD MCP Server for Cursor integration"
+    },
+    "freecad": {
+        "connection_method": "auto",
+        "host": "localhost",
+        "port": 12345,
+        "freecad_path": "freecad"
+    },
+    "tools": {
+        "enable_smithery": true,
+        "enable_primitives": true,
+        "enable_model_manipulation": true,
+        "enable_export_import": true,
+        "enable_measurement": true,
+        "enable_code_generator": true
+    },
+    "cursor": {
+        "debug": true,
+        "log_level": "INFO",
+        "stdio_transport": true
+    }
+} 

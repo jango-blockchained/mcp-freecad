@@ -162,8 +162,8 @@ def handle_client(conn, addr):
         # Execute command
         result = execute_command(command)
         
-        # Send response
-        response = json.dumps(result).encode()
+        # Send response (append newline as delimiter)
+        response = json.dumps(result).encode() + b'\n'
         conn.sendall(response)
         log(f"Sent response: {result}")
     except Exception as e:
@@ -631,7 +631,8 @@ if __name__ == "__main__":
     parser.add_argument('--debug', action='store_true', help='Enable debug logging')
     parser.add_argument('--config', help='Path to config file')
     
-    args = parser.parse_args()
+    # Use parse_known_args to ignore unknown arguments potentially passed by FreeCAD GUI environment
+    args, unknown = parser.parse_known_args()
     
     # Update config with command line arguments
     if args.config and os.path.exists(args.config):
@@ -649,4 +650,11 @@ if __name__ == "__main__":
     host = args.host or config["host"]
     port = args.port or config["port"]
     
-    start_server(host, port) 
+    # Start the server in a background thread to avoid blocking FreeCAD GUI when run with exec()
+    server_thread = threading.Thread(target=start_server, args=(host, port))
+    server_thread.daemon = True  # Allow FreeCAD to exit even if this thread is running
+    server_thread.start()
+    print(f"FreeCAD server thread started on {host}:{port}")
+
+    # Note: If running via exec() in FreeCAD GUI, this script finishing doesn't stop the thread.
+    # The server will keep running in the background within the FreeCAD process. 

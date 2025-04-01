@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<package format="1">
+    <name>MCP Connection Indicator</name>
+    <description>A simple workbench that shows the MCP connection status in the status bar</description>
+    <version>0.1.0</version>
+    <maintainer email="example@example.com">MCP-FreeCAD Team</maintainer>
+    <license>MIT</license>
+    <url type="repository">https://github.com/yourusername/freecad_mcp_indicator</url>
+    <url type="bugtracker">https://github.com/yourusername/freecad_mcp_indicator/issues</url>
+
+    <content>
+        <workbench>
+            <classname>MCPIndicatorWorkbench</classname>
+            <subdirectory>./mcp_indicator</subdirectory>
+            <icon>resources/icons/mcp_icon.svg</icon>
+            <depend>mcp-freecad</depend>
+            <freecadmin>0.19.0</freecadmin>
+            <pythonmin>3.8.0</pythonmin>
+        </workbench>
+    </content>
+</package> 

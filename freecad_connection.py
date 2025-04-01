@@ -204,13 +204,23 @@ class FreeCADConnection:
             data = json.dumps(command).encode()
             self._socket.sendall(data)
             
-            # Receive response
-            response_data = self._socket.recv(65536).decode()
+            # Receive response in chunks until newline delimiter
+            response_data = b""
+            while True:
+                chunk = self._socket.recv(4096)
+                if not chunk:
+                    break # Connection closed prematurely
+                response_data += chunk
+                if response_data.endswith(b'\n'):
+                    break # End of message found
             
+            # Remove trailing newline before parsing
+            response_str = response_data.strip().decode()
+
             try:
-                return json.loads(response_data)
+                return json.loads(response_str)
             except json.JSONDecodeError:
-                return {"error": f"Invalid JSON response: {response_data}"}
+                return {"error": f"Invalid JSON response: {response_str}"}
             
         except Exception as e:
             # Reset socket on error

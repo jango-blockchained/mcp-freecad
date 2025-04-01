@@ -29,12 +29,12 @@
     "max_delay": 30.0
   },
   "freecad": {
-    "path": "/usr/bin/freecad",
-    "python_path": "/usr/lib/freecad-python3/lib",
+    "path": "./squashfs-root/usr/bin/freecad",
+    "python_path": "./squashfs-root/usr/bin/python",
     "server_port": 12345,
-    "auto_connect": false,
+    "auto_connect": true,
     "reconnect_on_failure": true,
-    "use_mock": true,
+    "use_mock": false,
     "connection_method": "auto",
     "host": "localhost",
     "port": 12345,

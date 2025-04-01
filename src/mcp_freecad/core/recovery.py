@@ -209,15 +209,26 @@ class FreeCADConnectionManager:
 
     def get_status(self) -> Dict[str, Any]:
         """Get the current connection status."""
+        config = self.config
+        if isinstance(config, dict):
+            config = {
+                "max_retries": config.get("max_retries", 5),
+                "retry_delay": config.get("retry_delay", 2.0),
+                "backoff_factor": config.get("backoff_factor", 1.5),
+                "max_delay": config.get("max_delay", 30.0)
+            }
+        else:
+            config = {
+                "max_retries": config.max_retries,
+                "retry_delay": config.retry_delay,
+                "backoff_factor": config.backoff_factor,
+                "max_delay": config.max_delay
+            }
+        
         return {
             "connected": self.connected,
             "recovery_status": self.recovery.get_status(),
-            "config": {
-                "max_retries": self.config.get("max_retries", 5),
-                "retry_delay": self.config.get("retry_delay", 2.0),
-                "backoff_factor": self.config.get("backoff_factor", 1.5),
-                "max_delay": self.config.get("max_delay", 30.0)
-            }
+            "config": config
         }
         
     async def execute_with_recovery(self, operation: Callable) -> Any:

@@ -8,6 +8,7 @@ from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
 from loguru import logger
+from pydantic import BaseModel
 
 from .cache import ResourceCache
 from .recovery import FreeCADConnectionManager, ConnectionRecovery, RecoveryConfig
@@ -26,6 +27,12 @@ class AuthManager:
         # Simple token authentication for now
         return token == self.config.get("api_key", "")
 
+class ToolExecutionParams(BaseModel):
+    params: Dict[str, Any]
+
+class ResourceAccessParams(BaseModel):
+    params: Dict[str, Any]
+
 class MCPServer:
     def __init__(self, config_path: str = "config.json"):
         self.config = self._load_config(config_path)
@@ -33,6 +40,13 @@ class MCPServer:
         self.tools = {}
         self.event_handlers = {}
         self.auth_manager = AuthManager(self.config.get("auth", {}))
+        self.recovery = ConnectionRecovery(config=RecoveryConfig(
+            max_retries=self.config.get("recovery", {}).get("max_retries", 5),
+            retry_delay=self.config.get("recovery", {}).get("retry_delay", 2.0),
+            backoff_factor=self.config.get("recovery", {}).get("backoff_factor", 1.5),
+            max_delay=self.config.get("recovery", {}).get("max_delay", 30.0)
+        ))
+        self.start_time = time.time()
         
         # Initialize optimization components
         self.resource_cache = ResourceCache(
@@ -40,16 +54,8 @@ class MCPServer:
             max_size=self.config.get("cache", {}).get("max_size", 100)
         )
         
-        recovery_config = RecoveryConfig(
-            max_retries=self.config.get("recovery", {}).get("max_retries", 5),
-            retry_delay=self.config.get("recovery", {}).get("retry_delay", 2.0),
-            backoff_factor=self.config.get("recovery", {}).get("backoff_factor", 1.5),
-            max_delay=self.config.get("recovery", {}).get("max_delay", 30.0)
-        )
-        self.recovery = ConnectionRecovery(config=recovery_config)
-        
         self.connection_manager = FreeCADConnectionManager(
-            config=recovery_config,
+            config=self.recovery.config,
             recovery=self.recovery
         )
         
@@ -260,19 +266,19 @@ class MCPServer:
             }
 
         @self.app.post("/tools/{tool_id}/execute")
-        async def execute_tool(tool_id: str, params: Dict[str, Any]):
+        async def execute_tool(tool_id: str, request: ToolExecutionParams):
             """Execute a tool."""
-            return await self.handle_tool_execution(tool_id, params)
+            return await self.handle_tool_execution(tool_id, request.params)
 
         @self.app.post("/resources/{resource_id}/access")
-        async def access_resource(resource_id: str, params: Dict[str, Any]):
+        async def access_resource(resource_id: str, request: ResourceAccessParams):
             """Access a resource."""
             if resource_id not in self.resources:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Resource {resource_id} not found"
                 )
-            return await self.resources[resource_id].get_resource(params)
+            return await self.resources[resource_id].get_resource(params=request.params)
 
         @self.app.get("/diagnostics")
         async def get_diagnostics():
