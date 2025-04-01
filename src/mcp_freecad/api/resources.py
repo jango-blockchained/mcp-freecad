@@ -1,51 +1,151 @@
-from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Header
-from pydantic import BaseModel
+from typing import Dict, Any, Optional
+import logging
+from fastapi import APIRouter, HTTPException, Depends, Query
 
-class ResourceResponse(BaseModel):
-    resource_id: str
-    resource_type: str
-    data: Dict[str, Any]
+from ..core.server import MCPServer
 
-def create_resource_router(mcp_server):
-    """Create a FastAPI router for resources."""
-    router = APIRouter()
+logger = logging.getLogger(__name__)
+
+def create_resource_router(server: MCPServer) -> APIRouter:
+    """Create a router for resource endpoints."""
+    router = APIRouter(
+        prefix="/resources",
+        tags=["resources"],
+        responses={404: {"description": "Resource not found"}},
+    )
     
-    @router.get("/resources/{resource_id}")
+    @router.get("/{resource_id}")
     async def get_resource(
-        resource_id: str,
-        authorization: Optional[str] = Header(None)
-    ) -> ResourceResponse:
-        """Get a resource from the MCP server."""
-        # Authenticate the request
-        if authorization:
-            token = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
-            if not await mcp_server.auth_manager.authenticate(token):
-                raise HTTPException(status_code=401, detail="Invalid authentication token")
+        resource_id: str, 
+        uri: Optional[str] = None,
+        params: Optional[Dict[str, Any]] = None
+    ):
+        """Get a resource from the server."""
+        logger.info(f"Resource request: {resource_id}, URI: {uri}")
         
-        # Parse resource ID
-        provider_id, _, specific_resource_id = resource_id.partition(".")
-        
-        # Check if resource provider is registered
-        if provider_id not in mcp_server.resources:
-            raise HTTPException(status_code=404, detail=f"Resource provider not found: {provider_id}")
+        if resource_id not in server.resources:
+            raise HTTPException(status_code=404, detail=f"Resource provider not found: {resource_id}")
             
-        # Get the resource provider
-        provider = mcp_server.resources[provider_id]
+        resource_provider = server.resources[resource_id]
         
         try:
+            # If URI is not provided, use a default URI based on resource ID
+            if not uri:
+                if resource_id == "cad_model":
+                    uri = "cad://model/current"
+                elif resource_id == "measurements":
+                    uri = "cad://measurements"
+                elif resource_id == "materials":
+                    uri = "cad://materials"
+                elif resource_id == "constraints":
+                    uri = "cad://constraints"
+                else:
+                    uri = f"cad://{resource_id}"
+                    
             # Get the resource
-            resource_data = await provider.get_resource(specific_resource_id or resource_id)
-            
-            # Return the response
-            return ResourceResponse(
-                resource_id=resource_id,
-                resource_type=provider.__class__.__name__,
-                data=resource_data
-            )
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            return await resource_provider.get_resource(uri, params)
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error getting resource: {str(e)}")
+            logger.error(f"Error getting resource: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    # Add endpoint for measurements
+    @router.get("/measurements/{measurement_type}")
+    async def get_measurement(
+        measurement_type: str,
+        object_name: Optional[str] = None,
+        point1: Optional[str] = None,
+        point2: Optional[str] = None
+    ):
+        """Get a measurement from the server."""
+        logger.info(f"Measurement request: {measurement_type}, Object: {object_name}")
+        
+        if "measurements" not in server.resources:
+            raise HTTPException(status_code=404, detail="Measurement provider not found")
+            
+        resource_provider = server.resources["measurements"]
+        
+        try:
+            # Construct a URI based on measurement type and parameters
+            uri = f"cad://measurements/{measurement_type}"
+            
+            # Add object to URI path if provided
+            if object_name:
+                uri += f"/{object_name}"
+                
+            # Build params based on provided values
+            params = {}
+            if point1 and point2:
+                # Parse points from string format
+                try:
+                    p1 = [float(x) for x in point1.split(',')]
+                    p2 = [float(x) for x in point2.split(',')]
+                    params["points"] = [p1, p2]
+                except ValueError:
+                    raise HTTPException(status_code=400, detail="Invalid point format. Expected: x,y,z")
+                    
+            # Get the resource
+            return await resource_provider.get_resource(uri, params)
+        except Exception as e:
+            logger.error(f"Error getting measurement: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    # Add endpoint for materials
+    @router.get("/materials/{resource_type}")
+    async def get_material(
+        resource_type: str,
+        object_name: Optional[str] = None,
+        material_name: Optional[str] = None
+    ):
+        """Get material information from the server."""
+        logger.info(f"Material request: {resource_type}, Object: {object_name}, Material: {material_name}")
+        
+        if "materials" not in server.resources:
+            raise HTTPException(status_code=404, detail="Material provider not found")
+            
+        resource_provider = server.resources["materials"]
+        
+        try:
+            # Construct a URI based on resource type and parameters
+            uri = f"cad://materials/{resource_type}"
+            
+            # Add object or material name to URI path if provided
+            if resource_type == "object" and object_name:
+                uri += f"/{object_name}"
+            elif resource_type == "info" and material_name:
+                uri += f"/{material_name}"
+                
+            # Get the resource
+            return await resource_provider.get_resource(uri)
+        except Exception as e:
+            logger.error(f"Error getting material information: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    # Add endpoint for constraints
+    @router.get("/constraints/{resource_type}")
+    async def get_constraint(
+        resource_type: str,
+        object_name: Optional[str] = None
+    ):
+        """Get constraint information from the server."""
+        logger.info(f"Constraint request: {resource_type}, Object: {object_name}")
+        
+        if "constraints" not in server.resources:
+            raise HTTPException(status_code=404, detail="Constraint provider not found")
+            
+        resource_provider = server.resources["constraints"]
+        
+        try:
+            # Construct a URI based on resource type and parameters
+            uri = f"cad://constraints/{resource_type}"
+            
+            # Add object name to URI path if provided
+            if object_name:
+                uri += f"/{object_name}"
+                
+            # Get the resource
+            return await resource_provider.get_resource(uri)
+        except Exception as e:
+            logger.error(f"Error getting constraint information: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
     
     return router 
