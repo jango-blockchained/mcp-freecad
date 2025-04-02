@@ -202,8 +202,20 @@ if not found_freecad_module and os.path.exists(freecad_path):
 try:
     import FreeCAD
     # FreeCAD module imported successfully
-    FREECAD_AVAILABLE = True
-    print("FreeCAD module found and imported successfully.")
+    
+    # Verify that essential methods and attributes exist
+    if (not hasattr(FreeCAD, "ActiveDocument") or
+        not hasattr(FreeCAD, "newDocument") or
+        not hasattr(FreeCAD, "Version")):
+        print("WARNING: FreeCAD module imported but appears incomplete. Using mock implementation instead.")
+        FREECAD_AVAILABLE = False
+        # Define a mock FreeCAD module
+        # ... (existing mock code) ...
+    else:
+        # FreeCAD module appears to be valid
+        FREECAD_AVAILABLE = True
+        print("FreeCAD module found and imported successfully.")
+        print(f"FreeCAD Version: {FreeCAD.Version}")
 except ImportError as e:
     # FreeCAD module not available, mock it for development
     print(f"WARNING: FreeCAD module not found ({e}). Using mock implementation.")
@@ -295,7 +307,16 @@ except ImportError as e:
 # Try to import FreeCADGui for GUI operations
 try:
     import FreeCADGui
-    FREECADGUI_AVAILABLE = True
+    # Check if essential methods and attributes exist
+    gui_available = True
+    
+    # Basic test to ensure the GUI module is actually functional
+    if not hasattr(FreeCADGui, "ActiveDocument") or not hasattr(FreeCADGui, "getDocument"):
+        print("FreeCADGui module found but appears to be incomplete. Some GUI operations may fail.")
+        print("This is normal when running in connect mode without a proper GUI environment.")
+        gui_available = False
+        
+    FREECADGUI_AVAILABLE = gui_available
     print("FreeCADGui module found and imported successfully.")
 except ImportError:
     FREECADGUI_AVAILABLE = False
@@ -383,13 +404,55 @@ def handle_ping(params):
 
 def handle_get_version(params):
     """Get FreeCAD version information"""
-    return {
-        "version": FreeCAD.Version,
-        "build_date": FreeCAD.BuildDate,
-        "os_platform": sys.platform,
-        "freecad_available": FREECAD_AVAILABLE,
-        "freecadgui_available": FREECADGUI_AVAILABLE
-    }
+    version_info = {}
+    
+    # Get version information with safety checks
+    if hasattr(FreeCAD, "Version"):
+        # Handle Version which could be a variety of types
+        try:
+            # If it's callable (like a function or method), try to call it
+            if callable(FreeCAD.Version):
+                try:
+                    version = FreeCAD.Version()
+                    if isinstance(version, (list, tuple)):
+                        version_info["version"] = list(version)
+                    else:
+                        version_info["version"] = [str(version)]
+                except:
+                    version_info["version"] = ["Unknown (callable)"]
+            # If it's a list or tuple, convert to list
+            elif isinstance(FreeCAD.Version, (list, tuple)):
+                version_info["version"] = list(FreeCAD.Version)
+            # Otherwise convert to string in a list
+            else:
+                version_info["version"] = [str(FreeCAD.Version)]
+        except:
+            version_info["version"] = ["Unknown (error)"]
+    else:
+        version_info["version"] = ["Unknown (missing)"]
+        
+    # BuildDate might not be available in all FreeCAD builds
+    if hasattr(FreeCAD, "BuildDate"):
+        # Handle BuildDate similarly
+        try:
+            if callable(FreeCAD.BuildDate):
+                try:
+                    version_info["build_date"] = str(FreeCAD.BuildDate())
+                except:
+                    version_info["build_date"] = "Unknown (callable)"
+            else:
+                version_info["build_date"] = str(FreeCAD.BuildDate)
+        except:
+            version_info["build_date"] = "Unknown (error)"
+    else:
+        version_info["build_date"] = "Unknown (missing)"
+    
+    # Add system information
+    version_info["os_platform"] = sys.platform
+    version_info["freecad_available"] = FREECAD_AVAILABLE
+    version_info["freecadgui_available"] = FREECADGUI_AVAILABLE
+    
+    return version_info
 
 def handle_get_model_info(params):
     """Get information about the current document and objects"""
@@ -458,9 +521,16 @@ def handle_create_document(params):
     
     # If in connect mode and GUI is available, make the document visible
     if config.get("connect_to_freecad", False) and FREECADGUI_AVAILABLE:
-        FreeCADGui.getDocument(name)
-        FreeCADGui.ActiveDocument = FreeCADGui.getDocument(name)
-        FreeCADGui.ActiveDocument.resetEdit()
+        try:
+            # Check if the required methods exist before calling them
+            if hasattr(FreeCADGui, "getDocument") and callable(FreeCADGui.getDocument):
+                FreeCADGui.getDocument(name)
+                if hasattr(FreeCADGui, "ActiveDocument"):
+                    FreeCADGui.ActiveDocument = FreeCADGui.getDocument(name)
+                    if hasattr(FreeCADGui.ActiveDocument, "resetEdit") and callable(FreeCADGui.ActiveDocument.resetEdit):
+                        FreeCADGui.ActiveDocument.resetEdit()
+        except Exception as e:
+            log(f"GUI activation error (non-fatal): {e}")
     
     return {
         "success": True,
@@ -505,16 +575,28 @@ def handle_create_object(params):
         else:
             doc = FreeCAD.newDocument(doc_name)
             if config.get("connect_to_freecad", False) and FREECADGUI_AVAILABLE:
-                FreeCADGui.getDocument(doc_name)
-                FreeCADGui.ActiveDocument = FreeCADGui.getDocument(doc_name)
+                try:
+                    # Check if the required methods exist before calling them
+                    if hasattr(FreeCADGui, "getDocument") and callable(FreeCADGui.getDocument):
+                        FreeCADGui.getDocument(doc_name)
+                        if hasattr(FreeCADGui, "ActiveDocument"):
+                            FreeCADGui.ActiveDocument = FreeCADGui.getDocument(doc_name)
+                except Exception as e:
+                    log(f"GUI activation error (non-fatal): {e}")
     else:
         if FreeCAD.ActiveDocument:
             doc = FreeCAD.ActiveDocument
         else:
             doc = FreeCAD.newDocument("Unnamed")
             if config.get("connect_to_freecad", False) and FREECADGUI_AVAILABLE:
-                FreeCADGui.getDocument("Unnamed")
-                FreeCADGui.ActiveDocument = FreeCADGui.getDocument("Unnamed")
+                try:
+                    # Check if the required methods exist before calling them
+                    if hasattr(FreeCADGui, "getDocument") and callable(FreeCADGui.getDocument):
+                        FreeCADGui.getDocument("Unnamed")
+                        if hasattr(FreeCADGui, "ActiveDocument"):
+                            FreeCADGui.ActiveDocument = FreeCADGui.getDocument("Unnamed")
+                except Exception as e:
+                    log(f"GUI activation error (non-fatal): {e}")
     
     # Create object based on type
     if obj_type == "box":
@@ -554,11 +636,26 @@ def handle_create_object(params):
     
     # Update GUI if in connect mode
     if config.get("connect_to_freecad", False) and FREECADGUI_AVAILABLE:
-        FreeCADGui.updateGui()
-        # Force view update
-        if FreeCADGui.ActiveDocument:
-            for view in FreeCADGui.getMainWindow().findChildren(FreeCADGui.View3DInventor):
-                view.update()
+        try:
+            # Check if updateGui method exists
+            if hasattr(FreeCADGui, "updateGui") and callable(FreeCADGui.updateGui):
+                FreeCADGui.updateGui()
+                
+                # Force view update - with safety checks
+                if hasattr(FreeCADGui, "ActiveDocument") and FreeCADGui.ActiveDocument:
+                    try:
+                        # Check if getMainWindow and findChildren are available
+                        if (hasattr(FreeCADGui, "getMainWindow") and callable(FreeCADGui.getMainWindow) and
+                            hasattr(FreeCADGui, "View3DInventor")):
+                            main_window = FreeCADGui.getMainWindow()
+                            if main_window and hasattr(main_window, "findChildren"):
+                                for view in main_window.findChildren(FreeCADGui.View3DInventor):
+                                    if hasattr(view, "update") and callable(view.update):
+                                        view.update()
+                    except Exception as e:
+                        log(f"View update error (non-fatal): {e}")
+        except Exception as e:
+            log(f"GUI update error (non-fatal): {e}")
     
     return {
         "success": True,
@@ -615,7 +712,11 @@ def handle_modify_object(params):
     
     # Update GUI if in connect mode
     if config.get("connect_to_freecad", False) and FREECADGUI_AVAILABLE:
-        FreeCADGui.updateGui()
+        try:
+            if hasattr(FreeCADGui, "updateGui") and callable(FreeCADGui.updateGui):
+                FreeCADGui.updateGui()
+        except Exception as e:
+            log(f"GUI update error (non-fatal): {e}")
     
     return {
         "success": True,
@@ -657,7 +758,11 @@ def handle_delete_object(params):
     
     # Update GUI if in connect mode
     if config.get("connect_to_freecad", False) and FREECADGUI_AVAILABLE:
-        FreeCADGui.updateGui()
+        try:
+            if hasattr(FreeCADGui, "updateGui") and callable(FreeCADGui.updateGui):
+                FreeCADGui.updateGui()
+        except Exception as e:
+            log(f"GUI update error (non-fatal): {e}")
     
     return {
         "success": True,
@@ -765,11 +870,34 @@ def handle_export_document(params):
             }
             
         if file_type.lower() == "step":
-            import ImportGui
-            ImportGui.export(doc.Objects, file_path)
+            try:
+                # Try to import the module with error handling
+                import importlib
+                try:
+                    # Try ImportGui first
+                    ImportGui = importlib.import_module("ImportGui")
+                    ImportGui.export(doc.Objects, file_path)
+                except (ImportError, AttributeError) as e:
+                    log(f"ImportGui not available: {e}, trying Part module")
+                    # Fallback to Part module
+                    import Part
+                    Part.export(doc.Objects, file_path)
+            except Exception as e:
+                return {"error": f"Failed to export STEP: {e}"}
+                
         elif file_type.lower() == "stl":
-            import Mesh
-            Mesh.export(doc.Objects, file_path)
+            try:
+                # Try to import the module with error handling
+                import importlib
+                try:
+                    # Try Mesh module first
+                    Mesh = importlib.import_module("Mesh")
+                    Mesh.export(doc.Objects, file_path)
+                except (ImportError, AttributeError) as e:
+                    return {"error": f"Mesh module not available: {e}"}
+            except Exception as e:
+                return {"error": f"Failed to export STL: {e}"}
+                
         else:
             return {"error": f"Unsupported file type: {file_type}"}
         

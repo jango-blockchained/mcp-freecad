@@ -9,13 +9,12 @@ Usage:
     python freecad_mcp_server.py
 """
 
-import os
 import sys
 import json
 import logging
 import argparse
 import asyncio
-from typing import Dict, List, Any, Optional, TypeVar, Generic
+from typing import Dict, Any
 
 # Set up logging
 logging.basicConfig(
@@ -24,17 +23,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger("freecad_mcp")
 
-# Import MCP SDK
+# Import MCP SDK (now using `mcp` package)
 try:
-    from mcp_sdk.server import Server, StdioServerTransport
-    from mcp_sdk.server.requests import ListResourcesRequestSchema, GetResourceRequestSchema
-    from mcp_sdk.server.requests import ListToolsRequestSchema, ExecuteToolRequestSchema
-    from mcp_sdk.server.responses import ErrorResponse
+    from mcp.server import Server, StdioServerTransport
+    from mcp.server.requests import ListResourcesRequestSchema, GetResourceRequestSchema
+    from mcp.server.requests import ListToolsRequestSchema, ExecuteToolRequestSchema
+    from mcp.server.responses import ErrorResponse
     MCP_SDK_AVAILABLE = True
 except ImportError:
-    logger.error("MCP SDK not found. Please install it manually:")
-    logger.error("  pip install modelcontextprotocol")
-    sys.exit(1) # Exit if MCP SDK is essential and not found
+    logger.error("MCP SDK (mcp package) not found or import failed. Please ensure `mcp` is installed correctly:")
+    logger.error("  pip install mcp")
+    sys.exit(1)  # Exit if MCP SDK is essential and not found
 
 # Import FreeCAD connection
 try:
@@ -43,22 +42,12 @@ try:
 except ImportError:
     logger.warning("FreeCAD connection not found in the current directory")
     FREECAD_CONNECTION_AVAILABLE = False
-
-# Import tool providers from our implementation
-try:
-    from src.mcp_freecad.tools.primitives import PrimitiveToolProvider
-    from src.mcp_freecad.tools.model_manipulation import ModelManipulationToolProvider
-    from src.mcp_freecad.tools.smithery import SmitheryToolProvider
-    MCP_TOOLS_AVAILABLE = True
-except ImportError:
-    logger.warning("MCP tool providers not found. Using local implementations if available.")
-    MCP_TOOLS_AVAILABLE = False
-    try:
-        # Try to import the local smithery implementation
-        from freecad_bridge import FreeCADBridge
-        MCP_TOOLS_AVAILABLE = False
-    except ImportError:
-        logger.warning("Local FreeCAD bridge not found. Some functionality may be limited.")
+    # try:
+    #     # Try to import the local smithery implementation
+    #     from freecad_bridge import FreeCADBridge # This import was also unused here
+    #     MCP_TOOLS_AVAILABLE = False
+    # except ImportError:
+    #     logger.warning("Local FreeCAD bridge not found. Some functionality may be limited.")
 
 class FreeCADMCPServer:
     """FreeCAD MCP Server implementation."""

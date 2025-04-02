@@ -20,6 +20,8 @@ try:
     UNIFIED_CONNECTION_AVAILABLE = True
 except ImportError:
     UNIFIED_CONNECTION_AVAILABLE = False
+    print("Warning: FreeCADConnection not found. Using legacy socket connection mode.")
+    print("You may need to install the freecad_connection.py module in the same directory.")
 
 class FreeCADClient:
     """Client for communicating with FreeCAD"""
@@ -60,19 +62,31 @@ class FreeCADClient:
             try:
                 result = self.ping()
                 return result.get("pong", False)
-            except:
+            except Exception as e:
+                print(f"Connection error: {e}")
                 return False
         else:
             # Use unified connection
-            self._connection = FreeCADConnection(
-                host=self.host,
-                port=self.port,
-                freecad_path=self.freecad_path,
-                prefer_method=self.connection_method,
-                auto_connect=True
-            )
-            
-            return self._connection.is_connected()
+            try:
+                self._connection = FreeCADConnection(
+                    host=self.host,
+                    port=self.port,
+                    freecad_path=self.freecad_path,
+                    prefer_method=self.connection_method,
+                    auto_connect=True
+                )
+                
+                # Check if connection is valid
+                if self._connection.is_connected():
+                    conn_type = self._connection.get_connection_type()
+                    print(f"Connected to FreeCAD using {conn_type} method")
+                    return True
+                else:
+                    print("Failed to establish FreeCAD connection")
+                    return False
+            except Exception as e:
+                print(f"Error establishing connection: {e}")
+                return False
     
     def is_connected(self) -> bool:
         """
@@ -133,13 +147,21 @@ class FreeCADClient:
                 sock.connect((self.host, self.port))
                 
                 # Send command
-                sock.sendall(json.dumps(command).encode())
+                sock.sendall(json.dumps(command).encode() + b'\n')
                 
                 # Receive response
                 response = sock.recv(8192).decode()
                 
                 # Parse response
-                return json.loads(response)
+                result = json.loads(response)
+                
+                # Check for FreeCADGui attribute errors and provide more helpful messages
+                if "error" in result and "module 'FreeCADGui' has no attribute" in result["error"]:
+                    # Add helpful context to the error message
+                    result["error"] += "\nThis is likely because the server is running without a GUI environment. "
+                    result["error"] += "Use the '--connect' flag with the server to connect to a running FreeCAD instance."
+                
+                return result
             except socket.timeout:
                 return {"error": f"Connection timed out after {self.timeout} seconds"}
             except ConnectionRefusedError:
@@ -153,7 +175,15 @@ class FreeCADClient:
             if not self._connection:
                 return {"error": "Not connected to FreeCAD"}
             
-            return self._connection.execute_command(command_type, params)
+            result = self._connection.execute_command(command_type, params)
+            
+            # Check for FreeCADGui attribute errors and provide more helpful messages
+            if "error" in result and "module 'FreeCADGui' has no attribute" in result["error"]:
+                # Add helpful context to the error message
+                result["error"] += "\nThis is likely because the server is running without a GUI environment. "
+                result["error"] += "Use the '--connect' flag with the server to connect to a running FreeCAD instance."
+            
+            return result
     
     def ping(self):
         """Ping the server to check if it's responsive"""
