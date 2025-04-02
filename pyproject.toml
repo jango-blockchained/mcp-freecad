@@ -43,10 +43,12 @@ packages = ["mcp_freecad"]
 [tool.black]
 line-length = 88
 target-version = ["py38"]
+extend-exclude = "(squashfs-root|.venv)"
 
 [tool.isort]
 profile = "black"
 line_length = 88
+skip = ["squashfs-root", ".venv"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

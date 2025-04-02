@@ -1,0 +1,134 @@
+./examples/demo.py:69:9: F841 local variable 'doc_result' is assigned to but never used
+./examples/demo.py:80:15: F541 f-string is missing placeholders
+./examples/demo.py:90:15: F541 f-string is missing placeholders
+./examples/demo.py:125:11: F541 f-string is missing placeholders
+./examples/freecad_cli_test.py:12:1: F401 'sys' imported but unused
+./examples/test_freecad_connection.py:19:1: E402 module level import not at top of file
+./examples/use_freecad.py:17:1: F401 'FreeCAD' imported but unused
+./examples/use_freecad.py:17:1: E402 module level import not at top of file
+./examples/use_freecad.py:18:1: F401 'Mesh' imported but unused
+./examples/use_freecad.py:18:1: E402 module level import not at top of file
+./examples/use_freecad.py:19:1: F401 'Part' imported but unused
+./examples/use_freecad.py:19:1: E402 module level import not at top of file
+./examples/use_freecad.py:22:1: E402 module level import not at top of file
+./examples/use_freecad.py:71:19: F541 f-string is missing placeholders
+./freecad_bridge.py:178:13: F541 f-string is missing placeholders
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:3:1: F401 'socket' imported but unused
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:4:1: F401 'subprocess' imported but unused
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:6:1: F401 'time' imported but unused
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:10:1: F401 'PySide2.QtCore' imported but unused
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:10:1: F401 'PySide2.QtGui' imported but unused
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:10:1: F401 'PySide2.QtWidgets' imported but unused
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:106:9: F811 redefinition of unused 'QtCore' from line 10
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:106:9: F811 redefinition of unused 'QtWidgets' from line 10
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:184:9: F401 'PySide2.QtCore' imported but unused
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:184:9: F401 'PySide2.QtGui' imported but unused
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:184:9: F811 redefinition of unused 'QtCore' from line 10
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:184:9: F811 redefinition of unused 'QtGui' from line 10
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:184:9: F811 redefinition of unused 'QtWidgets' from line 10
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:235:9: F811 redefinition of unused 'QtWidgets' from line 10
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:315:9: F811 redefinition of unused 'socket' from line 3
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:316:9: F811 redefinition of unused 'subprocess' from line 4
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:318:9: F811 redefinition of unused 'time' from line 6
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:320:9: F811 redefinition of unused 'QtCore' from line 10
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:320:9: F811 redefinition of unused 'QtWidgets' from line 10
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:386:17: F841 local variable 'cancelButton' is assigned to but never used
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:489:9: F811 redefinition of unused 'subprocess' from line 4
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:519:9: F811 redefinition of unused 'QtCore' from line 10
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:530:9: F811 redefinition of unused 'QtCore' from line 10
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:530:9: F811 redefinition of unused 'QtGui' from line 10
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:576:9: F401 'subprocess' imported but unused
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:576:9: F811 redefinition of unused 'subprocess' from line 4
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:577:9: F401 'sys' imported but unused
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:579:9: F811 redefinition of unused 'QtWidgets' from line 10
+./freecad_mcp_indicator/mcp_indicator/InitGui.py:669:9: F811 redefinition of unused 'subprocess' from line 4
+./src/mcp_freecad/api/events.py:5:1: F401 'typing.Set' imported but unused
+./src/mcp_freecad/api/events.py:7:1: F401 'fastapi.Body' imported but unused
+./src/mcp_freecad/api/events.py:7:1: F401 'fastapi.Depends' imported but unused
+./src/mcp_freecad/api/events.py:39:9: F841 local variable 'ping_task' is assigned to but never used
+./src/mcp_freecad/api/events.py:225:52: F541 f-string is missing placeholders
+./src/mcp_freecad/api/resources.py:4:1: F401 'fastapi.Depends' imported but unused
+./src/mcp_freecad/api/resources.py:4:1: F401 'fastapi.Query' imported but unused
+./src/mcp_freecad/api/tools.py:2:1: F401 'typing.Optional' imported but unused
+./src/mcp_freecad/api/tools.py:4:1: F401 'fastapi.Body' imported but unused
+./src/mcp_freecad/api/tools.py:4:1: F401 'fastapi.Depends' imported but unused
+./src/mcp_freecad/api/tools.py:4:1: F401 'fastapi.Header' imported but unused
+./src/mcp_freecad/core/cache.py:4:1: F401 'typing.List' imported but unused
+./src/mcp_freecad/core/diagnostics.py:1:1: F401 'asyncio' imported but unused
+./src/mcp_freecad/core/diagnostics.py:3:1: F401 'os' imported but unused
+./src/mcp_freecad/core/diagnostics.py:4:1: F401 'platform' imported but unused
+./src/mcp_freecad/core/diagnostics.py:5:1: F401 'sys' imported but unused
+./src/mcp_freecad/core/diagnostics.py:6:1: F401 'threading' imported but unused
+./src/mcp_freecad/core/diagnostics.py:8:1: F401 'collections.deque' imported but unused
+./src/mcp_freecad/core/diagnostics.py:10:1: F401 'functools.wraps' imported but unused
+./src/mcp_freecad/core/diagnostics.py:11:1: F401 'typing.Callable' imported but unused
+./src/mcp_freecad/core/diagnostics.py:13:1: F401 'psutil' imported but unused
+./src/mcp_freecad/core/recovery.py:4:1: F401 'os' imported but unused
+./src/mcp_freecad/core/recovery.py:6:1: F401 'subprocess' imported but unused
+./src/mcp_freecad/core/recovery.py:7:1: F401 'sys' imported but unused
+./src/mcp_freecad/core/recovery.py:8:1: F401 'time' imported but unused
+./src/mcp_freecad/core/recovery.py:10:1: F401 'typing.Coroutine' imported but unused
+./src/mcp_freecad/core/recovery.py:16:1: F811 redefinition of unused 'logger' from line 12
+./src/mcp_freecad/core/server.py:2:1: F401 'logging' imported but unused
+./src/mcp_freecad/core/server.py:4:1: F401 'contextlib.asynccontextmanager' imported but unused
+./src/mcp_freecad/core/server.py:5:1: F401 'typing.AsyncIterator' imported but unused
+./src/mcp_freecad/core/server.py:5:1: F401 'typing.Callable' imported but unused
+./src/mcp_freecad/core/server.py:5:1: F401 'typing.Generic' imported but unused
+./src/mcp_freecad/core/server.py:5:1: F401 'typing.List' imported but unused
+./src/mcp_freecad/core/server.py:5:1: F401 'typing.Optional' imported but unused
+./src/mcp_freecad/core/server.py:7:1: F401 'fastapi.Depends' imported but unused
+./src/mcp_freecad/core/server.py:8:1: F401 'fastapi.openapi.utils.get_openapi' imported but unused
+./src/mcp_freecad/core/server.py:9:1: F401 'fastapi.responses.JSONResponse' imported but unused
+./src/mcp_freecad/core/server.py:13:1: F401 '..tools.base.ToolParams' imported but unused
+./src/mcp_freecad/core/server.py:13:1: F401 '..tools.base.ToolProvider' imported but unused
+./src/mcp_freecad/core/server.py:14:1: F401 '..tools.resource.ResourceParams' imported but unused
+./src/mcp_freecad/core/server.py:14:1: F401 '..tools.resource.ResourceProvider' imported but unused
+./src/mcp_freecad/events/command_events.py:4:1: F401 'typing.Set' imported but unused
+./src/mcp_freecad/events/document_events.py:4:1: F401 'typing.Set' imported but unused
+./src/mcp_freecad/events/error_events.py:6:1: F401 'typing.Set' imported but unused
+./src/mcp_freecad/events/error_events.py:69:17: E722 do not use bare 'except'
+./src/mcp_freecad/resources/cad_model.py:3:1: F401 'urllib.parse.parse_qs' imported but unused
+./src/mcp_freecad/resources/constraint.py:2:1: F401 'typing.List' imported but unused
+./src/mcp_freecad/resources/constraint.py:3:1: F401 'urllib.parse.parse_qs' imported but unused
+./src/mcp_freecad/resources/constraint.py:442:33: E722 do not use bare 'except'
+./src/mcp_freecad/resources/constraint.py:573:37: E722 do not use bare 'except'
+./src/mcp_freecad/resources/material.py:3:1: F401 'typing.List' imported but unused
+./src/mcp_freecad/resources/material.py:4:1: F401 'urllib.parse.parse_qs' imported but unused
+./src/mcp_freecad/resources/measurement.py:4:1: F401 'urllib.parse.parse_qs' imported but unused
+./src/mcp_freecad/tools/base.py:2:1: F401 'typing.Type' imported but unused
+./src/mcp_freecad/tools/code_generator.py:7:1: F401 'typing.List' imported but unused
+./src/mcp_freecad/tools/code_generator.py:7:1: F401 'typing.Optional' imported but unused
+./src/mcp_freecad/tools/export_import.py:3:1: F401 'tempfile' imported but unused
+./src/mcp_freecad/tools/export_import.py:4:1: F401 'typing.List' imported but unused
+./src/mcp_freecad/tools/export_import.py:4:1: F401 'typing.Optional' imported but unused
+./src/mcp_freecad/tools/export_import.py:505:13: F841 local variable 'doc' is assigned to but never used
+./src/mcp_freecad/tools/measurement.py:3:1: F401 'typing.List' imported but unused
+./src/mcp_freecad/tools/measurement.py:3:1: F401 'typing.Optional' imported but unused
+./src/mcp_freecad/tools/measurement.py:3:1: F401 'typing.Tuple' imported but unused
+./src/mcp_freecad/tools/model_manipulation.py:3:1: F401 'typing.List' imported but unused
+./src/mcp_freecad/tools/model_manipulation.py:3:1: F401 'typing.Optional' imported but unused
+./src/mcp_freecad/tools/model_manipulation.py:167:25: F841 local variable 'rot_x_rad' is assigned to but never used
+./src/mcp_freecad/tools/model_manipulation.py:168:25: F841 local variable 'rot_y_rad' is assigned to but never used
+./src/mcp_freecad/tools/model_manipulation.py:169:25: F841 local variable 'rot_z_rad' is assigned to but never used
+./src/mcp_freecad/tools/primitives.py:2:1: F401 'typing.Optional' imported but unused
+./src/mcp_freecad/tools/resource.py:2:1: F401 'typing.Type' imported but unused
+./src/mcp_freecad/tools/smithery.py:2:1: F401 'math' imported but unused
+./src/mcp_freecad/tools/smithery.py:3:1: F401 'typing.Optional' imported but unused
+./src/mcp_freecad/tools/smithery.py:282:13: F841 local variable 'base_wire' is assigned to but never used
+./src/mcp_freecad/tools/smithery.py:289:13: F841 local variable 'tip_wire' is assigned to but never used
+./temp_mcp_import_test.py:5:5: F401 'mcp_sdk.server.Server' imported but unused
+./temp_mcp_import_test.py:5:5: F401 'mcp_sdk.server.StdioServerTransport' imported but unused
+./temp_mcp_import_test.py:6:5: F401 'mcp_sdk.server.requests.ExecuteToolRequestSchema' imported but unused
+./temp_mcp_import_test.py:6:5: F401 'mcp_sdk.server.requests.GetResourceRequestSchema' imported but unused
+./temp_mcp_import_test.py:6:5: F401 'mcp_sdk.server.requests.ListResourcesRequestSchema' imported but unused
+./temp_mcp_import_test.py:6:5: F401 'mcp_sdk.server.requests.ListToolsRequestSchema' imported but unused
+./temp_mcp_import_test.py:12:5: F401 'mcp_sdk.server.responses.ErrorResponse' imported but unused
+./tests/test_recovery.py:118:63: F841 local variable 'mock_import' is assigned to but never used
+./tests/test_recovery.py:136:63: F841 local variable 'mock_import' is assigned to but never used
+./tests/test_server.py:1:1: F401 'json' imported but unused
+./tests/test_server.py:3:1: F401 'unittest.mock.patch' imported but unused
+./tests/test_server.py:10:1: F401 'mcp_freecad.core.exceptions.AuthenticationError' imported but unused
+./tests/test_server.py:10:1: F401 'mcp_freecad.core.exceptions.ResourceAccessError' imported but unused
+./tests/test_server.py:10:1: F401 'mcp_freecad.core.exceptions.ToolExecutionError' imported but unused
+./tests/test_server.py:10:1: F401 'mcp_freecad.core.exceptions.ValidationError' imported but unused
+./tests/test_server.py:16:1: F401 'mcp_freecad.core.recovery.RecoveryConfig' imported but unused

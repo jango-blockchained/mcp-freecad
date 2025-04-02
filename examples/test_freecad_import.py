@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-import sys
 import os
+import sys
 
 print("Python version:", sys.version)
 print("Current working directory:", os.getcwd())
@@ -12,7 +12,7 @@ appimage_paths = [
     os.path.join(current_dir, "squashfs-root/usr/bin"),
     os.path.join(current_dir, "squashfs-root/usr/lib"),
     os.path.join(current_dir, "squashfs-root/usr/Mod"),
-    os.path.join(current_dir, "squashfs-root/usr")
+    os.path.join(current_dir, "squashfs-root/usr"),
 ]
 
 # Set Python path to use the AppImage's Python
@@ -30,7 +30,7 @@ possible_paths = [
     "/usr/lib/freecad/lib",
     "/usr/share/freecad/Mod",
     "/usr/lib/python3/dist-packages",
-    "/usr/lib/python3/dist-packages/freecad"
+    "/usr/lib/python3/dist-packages/freecad",
 ]
 
 # List the contents of squashfs-root/usr for debugging
@@ -52,12 +52,13 @@ for path in possible_paths:
                 print(f"  {item}")
         except PermissionError:
             print("  Permission denied")
-        
+
         # Add to sys.path and try to import
         if path not in sys.path:
             sys.path.append(path)
         try:
             import FreeCAD
+
             print("SUCCESS! FreeCAD imported from", path)
             print("FreeCAD version:", FreeCAD.Version)
             break
@@ -66,4 +67,4 @@ for path in possible_paths:
     else:
         print(f"\nPath does not exist: {path}")
 else:
-    print("\nCould not import FreeCAD from any of the paths") 
+    print("\nCould not import FreeCAD from any of the paths")

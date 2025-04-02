@@ -1,5 +1,6 @@
 from mcp_freecad.core.recovery import RecoveryConfig
 
+
 class FreeCADConnectionManager:
     def __init__(self, config: RecoveryConfig):
         self._config = config
@@ -18,6 +19,7 @@ class FreeCADConnectionManager:
 
         try:
             import FreeCAD
+
             self._freecad = FreeCAD
             self._connected = True
         except ImportError as e:
@@ -27,4 +29,4 @@ class FreeCADConnectionManager:
     async def disconnect(self) -> None:
         """Disconnect from FreeCAD."""
         self._freecad = None
-        self._connected = False 
+        self._connected = False
