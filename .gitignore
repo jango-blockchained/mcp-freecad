@@ -45,6 +45,10 @@ env/
 # Logs
 *.log
 logs/
+freecad_server_stderr.log
+freecad_server_stdout.log
+mcp-freecad-debug.log
+mcp-freecad-traceback.log
 
 # OS specific
 .DS_Store
@@ -53,6 +57,16 @@ logs/
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-Thumbs.db 
+Thumbs.db
 
+# Project specific
 squashfs-root/
+backups/
+tmp/
+.cursor/
+
+# Lock files
+uv.lock
+
+# Generated files
+freecad-mcp
