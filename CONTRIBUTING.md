@@ -1,72 +1,106 @@
 # Contributing to MCP-FreeCAD
 
-Thank you for your interest in contributing to the MCP-FreeCAD project! This document provides guidelines and information for contributing.
+Thank you for your interest in contributing to the MCP-FreeCAD project! This document provides guidelines and instructions for contributing to our project.
 
-## Getting Started
+## Code of Conduct
 
-1. Fork the repository on GitHub
-2. Clone your fork locally:
+Please read and follow our Code of Conduct. We expect all contributors to abide by these guidelines to ensure a positive and respectful community.
+
+## Development Environment Setup
+
+1. **Fork and Clone the Repository**
    ```bash
-   git clone https://github.com/yourusername/mcp-freecad.git
+   git clone https://github.com/your-username/mcp-freecad.git
    cd mcp-freecad
    ```
-3. Set up the development environment:
+
+2. **Create a Virtual Environment**
    ```bash
    python -m venv .venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   pip install -r requirements.txt
+   ```
+
+3. **Install Development Dependencies**
+   ```bash
+   pip install -e .
    ```
 
 ## Development Workflow
 
-1. Create a branch for your feature:
+1. **Create a Branch**
    ```bash
-   git checkout -b feature/your-feature-name
+   git checkout -b feature-name
    ```
-2. Make your changes
-3. Run tests to ensure everything works:
+
+2. **Make Your Changes**
+   - Follow the code style guidelines
+   - Write clean, readable code
+   - Add comments where necessary
+
+3. **Add Tests**
+   - Write tests for new features
+   - Ensure existing tests pass
+
+4. **Run Tests**
    ```bash
-   # Run the test script
-   python test_api.py
+   python test_mcp_tools.py
    ```
-4. Push your changes:
+
+5. **Check Code Style**
    ```bash
-   git push origin feature/your-feature-name
+   flake8
    ```
-5. Create a Pull Request on GitHub
-
-## Coding Style
-
-This project follows these coding standards:
-
-- Use Black for code formatting (line length: 88)
-- Follow PEP 8 guidelines
-- Use type hints for function parameters and return values
-- Write docstrings for all functions, classes, and modules
-
-## Project Structure
-
-- `src/mcp_freecad/`: Core implementation modules
-  - `api/`: API endpoint implementations
-  - `core/`: Core server components
-  - `events/`: Event handling system
-  - `extractor/`: CAD context extraction
-  - `resources/`: Resource providers
-  - `tools/`: Tool providers
-- `app.py`: Main application entry point
-- `test_api.py`: API testing script
 
 ## Pull Request Process
 
-1. Update the README.md or documentation with details of changes if appropriate
-2. Update the tests to cover your changes
-3. Make sure all tests pass
-4. The PR will be merged once it is reviewed and approved
+1. **Update Documentation**
+   - Update the README.md if necessary
+   - Add documentation for new features
+   - Update documentation for modified features
 
-## Communication
+2. **Commit Your Changes**
+   ```bash
+   git commit -m "Add feature X"
+   ```
 
-If you have questions or need help, please:
-- Open an issue on GitHub
-- Reach out to the maintainers
+3. **Push to Your Fork**
+   ```bash
+   git push origin feature-name
+   ```
 
-Thank you for your contributions! 
+4. **Create a Pull Request**
+   - Go to the original repository on GitHub
+   - Click "New Pull Request"
+   - Select your fork and branch
+   - Fill in the PR template
+
+5. **Code Review**
+   - Address any comments or feedback
+   - Make requested changes
+   - Push changes to your branch
+
+## Style Guidelines
+
+### Python Code Style
+
+- Follow PEP 8 guidelines
+- Use 4 spaces for indentation (no tabs)
+- Use meaningful variable and function names
+- Keep functions small and focused on a single task
+
+### Commit Messages
+
+- Use the imperative mood ("Add feature" not "Added feature")
+- Keep the first line under 50 characters
+- Separate subject from body with a blank line
+- Use the body to explain what and why, not how
+
+## License
+
+By contributing to MCP-FreeCAD, you agree that your contributions will be licensed under the project's MIT License.
+
+## Questions?
+
+If you have any questions or need help, feel free to open an issue or contact the maintainers directly.
+
+Thank you for contributing to MCP-FreeCAD! 

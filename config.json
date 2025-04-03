@@ -8,7 +8,7 @@
     "port": 8000,
     "debug": false,
     "workers": 1,
-    "name": "freecad-mcp-server",
+    "name": "mcp-freecad",
     "version": "0.1.0",
     "mcp": {
       "transport": "stdio",
@@ -29,7 +29,7 @@
     "max_delay": 30.0
   },
   "freecad": {
-    "path": "/home/jango/Git/mcp-freecad/squashfs-root/usr/bin/freecad",
+    "path": "/usr/bin/freecad",
     "python_path": "/home/jango/Git/mcp-freecad/squashfs-root/usr/bin/python",
     "server_port": 12345,
     "auto_connect": true,
@@ -110,4 +110,4 @@
       ]
     }
   }
-} 
+}

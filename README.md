@@ -52,14 +52,102 @@ graph TD
 - **Description**: A command-line client utility for interacting directly with the `FreeCADConnection` interface (not the MCP server). Useful for basic testing and scripting outside the MCP context.
 - **Example**: `python freecad_client.py create-box --length 20`
 
+## 📁 Project Structure
+
+The MCP-FreeCAD project is organized with the following directory structure:
+
+```
+mcp-freecad/
+├── assets/                  # 3D model assets (STL, STEP files)
+├── backups/                 # Backup files
+├── docs/                    # Documentation files
+├── examples/                # Example scripts showing API usage
+├── freecad-mcp              # Main executable symlink
+├── freecad_mcp.py           # Entry point script
+├── scripts/                 # Shell scripts for installation and execution
+├── src/                     # Source code
+│   └── mcp_freecad/         # Main package
+│       ├── __init__.py      # Package initialization
+│       ├── client/          # Client-side code
+│       │   ├── __init__.py
+│       │   ├── freecad_client.py
+│       │   └── freecad_connection.py
+│       ├── server/          # Server-side code
+│       │   ├── __init__.py
+│       │   ├── freecad_bridge.py
+│       │   └── freecad_mcp_server.py
+│       ├── tools/           # Tools implementation
+│       └── core/            # Core functionality
+├── tests/                   # Test files
+└── tmp/                     # Temporary files
+```
+
+This structure makes the code more maintainable and follows Python packaging best practices.
+
 ## ⚙️ Installation
 
-1.  **Install FreeCAD**: Ensure FreeCAD is installed on your system and accessible from the command line.
-2.  **Install Dependencies**:
-    ```bash
-    pip install modelcontextprotocol # For the MCP Server
-    # Other dependencies might be listed in requirements.txt if available
-    ```
+There are several ways to install and use the MCP-FreeCAD server:
+
+### 1. Quick Start for AI Tools
+
+To install and run the MCP-FreeCAD server in a single command, run:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/user/mcp-freecad/main/mcp-freecad-installer.sh | bash
+```
+
+This command will:
+1. Clone the MCP-FreeCAD repository (or update it if already cloned)
+2. Set up a Python virtual environment
+3. Install all dependencies
+4. Start the MCP server
+
+After installation, you can run the server directly with:
+
+```bash
+~/.mcp-freecad/mcp-freecad.sh
+```
+
+### 2. Global Installation
+
+If you have cloned the repository, you can install the MCP-FreeCAD server globally on your system:
+
+```bash
+# Navigate to the repository
+cd /path/to/mcp-freecad
+
+# Run the global installation script
+./install-global.sh
+```
+
+After installation, you can run the server from anywhere with:
+
+```bash
+mcp-freecad
+```
+
+### 3. Manual Installation
+
+You can also install the server manually:
+
+```bash
+# Clone the repository
+git clone https://github.com/user/mcp-freecad.git
+cd mcp-freecad
+
+# Create a virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Install the package in development mode
+pip install -e .
+
+# Run the server
+./freecad-mcp
+```
 
 ## 🚀 Using the MCP Server
 
@@ -69,10 +157,13 @@ This is the primary way to interact with FreeCAD using AI assistants like Claude
 
 ```bash
 # Start the server using the default config.json
-./freecad_mcp_server.py
+./freecad-mcp
 
 # Start with a specific configuration file
-./freecad_mcp_server.py --config /path/to/your/config.json
+./freecad-mcp --config /path/to/your/config.json
+
+# Enable debug logging
+./freecad-mcp --debug
 ```
 The server will run and listen for connections from MCP clients.
 
@@ -82,13 +173,13 @@ Use any MCP-compatible client. Example using the reference `mcp client`:
 
 ```bash
 # Replace 'mcp client' with the actual client command if different
-mcp client connect stdio --command "./freecad_mcp_server.py"
+mcp client connect stdio --command "./freecad-mcp"
 ```
 
 Or using `uv` if you have a client script like the one in the MCP docs:
 
 ```bash
-uv run path/to/your/mcp_client.py ./freecad_mcp_server.py
+uv run path/to/your/mcp_client.py ./freecad-mcp
 ```
 
 ### MCP Server Configuration (`config.json`)
@@ -469,3 +560,101 @@ for file in files:
     }
 }
 ```
+
+## Quick Start for AI Tools
+
+To install and run the MCP-FreeCAD server in a single command, run:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/user/mcp-freecad/main/mcp-freecad-installer.sh | bash
+```
+
+This command will:
+1. Clone the MCP-FreeCAD repository (or update it if already cloned)
+2. Set up a Python virtual environment
+3. Install all dependencies
+4. Start the MCP server
+
+After installation, you can run the server directly with:
+
+```bash
+~/.mcp-freecad/mcp-freecad.sh
+```
+
+## Features
+
+- Connect AI assistants to FreeCAD through the MCP protocol
+- Create and manipulate 3D models programmatically
+- Support for primitive shapes (box, cylinder, sphere, cone)
+- Boolean operations (union, intersection, cut)
+- Object transformations (move, rotate)
+- Export models to STL format
+- Document and object management
+- Specialty smithery tools for blacksmithing models
+
+## Prerequisites
+
+- FreeCAD 0.20 or newer installed on the system
+- Python 3.8 or newer
+- MCP SDK (`pip install mcp trio`)
+
+## Available Tools
+
+### Document Management
+
+1. **freecad.create_document** - Create a new FreeCAD document
+2. **freecad.list_documents** - List all open documents
+3. **freecad.list_objects** - List all objects in a document
+
+### 3D Primitives
+
+1. **freecad.create_box** - Create a box primitive
+2. **freecad.create_cylinder** - Create a cylinder primitive
+3. **freecad.create_sphere** - Create a sphere primitive
+4. **freecad.create_cone** - Create a cone primitive
+
+### Boolean Operations
+
+1. **freecad.boolean_union** - Create a union of two objects (add)
+2. **freecad.boolean_cut** - Cut the second object from the first (subtract)
+3. **freecad.boolean_intersection** - Create the intersection of two objects (common volume)
+
+### Transformations
+
+1. **freecad.move_object** - Move an object to a new position
+2. **freecad.rotate_object** - Rotate an object
+
+### Export
+
+1. **freecad.export_stl** - Export the model to an STL file
+
+### Smithery Tools (Specialty Tools)
+
+1. **smithery.create_anvil** - Create an anvil model
+2. **smithery.create_hammer** - Create a blacksmith hammer model
+3. **smithery.create_tongs** - Create blacksmith tongs model
+4. **smithery.forge_blade** - Create a forged blade model
+5. **smithery.create_horseshoe** - Create a horseshoe model
+
+## Testing
+
+To run the comprehensive test suite, which tests all available tools:
+
+```bash
+python test_mcp_tools.py
+```
+
+This will create various models, perform boolean operations, transformations, and verify the functionality of all tools.
+
+## Documentation
+
+For AI assistants, please refer to the [AI Assistant Guide](AI_ASSISTANT_GUIDE.md) for detailed usage instructions and examples.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Acknowledgments
+
+- FreeCAD development team for the amazing CAD software
+- Anthropic and Claude for the Model Context Protocol (MCP) SDK

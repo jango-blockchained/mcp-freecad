@@ -76,17 +76,17 @@ This will start FreeCAD with the server script, which will listen for connection
 To test that the FreeCAD server is running correctly, you can use the included client:
 
 ```bash
-python freecad_client.py ping
+python freecad_client.py
 ```
 
-If the server is running, you should see a response like:
+If the client successfully connects to the FreeCAD server (either via the socket server, the bridge, or mock mode), it will print the connection method used:
 
-```json
-{
-  "pong": true,
-  "timestamp": 1627392982.3456
-}
 ```
+Connected to FreeCAD using <method> method
+```
+(Where `<method>` will be `server`, `bridge`, or `mock`)
+
+If it fails to connect, it will print an error message indicating the reason (e.g., connection refused, timeout, etc.).
 
 ## Client Usage Examples
 

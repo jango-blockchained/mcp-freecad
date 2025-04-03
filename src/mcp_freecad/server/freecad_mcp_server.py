@@ -51,20 +51,35 @@ except ImportError as e:
 
 # Import FreeCAD connection
 try:
-    from freecad_connection import FreeCADConnection
+    from ..client.freecad_connection import FreeCADConnection
 
     FREECAD_CONNECTION_AVAILABLE = True
 except ImportError:
     logger.warning(
-        "FreeCAD connection module (freecad_connection.py) not found in the current directory or Python path."
+        "FreeCAD connection module not found in the module structure. Trying relative import."
     )
-    FREECAD_CONNECTION_AVAILABLE = False
-    # try:
-    #     # Try to import the local smithery implementation
-    #     from freecad_bridge import FreeCADBridge
-    #     MCP_TOOLS_AVAILABLE = False
-    # except ImportError:
-    #     logger.warning("Local FreeCAD bridge not found. Some functionality may be limited.")
+    try:
+        from freecad_connection import FreeCADConnection
+        FREECAD_CONNECTION_AVAILABLE = True
+    except ImportError:
+        logger.warning(
+            "FreeCAD connection module (freecad_connection.py) not found in the current directory or Python path."
+        )
+        FREECAD_CONNECTION_AVAILABLE = False
+        # try:
+        #     # Try to import the local smithery implementation
+        #     from freecad_bridge import FreeCADBridge
+        #     MCP_TOOLS_AVAILABLE = False
+        # except ImportError:
+        #     logger.warning("Local FreeCAD bridge not found. Some functionality may be limited.")
+
+try:
+    from .freecad_bridge import FreeCADBridge
+except ImportError:
+    try:
+        from freecad_bridge import FreeCADBridge
+    except ImportError:
+        logger.warning("FreeCAD bridge module not found. Some functionality may be limited.")
 
 
 class FreeCADMCPServer:

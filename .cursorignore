@@ -38,6 +38,10 @@ env/
 # Logs
 *.log
 logs/
+freecad_server_stderr.log
+freecad_server_stdout.log
+mcp-freecad-debug.log
+mcp-freecad-traceback.log
 
 # OS specific
 .DS_Store
@@ -46,6 +50,18 @@ logs/
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-Thumbs.db 
+Thumbs.db
 
+# Project specific directories
 squashfs-root/
+backups/
+tmp/
+.cursor/
+.pytest_cache/
+
+# Assets (STL/STEP files can be large)
+assets/*.stl
+assets/*.step
+
+# Lock files
+uv.lock
