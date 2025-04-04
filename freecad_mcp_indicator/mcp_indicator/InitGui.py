@@ -1000,6 +1000,11 @@ static char * mcp_icon_xpm[] = {
             env["FREECAD_NO_GUI"] = "1"  # Custom environment variable to signal no GUI
             env["PYTHONUNBUFFERED"] = "1"  # Ensure Python output is unbuffered
 
+            # Clear PYTHONHOME to avoid conflicts with FreeCAD AppImage Python
+            if "PYTHONHOME" in env:
+                del env["PYTHONHOME"]
+                FreeCAD.Console.PrintMessage("Cleared PYTHONHOME environment variable to avoid conflicts\n")
+
             # Set up command with appropriate arguments
             if use_wrapper:
                 FreeCAD.Console.PrintMessage(
@@ -1189,6 +1194,11 @@ static char * mcp_icon_xpm[] = {
             # Create a modified environment
             env = dict(os.environ)
             env["PYTHONUNBUFFERED"] = "1"  # Ensure Python output is unbuffered
+
+            # Clear PYTHONHOME to avoid conflicts with FreeCAD AppImage Python
+            if "PYTHONHOME" in env:
+                del env["PYTHONHOME"]
+                FreeCAD.Console.PrintMessage("Cleared PYTHONHOME environment variable to avoid conflicts\n")
 
             # Set up command with appropriate arguments
             server_cmd = [python_exec, self.MCP_SERVER_SCRIPT_PATH]
