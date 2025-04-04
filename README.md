@@ -16,6 +16,8 @@ graph TD
     F -->|Testing| G
 ```
 
+For more detailed flowcharts, see [FLOWCHART.md](docs/FLOWCHART.md).
+
 ## 🏗️ Core Components
 
 ### 1. FreeCAD MCP Server (`freecad_mcp_server.py`)
@@ -45,6 +47,8 @@ graph TD
     freecad -c /path/to/freecad_server.py --host localhost --port 12345 --debug
     ```
 
+See [FREECAD_SERVER_SETUP.md](docs/FREECAD_SERVER_SETUP.md) for detailed setup instructions.
+
 ### 4. FreeCAD Bridge (`freecad_bridge.py`)
 - **Description**: A Python module enabling command-line interaction with FreeCAD, bypassing direct module import issues. Used by `FreeCADConnection` when using the `bridge` method.
 
@@ -60,29 +64,35 @@ The MCP-FreeCAD project is organized with the following directory structure:
 mcp-freecad/
 ├── assets/                  # 3D model assets (STL, STEP files)
 ├── backups/                 # Backup files
+├── config.json              # Main configuration file
 ├── docs/                    # Documentation files
+│   ├── FLOWCHART.md         # Detailed flow diagrams
+│   ├── FREECAD_INTEGRATION.md # FreeCAD integration guide
+│   ├── FREECAD_SERVER_SETUP.md # Server setup instructions
+│   ├── OPTIMIZATION_FEATURES.md # Performance optimization guide
+│   └── PYTHON_INTERPRETER_SETUP.md # Python interpreter configuration
 ├── examples/                # Example scripts showing API usage
-├── freecad-mcp              # Main executable symlink
+├── freecad_bridge.py        # Bridge for CLI interaction with FreeCAD
+├── freecad_client.py        # Command-line client
+├── freecad_connection.py    # Unified connection interface
 ├── freecad_mcp.py           # Entry point script
+├── freecad_mcp_server.py    # MCP server implementation
+├── freecad_server.py        # Socket-based server for FreeCAD
 ├── scripts/                 # Shell scripts for installation and execution
+│   ├── README.md            # Scripts documentation
+│   ├── bin/                 # Executable scripts
+│   │   ├── install-global.sh    # Global installation script
+│   │   ├── mcp-freecad-installer.sh # Installer script
+│   │   ├── mcp-freecad.sh       # Simple wrapper script
+│   │   └── run_freecad_server.sh # Server runner script
+│   ├── start_freecad_with_server.sh # FreeCAD starter with server
+│   └── start_server.py       # Python script for server startup
 ├── src/                     # Source code
-│   └── mcp_freecad/         # Main package
-│       ├── __init__.py      # Package initialization
-│       ├── client/          # Client-side code
-│       │   ├── __init__.py
-│       │   ├── freecad_client.py
-│       │   └── freecad_connection.py
-│       ├── server/          # Server-side code
-│       │   ├── __init__.py
-│       │   ├── freecad_bridge.py
-│       │   └── freecad_mcp_server.py
-│       ├── tools/           # Tools implementation
-│       └── core/            # Core functionality
 ├── tests/                   # Test files
 └── tmp/                     # Temporary files
 ```
 
-This structure makes the code more maintainable and follows Python packaging best practices.
+For more details on scripts, see [scripts/README.md](scripts/README.md).
 
 ## ⚙️ Installation
 
@@ -93,7 +103,7 @@ There are several ways to install and use the MCP-FreeCAD server:
 To install and run the MCP-FreeCAD server in a single command, run:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/user/mcp-freecad/main/mcp-freecad-installer.sh | bash
+curl -sSL https://raw.githubusercontent.com/jango-blockchained/mcp-freecad/main/scripts/bin/mcp-freecad-installer.sh | bash
 ```
 
 This command will:
@@ -105,7 +115,7 @@ This command will:
 After installation, you can run the server directly with:
 
 ```bash
-~/.mcp-freecad/mcp-freecad.sh
+~/.mcp-freecad/scripts/bin/mcp-freecad.sh
 ```
 
 ### 2. Global Installation
@@ -117,7 +127,7 @@ If you have cloned the repository, you can install the MCP-FreeCAD server global
 cd /path/to/mcp-freecad
 
 # Run the global installation script
-./install-global.sh
+./scripts/bin/install-global.sh
 ```
 
 After installation, you can run the server from anywhere with:
@@ -132,7 +142,7 @@ You can also install the server manually:
 
 ```bash
 # Clone the repository
-git clone https://github.com/user/mcp-freecad.git
+git clone https://github.com/jango-blockchained/mcp-freecad.git
 cd mcp-freecad
 
 # Create a virtual environment
@@ -146,8 +156,16 @@ pip install -r requirements.txt
 pip install -e .
 
 # Run the server
-./freecad-mcp
+python freecad_mcp_server.py
 ```
+
+### 4. FreeCAD Python Interpreter Setup
+
+For proper integration with FreeCAD's Python modules, see [PYTHON_INTERPRETER_SETUP.md](docs/PYTHON_INTERPRETER_SETUP.md) which explains how to:
+
+- Extract and use FreeCAD's AppImage Python interpreter
+- Set up a virtual environment with FreeCAD's Python
+- Configure `PYTHONPATH` for FreeCAD module access
 
 ## 🚀 Using the MCP Server
 
@@ -157,13 +175,13 @@ This is the primary way to interact with FreeCAD using AI assistants like Claude
 
 ```bash
 # Start the server using the default config.json
-./freecad-mcp
+python freecad_mcp_server.py
 
 # Start with a specific configuration file
-./freecad-mcp --config /path/to/your/config.json
+python freecad_mcp_server.py --config /path/to/your/config.json
 
 # Enable debug logging
-./freecad-mcp --debug
+python freecad_mcp_server.py --debug
 ```
 The server will run and listen for connections from MCP clients.
 
@@ -173,28 +191,42 @@ Use any MCP-compatible client. Example using the reference `mcp client`:
 
 ```bash
 # Replace 'mcp client' with the actual client command if different
-mcp client connect stdio --command "./freecad-mcp"
+mcp client connect stdio --command "python freecad_mcp_server.py"
 ```
 
 Or using `uv` if you have a client script like the one in the MCP docs:
 
 ```bash
-uv run path/to/your/mcp_client.py ./freecad-mcp
+uv run path/to/your/mcp_client.py python freecad_mcp_server.py
 ```
+
+### Alternative: Starting FreeCAD with Integrated Server
+
+You can also start FreeCAD with the integrated server using:
+
+```bash
+./scripts/start_freecad_with_server.sh
+```
+
+This will launch FreeCAD and automatically start the server inside it.
 
 ### MCP Server Configuration (`config.json`)
 
 ```json
 {
     "server": {
-        "name": "freecad-mcp-server",
+        "name": "mcp-freecad",
         "version": "0.1.0"
     },
     "freecad": {
-        "connection_method": "auto", // "auto", "server", "bridge", or "mock"
-        "host": "localhost",          // For 'server' connection method
-        "port": 12345,                // For 'server' connection method
-        "freecad_path": "freecad"     // Path to FreeCAD executable (for 'bridge' method)
+        "path": "/usr/bin/freecad",
+        "python_path": "./squashfs-root/usr/bin/python",
+        "host": "localhost",
+        "port": 12345,
+        "auto_connect": true,
+        "reconnect_on_failure": true,
+        "use_mock": false,
+        "connection_method": "server"
     },
     "tools": { // Optional: control which tool groups are enabled
         "enable_smithery": true,
@@ -206,6 +238,8 @@ uv run path/to/your/mcp_client.py ./freecad-mcp
     }
 }
 ```
+
+See [FREECAD_INTEGRATION.md](docs/FREECAD_INTEGRATION.md) for more details on integration options.
 
 ## 🛠️ Available MCP Tools
 
@@ -301,7 +335,7 @@ Assistant: I've created the hammer with a 400mm handle and default head dimensio
     - **`server` method**: Ensure `freecad_server.py` is running inside an active FreeCAD instance, listening on the correct host/port configured in `config.json`.
     - **General**: Check FreeCAD logs for errors.
 - **Missing MCP SDK**: Install via `pip install modelcontextprotocol`.
-- **Python Path Issues**: If FreeCAD modules aren't found, ensure FreeCAD's `lib` directory is in your `PYTHONPATH` environment variable, especially when running scripts directly.
+- **Python Path Issues**: If FreeCAD modules aren't found, refer to [PYTHON_INTERPRETER_SETUP.md](docs/PYTHON_INTERPRETER_SETUP.md) for detailed guidance.
 
 ## 📄 License
 
@@ -561,26 +595,6 @@ for file in files:
 }
 ```
 
-## Quick Start for AI Tools
-
-To install and run the MCP-FreeCAD server in a single command, run:
-
-```bash
-curl -sSL https://raw.githubusercontent.com/user/mcp-freecad/main/mcp-freecad-installer.sh | bash
-```
-
-This command will:
-1. Clone the MCP-FreeCAD repository (or update it if already cloned)
-2. Set up a Python virtual environment
-3. Install all dependencies
-4. Start the MCP server
-
-After installation, you can run the server directly with:
-
-```bash
-~/.mcp-freecad/mcp-freecad.sh
-```
-
 ## Features
 
 - Connect AI assistants to FreeCAD through the MCP protocol
@@ -596,7 +610,7 @@ After installation, you can run the server directly with:
 
 - FreeCAD 0.20 or newer installed on the system
 - Python 3.8 or newer
-- MCP SDK (`pip install mcp trio`)
+- MCP SDK (`pip install modelcontextprotocol`)
 
 ## Available Tools
 
@@ -638,17 +652,64 @@ After installation, you can run the server directly with:
 
 ## Testing
 
-To run the comprehensive test suite, which tests all available tools:
+The project includes both unit tests and end-to-end (E2E) tests to ensure quality and reliability.
+
+### Unit Tests
+
+To run the basic unit tests:
 
 ```bash
 python test_mcp_tools.py
+python test_mcp_client.py
 ```
 
-This will create various models, perform boolean operations, transformations, and verify the functionality of all tools.
+### End-to-End Tests
+
+End-to-end tests verify that the entire system works correctly from the client's perspective. They test real-world scenarios and interactions between different components.
+
+To run all E2E tests:
+
+```bash
+# Run with mock FreeCAD (default, doesn't require actual FreeCAD installation)
+./tests/e2e/run_tests.py
+
+# Run with verbose output
+./tests/e2e/run_tests.py --verbose
+
+# Run with real FreeCAD connection (requires FreeCAD to be installed)
+./tests/e2e/run_tests.py --real
+
+# Run a specific test file
+./tests/e2e/run_tests.py --single test_primitives.py
+```
+
+The E2E tests are organized by functionality:
+- `test_primitives.py` - Tests for basic shape creation and manipulation
+- `test_smithery.py` - Tests for blacksmithing tool operations
+
+#### Writing New E2E Tests
+
+To add new E2E tests:
+
+1. Create a new test file in the `tests/e2e/` directory
+2. Extend the appropriate base test class (`MCPClientTestBase`)
+3. Add test methods that use the MCP client to interact with the tools
+4. Run your tests with the test runner
+
+See existing test files for examples.
 
 ## Documentation
 
-For AI assistants, please refer to the [AI Assistant Guide](AI_ASSISTANT_GUIDE.md) for detailed usage instructions and examples.
+The project includes several documentation files for different aspects:
+
+- [PYTHON_INTERPRETER_SETUP.md](docs/PYTHON_INTERPRETER_SETUP.md) - How to configure the Python interpreter
+- [FREECAD_SERVER_SETUP.md](docs/FREECAD_SERVER_SETUP.md) - Server setup guide
+- [FREECAD_INTEGRATION.md](docs/FREECAD_INTEGRATION.md) - FreeCAD integration methods
+- [FLOWCHART.md](docs/FLOWCHART.md) - Detailed flow diagrams
+- [OPTIMIZATION_FEATURES.md](docs/OPTIMIZATION_FEATURES.md) - Performance optimization guide
+- [scripts/README.md](scripts/README.md) - Scripts documentation
+
+For AI assistants, please refer to the [AI_ASSISTANT_GUIDE.md](AI_ASSISTANT_GUIDE.md) for detailed usage instructions and examples.
 
 ## Contributing
 

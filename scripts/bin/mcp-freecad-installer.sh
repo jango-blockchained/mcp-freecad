@@ -21,7 +21,7 @@ if ! command_exists python3; then
 fi
 
 # Repository URL and local directory
-REPO_URL="https://github.com/user/mcp-freecad.git"  # Replace with your actual repository URL
+REPO_URL="https://github.com/jango-blockchained/mcp-freecad.git"
 INSTALL_DIR="$HOME/.mcp-freecad"
 
 # Create installation directory if it doesn't exist
