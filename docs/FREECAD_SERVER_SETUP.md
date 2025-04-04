@@ -1,6 +1,14 @@
 # FreeCAD Server Setup Guide
 
-This document explains how to set up and use the FreeCAD server for the MCP-FreeCAD integration.
+**Note:** This document describes the setup for the **Socket Server** connection method. For the **most reliable connection**, we strongly recommend using the **Launcher method with an extracted FreeCAD AppImage**. Please see `docs/FREECAD_INTEGRATION.md` and `docs/PYTHON_INTERPRETER_SETUP.md` for details on that recommended approach.
+
+This guide explains how to set up and manually run the `freecad_server.py` script *inside* FreeCAD, which allows the `FreeCADConnection` class (using the `server` method) to communicate with it via sockets.
+
+## When to Use This Method?
+
+- You prefer running a persistent FreeCAD instance in the background.
+- The recommended AppImage/Launcher method is not suitable for your specific setup.
+- You are debugging the socket communication layer itself.
 
 ## Requirements
 
@@ -48,28 +56,51 @@ Make sure to set the correct path to your FreeCAD executable.
 
 ### 3. Server Files
 
-Ensure that the following files are in your project directory:
+Ensure that the `freecad_server.py` script is available and accessible by your FreeCAD instance.
 
-1. `freecad_server.py`: The server that runs inside FreeCAD
-2. `freecad_client.py`: A client for communicating with the FreeCAD server
+## Starting the Server Manually within FreeCAD
 
-## Starting the Server
+Unlike the Launcher method, the Socket Server method requires you to **manually start the `freecad_server.py` script inside a running FreeCAD instance**.
 
-There are two ways to start the FreeCAD server:
+### Option 1: Using the FreeCAD Python Console
 
-### Option 1: Automatic Start (Recommended)
+1.  Launch FreeCAD (GUI or console mode).
+2.  Open the Python console (View -> Panels -> Python console).
+3.  Execute the server script:
+    ```python
+    # Make sure the path is correct
+    exec(open("/path/to/mcp-freecad/freecad_server.py").read())
+    ```
+    You should see output indicating the server is listening (e.g., `FreeCAD server listening on localhost:12345`).
 
-The MCP-FreeCAD integration will automatically start the FreeCAD server when needed, if `auto_connect` is set to `true` in your configuration. This is the recommended approach for regular use.
+### Option 2: Launching FreeCAD with the Server Script
 
-### Option 2: Manual Start
-
-You can manually start the FreeCAD server by running:
+You can start FreeCAD directly with the server script:
 
 ```bash
-freecad -c freecad_server.py
+# Adjust path to your FreeCAD executable if needed
+freecad -c /path/to/mcp-freecad/freecad_server.py --host 0.0.0.0 --port 12345
 ```
 
-This will start FreeCAD with the server script, which will listen for connections on port 12345 (or the port specified in the script arguments).
+This starts FreeCAD in console mode and immediately runs the server script.
+
+## Configuring MCP-FreeCAD to Use the Server Method
+
+To make the main MCP server connect to your manually started `freecad_server.py`, update your `config.json`:
+
+```json
+{
+  "freecad": {
+    "connection_method": "server",
+    "host": "localhost",
+    "port": 12345,
+    "use_mock": false,
+    "use_apprun": false
+  }
+}
+```
+
+Ensure the `host` and `port` match how you started `freecad_server.py`.
 
 ## Testing the Connection
 

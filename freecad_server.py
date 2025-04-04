@@ -25,6 +25,7 @@ import sys
 import threading
 import time
 import traceback
+import subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -102,122 +103,50 @@ def log(message):
 freecad_config = config.get("freecad", {})
 freecad_path = freecad_config.get("path", "freecad")
 freecad_python_path = freecad_config.get("python_path")
+module_path = freecad_config.get("module_path")
+use_mock = freecad_config.get("use_mock", False)
 
-# More robust method to find FreeCAD module
-found_freecad_module = False
+# If we're being told explicitly not to use mock mode, we'll try harder to find FreeCAD
+if not use_mock:
+    print("Mock mode disabled. Attempting to locate and load actual FreeCAD modules...")
 
-if freecad_path and os.path.exists(freecad_path):
-    log(f"Using FreeCAD executable from config: {freecad_path}")
-    # Try to locate the FreeCAD module directory based on the executable path
-    freecad_base_dir = os.path.dirname(os.path.dirname(freecad_path))
-    potential_module_paths = [
-        os.path.join(freecad_base_dir, "lib"),
-        os.path.join(freecad_base_dir, "lib", "freecad"),
-        os.path.join(freecad_base_dir, "Mod"),
-        os.path.join(freecad_base_dir, "usr", "lib"),
-        os.path.join(freecad_base_dir, "usr", "lib", "freecad"),
-        # Directly look in squashfs locations
-        os.path.join(freecad_base_dir, "usr", "lib", "python3"),
-        os.path.join(freecad_base_dir, "usr", "lib", "python3", "dist-packages"),
-        # For AppImage structure
-        freecad_base_dir,
+    # Step 1: Check if module_path is specified and valid
+    if module_path and os.path.exists(module_path):
+        print(f"Using module path from config: {module_path}")
+        sys.path.append(module_path)
+
+    # Step 2: Try to find FreeCAD executable and get its Python environment
+    if freecad_path and os.path.exists(freecad_path):
+        try:
+            # Get FreeCAD Python environment information
+            result = subprocess.run(
+                [freecad_path, "--write-python-path"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                fcad_python_paths = result.stdout.strip().split('\n')
+                for path in fcad_python_paths:
+                    if path and os.path.exists(path):
+                        print(f"Adding path from FreeCAD: {path}")
+                        sys.path.append(path)
+        except (subprocess.SubprocessError, FileNotFoundError) as e:
+            print(f"Error getting FreeCAD Python paths: {e}")
+
+    # Step 3: Look in common system locations
+    common_freecad_paths = [
+        "/usr/lib/freecad-python3/lib",
+        "/usr/lib/freecad/lib",
+        "/usr/lib/freecad",
+        "/usr/lib/python3/dist-packages/freecad",
+        "/usr/share/freecad/lib",
     ]
 
-    # More verbose debugging
-    print(
-        f"Looking for FreeCAD module in directories based on executable: {freecad_path}"
-    )
-    print(f"Base directory: {freecad_base_dir}")
-
-    for path in potential_module_paths:
+    for path in common_freecad_paths:
         if os.path.exists(path):
-            print(f"Found path: {path}")
-            log(f"Adding potential FreeCAD module path: {path}")
+            print(f"Found potential FreeCAD path: {path}")
             sys.path.append(path)
-
-            # Check if we can now import FreeCAD
-            try:
-                import importlib
-
-                importlib.import_module("FreeCAD")
-                found_freecad_module = True
-                print(f"Successfully imported FreeCAD module from {path}")
-                break
-            except ImportError:
-                print(f"FreeCAD module not found in {path}")
-
-# If we still haven't found it, try a more direct approach - look for the Python executable's dist-packages
-if (
-    not found_freecad_module
-    and freecad_python_path
-    and os.path.exists(freecad_python_path)
-):
-    print(f"Trying to use Python path from config: {freecad_python_path}")
-    # Get Python's site-packages directory
-    try:
-        # Run Python to get site-packages directory
-        import subprocess
-
-        result = subprocess.run(
-            [freecad_python_path, "-c", "import site; print(site.getsitepackages())"],
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode == 0:
-            # Parse the output, which will be a list like "['path1', 'path2']"
-            import ast
-
-            site_packages = ast.literal_eval(result.stdout.strip())
-            for path in site_packages:
-                print(f"Adding site-packages path: {path}")
-                sys.path.append(path)
-
-                # Also try dist-packages
-                dist_packages = path.replace("site-packages", "dist-packages")
-                if os.path.exists(dist_packages):
-                    print(f"Adding dist-packages path: {dist_packages}")
-                    sys.path.append(dist_packages)
-
-            # Check if we can now import FreeCAD
-            try:
-                import importlib
-
-                importlib.import_module("FreeCAD")
-                found_freecad_module = True
-                print("Successfully imported FreeCAD module from site-packages")
-            except ImportError:
-                print("FreeCAD module not found in site-packages")
-    except Exception as e:
-        print(f"Error getting site-packages directory: {e}")
-
-# If we're using an AppImage or standalone FreeCAD executable, try to extract it
-if not found_freecad_module and os.path.exists(freecad_path):
-    print("Attempting to locate FreeCAD module in AppImage/standalone structure...")
-    # For AppImage, the Python module might be in a different location
-    # Check if we can run FreeCAD with --write-python-path
-    try:
-        import subprocess
-
-        result = subprocess.run(
-            [freecad_path, "--write-python-path"], capture_output=True, text=True
-        )
-        if result.returncode == 0 and result.stdout.strip():
-            python_path = result.stdout.strip().split("\n")[0]
-            print(f"FreeCAD reported Python path: {python_path}")
-            if os.path.exists(python_path):
-                # Add the path to sys.path
-                sys.path.append(python_path)
-                # Try to import FreeCAD again
-                try:
-                    import importlib
-
-                    importlib.import_module("FreeCAD")
-                    found_freecad_module = True
-                    print(f"Successfully imported FreeCAD module from {python_path}")
-                except ImportError:
-                    print(f"FreeCAD module not found in {python_path}")
-    except Exception as e:
-        print(f"Error getting Python path from FreeCAD: {e}")
 
 # Try to import FreeCAD
 try:

@@ -1122,6 +1122,17 @@ static char * mcp_icon_xpm[] = {
             )
             return
 
+        # Try to kill any existing MCP server processes
+        try:
+            # Find processes using the freecad_mcp_server.py script
+            cmd = f'pkill -f "python.*{os.path.basename(self.MCP_SERVER_SCRIPT_PATH)}"'
+            subprocess.run(cmd, shell=True)
+            FreeCAD.Console.PrintMessage("Killed existing MCP server processes.\n")
+            # Wait a moment for the processes to die
+            time.sleep(1)
+        except Exception as e:
+            FreeCAD.Console.PrintWarning(f"Warning when killing existing processes: {str(e)}\n")
+
         # Find a proper Python executable
         python_candidates = [
             "/usr/bin/python3",
@@ -1213,6 +1224,9 @@ static char * mcp_icon_xpm[] = {
             # Add port if not default
             if self.MCP_SERVER_PORT != 8000:
                 server_cmd.extend(["--port", str(self.MCP_SERVER_PORT)])
+
+            # Add debug mode for more verbose output
+            server_cmd.append("--debug")
 
             # Print the exact command for debugging
             FreeCAD.Console.PrintMessage(f"MCP server command: {' '.join(server_cmd)}\n")

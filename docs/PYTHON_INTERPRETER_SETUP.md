@@ -1,143 +1,78 @@
 # Python Interpreter Setup for FreeCAD Integration
 
-This document explains how the Python interpreter is configured and used with FreeCAD in the MCP-FreeCAD project, particularly focusing on the AppImage extraction method.
+This document explains how to set up your Python environment to interact with FreeCAD, particularly when using the recommended AppImage-based connection method for the MCP-FreeCAD project.
 
-## Overview
+## The Challenge: FreeCAD's Embedded Python
 
-The MCP-FreeCAD project requires access to FreeCAD's Python modules, specifically `FreeCAD` and `FreeCADGui`, to interact with the CAD application. Since these modules are part of FreeCAD's custom Python environment, special configuration is needed to access them correctly.
+FreeCAD comes with its own embedded Python interpreter and modules (like `FreeCAD`, `Part`, `FreeCADGui`). These modules are designed to be initialized and run by the FreeCAD application itself. Attempting to directly `import FreeCAD` from your system's standard Python installation will usually fail due to initialization errors and missing dependencies.
 
-## AppImage Extraction Method
+## Recommended Solution: AppImage Extraction + Launcher
 
-### What is an AppImage?
+The most reliable way to interact with FreeCAD is by using its own environment. The MCP-FreeCAD project facilitates this through the **AppImage extraction and Launcher method**:
 
-AppImage is a format for distributing portable software on Linux without requiring superuser permissions to install. It contains the application and all its dependencies.
+1.  **Download a FreeCAD AppImage**: Get the latest stable or weekly build AppImage from the [FreeCAD releases page](https://github.com/FreeCAD/FreeCAD/releases).
+2.  **Extract the AppImage**: Use the provided `extract_appimage.py` script:
+    ```bash
+    cd /path/to/mcp-freecad
+    ./extract_appimage.py /path/to/FreeCAD_*.AppImage
+    ```
+    This script:
+    *   Extracts the AppImage to a `squashfs-root` directory.
+    *   Updates your `config.json` to use the `launcher` connection method via `AppRun` from the extracted directory.
+    *   Ensures all FreeCAD dependencies and Python modules are contained within `squashfs-root`.
 
-### Extraction Process
+3.  **How it Works**: When you run the MCP server (`python freecad_mcp_server.py`), the `FreeCADConnection` uses the `FreeCADLauncher`. The launcher executes the `AppRun` script within the `squashfs-root` directory. `AppRun` correctly sets up the FreeCAD environment (paths, libraries) and then runs our `freecad_script.py` using FreeCAD's *internal* Python interpreter. All communication happens via standard input/output.
 
-1. Download the FreeCAD AppImage from the official FreeCAD website.
-2. Make the AppImage executable:
-   ```bash
-   chmod +x FreeCAD-*.AppImage
-   ```
-3. Extract the AppImage content without running it:
-   ```bash
-   ./FreeCAD-*.AppImage --appimage-extract
-   ```
-4. This creates a `squashfs-root` directory containing all FreeCAD files, including the Python interpreter and modules.
+**Why this is Recommended:**
 
-## Configuration in MCP-FreeCAD
+*   **No Import Errors**: We don't attempt to import FreeCAD modules into our main Python environment.
+*   **Correct Environment**: FreeCAD runs in the exact environment it was packaged with.
+*   **Dependency Isolation**: All dependencies are bundled within the extracted AppImage.
+*   **Simplicity**: The `extract_appimage.py` script automates the setup.
 
-The project's `config.json` file contains critical settings for the Python interpreter:
+**With this recommended setup, you generally don't need to manually configure your Python interpreter or `PYTHONPATH` for the MCP server itself**, as the interaction happens via the subprocess launched by `AppRun`.
 
-```json
-"freecad": {
-  "path": "/usr/bin/freecad",
-  "python_path": "./squashfs-root/usr/bin/python",
-  ...
-}
-```
+## Alternative: Creating a Dev Environment (For Tool Development/Debugging)
 
-Key configuration items:
-- `path`: Path to the FreeCAD executable
-- `python_path`: Path to the Python interpreter within the extracted AppImage
+While the AppRun method is best for *running* the MCP server, if you are developing custom tools or need to debug scripts *intended to run inside FreeCAD*, you might want a development environment where you can directly import FreeCAD modules.
 
-## How the Python Interpreter is Used
-
-The project uses the specified Python interpreter in the following ways:
-
-1. **Direct Execution**: The `run_freecad_server.sh` script reads these settings from `config.json` and uses them to run Python scripts with the correct environment.
-
-2. **Environment Setup**: The script sets up the `PYTHONPATH` to include necessary directories within the extracted AppImage:
-   ```bash
-   export PYTHONPATH="$FREECAD_BASE/usr/lib/python3/dist-packages:$PYTHONPATH"
-   ```
-
-3. **Fallback Mechanism**: If the configured paths are not accessible, the system falls back to using the system Python or directly invoking FreeCAD as a Python interpreter.
-
-## Why This Approach Matters
-
-This setup is crucial because:
-
-1. **Module Access**: It ensures access to FreeCAD and FreeCADGui modules, which are not available in standard Python installations.
-
-2. **Version Consistency**: Using the bundled Python interpreter ensures compatibility with the FreeCAD version.
-
-3. **Dependency Management**: The extracted AppImage includes all necessary dependencies, avoiding complex manual installations.
-
-## Troubleshooting
-
-If you encounter issues with the Python interpreter:
-
-1. Verify that the paths in `config.json` point to valid locations.
-2. Check that the extracted AppImage structure matches the expected paths.
-3. Ensure proper permissions for both the FreeCAD executable and Python interpreter.
-4. Use the `--debug` flag when running scripts for more verbose output.
-
-## Example: Custom Script Execution
-
-To run a custom script with the FreeCAD Python environment:
-
-```bash
-./squashfs-root/usr/bin/python my_freecad_script.py
-```
-
-Or, using the run_freecad_server.sh script (which handles environment setup):
-
-```bash
-./run_freecad_server.sh --script=my_freecad_script.py
-```
-
-## Setting Up a Virtual Environment with FreeCAD's Python
-
-For consistent development and to ensure the correct Python interpreter is always used, you can create a virtual environment using the FreeCAD Python interpreter from the extracted AppImage:
+**Warning**: This is more complex and potentially less stable than using the AppRun method for the server itself.
 
 ### Steps to Create a FreeCAD-based Virtual Environment
 
-1. Navigate to your project directory:
-   ```bash
-   cd /path/to/mcp-freecad
-   ```
+1.  **Extract the AppImage**: Follow steps 1 & 2 from the recommended solution above.
 
-2. Create a virtual environment using the Python from squashfs:
-   ```bash
-   ./squashfs-root/usr/bin/python -m venv .venv-freecad --system-site-packages
-   ```
-   The `--system-site-packages` flag is crucial as it allows the virtual environment to access the FreeCAD modules from the AppImage's Python.
+2.  **Identify FreeCAD's Python**: Locate the Python executable within the extracted directory (e.g., `./squashfs-root/usr/bin/python`).
 
-3. Activate the virtual environment:
-   ```bash
-   source .venv-freecad/bin/activate
-   ```
+3.  **Create Virtual Environment**: Navigate to your project directory and create a venv using FreeCAD's Python:
+    ```bash
+    cd /path/to/mcp-freecad
+    ./squashfs-root/usr/bin/python -m venv .venv-freecad --system-site-packages
+    ```
+    *   **Crucial**: Use the Python *from the extracted AppImage*.
+    *   **Crucial**: Use `--system-site-packages` to allow access to FreeCAD modules already present in the AppImage's Python environment.
 
-4. Verify FreeCAD modules are accessible:
-   ```bash
-   python -c "import FreeCAD; import FreeCADGui; print('FreeCAD version:', FreeCAD.Version())"
-   ```
+4.  **Activate**: `source .venv-freecad/bin/activate`
 
-5. Install any additional project dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+5.  **Verify**: Check if you can import FreeCAD:
+    ```bash
+    python -c "import FreeCAD; import Part; import FreeCADGui; print(f'Successfully imported FreeCAD {FreeCAD.Version()}')"
+    ```
+    *Note: `FreeCADGui` might fail if you don't have a graphical environment (X11/Wayland) set up correctly, but `FreeCAD` and `Part` should import.* 
 
-### Benefits of This Approach
+6.  **Install Dependencies**: Install your project's *other* dependencies into this venv:
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-- **Consistency**: Always uses the correct Python interpreter with access to FreeCAD modules
-- **Isolation**: Keeps project dependencies separate from system Python 
-- **Reproducibility**: Easier for other developers to set up the same environment
-- **IDE Integration**: Better integration with IDEs like VSCode for code completion and type hints
-- **Simplified Development Workflow**: No need to constantly specify the Python path
+### Using the Dev Environment
 
-### Updating Scripts to Use the Virtual Environment
+*   Activate this `.venv-freecad` whenever you want to run scripts that *directly* `import FreeCAD` for testing or development purposes.
+*   Your IDE (like VSCode) can be configured to use this virtual environment's interpreter for better code completion and debugging of FreeCAD-specific code.
+*   **Remember**: This setup is primarily for *development* convenience. For *running* the MCP server, stick to the AppRun method configured by `extract_appimage.py`, which doesn't require activating this specific venv.
 
-Update your development and deployment scripts to activate the virtual environment:
+## Troubleshooting
 
-```bash
-#!/bin/bash
-# Activate FreeCAD virtual environment
-source .venv-freecad/bin/activate
-
-# Run your scripts
-python ./your_script.py
-```
-
-This ensures that all development and execution consistently use the correct Python interpreter with access to the FreeCAD modules. 
+*   **`extract_appimage.py` Fails**: Ensure the AppImage path is correct and you have execution permissions. Check for sufficient disk space.
+*   **AppRun Method Fails**: Check the `apprun_path` in `config.json` points to the correct `squashfs-root` directory. Look for errors in the MCP server logs when it tries to connect.
+*   **Dev Environment Import Errors**: Make sure you created the venv using the *correct* Python from `squashfs-root` and included `--system-site-packages`. Ensure the venv is activated.

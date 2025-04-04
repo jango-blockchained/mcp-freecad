@@ -5,6 +5,7 @@ FreeCAD Connection Manager
 This module provides a unified interface for connecting to FreeCAD using either:
 1. Socket-based communication with freecad_server.py running inside FreeCAD
 2. CLI-based communication using the FreeCAD executable directly
+3. Subprocess-based communication using freecad_wrapper.py (new method)
 
 Usage:
     from freecad_connection import FreeCADConnection
@@ -32,10 +33,23 @@ from typing import Any, Dict, List, Optional
 # Import FreeCADBridge class if available
 try:
     from freecad_bridge import FreeCADBridge
-
     BRIDGE_AVAILABLE = True
 except ImportError:
     BRIDGE_AVAILABLE = False
+
+# Import our new FreeCADWrapper
+try:
+    from freecad_wrapper import FreeCADWrapper
+    WRAPPER_AVAILABLE = True
+except ImportError:
+    WRAPPER_AVAILABLE = False
+
+# Import our new FreeCADLauncher
+try:
+    from freecad_launcher import FreeCADLauncher
+    LAUNCHER_AVAILABLE = True
+except ImportError:
+    LAUNCHER_AVAILABLE = False
 
 
 class FreeCADConnection:
@@ -45,6 +59,8 @@ class FreeCADConnection:
 
     CONNECTION_SERVER = "server"
     CONNECTION_BRIDGE = "bridge"
+    CONNECTION_WRAPPER = "wrapper"
+    CONNECTION_LAUNCHER = "launcher"
     CONNECTION_MOCK = "mock"
 
     def __init__(
@@ -54,6 +70,8 @@ class FreeCADConnection:
         freecad_path: str = "freecad",
         auto_connect: bool = True,
         prefer_method: Optional[str] = None,
+        use_mock: bool = True,
+        script_path: Optional[str] = None
     ):
         """
         Initialize the FreeCAD connection
@@ -64,13 +82,19 @@ class FreeCADConnection:
             freecad_path: Path to FreeCAD executable for CLI bridge (default: 'freecad')
             auto_connect: Whether to automatically connect (default: True)
             prefer_method: Preferred connection method (default: None = auto-detect)
+            use_mock: Whether to allow using mock mode as fallback (default: True)
+            script_path: Path to FreeCAD script for launcher method (default: None)
         """
         self.host = host
         self.port = port
         self.freecad_path = freecad_path
+        self.script_path = script_path
         self.connection_type = None
         self._bridge = None
         self._socket = None
+        self._wrapper = None
+        self._launcher = None
+        self.use_mock = use_mock
 
         if auto_connect:
             self.connect(prefer_method)
@@ -80,7 +104,7 @@ class FreeCADConnection:
         Connect to FreeCAD using the best available method
 
         Args:
-            prefer_method: Preferred connection method (server, bridge, or mock)
+            prefer_method: Preferred connection method (server, bridge, wrapper, launcher or mock)
 
         Returns:
             bool: True if successfully connected
@@ -89,12 +113,20 @@ class FreeCADConnection:
         methods = self._get_connection_methods(prefer_method)
 
         for method in methods:
+            # Skip mock mode if use_mock is False
+            if method == self.CONNECTION_MOCK and not self.use_mock:
+                continue
+
             success = False
 
             if method == self.CONNECTION_SERVER:
                 success = self._connect_server()
             elif method == self.CONNECTION_BRIDGE:
                 success = self._connect_bridge()
+            elif method == self.CONNECTION_WRAPPER:
+                success = self._connect_wrapper()
+            elif method == self.CONNECTION_LAUNCHER:
+                success = self._connect_launcher()
             elif method == self.CONNECTION_MOCK:
                 success = self._connect_mock()
 
@@ -115,11 +147,22 @@ class FreeCADConnection:
         Returns:
             List of methods to try in order
         """
-        all_methods = [
-            self.CONNECTION_SERVER,
-            self.CONNECTION_BRIDGE,
-            self.CONNECTION_MOCK,
-        ]
+        # If use_mock is False, don't include mock mode in the methods
+        if self.use_mock:
+            all_methods = [
+                self.CONNECTION_LAUNCHER,  # Try our new launcher first
+                self.CONNECTION_WRAPPER,
+                self.CONNECTION_SERVER,
+                self.CONNECTION_BRIDGE,
+                self.CONNECTION_MOCK,
+            ]
+        else:
+            all_methods = [
+                self.CONNECTION_LAUNCHER,  # Try our new launcher first
+                self.CONNECTION_WRAPPER,
+                self.CONNECTION_SERVER,
+                self.CONNECTION_BRIDGE,
+            ]
 
         if prefer_method in all_methods:
             # Move preferred method to the front
@@ -159,6 +202,65 @@ class FreeCADConnection:
         except Exception:
             return False
 
+    def _connect_wrapper(self) -> bool:
+        """
+        Connect using FreeCAD wrapper
+
+        Returns:
+            bool: True if successful
+        """
+        if not WRAPPER_AVAILABLE:
+            return False
+
+        try:
+            self._wrapper = FreeCADWrapper(debug=True)
+            return self._wrapper.start()
+        except Exception as e:
+            print(f"Error connecting to FreeCAD wrapper: {e}")
+            return False
+
+    def _connect_launcher(self) -> bool:
+        """
+        Connect using FreeCAD launcher
+
+        Returns:
+            bool: True if successful
+        """
+        if not LAUNCHER_AVAILABLE:
+            return False
+
+        try:
+            # Check if we should use AppRun mode
+            freecad_config = {}
+            if os.path.exists("config.json"):
+                try:
+                    with open("config.json", "r") as f:
+                        config = json.load(f)
+                        if "freecad" in config:
+                            freecad_config = config["freecad"]
+                except Exception as e:
+                    print(f"Error loading config.json: {e}")
+
+            use_apprun = freecad_config.get("use_apprun", False)
+            apprun_path = freecad_config.get("apprun_path", self.freecad_path)
+
+            if use_apprun:
+                print(f"Using AppRun mode with path: {apprun_path}")
+
+            self._launcher = FreeCADLauncher(
+                freecad_path=apprun_path if use_apprun else self.freecad_path,
+                script_path=self.script_path,
+                debug=True,
+                use_apprun=use_apprun
+            )
+
+            # Test the connection by getting the version
+            version_result = self._launcher.get_version()
+            return version_result.get("success", False)
+        except Exception as e:
+            print(f"Error connecting to FreeCAD launcher: {e}")
+            return False
+
     def _connect_mock(self) -> bool:
         """
         Connect using mock implementation
@@ -183,7 +285,7 @@ class FreeCADConnection:
         Get the current connection type
 
         Returns:
-            str: Connection type (server, bridge, or mock)
+            str: Connection type (server, bridge, wrapper, or mock)
         """
         return self.connection_type
 
@@ -359,6 +461,38 @@ class FreeCADConnection:
         elif self.connection_type == self.CONNECTION_BRIDGE:
             # Use bridge
             return self._execute_bridge_command(command_type, params)
+
+        elif self.connection_type == self.CONNECTION_WRAPPER:
+            # Use wrapper
+            return self._wrapper.send_command(command_type, params)
+
+        elif self.connection_type == self.CONNECTION_LAUNCHER:
+            # Use launcher
+            if command_type == "ping":
+                return {"pong": True, "launcher": True}
+            elif command_type == "get_version":
+                return self._launcher.get_version()
+            elif command_type == "create_document":
+                return self._launcher.create_document(params.get("name", "Unnamed"))
+            elif command_type == "create_object":
+                obj_type = params.get("type")
+                if obj_type == "box":
+                    return self._launcher.create_box(
+                        params.get("properties", {}).get("length", 10.0),
+                        params.get("properties", {}).get("width", 10.0),
+                        params.get("properties", {}).get("height", 10.0),
+                        params.get("document")
+                    )
+                else:
+                    return {"error": f"Unsupported object type: {obj_type}"}
+            elif command_type == "export_document":
+                return self._launcher.export_stl(
+                    params.get("object"),
+                    params.get("path"),
+                    params.get("document")
+                )
+            else:
+                return {"error": f"Unsupported command: {command_type}"}
 
         else:
             # Use mock implementation
@@ -573,6 +707,19 @@ class FreeCADConnection:
                 pass
             self._socket = None
 
+        # Close the launcher if it exists
+        if self._launcher:
+            # Launcher doesn't need explicit closing
+            self._launcher = None
+
+        # Close the wrapper if it exists
+        if self._wrapper:
+            try:
+                self._wrapper.stop()
+            except Exception:
+                pass
+            self._wrapper = None
+
         # Bridge doesn't need closing
         self._bridge = None
         self.connection_type = None
@@ -581,7 +728,7 @@ class FreeCADConnection:
 # Example usage
 if __name__ == "__main__":
     # Create connection
-    connection = FreeCADConnection()
+    connection = FreeCADConnection(use_mock=False)  # Disable mock mode to test real connections
 
     if not connection.is_connected():
         print("Failed to connect to FreeCAD")

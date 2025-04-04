@@ -1,167 +1,90 @@
 # FreeCAD Integration Guide
 
+This document outlines how the MCP-FreeCAD server connects to and interacts with FreeCAD.
+
 ## Understanding FreeCAD Integration
 
-When integrating with FreeCAD, it's important to understand that FreeCAD has its own embedded Python interpreter. This means that:
+FreeCAD has its own embedded Python interpreter and GUI framework. This presents challenges for external applications trying to interact with it:
 
-1. FreeCAD's Python modules (like `FreeCAD.so`) **cannot be directly imported** into a standard Python environment
-2. The proper way to interact with FreeCAD is through one of these approaches:
+1.  **Direct Module Import Issues**: FreeCAD's core Python modules (`FreeCAD.so`, `FreeCADGui.so`, etc.) are designed to be initialized by the FreeCAD application itself. Attempting to `import FreeCAD` directly from a standard Python environment often leads to initialization errors or crashes.
+2.  **Environment Dependencies**: FreeCAD relies on specific environment variables and library paths being set up correctly, which might not be present in a standard Python environment.
 
-## Recommended Integration Approaches
+## Connection Methods
 
-### 1. FreeCAD as a Subprocess
+The `FreeCADConnection` class (`freecad_connection.py`) provides a unified interface to handle these challenges, offering several connection methods:
 
-The most reliable approach is to run FreeCAD as a subprocess and communicate with it via standard input/output or a specific protocol.
+### 1. Launcher (Recommended: AppImage Extraction)
 
-```python
-import subprocess
-import json
+- **Method**: `launcher`
+- **Mechanism**: This is the **most reliable and recommended** method. It launches FreeCAD as a separate process using a specific script (`freecad_script.py`) executed within FreeCAD's own Python environment. Communication happens via standard input/output between the MCP server and the FreeCAD process.
+- **Setup**: It works best when using an **extracted FreeCAD AppImage**. The `extract_appimage.py` utility script simplifies this setup:
+    1.  Download a FreeCAD AppImage.
+    2.  Run `./extract_appimage.py /path/to/FreeCAD.AppImage`. This extracts the AppImage and automatically updates `config.json` to use the `launcher` method with the `use_apprun: true` option, pointing `apprun_path` to the extraction directory.
+- **How it Works**: The `FreeCADLauncher` class (`freecad_launcher.py`) handles constructing the command to run FreeCAD (or `AppRun` from the extracted AppImage) with the `--run-script` argument, passing commands and parameters to `freecad_script.py` and parsing the JSON results from its standard output.
+- **Advantages**: Avoids module import issues, uses a self-contained environment (with AppImage), ensures correct initialization.
 
-def run_freecad_command(script_content):
-    # Create a temporary script
-    with open("temp_script.py", "w") as f:
-        f.write(script_content)
+### 2. Socket Server
+
+- **Method**: `server`
+- **Mechanism**: Requires a separate `freecad_server.py` script to be running *inside* an active FreeCAD instance. The `FreeCADConnection` class connects to this server via a TCP socket to send commands and receive results.
+- **Setup**: Requires manually starting `freecad_server.py` within FreeCAD (e.g., through the FreeCAD Python console or by launching FreeCAD with the script).
+- **Configuration**: Set `connection_method: server` in `config.json` and ensure `host` and `port` match the running `freecad_server.py`.
+- **Disadvantages**: Requires managing a separate server process within FreeCAD, potentially less stable than the launcher method.
+
+### 3. CLI Bridge (Legacy)
+
+- **Method**: `bridge`
+- **Mechanism**: Uses command-line calls to the FreeCAD executable, attempting to execute small snippets of Python code. Relies on `freecad_bridge.py`.
+- **Setup**: Requires the FreeCAD executable to be in the system PATH or configured via `freecad_path` in `config.json`.
+- **Disadvantages**: Can be slow due to process startup overhead for each command, may still encounter environment issues, generally less robust than the launcher or server methods.
+
+### 4. Mock Connection
+
+- **Method**: `mock`
+- **Mechanism**: A built-in fallback that simulates FreeCAD responses without actually connecting to FreeCAD. Useful for testing the MCP server logic or for development when FreeCAD is unavailable.
+- **Setup**: Set `use_mock: true` in the `freecad` section of `config.json`. The `connection_method` is ignored if `use_mock` is true.
+
+## Configuration (`config.json`)
+
+The `freecad` section in `config.json` controls the connection behavior:
+
+```json
+{
+  "freecad": {
+    // General settings
+    "path": "/usr/bin/freecad",           // Path to FreeCAD executable (used by bridge, fallback for launcher)
+    "auto_connect": true,                // Attempt connection on startup
+    "reconnect_on_failure": true,        // Attempt to reconnect if connection fails
     
-    # Run FreeCAD with the script
-    process = subprocess.run(
-        ["freecad", "-c", "temp_script.py"],
-        capture_output=True,
-        text=True
-    )
+    // Mock Mode Settings
+    "use_mock": false,                   // Set to true to force mock mode
     
-    return process.stdout, process.stderr
+    // Connection Method Selection
+    "connection_method": "launcher",     // Preferred method: "launcher", "server", "bridge", or null/auto
+    
+    // Launcher Method Settings
+    "script_path": "freecad_script.py",    // Path to the script run by the launcher
+    "launcher_path": "freecad_launcher.py", // Path to the launcher helper
+    "use_apprun": true,                  // Set to true by extract_appimage.py
+    "apprun_path": "/path/to/squashfs-root", // Path to extracted AppImage dir (set by extract_appimage.py)
+
+    // Server Method Settings
+    "host": "localhost",                 // Hostname for the freecad_server.py
+    "port": 12345,                       // Port for the freecad_server.py
+    
+    // Legacy/Unused (kept for potential future use or reference)
+    "python_path": "/usr/bin/python3", 
+    "module_path": "/usr/lib/freecad-python3/lib"
+  }
+}
 ```
 
-### 2. Socket-Based Communication
+**Key Configuration Options:**
 
-Another approach is to run FreeCAD in server mode and communicate with it via sockets:
+-   `connection_method`: Determines the primary connection method to try. If set to `null` or omitted, it defaults to the order: `launcher`, `server`, `bridge`. If `use_mock` is `true`, it overrides this.
+-   `use_apprun`: When `connection_method` is `launcher`, this tells the launcher to use `AppRun` from the `apprun_path` directory instead of the standard `path` executable.
+-   `apprun_path`: The path to the directory containing the extracted AppImage (`squashfs-root`). Set automatically by `extract_appimage.py`.
 
-```python
-import socket
-import json
+## Summary
 
-def send_command_to_freecad(command, host='localhost', port=12345):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((host, port))
-        s.sendall(json.dumps(command).encode())
-        response = s.recv(4096)
-        return json.loads(response.decode())
-```
-
-This approach requires starting FreeCAD with a server script that listens for connections.
-
-### 3. Python Extension for FreeCAD
-
-You can create a Python extension that runs inside FreeCAD and provides an API for external applications:
-
-1. Create a FreeCAD extension/workbench
-2. Implement a server that listens for commands
-3. Communicate with it from your application
-
-## Modifications to the MCP-FreeCAD Integration
-
-Based on the above understanding, our MCP-FreeCAD integration should be modified to:
-
-1. Run FreeCAD as a separate process
-2. Implement a communication protocol between our MCP server and FreeCAD
-3. Use a message-based architecture to send commands and receive responses
-
-## Implementation Steps
-
-1. Modify the `FreeCADConnectionManager` to use subprocess or sockets instead of direct imports
-2. Create a FreeCAD server script that will run inside FreeCAD
-3. Implement serialization/deserialization of commands and responses
-4. Update all resource and tool providers to use this communication channel
-
-## Example Implementation
-
-A basic implementation of the FreeCAD server script (to run inside FreeCAD):
-
-```python
-# freecad_server.py - Run this inside FreeCAD
-import FreeCAD
-import socket
-import json
-import threading
-import sys
-
-def handle_client(conn, addr):
-    try:
-        data = conn.recv(4096)
-        if not data:
-            return
-            
-        command = json.loads(data.decode())
-        
-        # Execute the command
-        result = execute_command(command)
-        
-        # Send back the result
-        conn.sendall(json.dumps(result).encode())
-    except Exception as e:
-        conn.sendall(json.dumps({"error": str(e)}).encode())
-    finally:
-        conn.close()
-
-def execute_command(command):
-    cmd_type = command.get("type")
-    params = command.get("params", {})
-    
-    if cmd_type == "get_model_info":
-        return get_model_info()
-    elif cmd_type == "create_object":
-        return create_object(params)
-    # Add more commands as needed
-    
-    return {"error": f"Unknown command: {cmd_type}"}
-    
-def get_model_info():
-    if not FreeCAD.ActiveDocument:
-        return {"error": "No active document"}
-        
-    objects = []
-    for obj in FreeCAD.ActiveDocument.Objects:
-        objects.append({
-            "name": obj.Name,
-            "label": obj.Label,
-            "type": obj.TypeId
-        })
-        
-    return {
-        "document": FreeCAD.ActiveDocument.Name,
-        "objects": objects
-    }
-    
-def create_object(params):
-    if not FreeCAD.ActiveDocument:
-        FreeCAD.newDocument("Unnamed")
-        
-    obj_type = params.get("type")
-    
-    if obj_type == "box":
-        box = FreeCAD.ActiveDocument.addObject("Part::Box", "Box")
-        box.Length = params.get("length", 10)
-        box.Width = params.get("width", 10)
-        box.Height = params.get("height", 10)
-        FreeCAD.ActiveDocument.recompute()
-        return {"success": True, "object": box.Name}
-    
-    return {"error": f"Unknown object type: {obj_type}"}
-
-def start_server(host='localhost', port=12345):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((host, port))
-        s.listen()
-        print(f"FreeCAD server listening on {host}:{port}")
-        
-        while True:
-            conn, addr = s.accept()
-            thread = threading.Thread(target=handle_client, args=(conn, addr))
-            thread.daemon = True
-            thread.start()
-
-if __name__ == "__main__":
-    start_server()
-```
-
-This approach requires updating your MCP server to communicate with this FreeCAD server. 
+For the most stable and reliable connection, use the **Launcher method with an extracted FreeCAD AppImage**. The `extract_appimage.py` script automates this setup process. 

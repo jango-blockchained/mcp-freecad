@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mcp-freecad"
-version = "0.3.1"
+version = "0.4.2"
 description = "MCP Protocol integration for FreeCAD"
 readme = "README.md"
 authors = [
-    {name = "MCP-FreeCAD Team", email = "example@example.com"}
+    {name = "jango-blockchained", email = "info@cryptolinx.de"}
 ]
 license = {text = "MIT"}
 classifiers = [
@@ -52,4 +52,4 @@ skip = ["squashfs-root", ".venv"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-python_files = "test_*.py" 
+python_files = "test_*.py"

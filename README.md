@@ -159,7 +159,40 @@ pip install -e .
 python freecad_mcp_server.py
 ```
 
-### 4. FreeCAD Python Interpreter Setup
+### 4. Recommended Setup: Using FreeCAD AppImage (Most Reliable)
+
+For the most reliable FreeCAD connection, especially if you encounter module import issues, we recommend using the FreeCAD AppImage:
+
+1.  **Download a FreeCAD AppImage**: Get the latest stable or weekly build AppImage from the [FreeCAD releases page](https://github.com/FreeCAD/FreeCAD/releases).
+
+2.  **Make it Executable**: `chmod +x /path/to/FreeCAD_*.AppImage`
+
+3.  **Extract the AppImage**: Use the provided utility script to extract the AppImage. This creates a self-contained FreeCAD environment.
+
+    ```bash
+    # Navigate to the mcp-freecad directory
+    cd /path/to/mcp-freecad
+    
+    # Run the extraction script
+    ./extract_appimage.py /path/to/FreeCAD_*.AppImage
+    
+    # Optional: Specify output directory
+    # ./extract_appimage.py /path/to/FreeCAD_*.AppImage --output /custom/extract/path
+    ```
+    This script will:
+    - Extract the AppImage to a `squashfs-root` directory (by default, next to the AppImage).
+    - **Automatically update your `config.json`** to use the extracted AppImage (`use_apprun: true`, `apprun_path` set correctly, `connection_method: launcher`).
+    - Test the extracted AppImage to ensure it works.
+
+4.  **Start the MCP Server**: The server will now use the `launcher` connection method with the extracted AppImage environment.
+
+    ```bash
+    python freecad_mcp_server.py
+    ```
+
+This method avoids potential conflicts with system Python versions and ensures all necessary FreeCAD dependencies and modules are correctly loaded.
+
+### 5. FreeCAD Python Interpreter Setup
 
 For proper integration with FreeCAD's Python modules, see [PYTHON_INTERPRETER_SETUP.md](docs/PYTHON_INTERPRETER_SETUP.md) which explains how to:
 

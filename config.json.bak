@@ -6,7 +6,7 @@
   "server": {
     "host": "0.0.0.0",
     "port": 8000,
-    "debug": true,
+    "debug": false,
     "workers": 1,
     "name": "mcp-freecad",
     "version": "0.1.0",
@@ -37,11 +37,7 @@
     "auto_connect": true,
     "reconnect_on_failure": true,
     "use_mock": false,
-    "connection_method": "launcher",
-    "script_path": "freecad_script.py",
-    "launcher_path": "freecad_launcher.py",
-    "use_apprun": true,
-    "apprun_path": "/path/to/squashfs-root"
+    "connection_method": "server"
   },
   "cors": {
     "origins": ["*"],

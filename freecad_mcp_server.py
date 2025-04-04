@@ -126,6 +126,7 @@ class FreeCADMCPServer:
                 freecad_path=freecad_config.get("freecad_path", "freecad"),
                 auto_connect=True,
                 prefer_method=freecad_config.get("connection_method"),
+                use_mock=freecad_config.get("use_mock", True)
             )
 
             if self.freecad_connection.is_connected():
