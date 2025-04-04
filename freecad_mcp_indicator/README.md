@@ -3,6 +3,10 @@
 > **⚠️ UNDER HEAVY DEVELOPMENT! ⚠️**  
 > This project is being actively developed with daily updates. Features and interfaces may change frequently. Check back regularly for improvements!
 
+[![CI](https://github.com/yourusername/freecad_mcp_indicator/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/freecad_mcp_indicator/actions/workflows/ci.yml)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A FreeCAD workbench that shows MCP connection status in the status bar and provides comprehensive control over the MCP server.
 
 ## Features
@@ -138,6 +142,30 @@ If you're having trouble connecting to the MCP server:
 - Python 3.8 or later
 - mcp-freecad library
 - PySide2
+
+## Development
+
+### Running Tests
+The project includes automated tests to ensure code quality. To run tests locally:
+
+```bash
+# Install development dependencies
+pip install -r requirements-dev.txt
+
+# Run tests
+pytest
+
+# Run linting
+flake8
+black --check .
+isort --check .
+```
+
+### CI/CD
+This project uses GitHub Actions for continuous integration. The CI process:
+- Runs tests across multiple Python versions (3.8, 3.9, 3.10, 3.11)
+- Performs static code analysis and linting
+- Ensures consistent code formatting
 
 ## License
 

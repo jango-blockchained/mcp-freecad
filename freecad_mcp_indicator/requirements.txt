@@ -1,0 +1,3 @@
+PySide2>=5.15.0
+# Note: FreeCAD is not listed as a dependency since it's installed separately
+# and this module is meant to be used within FreeCAD
