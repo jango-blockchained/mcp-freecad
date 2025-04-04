@@ -56,7 +56,7 @@ Thumbs.db
 squashfs-root/
 backups/
 tmp/
-.cursor/
+.cursor/rules/
 .pytest_cache/
 
 # Assets (STL/STEP files can be large)

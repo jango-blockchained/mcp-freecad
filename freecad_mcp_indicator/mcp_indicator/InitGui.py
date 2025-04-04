@@ -4,6 +4,7 @@ import socket
 import subprocess
 import sys
 import time
+import json
 
 import FreeCAD
 import FreeCADGui
@@ -12,6 +13,10 @@ from PySide2 import QtCore, QtGui, QtWidgets
 # Remove global path calculations and move to __init__
 PYTHON_EXECUTABLE = sys.executable
 
+# Check if running on Wayland to handle specific issues
+RUNNING_ON_WAYLAND = os.environ.get('XDG_SESSION_TYPE', '').lower() == 'wayland'
+if RUNNING_ON_WAYLAND:
+    FreeCAD.Console.PrintWarning("Running on Wayland: Some UI features may be limited\n")
 
 class MCPIndicatorWorkbench(FreeCADGui.Workbench):
     """MCP Connection Indicator Workbench"""
@@ -94,23 +99,53 @@ static char * mcp_icon_xpm[] = {
                 "Server script path not set. Use Settings to configure.\n"
             )
 
+        # MCP Client settings
+        self.MCP_SERVER_HOST = self.params.GetString("MCPServerHost", "localhost")
+        self.MCP_SERVER_PORT = self.params.GetInt("MCPServerPort", 8000)
+
+        # MCP Server settings
+        self.MCP_SERVER_CONFIG = self.params.GetString("MCPServerConfig", "")
+
+        # UI elements
         self._control_button = None
+        self._server_status_button = None
+        self._connection_info_dialog = None
+
+        # Process and status tracking
         self._server_process = None
         self._timer = None
         self._connection_status = False
         self._server_running = False  # Track server running separately from process
+        self._connection_details = {
+            "type": "Unknown",
+            "client_port": 0,
+            "server_port": 0,
+            "connected_clients": 0,
+            "server_uptime": 0,
+        }
 
     def Initialize(self):
         """Initialize the workbench"""
         # Import necessary PySide modules locally for this scope
         from PySide2 import QtCore, QtWidgets  # Add QtCore here
 
-        # Create the control button
+        # Create the main MCP client connection indicator
         self._control_button = QtWidgets.QToolButton()
         self._control_button.setPopupMode(QtWidgets.QToolButton.InstantPopup)
         self._control_button.setFixedSize(24, 24)
-        self._control_button.setToolTip("Server: Stopped\nMCP: Disconnected")
+        self._control_button.setToolTip("MCP Client: Disconnected")
         self._control_button.setAutoRaise(True)
+
+        # Create the MCP server status indicator
+        self._server_status_button = QtWidgets.QToolButton()
+        self._server_status_button.setPopupMode(QtWidgets.QToolButton.InstantPopup)
+        self._server_status_button.setFixedSize(24, 24)
+        self._server_status_button.setToolTip("MCP Server: Stopped")
+        self._server_status_button.setAutoRaise(True)
+
+        # Make the buttons clickable
+        self._control_button.clicked.connect(self._show_connection_info)
+        self._server_status_button.clicked.connect(self._show_server_info)
 
         # Create menu and actions
         self._control_menu = QtWidgets.QMenu(self._control_button)
@@ -158,15 +193,19 @@ static char * mcp_icon_xpm[] = {
         self._restart_action.setEnabled(False)
         self._control_menu.addAction(self._restart_action)
 
+        # Add the same menu to server status button
+        self._server_status_button.setMenu(self._control_menu)
         self._control_button.setMenu(self._control_menu)
 
         # Update both server and MCP indicator states
         self._update_indicator_icon()
+        self._update_server_icon()
 
-        # Add button to status bar
+        # Add buttons to status bar
         mw = FreeCADGui.getMainWindow()
         if mw:
             statusbar = mw.statusBar()
+            statusbar.addPermanentWidget(self._server_status_button)
             statusbar.addPermanentWidget(self._control_button)
 
         # Setup timer for periodic connection check
@@ -178,6 +217,123 @@ static char * mcp_icon_xpm[] = {
         self._check_status()
         self._update_action_states()
 
+    def _show_connection_info(self):
+        """Show dialog with detailed MCP Client connection information"""
+        self._show_info_dialog("MCP Client Connection Details", self._get_client_info_html())
+
+    def _show_server_info(self):
+        """Show dialog with detailed MCP Server information"""
+        self._show_info_dialog("MCP Server Details", self._get_server_info_html())
+
+    def _show_info_dialog(self, title, html_content):
+        """Show a dialog with HTML content"""
+        from PySide2 import QtWidgets, QtCore
+
+        dialog = QtWidgets.QDialog(FreeCADGui.getMainWindow())
+        dialog.setWindowTitle(title)
+        dialog.setMinimumSize(400, 300)
+
+        # Set dialog flags to avoid activation issues on Wayland
+        if RUNNING_ON_WAYLAND:
+            dialog.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowStaysOnTopHint)
+
+        layout = QtWidgets.QVBoxLayout()
+        dialog.setLayout(layout)
+
+        text_browser = QtWidgets.QTextBrowser()
+        text_browser.setHtml(html_content)
+        layout.addWidget(text_browser)
+
+        refresh_button = QtWidgets.QPushButton("Refresh")
+
+        if "Client" in title:
+            refresh_button.clicked.connect(lambda: text_browser.setHtml(self._get_client_info_html()))
+        else:
+            refresh_button.clicked.connect(lambda: text_browser.setHtml(self._get_server_info_html()))
+
+        layout.addWidget(refresh_button)
+
+        # Add close button
+        button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Close)
+        button_box.rejected.connect(dialog.reject)
+        layout.addWidget(button_box)
+
+        dialog.exec_()
+
+    def _get_client_info_html(self):
+        """Generate HTML content for client connection details"""
+        connection_status = "Connected" if self._connection_status else "Disconnected"
+        status_color = "green" if self._connection_status else "red"
+
+        html = f"""
+        <h2>MCP Client Connection Status</h2>
+        <p>Status: <span style='color:{status_color};font-weight:bold;'>{connection_status}</span></p>
+        <p>Server Host: {self.MCP_SERVER_HOST}</p>
+        <p>Server Port: {self.MCP_SERVER_PORT}</p>
+        <p>Connection Type: {self._connection_details['type']}</p>
+        <p>Client Port: {self._connection_details['client_port']}</p>
+        """
+
+        # Add additional information if available
+        if self._connection_status:
+            html += "<h3>Additional Details</h3>"
+            try:
+                # Attempt to get more connection details if connected
+                connection_info = self._get_detailed_connection_info()
+                if connection_info:
+                    for key, value in connection_info.items():
+                        html += f"<p>{key}: {value}</p>"
+            except:
+                html += "<p>Could not retrieve additional connection details</p>"
+
+        return html
+
+    def _get_server_info_html(self):
+        """Generate HTML content for server details"""
+        server_status = "Running" if self._server_running else "Stopped"
+        status_color = "green" if self._server_running else "red"
+
+        html = f"""
+        <h2>MCP Server Status</h2>
+        <p>Status: <span style='color:{status_color};font-weight:bold;'>{server_status}</span></p>
+        <p>Server Path: {self.SERVER_SCRIPT_PATH}</p>
+        <p>Connected Clients: {self._connection_details['connected_clients']}</p>
+        <p>Server Port: {self._connection_details['server_port']}</p>
+        <p>Uptime: {self._connection_details['server_uptime']} seconds</p>
+        """
+
+        if self.MCP_SERVER_CONFIG:
+            html += f"<p>Config File: {self.MCP_SERVER_CONFIG}</p>"
+
+        if self._server_running:
+            html += "<h3>Active Connections</h3>"
+            try:
+                # Attempt to get active connections info
+                connections = self._get_active_connections()
+                if connections:
+                    html += "<ul>"
+                    for conn in connections:
+                        html += f"<li>{conn['client_ip']}:{conn['client_port']} - {conn['type']}</li>"
+                    html += "</ul>"
+                else:
+                    html += "<p>No active connections</p>"
+            except:
+                html += "<p>Could not retrieve active connections</p>"
+
+        return html
+
+    def _get_detailed_connection_info(self):
+        """Get detailed connection information from MCP client"""
+        # This is a placeholder - in a real implementation, you'd query the MCP client for details
+        # Example return: {'protocol_version': '1.0', 'latency': '15ms', 'data_format': 'JSON'}
+        return {}
+
+    def _get_active_connections(self):
+        """Get list of active connections to the MCP server"""
+        # This is a placeholder - in a real implementation, you'd query the MCP server for connections
+        # Example return: [{'client_ip': '127.0.0.1', 'client_port': 12345, 'type': 'WebSocket'}]
+        return []
+
     def _show_settings(self):
         """Show settings dialog to configure server path"""
         # Import locally to ensure Qt modules are available
@@ -186,15 +342,24 @@ static char * mcp_icon_xpm[] = {
         # Create dialog
         dialog = QtWidgets.QDialog(FreeCADGui.getMainWindow())
         dialog.setWindowTitle("MCP Indicator Settings")
-        dialog.setMinimumWidth(400)
+        dialog.setMinimumWidth(500)
 
         # Create layout
         layout = QtWidgets.QVBoxLayout()
         dialog.setLayout(layout)
 
+        # Create tabs
+        tabs = QtWidgets.QTabWidget()
+        layout.addWidget(tabs)
+
+        # ==== Server Tab ====
+        server_tab = QtWidgets.QWidget()
+        server_layout = QtWidgets.QVBoxLayout()
+        server_tab.setLayout(server_layout)
+
         # Add path field with browse button
         path_layout = QtWidgets.QHBoxLayout()
-        layout.addLayout(path_layout)
+        server_layout.addLayout(path_layout)
 
         # Label for server path
         path_label = QtWidgets.QLabel("Server Script Path:")
@@ -210,6 +375,54 @@ static char * mcp_icon_xpm[] = {
         browse_button.clicked.connect(self._browse_server_path)
         path_layout.addWidget(browse_button)
 
+        # Server configuration file
+        config_layout = QtWidgets.QHBoxLayout()
+        server_layout.addLayout(config_layout)
+
+        config_label = QtWidgets.QLabel("Server Config File:")
+        config_layout.addWidget(config_label)
+
+        self.config_field = QtWidgets.QLineEdit()
+        self.config_field.setText(self.MCP_SERVER_CONFIG)
+        config_layout.addWidget(self.config_field)
+
+        config_browse_button = QtWidgets.QPushButton("Browse...")
+        config_browse_button.clicked.connect(self._browse_config_path)
+        config_layout.addWidget(config_browse_button)
+
+        # ==== Client Tab ====
+        client_tab = QtWidgets.QWidget()
+        client_layout = QtWidgets.QVBoxLayout()
+        client_tab.setLayout(client_layout)
+
+        # MCP Server Host
+        host_layout = QtWidgets.QHBoxLayout()
+        client_layout.addLayout(host_layout)
+
+        host_label = QtWidgets.QLabel("MCP Server Host:")
+        host_layout.addWidget(host_label)
+
+        self.host_field = QtWidgets.QLineEdit()
+        self.host_field.setText(self.MCP_SERVER_HOST)
+        host_layout.addWidget(self.host_field)
+
+        # MCP Server Port
+        port_layout = QtWidgets.QHBoxLayout()
+        client_layout.addLayout(port_layout)
+
+        port_label = QtWidgets.QLabel("MCP Server Port:")
+        port_layout.addWidget(port_label)
+
+        self.port_field = QtWidgets.QSpinBox()
+        self.port_field.setMinimum(1)
+        self.port_field.setMaximum(65535)
+        self.port_field.setValue(self.MCP_SERVER_PORT)
+        port_layout.addWidget(self.port_field)
+
+        # Add tabs to the tab widget
+        tabs.addTab(server_tab, "Server Settings")
+        tabs.addTab(client_tab, "Client Settings")
+
         # Add button box
         button_box = QtWidgets.QDialogButtonBox(
             QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
@@ -220,15 +433,31 @@ static char * mcp_icon_xpm[] = {
 
         # Show dialog and process result
         if dialog.exec_() == QtWidgets.QDialog.Accepted:
-            # Save the path
+            # Save the server path
             new_path = self.path_field.text()
             self.SERVER_SCRIPT_PATH = new_path
             # Store in FreeCAD parameters
             self.params.SetString("ServerScriptPath", new_path)
-            FreeCAD.Console.PrintMessage(f"Server script path set to: {new_path}\n")
 
-            # Update UI based on new path
+            # Save server config
+            new_config = self.config_field.text()
+            self.MCP_SERVER_CONFIG = new_config
+            self.params.SetString("MCPServerConfig", new_config)
+
+            # Save client settings
+            new_host = self.host_field.text()
+            self.MCP_SERVER_HOST = new_host
+            self.params.SetString("MCPServerHost", new_host)
+
+            new_port = self.port_field.value()
+            self.MCP_SERVER_PORT = new_port
+            self.params.SetInt("MCPServerPort", new_port)
+
+            FreeCAD.Console.PrintMessage(f"MCP settings updated\n")
+
+            # Update UI based on new settings
             self._update_action_states()
+            self._check_status()
 
     def _browse_server_path(self):
         """Open file dialog to select server script"""
@@ -252,61 +481,37 @@ static char * mcp_icon_xpm[] = {
         if file_path:
             self.path_field.setText(file_path)
 
-    def Activated(self):
-        """Called when workbench is activated"""
-        pass
+    def _browse_config_path(self):
+        """Open file dialog to select server config file"""
+        from PySide2 import QtWidgets
 
-    def Deactivated(self):
-        """Called when workbench is deactivated"""
-        if self._server_process:
-            FreeCAD.Console.PrintMessage(
-                "MCPIndicatorWorkbench deactivated, consider stopping the server manually if needed.\n"
-            )
-        pass
+        # Start in the directory of the current path, or home dir if empty
+        start_dir = (
+            os.path.dirname(self.MCP_SERVER_CONFIG)
+            if self.MCP_SERVER_CONFIG
+            else os.path.expanduser("~")
+        )
 
-    def _is_server_running(self):
-        """Check if the server process is running."""
-        try:
-            return bool(
-                self._server_process is not None and self._server_process.poll() is None
-            )
-        except Exception:
-            return False
+        # Open file dialog
+        file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            FreeCADGui.getMainWindow(),
+            "Select MCP Server Config File",
+            start_dir,
+            "JSON Files (*.json);;All Files (*.*)",
+        )
 
-    def _update_action_states(self):
-        """Enable/disable actions based on server state."""
-        try:
-            running = bool(self._server_running)  # Ensure boolean
-
-            # Check if path is set
-            path_exists = bool(self.SERVER_SCRIPT_PATH)
-
-            if self._start_action:  # Check if actions exist
-                # Only enable start if path is set and server not running
-                self._start_action.setEnabled(not running and path_exists)
-
-            if self._start_connect_action:
-                # Only enable connect start if path is set and server not running
-                self._start_connect_action.setEnabled(not running and path_exists)
-
-            if self._stop_action:
-                # Enable stop if server is running
-                self._stop_action.setEnabled(running)
-
-            if self._restart_action:
-                # Only enable restart if path is set and server is running
-                self._restart_action.setEnabled(running and path_exists)
-
-            self._update_tooltip()
-
-        except Exception as e:
-            FreeCAD.Console.PrintError(f"Error updating action states: {str(e)}\n")
+        if file_path:
+            self.config_field.setText(file_path)
 
     def _update_tooltip(self):
-        """Update the button's tooltip based on server status."""
+        """Update tooltips for both indicator buttons"""
+        # Client indicator tooltip
+        client_status = "Connected" if self._connection_status else "Disconnected"
+        self._control_button.setToolTip(f"MCP Client: {client_status}")
+
+        # Server indicator tooltip
         server_status = "Running" if self._server_running else "Stopped"
-        path_status = "Path Set" if self.SERVER_SCRIPT_PATH else "Path Not Set"
-        self._control_button.setToolTip(f"Server: {server_status}\n{path_status}")
+        self._server_status_button.setToolTip(f"MCP Server: {server_status}")
 
     def _start_server(self, connect_mode=False):
         """Start the freecad_server.py script."""
@@ -466,22 +671,18 @@ static char * mcp_icon_xpm[] = {
         self._update_action_states()
 
     def _check_server_status(self):
-        """Check if the server started successfully by checking its process status."""
-        if not self._server_process:
-            return
+        """Check if the MCP server is running"""
+        previous_status = self._server_running
+        self._server_running = self._is_server_running()
 
-        # Check if process is still running
-        if self._server_process.poll() is not None:
-            # Process has terminated
-            FreeCAD.Console.PrintError(
-                f"Server process terminated unexpectedly with code: {self._server_process.poll()}\n"
-            )
-            self._server_process = None
+        # Update server icon if status changed
+        if previous_status != self._server_running:
+            self._update_server_icon()
             self._update_action_states()
-            return
 
-        # If we get here, the process is still running
-        FreeCAD.Console.PrintMessage("Server startup completed.\n")
+        # If server just started, record the start time for uptime calculation
+        if not previous_status and self._server_running:
+            self._server_start_time = time.time()
 
     def _stop_server(self):
         """Stop the running freecad_server.py script."""
@@ -526,45 +727,168 @@ static char * mcp_icon_xpm[] = {
             self._start_server()
 
     def _update_indicator_icon(self):
-        """Update the button's icon to show only server status."""
+        """Update the indicator icon based on connection status"""
+        if not self._control_button:
+            return
+
+        # Ensure QtGui is imported
         from PySide2 import QtCore, QtGui
 
-        # Color for server status
-        server_color = (
-            QtGui.QColor(QtCore.Qt.blue)
-            if self._server_running
-            else QtGui.QColor(QtCore.Qt.gray)
-        )
-
-        # Create a pixmap for our status icon
-        icon_size = QtCore.QSize(16, 16)
-        pixmap = QtGui.QPixmap(icon_size)
-        pixmap.fill(QtCore.Qt.transparent)
-
-        # Paint the status icon
-        painter = QtGui.QPainter(pixmap)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-
-        # Draw circle indicator for server status
-        painter.setBrush(QtGui.QBrush(server_color))
-        painter.setPen(QtCore.Qt.NoPen)
-        painter.drawEllipse(2, 2, icon_size.width() - 4, icon_size.height() - 4)
-
-        # Finish painting
-        painter.end()
+        # Create the icon based on connection status
+        if self._connection_status:
+            # Connected - green circle
+            pixmap = QtGui.QPixmap(16, 16)
+            pixmap.fill(QtCore.Qt.transparent)
+            painter = QtGui.QPainter(pixmap)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(0, 200, 0)))  # Green
+            painter.setPen(QtGui.QPen(QtGui.QColor(0, 100, 0), 1))  # Dark green border
+            painter.drawEllipse(2, 2, 12, 12)
+            painter.end()
+        else:
+            # Disconnected - red circle
+            pixmap = QtGui.QPixmap(16, 16)
+            pixmap.fill(QtCore.Qt.transparent)
+            painter = QtGui.QPainter(pixmap)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(200, 0, 0)))  # Red
+            painter.setPen(QtGui.QPen(QtGui.QColor(100, 0, 0), 1))  # Dark red border
+            painter.drawEllipse(2, 2, 12, 12)
+            painter.end()
 
         # Set the icon
         self._control_button.setIcon(QtGui.QIcon(pixmap))
+
+        # Update tooltip
+        self._update_tooltip()
+
+    def _update_server_icon(self):
+        """Update the server status icon based on server running status"""
+        if not self._server_status_button:
+            return
+
+        # Ensure QtGui is imported
+        from PySide2 import QtCore, QtGui
+
+        # Create the icon based on server status
+        if self._server_running:
+            # Running - blue circle
+            pixmap = QtGui.QPixmap(16, 16)
+            pixmap.fill(QtCore.Qt.transparent)
+            painter = QtGui.QPainter(pixmap)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(0, 100, 200)))  # Blue
+            painter.setPen(QtGui.QPen(QtGui.QColor(0, 50, 100), 1))  # Dark blue border
+            painter.drawEllipse(2, 2, 12, 12)
+            painter.end()
+        else:
+            # Stopped - orange circle
+            pixmap = QtGui.QPixmap(16, 16)
+            pixmap.fill(QtCore.Qt.transparent)
+            painter = QtGui.QPainter(pixmap)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(255, 165, 0)))  # Orange
+            painter.setPen(QtGui.QPen(QtGui.QColor(200, 120, 0), 1))  # Dark orange border
+            painter.drawEllipse(2, 2, 12, 12)
+            painter.end()
+
+        # Set the icon
+        self._server_status_button.setIcon(QtGui.QIcon(pixmap))
+
+        # Update tooltip
         self._update_tooltip()
 
     def _check_status(self):
-        """Check server running status"""
-        # Check if server is running
-        self._server_running = self._is_server_running()
-        # Update the indicator and tooltip
-        self._update_indicator_icon()
-        # Update button states
-        self._update_action_states()
+        """Check both server and connection status"""
+        try:
+            # Check server status first
+            self._check_server_status()
+
+            # Then check MCP connection
+            prev_status = self._connection_status
+            self._connection_status = self._check_connection()
+
+            # Check server API for connection details if server is running
+            if self._server_running:
+                try:
+                    self._update_connection_details()
+                except Exception as e:
+                    FreeCAD.Console.PrintWarning(f"Failed to update connection details: {str(e)}\n")
+
+            # Update icons if status changed
+            if prev_status != self._connection_status:
+                self._update_indicator_icon()
+
+            # Update both tooltips
+            self._update_tooltip()
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"Error in status check: {str(e)}\n")
+
+    def _update_connection_details(self):
+        """Update connection details by querying the server API"""
+        try:
+            # This is a placeholder - in a real implementation, you'd
+            # make an HTTP request to the server's status API endpoint
+            # For now we'll just set some placeholder values
+
+            # If the server is running, simulate some connection details
+            if self._server_running:
+                self._connection_details = {
+                    "type": "WebSocket" if self._connection_status else "None",
+                    "client_port": 9000 if self._connection_status else 0,
+                    "server_port": self.MCP_SERVER_PORT,
+                    "connected_clients": 1 if self._connection_status else 0,
+                    "server_uptime": int(time.time() - self._server_start_time) if hasattr(self, '_server_start_time') else 0,
+                }
+            else:
+                # Reset connection details when server is not running
+                self._connection_details = {
+                    "type": "Unknown",
+                    "client_port": 0,
+                    "server_port": 0,
+                    "connected_clients": 0,
+                    "server_uptime": 0,
+                }
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"Error updating connection details: {str(e)}\n")
+
+    def _is_server_running(self):
+        """Check if the server process is running."""
+        try:
+            return bool(
+                self._server_process is not None and self._server_process.poll() is None
+            )
+        except Exception:
+            return False
+
+    def _update_action_states(self):
+        """Enable/disable actions based on server state."""
+        try:
+            running = bool(self._server_running)  # Ensure boolean
+
+            # Check if path is set
+            path_exists = bool(self.SERVER_SCRIPT_PATH)
+
+            if self._start_action:  # Check if actions exist
+                # Only enable start if path is set and server not running
+                self._start_action.setEnabled(not running and path_exists)
+
+            if self._start_connect_action:
+                # Only enable connect start if path is set and server not running
+                self._start_connect_action.setEnabled(not running and path_exists)
+
+            if self._stop_action:
+                # Enable stop if server is running
+                self._stop_action.setEnabled(running)
+
+            if self._restart_action:
+                # Only enable restart if path is set and server is running
+                self._restart_action.setEnabled(running and path_exists)
+
+            self._update_tooltip()
+
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"Error updating action states: {str(e)}\n")
 
     def _check_connection(self):
         """Check MCP connection status - now just a stub method"""
