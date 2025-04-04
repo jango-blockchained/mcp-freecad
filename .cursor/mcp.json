@@ -2,6 +2,17 @@
     "mcpServers": {
       "mcp-freecad": {
         "command": "mcp-freecad"
-      }
+      },
+      "memory": {
+
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-memory"
+        ],
+        "env": {
+          "MEMORY_FILE_PATH": "/home/jango/Git/mcp-freecad/.cursor/knowledge-graph.json"
+        }
+    }
     }
   }

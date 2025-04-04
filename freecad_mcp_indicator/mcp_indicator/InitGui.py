@@ -5,6 +5,7 @@ import subprocess
 import sys
 import time
 import json
+import shutil
 
 import FreeCAD
 import FreeCADGui
@@ -60,24 +61,31 @@ static char * mcp_icon_xpm[] = {
             "User parameter:BaseApp/Preferences/Mod/MCPIndicator"
         )
 
-        # FreeCAD Server path (freecad_server.py)
+        # Repository path (main path to the mcp-freecad repository)
+        self.REPO_PATH = self.params.GetString("RepoPath", "")
+
+        # FreeCAD Server path (freecad_server.py - for socket method)
         self.SERVER_SCRIPT_PATH = self.params.GetString("ServerScriptPath", "")
 
         # MCP Server path (freecad_mcp_server.py)
         self.MCP_SERVER_SCRIPT_PATH = self.params.GetString("MCPServerScriptPath", "")
 
+        # If repository path is set but script paths are not, auto-set them
+        if self.REPO_PATH and (not self.SERVER_SCRIPT_PATH or not self.MCP_SERVER_SCRIPT_PATH):
+            self._update_script_paths_from_repo()
+
         # If not already set, try to determine default paths
         if not self.SERVER_SCRIPT_PATH or not self.MCP_SERVER_SCRIPT_PATH:
             try:
-                # Try to find the server scripts in the parent directory of the addon
+                # Try to find the scripts in the parent directory of the addon
                 current_file_path = inspect.getfile(inspect.currentframe())
                 current_dir = os.path.dirname(current_file_path)
                 # Go up two levels to get to potential project root
                 indicator_root = os.path.dirname(current_dir)
                 project_root = os.path.dirname(indicator_root)
 
-                # Try common locations for the server scripts
-                possible_paths = [
+                # Try common locations for the legacy server script
+                possible_server_paths = [
                     os.path.join(project_root, "freecad_server.py"),
                     os.path.join(
                         os.path.expanduser("~"),
@@ -101,32 +109,33 @@ static char * mcp_icon_xpm[] = {
                 ]
 
                 # Find FreeCAD Server path (first that exists)
-                for path in possible_paths:
-                    if os.path.exists(path):
-                        self.SERVER_SCRIPT_PATH = path
-                        # Store this discovered path
-                        self.params.SetString("ServerScriptPath", path)
-                        break
+                if not self.SERVER_SCRIPT_PATH:
+                    for path in possible_server_paths:
+                        if os.path.exists(path):
+                            self.SERVER_SCRIPT_PATH = path
+                            self.params.SetString("ServerScriptPath", path)
+                            break
 
                 # Find MCP Server path (first that exists)
-                for path in possible_mcp_paths:
-                    if os.path.exists(path):
-                        self.MCP_SERVER_SCRIPT_PATH = path
-                        # Store this discovered path
-                        self.params.SetString("MCPServerScriptPath", path)
-                        break
+                if not self.MCP_SERVER_SCRIPT_PATH:
+                    for path in possible_mcp_paths:
+                        for path in possible_mcp_paths:
+                            if os.path.exists(path):
+                                self.MCP_SERVER_SCRIPT_PATH = path
+                                self.params.SetString("MCPServerScriptPath", path)
+                                break
 
             except Exception as e:
-                FreeCAD.Console.PrintError(f"Error determining server paths: {str(e)}\n")
+                FreeCAD.Console.PrintError(f"Error determining script paths: {str(e)}\n")
 
         # Log server paths (whether found, set by user, or empty)
         if self.SERVER_SCRIPT_PATH:
             FreeCAD.Console.PrintMessage(
-                f"FreeCAD Server script path: {self.SERVER_SCRIPT_PATH}\n"
+                f"Socket Server script path (Legacy): {self.SERVER_SCRIPT_PATH}\n"
             )
         else:
             FreeCAD.Console.PrintWarning(
-                "FreeCAD Server script path not set. Use Settings to configure.\n"
+                "Socket Server script path not set. Configure in Settings if needed for 'server' connection method.\n"
             )
 
         if self.MCP_SERVER_SCRIPT_PATH:
@@ -135,14 +144,14 @@ static char * mcp_icon_xpm[] = {
             )
         else:
             FreeCAD.Console.PrintWarning(
-                "MCP Server script path not set. Use Settings to configure.\n"
+                "MCP Server script path not set. Start/Stop/Restart controls will be disabled.\n"
             )
 
-        # MCP Client settings
+        # MCP Client settings (for status checking)
         self.MCP_SERVER_HOST = self.params.GetString("MCPServerHost", "localhost")
         self.MCP_SERVER_PORT = self.params.GetInt("MCPServerPort", 8000)
 
-        # MCP Server settings
+        # MCP Server settings (config file for starting)
         self.MCP_SERVER_CONFIG = self.params.GetString("MCPServerConfig", "")
 
         # UI elements
@@ -166,6 +175,53 @@ static char * mcp_icon_xpm[] = {
             "connected_clients": 0,
             "server_uptime": 0,
         }
+
+    def _update_script_paths_from_repo(self):
+        """Update script paths based on repository path"""
+        if not self.REPO_PATH or not os.path.isdir(self.REPO_PATH):
+            return
+
+        # Set the script paths based on repo path
+        server_path = os.path.join(self.REPO_PATH, "freecad_server.py")
+        if os.path.exists(server_path):
+            self.SERVER_SCRIPT_PATH = server_path
+            self.params.SetString("ServerScriptPath", server_path)
+
+        # Check if the shell script exists, otherwise use the Python script
+        mcp_shell_path = os.path.join(self.REPO_PATH, "start_mcp_server.sh")
+        mcp_py_path = os.path.join(self.REPO_PATH, "freecad_mcp_server.py")
+
+        if os.path.exists(mcp_shell_path):
+            self.MCP_SERVER_SCRIPT_PATH = mcp_shell_path
+            self.params.SetString("MCPServerScriptPath", mcp_shell_path)
+        elif os.path.exists(mcp_py_path):
+            self.MCP_SERVER_SCRIPT_PATH = mcp_py_path
+            self.params.SetString("MCPServerScriptPath", mcp_py_path)
+
+        # Create start_mcp_server.sh script if it doesn't exist
+        if os.path.exists(mcp_py_path) and not os.path.exists(mcp_shell_path):
+            try:
+                # Check if we have a venv directory
+                venv_path = os.path.join(self.REPO_PATH, "mcp_venv")
+                if os.path.isdir(venv_path):
+                    with open(mcp_shell_path, 'w') as f:
+                        f.write('#!/bin/bash\n\n')
+                        f.write('# Get the directory where this script is located\n')
+                        f.write('SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"\n\n')
+                        f.write('# Activate the virtual environment\n')
+                        f.write('source "$SCRIPT_DIR/mcp_venv/bin/activate"\n\n')
+                        f.write('# Start the MCP server with debug mode\n')
+                        f.write('python "$SCRIPT_DIR/freecad_mcp_server.py" --debug "$@"\n')
+
+                    # Make the script executable
+                    os.chmod(mcp_shell_path, 0o755)
+
+                    # Update the MCP server path to use the shell script
+                    self.MCP_SERVER_SCRIPT_PATH = mcp_shell_path
+                    self.params.SetString("MCPServerScriptPath", mcp_shell_path)
+                    FreeCAD.Console.PrintMessage(f"Created start_mcp_server.sh script to use virtual environment\n")
+            except Exception as e:
+                FreeCAD.Console.PrintError(f"Error creating start_mcp_server.sh script: {str(e)}\n")
 
     def Initialize(self):
         """Initialize the workbench"""
@@ -472,7 +528,7 @@ static char * mcp_icon_xpm[] = {
         return []
 
     def _show_settings(self):
-        """Show settings dialog to configure server path"""
+        """Show settings dialog to configure server paths and client connection"""
         # Import locally to ensure Qt modules are available
         from PySide2 import QtCore, QtGui, QtWidgets
 
@@ -489,36 +545,55 @@ static char * mcp_icon_xpm[] = {
         tabs = QtWidgets.QTabWidget()
         layout.addWidget(tabs)
 
-        # ==== FreeCAD Server Tab ====
-        freecad_server_tab = QtWidgets.QWidget()
-        freecad_server_layout = QtWidgets.QVBoxLayout()
-        freecad_server_tab.setLayout(freecad_server_layout)
+        # ==== Repository Tab ====
+        repo_tab = QtWidgets.QWidget()
+        repo_layout = QtWidgets.QVBoxLayout()
+        repo_tab.setLayout(repo_layout)
 
         # Label with description
-        desc_label = QtWidgets.QLabel(
-            "FreeCAD Server (freecad_server.py) is a socket server that runs inside FreeCAD\n"
-            "and allows external scripts to execute FreeCAD Python commands."
+        repo_desc_label = QtWidgets.QLabel(
+            "<b>MCP-FreeCAD Repository Path:</b> Root directory of the mcp-freecad repository.\n"
+            "Set this path to automatically configure server paths for both FreeCAD and MCP servers.\n"
+            "This simplifies configuration by only requiring you to specify the repository location once."
         )
-        desc_label.setWordWrap(True)
-        freecad_server_layout.addWidget(desc_label)
+        repo_desc_label.setWordWrap(True)
+        repo_layout.addWidget(repo_desc_label)
 
-        # Add path field with browse button
-        path_layout = QtWidgets.QHBoxLayout()
-        freecad_server_layout.addLayout(path_layout)
+        # Add Repository path field with browse button
+        repo_path_layout = QtWidgets.QHBoxLayout()
+        repo_layout.addLayout(repo_path_layout)
 
-        # Label for server path
-        path_label = QtWidgets.QLabel("FreeCAD Server Script Path:")
-        path_layout.addWidget(path_label)
+        # Label for repository path
+        repo_path_label = QtWidgets.QLabel("Repository Path:")
+        repo_path_layout.addWidget(repo_path_label)
 
-        # Text field for path
-        self.path_field = QtWidgets.QLineEdit()
-        self.path_field.setText(self.SERVER_SCRIPT_PATH)
-        path_layout.addWidget(self.path_field)
+        # Text field for repository path
+        self.repo_path_field = QtWidgets.QLineEdit()
+        self.repo_path_field.setText(self.REPO_PATH)
+        self.repo_path_field.setPlaceholderText("e.g., /home/user/Git/mcp-freecad")
+        repo_path_layout.addWidget(self.repo_path_field)
 
-        # Browse button
-        browse_button = QtWidgets.QPushButton("Browse...")
-        browse_button.clicked.connect(self._browse_server_path)
-        path_layout.addWidget(browse_button)
+        # Browse button for repository
+        repo_browse_button = QtWidgets.QPushButton("Browse...")
+        repo_browse_button.clicked.connect(self._browse_repo_path)
+        repo_path_layout.addWidget(repo_browse_button)
+
+        # Add Apply button to update paths based on repo path
+        apply_button = QtWidgets.QPushButton("Auto-configure Server Paths")
+        apply_button.clicked.connect(lambda: self._apply_repo_path(self.repo_path_field.text()))
+        repo_layout.addWidget(apply_button)
+
+        # Add note about what happens when applying
+        apply_note = QtWidgets.QLabel(
+            "<i>Note: The 'Auto-configure' button will:</i>\n"
+            "- Set the Socket Server path to <repo>/freecad_server.py\n"
+            "- Set the MCP Server path to <repo>/start_mcp_server.sh\n"
+            "- Create start_mcp_server.sh if needed to use mcp_venv"
+        )
+        apply_note.setWordWrap(True)
+        repo_layout.addWidget(apply_note)
+
+        repo_layout.addStretch() # Push elements to top
 
         # ==== MCP Server Tab ====
         mcp_server_tab = QtWidgets.QWidget()
@@ -527,8 +602,9 @@ static char * mcp_icon_xpm[] = {
 
         # Label with description
         mcp_desc_label = QtWidgets.QLabel(
-            "MCP Server (freecad_mcp_server.py) implements the Model Context Protocol\n"
-            "and allows AI assistants to interact with FreeCAD through a standardized interface."
+            "<b>MCP Server (freecad_mcp_server.py):</b> Implements the Model Context Protocol.\n"
+            "This is the main server AI assistants connect to. Set the path here to enable\n"
+            "Start/Stop/Restart controls from within FreeCAD."
         )
         mcp_desc_label.setWordWrap(True)
         mcp_server_layout.addWidget(mcp_desc_label)
@@ -555,16 +631,19 @@ static char * mcp_icon_xpm[] = {
         config_layout = QtWidgets.QHBoxLayout()
         mcp_server_layout.addLayout(config_layout)
 
-        config_label = QtWidgets.QLabel("MCP Server Config File:")
+        config_label = QtWidgets.QLabel("MCP Server Config File (Optional, passed via --config):")
         config_layout.addWidget(config_label)
 
         self.config_field = QtWidgets.QLineEdit()
+        self.config_field.setPlaceholderText("Default: config.json in script directory")
         self.config_field.setText(self.MCP_SERVER_CONFIG)
         config_layout.addWidget(self.config_field)
 
         config_browse_button = QtWidgets.QPushButton("Browse...")
         config_browse_button.clicked.connect(self._browse_config_path)
         config_layout.addWidget(config_browse_button)
+
+        mcp_server_layout.addStretch() # Push elements to top
 
         # ==== Client Tab ====
         client_tab = QtWidgets.QWidget()
@@ -573,7 +652,7 @@ static char * mcp_icon_xpm[] = {
 
         # Label with description
         client_desc_label = QtWidgets.QLabel(
-            "MCP Client settings determine how FreeCAD connects to the MCP server."
+            "<b>Client Connection Settings:</b> Used by this addon to check the MCP Server status."
         )
         client_desc_label.setWordWrap(True)
         client_layout.addWidget(client_desc_label)
@@ -602,10 +681,46 @@ static char * mcp_icon_xpm[] = {
         self.port_field.setValue(self.MCP_SERVER_PORT)
         port_layout.addWidget(self.port_field)
 
+        client_layout.addStretch()
+
+        # ==== FreeCAD Server (Legacy) Tab ====
+        freecad_server_tab = QtWidgets.QWidget()
+        freecad_server_layout = QtWidgets.QVBoxLayout()
+        freecad_server_tab.setLayout(freecad_server_layout)
+
+        # Label with description
+        desc_label = QtWidgets.QLabel(
+            "<b>Socket Server (freecad_server.py):</b> Legacy socket server that runs inside FreeCAD.\n"
+            "Only needed if using the older 'server' connection method in the MCP Server config.\n"
+            "The recommended AppImage/Launcher method does <b>not</b> use this."
+        )
+        desc_label.setWordWrap(True)
+        freecad_server_layout.addWidget(desc_label)
+
+        # Add path field with browse button
+        path_layout = QtWidgets.QHBoxLayout()
+        freecad_server_layout.addLayout(path_layout)
+
+        # Label for server path
+        path_label = QtWidgets.QLabel("Socket Server Script Path:")
+        path_layout.addWidget(path_label)
+
+        # Text field for path
+        self.path_field = QtWidgets.QLineEdit()
+        self.path_field.setText(self.SERVER_SCRIPT_PATH)
+        path_layout.addWidget(self.path_field)
+
+        # Browse button
+        browse_button = QtWidgets.QPushButton("Browse...")
+        browse_button.clicked.connect(self._browse_server_path)
+        path_layout.addWidget(browse_button)
+
+        freecad_server_layout.addStretch() # Push elements to top
+
         # Add tabs to the tab widget
-        tabs.addTab(freecad_server_tab, "FreeCAD Server")
-        tabs.addTab(mcp_server_tab, "MCP Server")
-        tabs.addTab(client_tab, "Client Settings")
+        tabs.addTab(mcp_server_tab, "MCP Server Controls")
+        tabs.addTab(client_tab, "Client Status Check")
+        tabs.addTab(freecad_server_tab, "Socket Server (Legacy)")
 
         # Add button box
         button_box = QtWidgets.QDialogButtonBox(
@@ -617,16 +732,14 @@ static char * mcp_icon_xpm[] = {
 
         # Show dialog and process result
         if dialog.exec_() == QtWidgets.QDialog.Accepted:
-            # Save the FreeCAD server path
+            # Save the legacy FreeCAD server path
             new_path = self.path_field.text()
             self.SERVER_SCRIPT_PATH = new_path
-            # Store in FreeCAD parameters
             self.params.SetString("ServerScriptPath", new_path)
 
             # Save the MCP server path
             new_mcp_path = self.mcp_path_field.text()
             self.MCP_SERVER_SCRIPT_PATH = new_mcp_path
-            # Store in FreeCAD parameters
             self.params.SetString("MCPServerScriptPath", new_mcp_path)
 
             # Save server config
@@ -648,6 +761,74 @@ static char * mcp_icon_xpm[] = {
             # Update UI based on new settings
             self._update_action_states()
             self._check_status()
+
+    def _browse_repo_path(self):
+        """Open file dialog to select repository directory"""
+        from PySide2 import QtWidgets
+
+        # Start in the directory of the current path, or home dir if empty
+        start_dir = (
+            self.REPO_PATH
+            if self.REPO_PATH
+            else os.path.expanduser("~")
+        )
+
+        # Open directory dialog
+        dir_path = QtWidgets.QFileDialog.getExistingDirectory(
+            FreeCADGui.getMainWindow(),
+            "Select MCP-FreeCAD Repository Directory",
+            start_dir,
+            QtWidgets.QFileDialog.ShowDirsOnly | QtWidgets.QFileDialog.DontResolveSymlinks
+        )
+
+        if dir_path:
+            self.repo_path_field.setText(dir_path)
+
+    def _apply_repo_path(self, repo_path):
+        """Apply the repository path and update script paths automatically"""
+        if not repo_path or not os.path.isdir(repo_path):
+            from PySide2 import QtWidgets
+            QtWidgets.QMessageBox.warning(
+                FreeCADGui.getMainWindow(),
+                "Invalid Repository Path",
+                "Please select a valid directory for the MCP-FreeCAD repository."
+            )
+            return
+
+        # Store the old paths for comparison
+        old_server_path = self.SERVER_SCRIPT_PATH
+        old_mcp_path = self.MCP_SERVER_SCRIPT_PATH
+
+        # Temporarily set the repo path
+        self.REPO_PATH = repo_path
+
+        # Call the function to update paths
+        self._update_script_paths_from_repo()
+
+        # Update UI fields to reflect any changes
+        self.path_field.setText(self.SERVER_SCRIPT_PATH)
+        self.mcp_path_field.setText(self.MCP_SERVER_SCRIPT_PATH)
+
+        # Show results message
+        from PySide2 import QtWidgets
+        changes = []
+        if old_server_path != self.SERVER_SCRIPT_PATH:
+            changes.append(f"Socket Server path updated to: {self.SERVER_SCRIPT_PATH}")
+        if old_mcp_path != self.MCP_SERVER_SCRIPT_PATH:
+            changes.append(f"MCP Server path updated to: {self.MCP_SERVER_SCRIPT_PATH}")
+
+        if changes:
+            QtWidgets.QMessageBox.information(
+                FreeCADGui.getMainWindow(),
+                "Paths Updated",
+                "The following paths were automatically configured:\n\n" + "\n".join(changes)
+            )
+        else:
+            QtWidgets.QMessageBox.information(
+                FreeCADGui.getMainWindow(),
+                "No Changes",
+                "No path changes were needed. The paths are already set correctly."
+            )
 
     def _browse_server_path(self):
         """Open file dialog to select server script"""
@@ -714,6 +895,146 @@ static char * mcp_icon_xpm[] = {
 
         if file_path:
             self.config_field.setText(file_path)
+
+    def _update_indicator_icon(self):
+        """Update the indicator icon based on connection status"""
+        if not self._control_button:
+            return
+
+        # Ensure QtGui is imported
+        from PySide2 import QtCore, QtGui
+
+        # Create the icon based on connection status
+        if self._connection_status:
+            # Connected - green circle
+            pixmap = QtGui.QPixmap(16, 16)
+            pixmap.fill(QtCore.Qt.transparent)
+            painter = QtGui.QPainter(pixmap)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(0, 200, 0)))  # Green
+            painter.setPen(QtGui.QPen(QtGui.QColor(0, 100, 0), 1))  # Dark green border
+            painter.drawEllipse(2, 2, 12, 12)
+            painter.end()
+        else:
+            # Disconnected - red circle
+            pixmap = QtGui.QPixmap(16, 16)
+            pixmap.fill(QtCore.Qt.transparent)
+            painter = QtGui.QPainter(pixmap)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(200, 0, 0)))  # Red
+            painter.setPen(QtGui.QPen(QtGui.QColor(100, 0, 0), 1))  # Dark red border
+            painter.drawEllipse(2, 2, 12, 12)
+            painter.end()
+
+        # Set the icon
+        self._control_button.setIcon(QtGui.QIcon(pixmap))
+
+        # Update tooltip
+        self._update_tooltip()
+
+    def _update_freecad_server_icon(self):
+        """Update the FreeCAD server status icon based on server running status"""
+        if not self._freecad_server_status_button:
+            return
+
+        # Ensure QtGui is imported
+        from PySide2 import QtCore, QtGui
+
+        # Create the icon based on server status
+        if self._freecad_server_running:
+            # Running - blue circle with 'FC' text
+            pixmap = QtGui.QPixmap(16, 16)
+            pixmap.fill(QtCore.Qt.transparent)
+            painter = QtGui.QPainter(pixmap)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(0, 100, 200)))  # Blue
+            painter.setPen(QtGui.QPen(QtGui.QColor(0, 50, 100), 1))  # Dark blue border
+            painter.drawEllipse(2, 2, 12, 12)
+
+            # Add FC text
+            painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255)))
+            font = QtGui.QFont()
+            font.setPixelSize(7)
+            font.setBold(True)
+            painter.setFont(font)
+            painter.drawText(QtCore.QRect(2, 2, 12, 12), QtCore.Qt.AlignCenter, "FC")
+            painter.end()
+        else:
+            # Stopped - orange circle with 'FC' text
+            pixmap = QtGui.QPixmap(16, 16)
+            pixmap.fill(QtCore.Qt.transparent)
+            painter = QtGui.QPainter(pixmap)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(255, 165, 0)))  # Orange
+            painter.setPen(QtGui.QPen(QtGui.QColor(200, 120, 0), 1))  # Dark orange border
+            painter.drawEllipse(2, 2, 12, 12)
+
+            # Add FC text
+            painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255)))
+            font = QtGui.QFont()
+            font.setPixelSize(7)
+            font.setBold(True)
+            painter.setFont(font)
+            painter.drawText(QtCore.QRect(2, 2, 12, 12), QtCore.Qt.AlignCenter, "FC")
+            painter.end()
+
+        # Set the icon
+        self._freecad_server_status_button.setIcon(QtGui.QIcon(pixmap))
+
+        # Update tooltip
+        self._update_tooltip()
+
+    def _update_mcp_server_icon(self):
+        """Update the MCP server status icon based on server running status"""
+        if not self._mcp_server_status_button:
+            return
+
+        # Ensure QtGui is imported
+        from PySide2 import QtCore, QtGui
+
+        # Create the icon based on server status
+        if self._mcp_server_running:
+            # Running - green circle with 'MCP' text
+            pixmap = QtGui.QPixmap(16, 16)
+            pixmap.fill(QtCore.Qt.transparent)
+            painter = QtGui.QPainter(pixmap)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(0, 180, 0)))  # Green
+            painter.setPen(QtGui.QPen(QtGui.QColor(0, 100, 0), 1))  # Dark green border
+            painter.drawEllipse(2, 2, 12, 12)
+
+            # Add MCP text
+            painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255)))
+            font = QtGui.QFont()
+            font.setPixelSize(6)
+            font.setBold(True)
+            painter.setFont(font)
+            painter.drawText(QtCore.QRect(2, 2, 12, 12), QtCore.Qt.AlignCenter, "MCP")
+            painter.end()
+        else:
+            # Stopped - red circle with 'MCP' text
+            pixmap = QtGui.QPixmap(16, 16)
+            pixmap.fill(QtCore.Qt.transparent)
+            painter = QtGui.QPainter(pixmap)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(200, 0, 0)))  # Red
+            painter.setPen(QtGui.QPen(QtGui.QColor(100, 0, 0), 1))  # Dark red border
+            painter.drawEllipse(2, 2, 12, 12)
+
+            # Add MCP text
+            painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255)))
+            font = QtGui.QFont()
+            font.setPixelSize(6)
+            font.setBold(True)
+            painter.setFont(font)
+            painter.drawText(QtCore.QRect(2, 2, 12, 12), QtCore.Qt.AlignCenter, "MCP")
+            painter.end()
+
+        # Set the icon
+        self._mcp_server_status_button.setIcon(QtGui.QIcon(pixmap))
+
+        # Update tooltip
+        self._update_tooltip()
 
     def _update_tooltip(self):
         """Update tooltips for all indicator buttons"""
@@ -890,7 +1211,61 @@ static char * mcp_icon_xpm[] = {
         # For now, we'll consider it connected if either server is running
         return self._freecad_server_running or self._mcp_server_running
 
-    # Rename the old _start_server to _start_freecad_server
+    def _load_indicator_config(self):
+        """Load config.json, primarily to find the Python path."""
+        # Import json locally to ensure it's available in this scope
+        import json
+
+        config_path = self.MCP_SERVER_CONFIG
+        if not config_path and self.MCP_SERVER_SCRIPT_PATH:
+            config_path = os.path.join(os.path.dirname(self.MCP_SERVER_SCRIPT_PATH), "config.json")
+        elif not config_path:
+            # Fallback if MCP server script path is also not set
+            config_path = "config.json"
+
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, "r") as f:
+                    config_data = json.load(f)
+                    return config_data
+            except Exception as e:
+                FreeCAD.Console.PrintWarning(f"Failed to load config {config_path}: {str(e)}\n")
+        return {}
+
+    def _get_python_executable(self):
+        """Determine the Python executable to use."""
+        config = self._load_indicator_config()
+        python_path_from_config = config.get("freecad", {}).get("python_path")
+
+        python_candidates = []
+        if python_path_from_config and os.path.exists(python_path_from_config):
+            FreeCAD.Console.PrintMessage(f"Using Python executable from config: {python_path_from_config}\n")
+            python_candidates.append(python_path_from_config)
+        else:
+            FreeCAD.Console.PrintMessage("Python path not found in config or invalid, searching system...\n")
+
+        # Add other common candidates as fallbacks
+        python_candidates.extend([
+            # Try FreeCAD's bundled Python first if possible
+            os.path.join(os.path.dirname(sys.executable), "python3"),
+            os.path.join(os.path.dirname(sys.executable), "python"),
+            # Standard system paths
+            "/usr/bin/python3",
+            "/usr/local/bin/python3",
+            "/usr/bin/python",
+            os.path.join(sys.prefix, "bin", "python3"),
+            sys.executable # The python running FreeCAD itself as last resort
+        ])
+
+        # Find the first valid executable
+        for candidate in python_candidates:
+            if candidate and os.path.exists(candidate) and os.access(candidate, os.X_OK):
+                FreeCAD.Console.PrintMessage(f"Found Python executable: {candidate}\n")
+                return candidate
+
+        FreeCAD.Console.PrintError("Could not find a suitable Python executable.\n")
+        return None
+
     def _start_freecad_server(self, connect_mode=False):
         """Start the freecad_server.py script."""
         # Local imports to ensure modules are available in this scope
@@ -922,25 +1297,11 @@ static char * mcp_icon_xpm[] = {
         if use_wrapper:
             FreeCAD.Console.PrintMessage(f"Found wrapper script: {wrapper_script}\n")
         else:
-            # Find a proper Python executable, not FreeCAD itself
-            # Try common Python executable locations
-            python_candidates = [
-                "/usr/bin/python3",
-                "/usr/local/bin/python3",
-                "/usr/bin/python",
-                os.path.join(os.path.dirname(sys.executable), "python3"),
-                os.path.join(sys.prefix, "bin", "python3"),
-            ]
-
-            python_exec = None
-            for candidate in python_candidates:
-                if os.path.exists(candidate):
-                    python_exec = candidate
-                    break
-
+            # Find the Python executable using the new helper method
+            python_exec = self._get_python_executable()
             if not python_exec:
-                FreeCAD.Console.PrintError(
-                    "Could not find Python executable. Please install Python.\n"
+                QtWidgets.QMessageBox.critical(
+                    FreeCADGui.getMainWindow(), "Error", "Could not find Python executable."
                 )
                 return
 
@@ -1019,7 +1380,7 @@ static char * mcp_icon_xpm[] = {
                     server_cmd.append("--no-connect")
             else:
                 FreeCAD.Console.PrintMessage(
-                    f"Starting FreeCAD server in {mode_text}: {self.SERVER_SCRIPT_PATH} with Python: {python_exec}...\n"
+                    f"Starting Socket server in {mode_text}: {self.SERVER_SCRIPT_PATH} with Python: {python_exec}...\n"
                 )
                 server_cmd = [python_exec, self.SERVER_SCRIPT_PATH]
                 # Add connect flag if requested
@@ -1053,7 +1414,6 @@ static char * mcp_icon_xpm[] = {
 
         self._update_action_states()
 
-    # Rename the old _stop_server to _stop_freecad_server
     def _stop_freecad_server(self):
         """Stop the running freecad_server.py script."""
         # Local import to ensure module is available in this scope
@@ -1087,7 +1447,6 @@ static char * mcp_icon_xpm[] = {
             delattr(self, '_freecad_server_start_time')
         self._update_action_states()
 
-    # Rename the old _restart_server to _restart_freecad_server
     def _restart_freecad_server(self):
         """Restart the freecad_server.py script."""
         # Local import to ensure Qt module is available in this scope
@@ -1100,7 +1459,6 @@ static char * mcp_icon_xpm[] = {
         else:
             self._start_freecad_server()
 
-    # Add new methods for MCP server
     def _start_mcp_server(self):
         """Start the freecad_mcp_server.py script."""
         # Local imports to ensure modules are available in this scope
@@ -1133,24 +1491,11 @@ static char * mcp_icon_xpm[] = {
         except Exception as e:
             FreeCAD.Console.PrintWarning(f"Warning when killing existing processes: {str(e)}\n")
 
-        # Find a proper Python executable
-        python_candidates = [
-            "/usr/bin/python3",
-            "/usr/local/bin/python3",
-            "/usr/bin/python",
-            os.path.join(os.path.dirname(sys.executable), "python3"),
-            os.path.join(sys.prefix, "bin", "python3"),
-        ]
-
-        python_exec = None
-        for candidate in python_candidates:
-            if os.path.exists(candidate):
-                python_exec = candidate
-                break
-
+        # Find the Python executable using the new helper method
+        python_exec = self._get_python_executable()
         if not python_exec:
-            FreeCAD.Console.PrintError(
-                "Could not find Python executable. Please install Python.\n"
+            QtWidgets.QMessageBox.critical(
+                FreeCADGui.getMainWindow(), "Error", "Could not find Python executable."
             )
             return
 
@@ -1436,7 +1781,7 @@ static char * mcp_icon_xpm[] = {
 
         python_exec = None
         for candidate in python_candidates:
-            if os.path.exists(candidate):
+            if candidate and os.path.exists(candidate):
                 python_exec = candidate
                 break
 
@@ -1539,146 +1884,6 @@ static char * mcp_icon_xpm[] = {
         log_text.append(
             "sudo apt install python3-fastapi python3-uvicorn python3-websockets python3-aiofiles python3-pydantic"
         )
-
-    def _update_indicator_icon(self):
-        """Update the indicator icon based on connection status"""
-        if not self._control_button:
-            return
-
-        # Ensure QtGui is imported
-        from PySide2 import QtCore, QtGui
-
-        # Create the icon based on connection status
-        if self._connection_status:
-            # Connected - green circle
-            pixmap = QtGui.QPixmap(16, 16)
-            pixmap.fill(QtCore.Qt.transparent)
-            painter = QtGui.QPainter(pixmap)
-            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-            painter.setBrush(QtGui.QBrush(QtGui.QColor(0, 200, 0)))  # Green
-            painter.setPen(QtGui.QPen(QtGui.QColor(0, 100, 0), 1))  # Dark green border
-            painter.drawEllipse(2, 2, 12, 12)
-            painter.end()
-        else:
-            # Disconnected - red circle
-            pixmap = QtGui.QPixmap(16, 16)
-            pixmap.fill(QtCore.Qt.transparent)
-            painter = QtGui.QPainter(pixmap)
-            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-            painter.setBrush(QtGui.QBrush(QtGui.QColor(200, 0, 0)))  # Red
-            painter.setPen(QtGui.QPen(QtGui.QColor(100, 0, 0), 1))  # Dark red border
-            painter.drawEllipse(2, 2, 12, 12)
-            painter.end()
-
-        # Set the icon
-        self._control_button.setIcon(QtGui.QIcon(pixmap))
-
-        # Update tooltip
-        self._update_tooltip()
-
-    def _update_freecad_server_icon(self):
-        """Update the FreeCAD server status icon based on server running status"""
-        if not self._freecad_server_status_button:
-            return
-
-        # Ensure QtGui is imported
-        from PySide2 import QtCore, QtGui
-
-        # Create the icon based on server status
-        if self._freecad_server_running:
-            # Running - blue circle with 'FC' text
-            pixmap = QtGui.QPixmap(16, 16)
-            pixmap.fill(QtCore.Qt.transparent)
-            painter = QtGui.QPainter(pixmap)
-            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-            painter.setBrush(QtGui.QBrush(QtGui.QColor(0, 100, 200)))  # Blue
-            painter.setPen(QtGui.QPen(QtGui.QColor(0, 50, 100), 1))  # Dark blue border
-            painter.drawEllipse(2, 2, 12, 12)
-
-            # Add FC text
-            painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255)))
-            font = QtGui.QFont()
-            font.setPixelSize(7)
-            font.setBold(True)
-            painter.setFont(font)
-            painter.drawText(QtCore.QRect(2, 2, 12, 12), QtCore.Qt.AlignCenter, "FC")
-            painter.end()
-        else:
-            # Stopped - orange circle with 'FC' text
-            pixmap = QtGui.QPixmap(16, 16)
-            pixmap.fill(QtCore.Qt.transparent)
-            painter = QtGui.QPainter(pixmap)
-            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-            painter.setBrush(QtGui.QBrush(QtGui.QColor(255, 165, 0)))  # Orange
-            painter.setPen(QtGui.QPen(QtGui.QColor(200, 120, 0), 1))  # Dark orange border
-            painter.drawEllipse(2, 2, 12, 12)
-
-            # Add FC text
-            painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255)))
-            font = QtGui.QFont()
-            font.setPixelSize(7)
-            font.setBold(True)
-            painter.setFont(font)
-            painter.drawText(QtCore.QRect(2, 2, 12, 12), QtCore.Qt.AlignCenter, "FC")
-            painter.end()
-
-        # Set the icon
-        self._freecad_server_status_button.setIcon(QtGui.QIcon(pixmap))
-
-        # Update tooltip
-        self._update_tooltip()
-
-    def _update_mcp_server_icon(self):
-        """Update the MCP server status icon based on server running status"""
-        if not self._mcp_server_status_button:
-            return
-
-        # Ensure QtGui is imported
-        from PySide2 import QtCore, QtGui
-
-        # Create the icon based on server status
-        if self._mcp_server_running:
-            # Running - green circle with 'MCP' text
-            pixmap = QtGui.QPixmap(16, 16)
-            pixmap.fill(QtCore.Qt.transparent)
-            painter = QtGui.QPainter(pixmap)
-            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-            painter.setBrush(QtGui.QBrush(QtGui.QColor(0, 180, 0)))  # Green
-            painter.setPen(QtGui.QPen(QtGui.QColor(0, 100, 0), 1))  # Dark green border
-            painter.drawEllipse(2, 2, 12, 12)
-
-            # Add MCP text
-            painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255)))
-            font = QtGui.QFont()
-            font.setPixelSize(6)
-            font.setBold(True)
-            painter.setFont(font)
-            painter.drawText(QtCore.QRect(2, 2, 12, 12), QtCore.Qt.AlignCenter, "MCP")
-            painter.end()
-        else:
-            # Stopped - red circle with 'MCP' text
-            pixmap = QtGui.QPixmap(16, 16)
-            pixmap.fill(QtCore.Qt.transparent)
-            painter = QtGui.QPainter(pixmap)
-            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-            painter.setBrush(QtGui.QBrush(QtGui.QColor(200, 0, 0)))  # Red
-            painter.setPen(QtGui.QPen(QtGui.QColor(100, 0, 0), 1))  # Dark red border
-            painter.drawEllipse(2, 2, 12, 12)
-
-            # Add MCP text
-            painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255)))
-            font = QtGui.QFont()
-            font.setPixelSize(6)
-            font.setBold(True)
-            painter.setFont(font)
-            painter.drawText(QtCore.QRect(2, 2, 12, 12), QtCore.Qt.AlignCenter, "MCP")
-            painter.end()
-
-        # Set the icon
-        self._mcp_server_status_button.setIcon(QtGui.QIcon(pixmap))
-
-        # Update tooltip
-        self._update_tooltip()
 
 
 FreeCADGui.addWorkbench(MCPIndicatorWorkbench())

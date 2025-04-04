@@ -29,9 +29,9 @@
     "max_delay": 30.0
   },
   "freecad": {
-    "path": "/usr/bin/freecad",
-    "python_path": "/usr/bin/python3",
-    "module_path": "/usr/lib/freecad-python3/lib",
+    "path": "./squashfs-root/usr/bin/freecad",
+    "python_path": "./squashfs-root/usr/bin/python3",
+    "module_path": "./squashfs-root/usr/lib",
     "host": "localhost",
     "port": 12345,
     "auto_connect": true,
@@ -41,7 +41,7 @@
     "script_path": "freecad_script.py",
     "launcher_path": "freecad_launcher.py",
     "use_apprun": true,
-    "apprun_path": "/path/to/squashfs-root"
+    "apprun_path": "./squashfs-root"
   },
   "cors": {
     "origins": ["*"],
