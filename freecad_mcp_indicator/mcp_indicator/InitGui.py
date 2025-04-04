@@ -773,6 +773,9 @@ static char * mcp_icon_xpm[] = {
     def _update_connection_details(self):
         """Update connection details by querying the server API"""
         try:
+            # Local import to ensure time module is available in this scope
+            import time
+
             # If the FreeCAD server is running, update its details
             if self._freecad_server_running:
                 # Record uptime if not already tracked
@@ -1210,6 +1213,9 @@ static char * mcp_icon_xpm[] = {
             # Add port if not default
             if self.MCP_SERVER_PORT != 8000:
                 server_cmd.extend(["--port", str(self.MCP_SERVER_PORT)])
+
+            # Print the exact command for debugging
+            FreeCAD.Console.PrintMessage(f"MCP server command: {' '.join(server_cmd)}\n")
 
             FreeCAD.Console.PrintMessage(
                 f"Starting MCP server: {self.MCP_SERVER_SCRIPT_PATH} with Python: {python_exec}...\n"
