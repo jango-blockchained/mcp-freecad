@@ -1510,5 +1510,41 @@ static char * mcp_icon_xpm[] = {
             "sudo apt install python3-fastapi python3-uvicorn python3-websockets python3-aiofiles python3-pydantic"
         )
 
+    def _update_indicator_icon(self):
+        """Update the indicator icon based on connection status"""
+        if not self._control_button:
+            return
+
+        # Ensure QtGui is imported
+        from PySide2 import QtCore, QtGui
+
+        # Create the icon based on connection status
+        if self._connection_status:
+            # Connected - green circle
+            pixmap = QtGui.QPixmap(16, 16)
+            pixmap.fill(QtCore.Qt.transparent)
+            painter = QtGui.QPainter(pixmap)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(0, 200, 0)))  # Green
+            painter.setPen(QtGui.QPen(QtGui.QColor(0, 100, 0), 1))  # Dark green border
+            painter.drawEllipse(2, 2, 12, 12)
+            painter.end()
+        else:
+            # Disconnected - red circle
+            pixmap = QtGui.QPixmap(16, 16)
+            pixmap.fill(QtCore.Qt.transparent)
+            painter = QtGui.QPainter(pixmap)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(200, 0, 0)))  # Red
+            painter.setPen(QtGui.QPen(QtGui.QColor(100, 0, 0), 1))  # Dark red border
+            painter.drawEllipse(2, 2, 12, 12)
+            painter.end()
+
+        # Set the icon
+        self._control_button.setIcon(QtGui.QIcon(pixmap))
+
+        # Update tooltip
+        self._update_tooltip()
+
 
 FreeCADGui.addWorkbench(MCPIndicatorWorkbench())
