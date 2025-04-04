@@ -119,11 +119,10 @@ static char * mcp_icon_xpm[] = {
                 # Find MCP Server path (first that exists)
                 if not self.MCP_SERVER_SCRIPT_PATH:
                     for path in possible_mcp_paths:
-                        for path in possible_mcp_paths:
-                            if os.path.exists(path):
-                                self.MCP_SERVER_SCRIPT_PATH = path
-                                self.params.SetString("MCPServerScriptPath", path)
-                                break
+                        if os.path.exists(path):
+                            self.MCP_SERVER_SCRIPT_PATH = path
+                            self.params.SetString("MCPServerScriptPath", path)
+                            break
 
             except Exception as e:
                 FreeCAD.Console.PrintError(f"Error determining script paths: {str(e)}\n")
@@ -201,15 +200,30 @@ static char * mcp_icon_xpm[] = {
         # Create start_mcp_server.sh script if it doesn't exist
         if os.path.exists(mcp_py_path) and not os.path.exists(mcp_shell_path):
             try:
-                # Check if we have a venv directory
-                venv_path = os.path.join(self.REPO_PATH, "mcp_venv")
+                # Check for virtual environments
+                venv_paths = []
+
+                # Check for .venv directory (standard venv name)
+                venv_path = os.path.join(self.REPO_PATH, ".venv")
                 if os.path.isdir(venv_path):
+                    venv_paths.append((".venv", venv_path))
+
+                # Check for mcp_venv directory (alternative name)
+                mcp_venv_path = os.path.join(self.REPO_PATH, "mcp_venv")
+                if os.path.isdir(mcp_venv_path):
+                    venv_paths.append(("mcp_venv", mcp_venv_path))
+
+                # If we have at least one virtual environment, create the shell script
+                if venv_paths:
+                    # Use the first venv we found
+                    venv_name, venv_path = venv_paths[0]
+
                     with open(mcp_shell_path, 'w') as f:
                         f.write('#!/bin/bash\n\n')
                         f.write('# Get the directory where this script is located\n')
                         f.write('SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"\n\n')
                         f.write('# Activate the virtual environment\n')
-                        f.write('source "$SCRIPT_DIR/mcp_venv/bin/activate"\n\n')
+                        f.write(f'source "$SCRIPT_DIR/{venv_name}/bin/activate"\n\n')
                         f.write('# Start the MCP server with debug mode\n')
                         f.write('python "$SCRIPT_DIR/freecad_mcp_server.py" --debug "$@"\n')
 
@@ -219,7 +233,26 @@ static char * mcp_icon_xpm[] = {
                     # Update the MCP server path to use the shell script
                     self.MCP_SERVER_SCRIPT_PATH = mcp_shell_path
                     self.params.SetString("MCPServerScriptPath", mcp_shell_path)
-                    FreeCAD.Console.PrintMessage(f"Created start_mcp_server.sh script to use virtual environment\n")
+                    FreeCAD.Console.PrintMessage(f"Created start_mcp_server.sh script to use {venv_name} virtual environment\n")
+                else:
+                    # Check for squashfs-root Python
+                    squashfs_python = os.path.join(self.REPO_PATH, "squashfs-root", "usr", "bin", "python")
+                    if os.path.exists(squashfs_python):
+                        # Create a script that uses squashfs-root Python directly
+                        with open(mcp_shell_path, 'w') as f:
+                            f.write('#!/bin/bash\n\n')
+                            f.write('# Get the directory where this script is located\n')
+                            f.write('SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"\n\n')
+                            f.write('# Use FreeCAD AppImage Python directly\n')
+                            f.write('"$SCRIPT_DIR/squashfs-root/usr/bin/python" "$SCRIPT_DIR/freecad_mcp_server.py" --debug "$@"\n')
+
+                        # Make the script executable
+                        os.chmod(mcp_shell_path, 0o755)
+
+                        # Update the MCP server path to use the shell script
+                        self.MCP_SERVER_SCRIPT_PATH = mcp_shell_path
+                        self.params.SetString("MCPServerScriptPath", mcp_shell_path)
+                        FreeCAD.Console.PrintMessage(f"Created start_mcp_server.sh script to use squashfs-root Python\n")
             except Exception as e:
                 FreeCAD.Console.PrintError(f"Error creating start_mcp_server.sh script: {str(e)}\n")
 
@@ -588,7 +621,9 @@ static char * mcp_icon_xpm[] = {
             "<i>Note: The 'Auto-configure' button will:</i>\n"
             "- Set the Socket Server path to <repo>/freecad_server.py\n"
             "- Set the MCP Server path to <repo>/start_mcp_server.sh\n"
-            "- Create start_mcp_server.sh if needed to use mcp_venv"
+            "- Create start_mcp_server.sh if needed to use either:\n"
+            "  • A virtual environment (.venv or mcp_venv) if found\n"
+            "  • The FreeCAD AppImage Python (squashfs-root/usr/bin/python) if available"
         )
         apply_note.setWordWrap(True)
         repo_layout.addWidget(apply_note)
@@ -718,9 +753,13 @@ static char * mcp_icon_xpm[] = {
         freecad_server_layout.addStretch() # Push elements to top
 
         # Add tabs to the tab widget
+        tabs.addTab(repo_tab, "Repository Path")
         tabs.addTab(mcp_server_tab, "MCP Server Controls")
         tabs.addTab(client_tab, "Client Status Check")
         tabs.addTab(freecad_server_tab, "Socket Server (Legacy)")
+
+        # Set Repository tab as the default selected tab
+        tabs.setCurrentIndex(0)
 
         # Add button box
         button_box = QtWidgets.QDialogButtonBox(
@@ -732,6 +771,14 @@ static char * mcp_icon_xpm[] = {
 
         # Show dialog and process result
         if dialog.exec_() == QtWidgets.QDialog.Accepted:
+            # Save the repository path
+            new_repo_path = self.repo_path_field.text()
+            if new_repo_path != self.REPO_PATH:
+                self.REPO_PATH = new_repo_path
+                self.params.SetString("RepoPath", new_repo_path)
+                # Update paths based on new repo if needed
+                self._update_script_paths_from_repo()
+
             # Save the legacy FreeCAD server path
             new_path = self.path_field.text()
             self.SERVER_SCRIPT_PATH = new_path
@@ -1233,38 +1280,64 @@ static char * mcp_icon_xpm[] = {
         return {}
 
     def _get_python_executable(self):
-        """Determine the Python executable to use."""
-        config = self._load_indicator_config()
-        python_path_from_config = config.get("freecad", {}).get("python_path")
+        """Find an appropriate Python executable to use for the server process.
+
+        Priority:
+        1. Python from squashfs-root/usr/bin/python
+        2. Virtual environment in the repository
+        3. System Python
+        4. FreeCAD embedded Python as fallback
+        """
+        import sys
+        import shutil
+        import os
 
         python_candidates = []
-        if python_path_from_config and os.path.exists(python_path_from_config):
-            FreeCAD.Console.PrintMessage(f"Using Python executable from config: {python_path_from_config}\n")
-            python_candidates.append(python_path_from_config)
-        else:
-            FreeCAD.Console.PrintMessage("Python path not found in config or invalid, searching system...\n")
 
-        # Add other common candidates as fallbacks
+        # First, check if we have access to squashfs-root/usr/bin/python
+        squashfs_python = None
+        if self.REPO_PATH and os.path.exists(self.REPO_PATH):
+            # Check for squashfs-root in the repository directory
+            squashfs_python = os.path.join(self.REPO_PATH, "squashfs-root", "usr", "bin", "python")
+            if os.path.exists(squashfs_python):
+                python_candidates.append(squashfs_python)
+                FreeCAD.Console.PrintMessage(f"Found FreeCAD AppImage Python: {squashfs_python}\n")
+
+        # Then check if we have a virtual environment in the repository
+        if self.REPO_PATH and os.path.exists(self.REPO_PATH):
+            # Check for standard virtual environment name (.venv)
+            venv_python = os.path.join(self.REPO_PATH, ".venv", "bin", "python")
+            if os.path.exists(venv_python):
+                python_candidates.append(venv_python)
+
+            # Check for mcp_venv directory (alternative venv name)
+            mcp_venv_python = os.path.join(self.REPO_PATH, "mcp_venv", "bin", "python")
+            if os.path.exists(mcp_venv_python):
+                python_candidates.append(mcp_venv_python)
+
+        # Then check if we can find a system Python
         python_candidates.extend([
-            # Try FreeCAD's bundled Python first if possible
-            os.path.join(os.path.dirname(sys.executable), "python3"),
-            os.path.join(os.path.dirname(sys.executable), "python"),
-            # Standard system paths
+            # System Python
+            shutil.which("python3"),
+            shutil.which("python"),
             "/usr/bin/python3",
-            "/usr/local/bin/python3",
-            "/usr/bin/python",
-            os.path.join(sys.prefix, "bin", "python3"),
-            sys.executable # The python running FreeCAD itself as last resort
+            # FreeCAD's embedded Python as a fallback
+            sys.executable,
         ])
 
         # Find the first valid executable
+        python_exec = None
         for candidate in python_candidates:
-            if candidate and os.path.exists(candidate) and os.access(candidate, os.X_OK):
-                FreeCAD.Console.PrintMessage(f"Found Python executable: {candidate}\n")
-                return candidate
+            if candidate and os.path.exists(candidate):
+                python_exec = candidate
+                break
 
-        FreeCAD.Console.PrintError("Could not find a suitable Python executable.\n")
-        return None
+        if python_exec:
+            FreeCAD.Console.PrintMessage(f"Using Python executable: {python_exec}\n")
+        else:
+            FreeCAD.Console.PrintError("Could not find a Python executable\n")
+
+        return python_exec
 
     def _start_freecad_server(self, connect_mode=False):
         """Start the freecad_server.py script."""
@@ -1480,6 +1553,90 @@ static char * mcp_icon_xpm[] = {
             )
             return
 
+        # Check if we can create a shell script for better venv handling
+        if self.REPO_PATH and self.MCP_SERVER_SCRIPT_PATH.endswith('.py'):
+            script_dir = os.path.dirname(self.MCP_SERVER_SCRIPT_PATH)
+            shell_script_path = os.path.join(script_dir, "start_mcp_server.sh")
+
+            # Only create the shell script if it's within the repo directory
+            if script_dir == self.REPO_PATH and not os.path.exists(shell_script_path):
+                # Check for virtual environments
+                venv_found = False
+
+                # Check for .venv directory (standard venv name)
+                venv_path = os.path.join(self.REPO_PATH, ".venv")
+                if os.path.isdir(venv_path):
+                    try:
+                        FreeCAD.Console.PrintMessage(f"Creating shell script to use .venv virtual environment...\n")
+                        with open(shell_script_path, 'w') as f:
+                            f.write('#!/bin/bash\n\n')
+                            f.write('# Get the directory where this script is located\n')
+                            f.write('SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"\n\n')
+                            f.write('# Activate the virtual environment\n')
+                            f.write('source "$SCRIPT_DIR/.venv/bin/activate"\n\n')
+                            f.write('# Start the MCP server with debug mode\n')
+                            f.write('python "$SCRIPT_DIR/freecad_mcp_server.py" --debug "$@"\n')
+
+                        # Make the script executable
+                        os.chmod(shell_script_path, 0o755)
+
+                        # Update the path
+                        self.MCP_SERVER_SCRIPT_PATH = shell_script_path
+                        self.params.SetString("MCPServerScriptPath", shell_script_path)
+                        FreeCAD.Console.PrintMessage(f"Created and will use {shell_script_path}\n")
+                        venv_found = True
+                    except Exception as e:
+                        FreeCAD.Console.PrintError(f"Error creating shell script: {str(e)}\n")
+
+                # Check for mcp_venv directory (alternative name)
+                if not venv_found:
+                    mcp_venv_path = os.path.join(self.REPO_PATH, "mcp_venv")
+                    if os.path.isdir(mcp_venv_path):
+                        try:
+                            FreeCAD.Console.PrintMessage(f"Creating shell script to use mcp_venv virtual environment...\n")
+                            with open(shell_script_path, 'w') as f:
+                                f.write('#!/bin/bash\n\n')
+                                f.write('# Get the directory where this script is located\n')
+                                f.write('SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"\n\n')
+                                f.write('# Activate the virtual environment\n')
+                                f.write('source "$SCRIPT_DIR/mcp_venv/bin/activate"\n\n')
+                                f.write('# Start the MCP server with debug mode\n')
+                                f.write('python "$SCRIPT_DIR/freecad_mcp_server.py" --debug "$@"\n')
+
+                            # Make the script executable
+                            os.chmod(shell_script_path, 0o755)
+
+                            # Update the path
+                            self.MCP_SERVER_SCRIPT_PATH = shell_script_path
+                            self.params.SetString("MCPServerScriptPath", shell_script_path)
+                            FreeCAD.Console.PrintMessage(f"Created and will use {shell_script_path}\n")
+                            venv_found = True
+                        except Exception as e:
+                            FreeCAD.Console.PrintError(f"Error creating shell script: {str(e)}\n")
+
+                # Check for squashfs-root Python if no venv was found
+                if not venv_found:
+                    squashfs_python = os.path.join(self.REPO_PATH, "squashfs-root", "usr", "bin", "python")
+                    if os.path.exists(squashfs_python):
+                        try:
+                            FreeCAD.Console.PrintMessage(f"Creating shell script to use squashfs-root Python...\n")
+                            with open(shell_script_path, 'w') as f:
+                                f.write('#!/bin/bash\n\n')
+                                f.write('# Get the directory where this script is located\n')
+                                f.write('SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"\n\n')
+                                f.write('# Use FreeCAD AppImage Python directly\n')
+                                f.write('"$SCRIPT_DIR/squashfs-root/usr/bin/python" "$SCRIPT_DIR/freecad_mcp_server.py" --debug "$@"\n')
+
+                            # Make the script executable
+                            os.chmod(shell_script_path, 0o755)
+
+                            # Update the path
+                            self.MCP_SERVER_SCRIPT_PATH = shell_script_path
+                            self.params.SetString("MCPServerScriptPath", shell_script_path)
+                            FreeCAD.Console.PrintMessage(f"Created and will use {shell_script_path} with squashfs-root Python\n")
+                        except Exception as e:
+                            FreeCAD.Console.PrintError(f"Error creating shell script: {str(e)}\n")
+
         # Try to kill any existing MCP server processes
         try:
             # Find processes using the freecad_mcp_server.py script
@@ -1560,7 +1717,23 @@ static char * mcp_icon_xpm[] = {
                 FreeCAD.Console.PrintMessage("Cleared PYTHONHOME environment variable to avoid conflicts\n")
 
             # Set up command with appropriate arguments
-            server_cmd = [python_exec, self.MCP_SERVER_SCRIPT_PATH]
+            server_cmd = []
+
+            # Check if we're dealing with a shell script or Python script
+            is_shell_script = self.MCP_SERVER_SCRIPT_PATH.endswith('.sh')
+
+            if is_shell_script:
+                # For shell scripts, run them directly
+                server_cmd = [self.MCP_SERVER_SCRIPT_PATH]
+            else:
+                # For Python scripts, use the Python executable
+                python_exec = self._get_python_executable()
+                if not python_exec:
+                    QtWidgets.QMessageBox.critical(
+                        FreeCADGui.getMainWindow(), "Error", "Could not find Python executable."
+                    )
+                    return
+                server_cmd = [python_exec, self.MCP_SERVER_SCRIPT_PATH]
 
             # Add config file if specified
             if self.MCP_SERVER_CONFIG:
@@ -1603,6 +1776,28 @@ static char * mcp_icon_xpm[] = {
 
         except Exception as e:
             FreeCAD.Console.PrintError(f"Failed to start MCP server: {str(e)}\n")
+
+            # Show a more helpful error message if 'no module named mcp' is in the error
+            if 'module' in str(e).lower() and 'mcp' in str(e).lower():
+                FreeCAD.Console.PrintError("It appears the MCP Python package is not installed in the Python environment being used.\n")
+
+                # Check if we have squashfs-root Python
+                squashfs_python = None
+                if self.REPO_PATH and os.path.exists(self.REPO_PATH):
+                    squashfs_python = os.path.join(self.REPO_PATH, "squashfs-root", "usr", "bin", "python")
+
+                if squashfs_python and os.path.exists(squashfs_python):
+                    FreeCAD.Console.PrintError(f"Try creating a virtual environment using the FreeCAD AppImage Python:\n")
+                    FreeCAD.Console.PrintError(f"1. {squashfs_python} -m venv {self.REPO_PATH}/mcp_venv\n")
+                    FreeCAD.Console.PrintError(f"2. source {self.REPO_PATH}/mcp_venv/bin/activate\n")
+                    FreeCAD.Console.PrintError(f"3. pip install mcp\n")
+                    FreeCAD.Console.PrintError(f"Then go to Settings and click Auto-configure Server Paths\n")
+                else:
+                    FreeCAD.Console.PrintError("You need to install the MCP package in your Python environment:\n")
+                    FreeCAD.Console.PrintError("1. Create a virtual environment: python -m venv mcp_venv\n")
+                    FreeCAD.Console.PrintError("2. Activate it: source mcp_venv/bin/activate\n")
+                    FreeCAD.Console.PrintError("3. Install MCP: pip install mcp\n")
+
             self._mcp_server_process = None
 
         self._update_action_states()

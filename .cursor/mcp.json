@@ -1,7 +1,7 @@
 {
     "mcpServers": {
       "mcp-freecad": {
-        "command": "mcp-freecad"
+        "command": "./start_mcp_server.sh"
       },
       "memory": {
 
