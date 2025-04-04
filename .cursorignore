@@ -35,13 +35,7 @@ env/
 *.FCStd1
 *.FCBak
 
-# Logs
-*.log
-logs/
-freecad_server_stderr.log
-freecad_server_stdout.log
-mcp-freecad-debug.log
-mcp-freecad-traceback.log
+
 
 # OS specific
 .DS_Store

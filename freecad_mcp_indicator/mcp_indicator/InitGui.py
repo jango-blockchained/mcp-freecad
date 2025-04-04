@@ -1546,5 +1546,109 @@ static char * mcp_icon_xpm[] = {
         # Update tooltip
         self._update_tooltip()
 
+    def _update_freecad_server_icon(self):
+        """Update the FreeCAD server status icon based on server running status"""
+        if not self._freecad_server_status_button:
+            return
+
+        # Ensure QtGui is imported
+        from PySide2 import QtCore, QtGui
+
+        # Create the icon based on server status
+        if self._freecad_server_running:
+            # Running - blue circle with 'FC' text
+            pixmap = QtGui.QPixmap(16, 16)
+            pixmap.fill(QtCore.Qt.transparent)
+            painter = QtGui.QPainter(pixmap)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(0, 100, 200)))  # Blue
+            painter.setPen(QtGui.QPen(QtGui.QColor(0, 50, 100), 1))  # Dark blue border
+            painter.drawEllipse(2, 2, 12, 12)
+
+            # Add FC text
+            painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255)))
+            font = QtGui.QFont()
+            font.setPixelSize(7)
+            font.setBold(True)
+            painter.setFont(font)
+            painter.drawText(QtCore.QRect(2, 2, 12, 12), QtCore.Qt.AlignCenter, "FC")
+            painter.end()
+        else:
+            # Stopped - orange circle with 'FC' text
+            pixmap = QtGui.QPixmap(16, 16)
+            pixmap.fill(QtCore.Qt.transparent)
+            painter = QtGui.QPainter(pixmap)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(255, 165, 0)))  # Orange
+            painter.setPen(QtGui.QPen(QtGui.QColor(200, 120, 0), 1))  # Dark orange border
+            painter.drawEllipse(2, 2, 12, 12)
+
+            # Add FC text
+            painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255)))
+            font = QtGui.QFont()
+            font.setPixelSize(7)
+            font.setBold(True)
+            painter.setFont(font)
+            painter.drawText(QtCore.QRect(2, 2, 12, 12), QtCore.Qt.AlignCenter, "FC")
+            painter.end()
+
+        # Set the icon
+        self._freecad_server_status_button.setIcon(QtGui.QIcon(pixmap))
+
+        # Update tooltip
+        self._update_tooltip()
+
+    def _update_mcp_server_icon(self):
+        """Update the MCP server status icon based on server running status"""
+        if not self._mcp_server_status_button:
+            return
+
+        # Ensure QtGui is imported
+        from PySide2 import QtCore, QtGui
+
+        # Create the icon based on server status
+        if self._mcp_server_running:
+            # Running - green circle with 'MCP' text
+            pixmap = QtGui.QPixmap(16, 16)
+            pixmap.fill(QtCore.Qt.transparent)
+            painter = QtGui.QPainter(pixmap)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(0, 180, 0)))  # Green
+            painter.setPen(QtGui.QPen(QtGui.QColor(0, 100, 0), 1))  # Dark green border
+            painter.drawEllipse(2, 2, 12, 12)
+
+            # Add MCP text
+            painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255)))
+            font = QtGui.QFont()
+            font.setPixelSize(6)
+            font.setBold(True)
+            painter.setFont(font)
+            painter.drawText(QtCore.QRect(2, 2, 12, 12), QtCore.Qt.AlignCenter, "MCP")
+            painter.end()
+        else:
+            # Stopped - red circle with 'MCP' text
+            pixmap = QtGui.QPixmap(16, 16)
+            pixmap.fill(QtCore.Qt.transparent)
+            painter = QtGui.QPainter(pixmap)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(200, 0, 0)))  # Red
+            painter.setPen(QtGui.QPen(QtGui.QColor(100, 0, 0), 1))  # Dark red border
+            painter.drawEllipse(2, 2, 12, 12)
+
+            # Add MCP text
+            painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255)))
+            font = QtGui.QFont()
+            font.setPixelSize(6)
+            font.setBold(True)
+            painter.setFont(font)
+            painter.drawText(QtCore.QRect(2, 2, 12, 12), QtCore.Qt.AlignCenter, "MCP")
+            painter.end()
+
+        # Set the icon
+        self._mcp_server_status_button.setIcon(QtGui.QIcon(pixmap))
+
+        # Update tooltip
+        self._update_tooltip()
+
 
 FreeCADGui.addWorkbench(MCPIndicatorWorkbench())
