@@ -68,4 +68,5 @@ tmp/
 uv.lock
 
 # Generated files
-freecad-mcp
+mcp-freecad
+scripts/bin/mcp-freecad
