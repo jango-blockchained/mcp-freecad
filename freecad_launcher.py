@@ -73,8 +73,8 @@ class FreeCADLauncher:
 
             cmd = [
                 apprun_path,
-                "--console",  # Run in console mode
-                "--run-script", self.script_path,
+                self.script_path,  # Script path as direct argument
+                "--",  # Separate script arguments
                 command,
                 params_json
             ]
@@ -83,12 +83,13 @@ class FreeCADLauncher:
             cmd = [
                 self.freecad_path,
                 "--console",  # Run in console mode
-                "--run-script", self.script_path,
+                self.script_path,  # Script path as direct argument
+                "--",  # Separate script arguments
                 command,
                 params_json
             ]
 
-        self.log(f"Running command: {' '.join(cmd)}")
+        self.log(f"Running command: {' '.join(map(str, cmd))}")
 
         try:
             # Run the command

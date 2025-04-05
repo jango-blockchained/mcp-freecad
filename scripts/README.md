@@ -13,13 +13,15 @@ This directory contains various scripts for running, installing, and setting up 
 
 - `start_server.py`: Python script to start the FreeCAD server from within FreeCAD's Python console or as a macro
 - `start_freecad_with_server.sh`: Shell script to launch FreeCAD with the integrated server enabled
+- `run_mcp_server.py`: Python script to run the MCP server using FreeCAD's AppRun
+- `start_mcp_server.sh`: Shell script to start the MCP server with proper environment settings
 
 ### Bin Scripts
 
 - `install-global.sh`: Script to install MCP-FreeCAD globally on the system
 - `mcp-freecad.sh`: Simple wrapper script to call the MCP-FreeCAD server with the Python interpreter
 - `mcp-freecad-installer.sh`: Script to check out the MCP-FreeCAD repository if needed and run the MCP server
-- `run_freecad_server.sh`: Wrapper script to run freecad_server.py with the correct environment settings
+- `run-freecad-server.sh`: Wrapper script to run freecad_server.py with the correct environment settings
 
 ## Usage
 
@@ -27,6 +29,12 @@ This directory contains various scripts for running, installing, and setting up 
 
 ```bash
 ./scripts/start_freecad_with_server.sh
+```
+
+### Starting the MCP Server
+
+```bash
+./scripts/start_mcp_server.sh
 ```
 
 ### Installing MCP-FreeCAD Globally
@@ -38,7 +46,7 @@ This directory contains various scripts for running, installing, and setting up 
 ### Running the FreeCAD Server with the Correct Environment
 
 ```bash
-./scripts/bin/run_freecad_server.sh
+./scripts/bin/run-freecad-server.sh
 ```
 
 ### Installing and Running the MCP-FreeCAD Server

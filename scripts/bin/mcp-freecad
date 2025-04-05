@@ -1,0 +1,3 @@
+#!/bin/bash
+cd "/home/jango/Git/mcp-freecad/scripts/bin"
+python3 "/home/jango/Git/mcp-freecad/scripts/bin/freecad_mcp_server.py" "$@"

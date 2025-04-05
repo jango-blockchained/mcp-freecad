@@ -84,7 +84,7 @@ mcp-freecad/
 │   │   ├── install-global.sh    # Global installation script
 │   │   ├── mcp-freecad-installer.sh # Installer script
 │   │   ├── mcp-freecad.sh       # Simple wrapper script
-│   │   └── run_freecad_server.sh # Server runner script
+│   │   └── run-freecad-server.sh # Server runner script
 │   ├── start_freecad_with_server.sh # FreeCAD starter with server
 │   └── start_server.py       # Python script for server startup
 ├── src/                     # Source code

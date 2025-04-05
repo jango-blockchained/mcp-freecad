@@ -187,7 +187,7 @@ static char * mcp_icon_xpm[] = {
             self.params.SetString("ServerScriptPath", server_path)
 
         # Check if the shell script exists, otherwise use the Python script
-        mcp_shell_path = os.path.join(self.REPO_PATH, "start_mcp_server.sh")
+        mcp_shell_path = os.path.join(self.REPO_PATH, "scripts", "start_mcp_server.sh")
         mcp_py_path = os.path.join(self.REPO_PATH, "freecad_mcp_server.py")
 
         if os.path.exists(mcp_shell_path):
@@ -237,8 +237,28 @@ static char * mcp_icon_xpm[] = {
                 else:
                     # Check for squashfs-root Python
                     squashfs_python = os.path.join(self.REPO_PATH, "squashfs-root", "usr", "bin", "python")
-                    if os.path.exists(squashfs_python):
-                        # Create a script that uses squashfs-root Python directly
+                    squashfs_apprun = os.path.join(self.REPO_PATH, "squashfs-root", "AppRun")
+                    if os.path.exists(squashfs_apprun):
+                        # Create a script that uses AppRun with --console and --run-script flags
+                        with open(mcp_shell_path, 'w') as f:
+                            f.write('#!/bin/bash\n\n')
+                            f.write('# Get the directory where this script is located\n')
+                            f.write('SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"\n\n')
+                            f.write('# Use FreeCAD AppRun to execute the script with proper environment\n')
+                            f.write('# Force X11 backend to avoid Wayland issues\n')
+                            f.write('export QT_QPA_PLATFORM=xcb\n\n')
+                            f.write('# Pass script path directly without --console flag\n')
+                            f.write('"$SCRIPT_DIR/squashfs-root/AppRun" "$SCRIPT_DIR/freecad_mcp_server.py" -- "$@"\n')
+
+                        # Make the script executable
+                        os.chmod(mcp_shell_path, 0o755)
+
+                        # Update the MCP server path to use the shell script
+                        self.MCP_SERVER_SCRIPT_PATH = mcp_shell_path
+                        self.params.SetString("MCPServerScriptPath", mcp_shell_path)
+                        FreeCAD.Console.PrintMessage(f"Created start_mcp_server.sh script to use squashfs-root/AppRun\n")
+                    elif os.path.exists(squashfs_python):
+                        # Fall back to direct Python use if AppRun isn't available
                         with open(mcp_shell_path, 'w') as f:
                             f.write('#!/bin/bash\n\n')
                             f.write('# Get the directory where this script is located\n')
@@ -623,7 +643,8 @@ static char * mcp_icon_xpm[] = {
             "- Set the MCP Server path to <repo>/start_mcp_server.sh\n"
             "- Create start_mcp_server.sh if needed to use either:\n"
             "  • A virtual environment (.venv or mcp_venv) if found\n"
-            "  • The FreeCAD AppImage Python (squashfs-root/usr/bin/python) if available"
+            "  • The FreeCAD AppImage executable (squashfs-root/AppRun) if available\n"
+            "  • The FreeCAD AppImage Python as fallback"
         )
         apply_note.setWordWrap(True)
         repo_layout.addWidget(apply_note)
@@ -1195,12 +1216,71 @@ static char * mcp_icon_xpm[] = {
             return False
 
     def _is_mcp_server_running(self):
-        """Check if the MCP server process is running."""
+        """
+        Check if the MCP server process is running.
+
+        This enhanced method checks two things:
+        1. If we have an internal process handle that's running
+        2. If the MCP server port is already in use by an external process
+
+        This prevents duplicate MCP servers from being started,
+        whether from FreeCAD itself or from external scripts like start_mcp_server.sh.
+        """
+        import socket
+
+        # First check if we have an internal process running
+        internal_running = False
         try:
-            return bool(
+            internal_running = bool(
                 self._mcp_server_process is not None and self._mcp_server_process.poll() is None
             )
         except Exception:
+            internal_running = False
+
+        # If we have an internal process, we know it's running
+        if internal_running:
+            return True
+
+        # If no internal process, check if the port is in use
+        try:
+            # Method 1: Try connecting to the port
+            # This works if a service is already listening and accepting connections
+            connect_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            connect_socket.settimeout(0.5)  # Short timeout to avoid hanging
+            result = connect_socket.connect_ex((self.MCP_SERVER_HOST, self.MCP_SERVER_PORT))
+            connect_socket.close()
+
+            # If connection was successful, port is in use
+            port_in_use = (result == 0)
+
+            # Method 2: Try binding to the port
+            # This works even if the service isn't accepting connections yet
+            if not port_in_use:
+                try:
+                    bind_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    bind_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    bind_socket.bind((self.MCP_SERVER_HOST, self.MCP_SERVER_PORT))
+                    bind_socket.close()
+                    # If we successfully bound to the port, it's not in use
+                    port_in_use = False
+                except socket.error:
+                    # If we couldn't bind to the port, it's in use
+                    port_in_use = True
+
+            # If we detect that the port is in use but we don't have a process handle,
+            # update our UI state accordingly
+            if port_in_use and self._mcp_server_process is None:
+                # Record approximate start time for uptime display
+                import time
+                if not hasattr(self, '_mcp_server_start_time'):
+                    self._mcp_server_start_time = time.time()
+                    FreeCAD.Console.PrintMessage("External MCP server detected on port {}. Not starting a new instance.\n".format(
+                        self.MCP_SERVER_PORT
+                    ))
+
+            return port_in_use
+        except Exception as e:
+            FreeCAD.Console.PrintWarning(f"Error checking if MCP server port is in use: {e}\n")
             return False
 
     def _update_action_states(self):
@@ -1362,7 +1442,7 @@ static char * mcp_icon_xpm[] = {
 
         # Check for wrapper script existence
         server_dir = os.path.dirname(self.SERVER_SCRIPT_PATH)
-        wrapper_script = os.path.join(server_dir, "run_freecad_server.sh")
+        wrapper_script = os.path.join(server_dir, "run-freecad-server.sh")
         use_wrapper = os.path.exists(wrapper_script) and os.access(
             wrapper_script, os.X_OK
         )
@@ -1556,10 +1636,15 @@ static char * mcp_icon_xpm[] = {
         # Check if we can create a shell script for better venv handling
         if self.REPO_PATH and self.MCP_SERVER_SCRIPT_PATH.endswith('.py'):
             script_dir = os.path.dirname(self.MCP_SERVER_SCRIPT_PATH)
-            shell_script_path = os.path.join(script_dir, "start_mcp_server.sh")
+            shell_script_path = os.path.join(self.REPO_PATH, "scripts", "start_mcp_server.sh")
 
-            # Only create the shell script if it's within the repo directory
-            if script_dir == self.REPO_PATH and not os.path.exists(shell_script_path):
+            # Create scripts directory if it doesn't exist
+            scripts_dir = os.path.join(self.REPO_PATH, "scripts")
+            if not os.path.exists(scripts_dir):
+                os.makedirs(scripts_dir)
+
+            # Always create/update the shell script if the MCP server script is in the repo
+            if os.path.dirname(self.MCP_SERVER_SCRIPT_PATH) == self.REPO_PATH:
                 # Check for virtual environments
                 venv_found = False
 
@@ -1617,25 +1702,42 @@ static char * mcp_icon_xpm[] = {
                 # Check for squashfs-root Python if no venv was found
                 if not venv_found:
                     squashfs_python = os.path.join(self.REPO_PATH, "squashfs-root", "usr", "bin", "python")
-                    if os.path.exists(squashfs_python):
-                        try:
-                            FreeCAD.Console.PrintMessage(f"Creating shell script to use squashfs-root Python...\n")
-                            with open(shell_script_path, 'w') as f:
-                                f.write('#!/bin/bash\n\n')
-                                f.write('# Get the directory where this script is located\n')
-                                f.write('SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"\n\n')
-                                f.write('# Use FreeCAD AppImage Python directly\n')
-                                f.write('"$SCRIPT_DIR/squashfs-root/usr/bin/python" "$SCRIPT_DIR/freecad_mcp_server.py" --debug "$@"\n')
+                    squashfs_apprun = os.path.join(self.REPO_PATH, "squashfs-root", "AppRun")
+                    if os.path.exists(squashfs_apprun):
+                        # Create a script that uses AppRun with --console and --run-script flags
+                        with open(shell_script_path, 'w') as f:
+                            f.write('#!/bin/bash\n\n')
+                            f.write('# Get the directory where this script is located\n')
+                            f.write('SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"\n\n')
+                            f.write('# Use FreeCAD AppRun to execute the script with proper environment\n')
+                            f.write('# Force X11 backend to avoid Wayland issues\n')
+                            f.write('export QT_QPA_PLATFORM=xcb\n\n')
+                            f.write('# Pass script path directly without --console flag\n')
+                            f.write('"$SCRIPT_DIR/squashfs-root/AppRun" "$SCRIPT_DIR/freecad_mcp_server.py" -- "$@"\n')
 
-                            # Make the script executable
-                            os.chmod(shell_script_path, 0o755)
+                        # Make the script executable
+                        os.chmod(shell_script_path, 0o755)
 
-                            # Update the path
-                            self.MCP_SERVER_SCRIPT_PATH = shell_script_path
-                            self.params.SetString("MCPServerScriptPath", shell_script_path)
-                            FreeCAD.Console.PrintMessage(f"Created and will use {shell_script_path} with squashfs-root Python\n")
-                        except Exception as e:
-                            FreeCAD.Console.PrintError(f"Error creating shell script: {str(e)}\n")
+                        # Update the MCP server path to use the shell script
+                        self.MCP_SERVER_SCRIPT_PATH = shell_script_path
+                        self.params.SetString("MCPServerScriptPath", shell_script_path)
+                        FreeCAD.Console.PrintMessage(f"Created start_mcp_server.sh script to use squashfs-root/AppRun\n")
+                    elif os.path.exists(squashfs_python):
+                        # Fall back to direct Python use if AppRun isn't available
+                        with open(shell_script_path, 'w') as f:
+                            f.write('#!/bin/bash\n\n')
+                            f.write('# Get the directory where this script is located\n')
+                            f.write('SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"\n\n')
+                            f.write('# Use FreeCAD AppImage Python directly\n')
+                            f.write('"$SCRIPT_DIR/squashfs-root/usr/bin/python" "$SCRIPT_DIR/freecad_mcp_server.py" --debug "$@"\n')
+
+                        # Make the script executable
+                        os.chmod(shell_script_path, 0o755)
+
+                        # Update the MCP server path to use the shell script
+                        self.MCP_SERVER_SCRIPT_PATH = shell_script_path
+                        self.params.SetString("MCPServerScriptPath", shell_script_path)
+                        FreeCAD.Console.PrintMessage(f"Created start_mcp_server.sh script to use squashfs-root Python\n")
 
         # Try to kill any existing MCP server processes
         try:

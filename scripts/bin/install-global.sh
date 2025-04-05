@@ -3,7 +3,10 @@
 
 set -e  # Exit on error
 
+# Get the script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the repository root (two levels up from the script)
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 INSTALL_DIR="/usr/local/bin"
 
 echo "Installing MCP-FreeCAD globally..."
@@ -11,8 +14,8 @@ echo "Installing MCP-FreeCAD globally..."
 # Create the shell script wrapper
 cat > "$SCRIPT_DIR/mcp-freecad" << EOF
 #!/bin/bash
-cd "$SCRIPT_DIR"
-python3 "$SCRIPT_DIR/freecad_mcp_server.py" "\$@"
+cd "$REPO_ROOT"
+python3 "$REPO_ROOT/freecad_mcp_server.py" "\$@"
 EOF
 
 # Make it executable

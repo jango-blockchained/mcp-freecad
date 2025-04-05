@@ -118,20 +118,17 @@ if not use_mock:
     # Step 2: Try to find FreeCAD executable and get its Python environment
     if freecad_path and os.path.exists(freecad_path):
         try:
-            # Get FreeCAD Python environment information
-            result = subprocess.run(
-                [freecad_path, "--write-python-path"],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            if result.returncode == 0 and result.stdout.strip():
-                fcad_python_paths = result.stdout.strip().split('\n')
-                for path in fcad_python_paths:
-                    if path and os.path.exists(path):
-                        print(f"Adding path from FreeCAD: {path}")
-                        sys.path.append(path)
-        except (subprocess.SubprocessError, FileNotFoundError) as e:
+            # Since --write-python-path is not supported, let's just add the known paths
+            # for an extracted AppImage
+            if os.path.exists(os.path.join(os.path.dirname(freecad_path), "usr/lib")):
+                # AppImage structure
+                lib_path = os.path.join(os.path.dirname(freecad_path), "usr/lib")
+                print(f"Adding AppImage lib path: {lib_path}")
+                sys.path.append(lib_path)
+            else:
+                # Traditional FreeCAD installation
+                print(f"Using standard FreeCAD paths")
+        except Exception as e:
             print(f"Error getting FreeCAD Python paths: {e}")
 
     # Step 3: Look in common system locations
