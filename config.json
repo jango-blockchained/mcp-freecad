@@ -31,10 +31,10 @@
   "freecad": {
     "path": "squashfs-root/usr/bin/freecad",
     "python_path": "squashfs-root/usr/bin/python3",
-    "module_path": "squashfs-root/usr/lib",
+    "module_path": "/usr/lib/",
     "host": "localhost",
     "port": 12345,
-    "auto_connect": true,
+    "auto_connect": false,
     "reconnect_on_failure": true,
     "use_mock": false,
     "connection_method": "launcher",

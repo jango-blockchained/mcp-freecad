@@ -4,8 +4,8 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# Change to the repository root directory
-cd "$REPO_ROOT"
+# Control Python initialization to prevent "PyImport_AppendInittab after Py_Initialize" errors
+export PYTHONNOUSERSITE=1
 
-# Call the freecad_mcp_server.py with the Python interpreter
-python3 "$REPO_ROOT/freecad_mcp_server.py" "$@"
+# Use the start_mcp_server.sh script which has proper initialization
+"$REPO_ROOT/scripts/start_mcp_server.sh" "$@"

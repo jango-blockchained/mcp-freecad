@@ -14,8 +14,13 @@ echo "Installing MCP-FreeCAD globally..."
 # Create the shell script wrapper
 cat > "$SCRIPT_DIR/mcp-freecad" << EOF
 #!/bin/bash
-cd "$REPO_ROOT"
-python3 "$REPO_ROOT/freecad_mcp_server.py" "\$@"
+# MCP-FreeCAD global wrapper
+
+# Control Python initialization to prevent "PyImport_AppendInittab after Py_Initialize" errors
+export PYTHONNOUSERSITE=1
+
+# Run the start_mcp_server.sh script with proper initialization
+"$REPO_ROOT/scripts/start_mcp_server.sh" "\$@"
 EOF
 
 # Make it executable
