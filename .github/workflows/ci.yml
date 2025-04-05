@@ -1,10 +1,20 @@
-name: CI
+name: CI (Disabled)
 
+# CI is currently disabled - this configuration is in place for future use
+# To enable, uncomment the 'on' section below and adjust as needed
+
+# on:
+#   push:
+#     branches: [ main ]
+#   pull_request:
+#     branches: [ main ]
+
+# Alternate way to disable: use an empty workflow_dispatch trigger
+# This makes the workflow only run when manually triggered
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
+    # Manual trigger only with a description of why you would run it
+    description: 'Manually trigger CI (currently set up but disabled by default)'
 
 jobs:
   test:
@@ -48,4 +58,4 @@ jobs:
         isort --check-only --profile black src tests app.py
     - name: Lint with flake8
       run: |
-        flake8 src tests app.py 
+        flake8 src tests app.py
