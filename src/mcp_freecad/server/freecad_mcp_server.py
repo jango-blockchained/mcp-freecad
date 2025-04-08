@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-FreeCAD MCP Server
+Advanced FreeCAD MCP Server using FastMCP
 
-This script implements a Model Context Protocol (MCP) server for FreeCAD.
-It provides tools and resources for AI assistants to interact with FreeCAD.
+This script implements a Model Context Protocol (MCP) server for FreeCAD
+using the FastMCP library and incorporating best practices.
 
 Usage:
     python freecad_mcp_server.py
@@ -14,1763 +14,1040 @@ import asyncio
 import json
 import logging
 import sys
-from typing import Any, Dict
-import os
+from typing import Any, Dict, List, Optional
 
-# Version information
-VERSION = "0.3.1"
+
+# --- FastMCP Import ---
+try:
+    from fastmcp import FastMCP, error, ToolContext
+    from fastmcp.error import MCPServerError, ErrorCode
+    from fastmcp.server.stdio import stdio_server
+    mcp_import_error = None
+except ImportError as e:
+    mcp_import_error = str(e)
+    # Dummy classes/objects for type hints if import fails
+    class FastMCP:
+        def __init__(self, name: str, version: str = "0.1.0"): pass
+        def tool(self): return lambda f: f
+        def resource(self, pattern: str): return lambda f: f
+        async def run_stdio(self): pass
+    class MCPServerError(Exception): pass
+    class ErrorCode: InvalidParams = -32602; InternalError = -32603; MethodNotFound = -32601
+    class ToolContext: pass
+    async def stdio_server(): pass # Simplified dummy
+
+# --- FreeCAD Connection Import ---
+# Adjust path based on actual location relative to this file
+try:
+    # Assuming execution from workspace root or correct PYTHONPATH
+    from src.mcp_freecad.client.freecad_connection import FreeCADConnection
+    FREECAD_CONNECTION_AVAILABLE = True
+except ImportError:
+    try:
+        # Fallback if running from within the server directory structure
+        from ...client.freecad_connection import FreeCADConnection
+        FREECAD_CONNECTION_AVAILABLE = True
+    except ImportError:
+        logging.warning(
+            "FreeCAD connection module not found. Trying relative import."
+        )
+        try:
+            # Final fallback - assumes freecad_connection.py is findable
+            from freecad_connection import FreeCADConnection
+            FREECAD_CONNECTION_AVAILABLE = True
+        except ImportError:
+            logging.warning(
+                "FreeCAD connection module could not be imported. Server will run without FreeCAD features."
+            )
+            FREECAD_CONNECTION_AVAILABLE = False
+            FreeCADConnection = None # Define as None if unavailable
+
+# --- Configuration & Globals ---
+VERSION = "1.0.0" # Server version
+CONFIG_PATH = "config.json"
+CONFIG: Dict[str, Any] = {}
+FC_CONNECTION: Optional[FreeCADConnection] = None
 
 # Set up logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
-logger = logging.getLogger("freecad_mcp")
+logger = logging.getLogger("advanced_freecad_mcp")
 
-# Import MCP SDK (using `mcp` package)
-try:
-    import mcp
-    from mcp.server import Server as MCPServer
-    from mcp.server.stdio import stdio_server
-    from mcp.server import InitializationOptions, NotificationOptions
-    from mcp.types import JSONRPCRequest
-    mcp_import_error = None
-except ImportError as e:
-    mcp_import_error = str(e)
-    # Create dummy classes for type hints
-    class MCPServer:
-        pass
-
-    class JSONRPCRequest:
-        pass
-
-    class InitializationOptions:
-        pass
-
-    class NotificationOptions:
-        pass
-
-# Import FreeCAD connection
-try:
-    from ..client.freecad_connection import FreeCADConnection
-
-    FREECAD_CONNECTION_AVAILABLE = True
-except ImportError:
-    logger.warning(
-        "FreeCAD connection module not found in the module structure. Trying relative import."
-    )
+# --- Configuration Loading ---
+def load_config(config_path: str) -> Dict[str, Any]:
+    """Load configuration from a JSON file."""
     try:
-        from freecad_connection import FreeCADConnection
-        FREECAD_CONNECTION_AVAILABLE = True
-    except ImportError:
-        logger.warning(
-            "FreeCAD connection module (freecad_connection.py) not found in the current directory or Python path."
-        )
-        FREECAD_CONNECTION_AVAILABLE = False
-        # try:
-        #     # Try to import the local smithery implementation
-        #     from freecad_bridge import FreeCADBridge
-        #     MCP_TOOLS_AVAILABLE = False
-        # except ImportError:
-        #     logger.warning("Local FreeCAD bridge not found. Some functionality may be limited.")
-
-try:
-    from .freecad_bridge import FreeCADBridge
-except ImportError:
-    try:
-        from freecad_bridge import FreeCADBridge
-    except ImportError:
-        logger.warning("FreeCAD bridge module not found. Some functionality may be limited.")
-
-
-class FreeCADMCPServer:
-    """
-    FreeCAD MCP Server implementation.
-    """
-
-    def __init__(self, config_path: str = "config.json"):
-        """
-        Initialize the FreeCAD MCP Server.
-
-        Args:
-            config_path: Path to the configuration file.
-        """
-        self.config = self._load_config(config_path)
-        self.freecad_connection = None
-        self.server = None
-        self.tools = {}
-        self.resources = {}
-
-        # Initialize FreeCAD connection
-        self._initialize_freecad_connection()
-
-        # Initialize tool providers
-        self._initialize_tool_providers()
-
-    def _load_config(self, config_path: str) -> Dict[str, Any]:
-        """Load configuration from a JSON file."""
-        try:
-            with open(config_path, "r") as f:
-                return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            logger.warning(f"Could not load config from {config_path}: {e}")
-            # Return default configuration
-            return {
-                "server": {"name": "freecad-mcp-server", "version": "0.1.0"},
-                "freecad": {
-                    "connection_method": "auto",  # auto, server, bridge, or mock
-                    "host": "localhost",
-                    "port": 12345,
-                    "freecad_path": "freecad",
-                },
+        with open(config_path, "r") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        logger.warning(f"Could not load config from {config_path}: {e}. Using defaults.")
+        # Return default configuration
+        return {
+            "server": {"name": "advanced-freecad-mcp-server", "version": VERSION},
+            "freecad": {
+                "connection_method": "auto",  # auto, server, bridge, or mock
+                "host": "localhost",
+                "port": 12345,
+                "freecad_path": "freecad",
+            },
+            "tools": {
+                 "enable_smithery": True # Example: Control tool availability via config
             }
+        }
 
-    def _initialize_freecad_connection(self):
-        """Initialize connection to FreeCAD."""
-        if not FREECAD_CONNECTION_AVAILABLE:
-            logger.warning(
-                "FreeCAD connection not available. Some features may not work."
-            )
-            return
+# --- FreeCAD Connection Initialization ---
+def initialize_freecad_connection(config: Dict[str, Any]):
+    """Initialize connection to FreeCAD."""
+    global FC_CONNECTION
+    if not FREECAD_CONNECTION_AVAILABLE or not FreeCADConnection:
+        logger.warning(
+            "FreeCAD connection unavailable. Skipping initialization."
+        )
+        FC_CONNECTION = None
+        return
 
-        freecad_config = self.config.get("freecad", {})
+    freecad_config = config.get("freecad", {})
+    logger.info("Attempting to connect to FreeCAD...")
+    try:
+        FC_CONNECTION = FreeCADConnection(
+            host=freecad_config.get("host", "localhost"),
+            port=freecad_config.get("port", 12345),
+            freecad_path=freecad_config.get("freecad_path", "freecad"),
+            auto_connect=True, # Attempt connection immediately
+            prefer_method=freecad_config.get("connection_method", "auto"),
+        )
 
-        try:
-            self.freecad_connection = FreeCADConnection(
-                host=freecad_config.get("host", "localhost"),
-                port=freecad_config.get("port", 12345),
-                freecad_path=freecad_config.get("freecad_path", "freecad"),
-                auto_connect=True,
-                prefer_method=freecad_config.get("connection_method"),
-            )
-
-            if self.freecad_connection.is_connected():
-                connection_type = self.freecad_connection.get_connection_type()
-                logger.info(f"Connected to FreeCAD using {connection_type} method")
-
-                # Get FreeCAD version
-                version_info = self.freecad_connection.get_version()
+        if FC_CONNECTION.is_connected():
+            connection_type = FC_CONNECTION.get_connection_type()
+            logger.info(f"Connected to FreeCAD using {connection_type} method")
+            try:
+                version_info = FC_CONNECTION.get_version()
                 version_str = ".".join(
                     str(v) for v in version_info.get("version", ["Unknown"])
                 )
                 logger.info(f"FreeCAD version: {version_str}")
-            else:
-                logger.warning("Failed to connect to FreeCAD")
-        except Exception as e:
-            logger.error(f"Error initializing FreeCAD connection: {e}")
-
-    def _initialize_tool_providers(self):
-        """Initialize tool providers - populate the tools dictionary with available tools."""
-        logger.info("Initializing tool providers...")
-        self.tools = {}
-
-        # Add basic FreeCAD document tools
-        self.tools["freecad.create_document"] = {
-            "name": "freecad.create_document",
-            "description": "Create a new FreeCAD document",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string",
-                        "description": "Name of the document"
-                    }
-                },
-                "required": ["name"]
-            }
-        }
-
-        self.tools["freecad.list_documents"] = {
-            "name": "freecad.list_documents",
-            "description": "List all open documents",
-            "schema": {
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
-        }
-
-        self.tools["freecad.list_objects"] = {
-            "name": "freecad.list_objects",
-            "description": "List all objects in the active document",
-            "schema": {
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
-        }
-
-        # Add primitive shape creation tools
-        self.tools["freecad.create_box"] = {
-            "name": "freecad.create_box",
-            "description": "Create a box primitive",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "length": {
-                        "type": "number",
-                        "description": "Length of the box"
-                    },
-                    "width": {
-                        "type": "number",
-                        "description": "Width of the box"
-                    },
-                    "height": {
-                        "type": "number",
-                        "description": "Height of the box"
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "Name of the box object"
-                    },
-                    "position_x": {
-                        "type": "number",
-                        "description": "X position of the box"
-                    },
-                    "position_y": {
-                        "type": "number",
-                        "description": "Y position of the box"
-                    },
-                    "position_z": {
-                        "type": "number",
-                        "description": "Z position of the box"
-                    }
-                },
-                "required": ["length", "width", "height"]
-            }
-        }
-
-        self.tools["freecad.create_cylinder"] = {
-            "name": "freecad.create_cylinder",
-            "description": "Create a cylinder primitive",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "radius": {
-                        "type": "number",
-                        "description": "Radius of the cylinder"
-                    },
-                    "height": {
-                        "type": "number",
-                        "description": "Height of the cylinder"
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "Name of the cylinder object"
-                    },
-                    "position_x": {
-                        "type": "number",
-                        "description": "X position of the cylinder"
-                    },
-                    "position_y": {
-                        "type": "number",
-                        "description": "Y position of the cylinder"
-                    },
-                    "position_z": {
-                        "type": "number",
-                        "description": "Z position of the cylinder"
-                    }
-                },
-                "required": ["radius", "height"]
-            }
-        }
-
-        self.tools["freecad.create_sphere"] = {
-            "name": "freecad.create_sphere",
-            "description": "Create a sphere primitive",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "radius": {
-                        "type": "number",
-                        "description": "Radius of the sphere"
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "Name of the sphere object"
-                    },
-                    "position_x": {
-                        "type": "number",
-                        "description": "X position of the sphere"
-                    },
-                    "position_y": {
-                        "type": "number",
-                        "description": "Y position of the sphere"
-                    },
-                    "position_z": {
-                        "type": "number",
-                        "description": "Z position of the sphere"
-                    }
-                },
-                "required": ["radius"]
-            }
-        }
-
-        self.tools["freecad.create_cone"] = {
-            "name": "freecad.create_cone",
-            "description": "Create a cone primitive",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "radius1": {
-                        "type": "number",
-                        "description": "Radius of the base"
-                    },
-                    "radius2": {
-                        "type": "number",
-                        "description": "Radius of the top (0 for a pointed cone)"
-                    },
-                    "height": {
-                        "type": "number",
-                        "description": "Height of the cone"
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "Name of the cone object"
-                    },
-                    "position_x": {
-                        "type": "number",
-                        "description": "X position of the cone"
-                    },
-                    "position_y": {
-                        "type": "number",
-                        "description": "Y position of the cone"
-                    },
-                    "position_z": {
-                        "type": "number",
-                        "description": "Z position of the cone"
-                    }
-                },
-                "required": ["radius1", "height"]
-            }
-        }
-
-        # Add boolean operations
-        self.tools["freecad.boolean_union"] = {
-            "name": "freecad.boolean_union",
-            "description": "Create a union of two objects (add them together)",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "object1": {
-                        "type": "string",
-                        "description": "First object name"
-                    },
-                    "object2": {
-                        "type": "string",
-                        "description": "Second object name"
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "Name of the resulting object"
-                    }
-                },
-                "required": ["object1", "object2"]
-            }
-        }
-
-        self.tools["freecad.boolean_cut"] = {
-            "name": "freecad.boolean_cut",
-            "description": "Cut the second object from the first (subtract)",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "object1": {
-                        "type": "string",
-                        "description": "Base object name (to cut from)"
-                    },
-                    "object2": {
-                        "type": "string",
-                        "description": "Tool object name (to cut with)"
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "Name of the resulting object"
-                    }
-                },
-                "required": ["object1", "object2"]
-            }
-        }
-
-        self.tools["freecad.boolean_intersection"] = {
-            "name": "freecad.boolean_intersection",
-            "description": "Create the intersection of two objects (common volume)",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "object1": {
-                        "type": "string",
-                        "description": "First object name"
-                    },
-                    "object2": {
-                        "type": "string",
-                        "description": "Second object name"
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "Name of the resulting object"
-                    }
-                },
-                "required": ["object1", "object2"]
-            }
-        }
-
-        # Add transformation tools
-        self.tools["freecad.move_object"] = {
-            "name": "freecad.move_object",
-            "description": "Move an object to a new position",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "object_name": {
-                        "type": "string",
-                        "description": "Name of the object to move"
-                    },
-                    "x": {
-                        "type": "number",
-                        "description": "X position"
-                    },
-                    "y": {
-                        "type": "number",
-                        "description": "Y position"
-                    },
-                    "z": {
-                        "type": "number",
-                        "description": "Z position"
-                    }
-                },
-                "required": ["object_name"]
-            }
-        }
-
-        self.tools["freecad.rotate_object"] = {
-            "name": "freecad.rotate_object",
-            "description": "Rotate an object",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "object_name": {
-                        "type": "string",
-                        "description": "Name of the object to rotate"
-                    },
-                    "angle_x": {
-                        "type": "number",
-                        "description": "Rotation angle around X axis in degrees"
-                    },
-                    "angle_y": {
-                        "type": "number",
-                        "description": "Rotation angle around Y axis in degrees"
-                    },
-                    "angle_z": {
-                        "type": "number",
-                        "description": "Rotation angle around Z axis in degrees"
-                    }
-                },
-                "required": ["object_name"]
-            }
-        }
-
-        # Add export tools
-        self.tools["freecad.export_stl"] = {
-            "name": "freecad.export_stl",
-            "description": "Export the model to an STL file",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "file_path": {
-                        "type": "string",
-                        "description": "Path to save the STL file"
-                    },
-                    "objects": {
-                        "type": "array",
-                        "description": "List of objects to export (empty for all objects)",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "required": ["file_path"]
-            }
-        }
-
-        # Add smithery tools if enabled
-        if self.config.get("tools", {}).get("enable_smithery", True):
-            self.tools["smithery.create_anvil"] = {
-                "name": "smithery.create_anvil",
-                "description": "Create an anvil model",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "length": {
-                            "type": "number",
-                            "description": "Length of the anvil"
-                        },
-                        "width": {
-                            "type": "number",
-                            "description": "Width of the anvil"
-                        },
-                        "height": {
-                            "type": "number",
-                            "description": "Height of the anvil"
-                        },
-                        "name": {
-                            "type": "string",
-                            "description": "Name of the anvil object"
-                        }
-                    },
-                    "required": []
-                }
-            }
-
-            self.tools["smithery.create_hammer"] = {
-                "name": "smithery.create_hammer",
-                "description": "Create a blacksmith hammer model",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "head_length": {
-                            "type": "number",
-                            "description": "Length of the hammer head"
-                        },
-                        "handle_length": {
-                            "type": "number",
-                            "description": "Length of the handle"
-                        },
-                        "name": {
-                            "type": "string",
-                            "description": "Name of the hammer object"
-                        }
-                    },
-                    "required": []
-                }
-            }
-
-        # Initialize resources dictionary
-        self.resources = {
-            "freecad://info": {
-                "uri": "freecad://info",
-                "name": "FreeCAD Info"
-            }
-        }
-
-        logger.info(f"Initialized {len(self.tools)} tools and {len(self.resources)} resources")
-
-    async def start(self):
-        """Start the MCP server."""
-        try:
-            # Initialize the MCP server with name, version, etc.
-            server_config = self.config.get("server", {})
-            self.server = MCPServer(server_config.get("name", "freecad-mcp-server"))
-
-            # Register handlers
-            self._setup_handlers()
-
-            logger.info("Starting FreeCAD MCP Server...")
-
-            # Use the proper stdio server pattern
-            async with stdio_server() as (read_stream, write_stream):
-                await self.server.run(
-                    read_stream,
-                    write_stream,
-                    InitializationOptions(
-                        server_name=server_config.get("name", "freecad-mcp-server"),
-                        server_version=server_config.get("version", "0.1.0"),
-                        capabilities=self.server.get_capabilities(
-                            notification_options=NotificationOptions(),
-                            experimental_capabilities={},
-                        ),
-                    ),
-                )
-
-            logger.info("Server has completed")
-
-        except Exception as e:
-            logger.error(f"Error starting the server: {e}")
-            raise
-
-    def _setup_handlers(self):
-        """Set up the MCP server handlers."""
-        # Define handlers for the protocols
-
-        # Save reference to self for closures
-        instance = self
-
-        # List Tools handler
-        @self.server.list_tools()
-        async def handle_list_tools():
-            logger.debug("Handling list_tools request")
-            return [
-                {
-                    "name": tool_info["name"],
-                    "description": tool_info["description"],
-                    "schema": tool_info["schema"],
-                }
-                for tool_id, tool_info in instance.tools.items()
-            ]
-
-        # Call Tool handler
-        @self.server.call_tool()
-        async def handle_call_tool(name, arguments):
-            logger.info(f"Executing tool: {name} with arguments: {arguments}")
-
-            if name not in instance.tools:
-                return {"error": f"Unknown tool: {name}"}
-
-            try:
-                # Handle smithery tools
-                if name.startswith("smithery."):
-                    return await instance._execute_smithery_tool(name, arguments)
-
-                # Handle FreeCAD tools
-                elif name.startswith("freecad."):
-                    return await instance._execute_freecad_tool(name, arguments)
-
-                return {"error": f"Tool not implemented: {name}"}
             except Exception as e:
-                logger.error(f"Error executing tool {name}: {e}")
-                return {"error": f"Error executing tool: {str(e)}"}
+                 logger.warning(f"Could not retrieve FreeCAD version: {e}")
+        else:
+            logger.warning("Failed to connect to FreeCAD initially. Tools requiring connection may fail.")
+            FC_CONNECTION = None # Set to None if connection failed
+    except Exception as e:
+        logger.error(f"Error initializing FreeCAD connection: {e}")
+        FC_CONNECTION = None
 
-        # List Resources handler
-        @self.server.list_resources()
-        async def handle_list_resources():
-            return [
-                {"uri": resource_info["uri"], "name": resource_info["name"]}
-                for resource_id, resource_info in instance.resources.items()
-            ]
+# --- Helper for script execution ---
+async def execute_script_in_freecad(script: str, env_vars_to_get: List[str] = None) -> Dict[str, Any]:
+    """Executes a script in FreeCAD and handles errors/results."""
+    if not FC_CONNECTION or not FC_CONNECTION.is_connected():
+        raise MCPServerError(ErrorCode.InternalError, "Not connected to FreeCAD")
 
-        # Read Resource handler
-        @self.server.read_resource()
-        async def handle_read_resource(uri):
-            logger.info(f"Getting resource: {uri}")
+    env_vars_to_get = env_vars_to_get or []
+    logger.debug(f"Executing script in FreeCAD: requesting env vars {env_vars_to_get}\n---\n{script}\n---")
 
-            if uri not in instance.resources:
-                return {"error": f"Unknown resource: {uri}"}
+    # TODO: Add progress reporting if needed via ToolContext
+    # ctx: ToolContext = ToolContext.get() # Get context if needed
+    # await ctx.send_progress(...)
 
-            try:
-                if uri == "freecad://info":
-                    if instance.freecad_connection and instance.freecad_connection.is_connected():
-                        version_info = instance.freecad_connection.get_version()
-                        version_str = ".".join(
-                            str(v) for v in version_info.get("version", ["Unknown"])
-                        )
-                        connection_type = instance.freecad_connection.get_connection_type()
+    try:
+        result = FC_CONNECTION.execute_command(
+            "execute_script", {"script": script}
+        )
+        # Await if the connection method is async
+        if asyncio.iscoroutine(result):
+            result = await result
 
-                        return {
-                            "content": f"FreeCAD version: {version_str}\nConnection type: {connection_type}",
-                            "mimeType": "text/markdown",
-                        }
-                    else:
-                        return {
-                            "content": "Error: Not currently connected to FreeCAD.",
-                            "mimeType": "text/plain",
-                        }
+        if "error" in result:
+            error_msg = result.get("error", "Unknown error from FreeCAD script execution")
+            logger.error(f"FreeCAD script execution failed: {error_msg}")
+            # Raise specific error type recognized by FastMCP
+            raise MCPServerError(ErrorCode.InternalError, f"FreeCAD execution error: {error_msg}")
 
-                return {"error": f"Resource not implemented: {uri}"}
-            except Exception as e:
-                logger.error(f"Error getting resource {uri}: {e}")
-                return {"error": f"Error getting resource: {str(e)}"}
+        env = result.get("environment", {})
+        extracted_data = {var: env.get(var) for var in env_vars_to_get}
+        logger.debug(f"Script execution successful. Env data received: {extracted_data}")
+        return extracted_data
 
-    async def _execute_smithery_tool(self, tool_name, arguments):
-        """Execute a smithery tool."""
-        if not self.freecad_connection or not self.freecad_connection.is_connected():
-            return {
-                "error": "Not connected to FreeCAD",
-                "message": "Not connected to FreeCAD",
-            }
+    except MCPServerError: # Re-raise MCP errors
+         raise
+    except Exception as e:
+        logger.error(f"Error during script execution call: {e}", exc_info=True)
+        raise MCPServerError(ErrorCode.InternalError, f"Server error during script execution: {str(e)}")
 
-        # Create smithery provider
+# --- Input Sanitization Helper ---
+def sanitize_name(name: str) -> str:
+    """Basic sanitization for names used in scripts (prevents breaking string literals)."""
+    return name.replace('"', '\"').replace('\\', '\\\\')
+
+def sanitize_path(path: str) -> str:
+    """Basic path sanitization."""
+    # Add more robust checks if needed (e.g., check against allowed directories)
+    if ".." in path:
+        raise MCPServerError(ErrorCode.InvalidParams, "Path cannot contain '..'")
+    # Ensure absolute paths aren't used unexpectedly if desired
+    # if os.path.isabs(path):
+    #     raise MCPServerError(ErrorCode.InvalidParams, "Absolute paths are not allowed")
+    return path
+
+
+# --- MCP Server Initialization ---
+server_name = CONFIG.get("server", {}).get("name", "advanced-freecad-mcp-server")
+mcp = FastMCP(server_name, version=VERSION)
+
+# --- Tool Definitions ---
+
+# == FreeCAD Document Tools ==
+
+@mcp.tool()
+async def freecad_create_document(name: str = "Unnamed") -> Dict[str, Any]:
+    """Create a new FreeCAD document."""
+    if not FC_CONNECTION:
+         raise MCPServerError(ErrorCode.InternalError, "FreeCAD connection not available")
+
+    logger.info(f"Executing freecad.create_document with name: {name}")
+    try:
+        # Use direct API call - safer than script for simple ops
+        doc_name = FC_CONNECTION.create_document(name)
+        if not doc_name:
+             raise MCPServerError(ErrorCode.InternalError, f"Failed to create document '{name}' in FreeCAD.")
+        return {
+            "document_name": doc_name,
+            "message": f"Created document: {doc_name}",
+            "success": True,
+        }
+    except Exception as e:
+        logger.error(f"Error in freecad.create_document: {e}", exc_info=True)
+        raise MCPServerError(ErrorCode.InternalError, f"Failed to create document: {str(e)}")
+
+
+@mcp.tool()
+async def freecad_list_documents() -> Dict[str, Any]:
+    """List all open documents."""
+    logger.info("Executing freecad.list_documents")
+    script = """
+import FreeCAD
+import json
+try:
+    document_names = list(FreeCAD.listDocuments().keys())
+    docs_json = json.dumps(document_names)
+except Exception as e:
+    # Propagate script errors back
+    docs_json = json.dumps({"error": str(e)})
+"""
+    try:
+        env_data = await execute_script_in_freecad(script, ["docs_json"])
+        docs_json_str = env_data.get("docs_json", "[]")
+        docs_data = json.loads(docs_json_str)
+
+        if isinstance(docs_data, dict) and "error" in docs_data:
+             raise MCPServerError(ErrorCode.InternalError, f"Error listing documents in FreeCAD: {docs_data['error']}")
+
+        document_names = docs_data # Should be the list
+        return {
+            "documents": document_names,
+            "count": len(document_names),
+            "message": f"Found {len(document_names)} open documents",
+            "success": True
+        }
+    except json.JSONDecodeError:
+        logger.error("Failed to decode document list from FreeCAD script")
+        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+    except Exception as e:
+        logger.error(f"Error listing documents: {e}", exc_info=True)
+        # Ensure MCP error is raised if not already
+        if not isinstance(e, MCPServerError):
+            raise MCPServerError(ErrorCode.InternalError, f"Error listing documents: {str(e)}")
+        else:
+            raise e
+
+
+@mcp.tool()
+async def freecad_list_objects(document: Optional[str] = None) -> Dict[str, Any]:
+    """List all objects in the specified or active document."""
+    logger.info(f"Executing freecad.list_objects for document: {document or 'Active'}")
+    safe_doc_name = sanitize_name(document) if document else ""
+
+    script = f"""
+import FreeCAD
+import json
+
+doc = None # Initialize doc to None before the try block
+doc_name_for_msg = "Active Document"
+doc_name_used = None # Variable to store the actual doc name
+
+try:
+    if "{safe_doc_name}":
+        doc = FreeCAD.getDocument("{safe_doc_name}")
+        if not doc: raise Exception(f"Document '{document}' not found")
+        doc_name_for_msg = "document '{document}'"
+    else:
+        doc = FreeCAD.ActiveDocument
+        if not doc: raise Exception("No active document found")
+        doc_name_for_msg = f"active document '{doc.Name}'"
+
+    doc_name_used = doc.Name # Store the name
+
+    objects_list = []
+    for obj in doc.Objects:
         try:
-            # In a real implementation, we would use the proper MCP tool provider
-            # For now, we'll directly use the FreeCAD connection
+            label = obj.Label if obj.Label else obj.Name # Use Name if Label is empty
+        except AttributeError:
+            label = obj.Name # Fallback if Label attribute doesn't exist
+        objects_list.append({{"name": obj.Name, "type": obj.TypeId, "label": label}})
 
-            if tool_name == "smithery.create_anvil":
-                # Extract parameters
-                length = float(arguments.get("length", 400.0))
-                width = float(arguments.get("width", 120.0))
-                height = float(arguments.get("height", 200.0))
-                horn_length = float(arguments.get("horn_length", 150.0))
+    # Serialize safely
+    objects_json = json.dumps(objects_list)
 
-                # Create anvil using script execution
-                script = f"""
+except Exception as e:
+    objects_json = json.dumps({{"error": str(e)}})
+    doc_name_used = doc.Name if doc else None # Now 'doc' is guaranteed to be defined (as None or the object)
+"""
+    try:
+        env_data = await execute_script_in_freecad(script, ["objects_json", "doc_name_used", "doc_name_for_msg"])
+        objects_json_str = env_data.get("objects_json", "[]")
+        objects_data = json.loads(objects_json_str)
+
+        if isinstance(objects_data, dict) and "error" in objects_data:
+             raise MCPServerError(ErrorCode.InternalError, f"Error listing objects in FreeCAD: {objects_data['error']}")
+
+        objects_list = objects_data
+        doc_name_used = env_data.get("doc_name_used")
+        doc_name_for_msg = env_data.get("doc_name_for_msg", doc_name_used or "unknown document")
+
+        return {
+            "objects": objects_list,
+            "count": len(objects_list),
+            "document": doc_name_used,
+            "message": f"Found {len(objects_list)} objects in {doc_name_for_msg}",
+            "success": True
+        }
+    except json.JSONDecodeError:
+        logger.error("Failed to decode object list from FreeCAD script")
+        raise MCPServerError(ErrorCode.InternalError, "Failed to parse object list from FreeCAD")
+    except Exception as e:
+        logger.error(f"Error listing objects: {e}", exc_info=True)
+        if not isinstance(e, MCPServerError):
+            raise MCPServerError(ErrorCode.InternalError, f"Error listing objects: {str(e)}")
+        else:
+            raise e
+
+
+# == FreeCAD Primitive Tools ==
+
+@mcp.tool()
+async def freecad_create_box(
+    length: float, width: float, height: float,
+    name: str = "Box",
+    position_x: float = 0.0, position_y: float = 0.0, position_z: float = 0.0
+) -> Dict[str, Any]:
+    """Create a box primitive in the active or new document."""
+    logger.info(f"Executing freecad.create_box: {name} ({length}x{width}x{height}) at ({position_x},{position_y},{position_z})")
+    safe_name = sanitize_name(name)
+    script = f"""
 import FreeCAD
 import Part
+import json
 
-# Variables for customization
-body_length = {length}
-body_width = {width}
-body_height = {height * 0.7}
-top_length = {length * 0.9}
-top_width = {width}
-top_height = {height * 0.3}
-horn_length = {horn_length}
-horn_radius1 = {width / 3}
-horn_radius2 = {width / 6}
-
-# Create document
-doc = FreeCAD.ActiveDocument or FreeCAD.newDocument("Smithery")
-
-# Create main body
-body = doc.addObject("Part::Box", "AnvilBody")
-body.Length = body_length
-body.Width = body_width
-body.Height = body_height
-
-# Create top
-top = doc.addObject("Part::Box", "AnvilTop")
-top.Length = top_length
-top.Width = top_width
-top.Height = top_height
-top.Placement.Base = FreeCAD.Vector((body_length - top_length) / 2, 0, body_height)
-
-# Create horn
-horn = doc.addObject("Part::Cone", "AnvilHorn")
-horn.Radius1 = horn_radius1
-horn.Radius2 = horn_radius2
-horn.Height = horn_length
-horn.Placement.Rotation = FreeCAD.Rotation(FreeCAD.Vector(0, 1, 0), 90)
-horn.Placement.Base = FreeCAD.Vector(body_length, body_width / 2, body_height + top_height / 2)
-
-# Create fusion
-fused_anvil = doc.addObject("Part::MultiFuse", "Anvil")
-fused_anvil.Shapes = [body, top, horn]
-
-# Recompute
-doc.recompute()
-
-# Return object ID
-anvil_id = fused_anvil.Name
+box_name = None
+try:
+    doc = FreeCAD.ActiveDocument or FreeCAD.newDocument("Unnamed")
+    box = doc.addObject("Part::Box", "{safe_name}")
+    box.Length = float({length})
+    box.Width = float({width})
+    box.Height = float({height})
+    box.Placement.Base = FreeCAD.Vector(float({position_x}), float({position_y}), float({position_z}))
+    doc.recompute()
+    box_name = box.Name # Get the actual name assigned by FreeCAD
+    result_json = json.dumps({{"object_name": box_name}})
+except Exception as e:
+    result_json = json.dumps({{"error": str(e)}})
 """
+    try:
+        env_data = await execute_script_in_freecad(script, ["result_json"])
+        result_json_str = env_data.get("result_json")
+        result_data = json.loads(result_json_str)
 
-                # Handle both synchronous and asynchronous versions of execute_command
-                result = self.freecad_connection.execute_command(
-                    "execute_script", {"script": script}
-                )
-                if asyncio.iscoroutine(result):
-                    result = await result
+        if isinstance(result_data, dict) and "error" in result_data:
+             raise MCPServerError(ErrorCode.InternalError, f"Error creating box in FreeCAD: {result_data['error']}")
 
-                if "error" in result:
-                    return {"error": result["error"], "message": result["error"]}
+        created_name = result_data.get("object_name")
+        return {
+            "object_name": created_name,
+            "message": f"Created box '{created_name}' with dimensions {length}x{width}x{height}mm",
+            "success": True
+        }
+    except json.JSONDecodeError:
+        logger.error("Failed to decode box creation result from FreeCAD script")
+        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+    except Exception as e:
+        logger.error(f"Error creating box: {e}", exc_info=True)
+        if not isinstance(e, MCPServerError):
+            raise MCPServerError(ErrorCode.InternalError, f"Error creating box: {str(e)}")
+        else:
+            raise e
 
-                # Get the name of the created object from the environment
-                anvil_id = result.get("environment", {}).get("anvil_id", "Anvil")
-
-                return {
-                    "anvil_id": anvil_id,
-                    "message": f"Created anvil with dimensions: {length}x{width}x{height}mm",
-                    "success": True,
-                }
-
-            elif tool_name == "smithery.create_hammer":
-                # Extract parameters
-                handle_length = float(arguments.get("handle_length", 300.0))
-                handle_diameter = float(arguments.get("handle_diameter", 25.0))
-                head_length = float(arguments.get("head_length", 100.0))
-                head_width = float(arguments.get("head_width", 40.0))
-                head_height = float(arguments.get("head_height", 30.0))
-
-                # Create hammer using script execution
-                script = f"""
+@mcp.tool()
+async def freecad_create_cylinder(
+    radius: float, height: float,
+    name: str = "Cylinder",
+    position_x: float = 0.0, position_y: float = 0.0, position_z: float = 0.0
+) -> Dict[str, Any]:
+    """Create a cylinder primitive."""
+    logger.info(f"Executing freecad.create_cylinder: {name} (r={radius}, h={height}) at ({position_x},{position_y},{position_z})")
+    safe_name = sanitize_name(name)
+    script = f"""
 import FreeCAD
 import Part
+import json
 
-# Create document
-doc = FreeCAD.ActiveDocument or FreeCAD.newDocument("Smithery")
-
-# Create handle
-handle = doc.addObject("Part::Cylinder", "HammerHandle")
-handle.Radius = {handle_diameter / 2}
-handle.Height = {handle_length}
-handle.Placement.Rotation = FreeCAD.Rotation(FreeCAD.Vector(0, 1, 0), 90)
-
-# Create head
-head = doc.addObject("Part::Box", "HammerHead")
-head.Length = {head_length}
-head.Width = {head_width}
-head.Height = {head_height}
-head.Placement.Base = FreeCAD.Vector(
-    handle.Height - head.Length/2,
-    -head.Width/2 + handle.Radius,
-    -head.Height/2 + handle.Radius
-)
-
-# Create fusion
-fusion = doc.addObject("Part::MultiFuse", "Hammer")
-fusion.Shapes = [handle, head]
-
-# Recompute
-doc.recompute()
-
-# Return object ID
-hammer_id = fusion.Name
+cylinder_name = None
+try:
+    doc = FreeCAD.ActiveDocument or FreeCAD.newDocument("Unnamed")
+    cylinder = doc.addObject("Part::Cylinder", "{safe_name}")
+    cylinder.Radius = float({radius})
+    cylinder.Height = float({height})
+    cylinder.Placement.Base = FreeCAD.Vector(float({position_x}), float({position_y}), float({position_z}))
+    doc.recompute()
+    cylinder_name = cylinder.Name
+    result_json = json.dumps({{"object_name": cylinder_name}})
+except Exception as e:
+    result_json = json.dumps({{"error": str(e)}})
 """
-                # Handle both synchronous and asynchronous versions of execute_command
-                result = self.freecad_connection.execute_command(
-                    "execute_script", {"script": script}
-                )
-                if asyncio.iscoroutine(result):
-                    result = await result
+    try:
+        env_data = await execute_script_in_freecad(script, ["result_json"])
+        result_json_str = env_data.get("result_json")
+        result_data = json.loads(result_json_str)
 
-                if "error" in result:
-                    return {"error": result["error"], "message": result["error"]}
+        if isinstance(result_data, dict) and "error" in result_data:
+             raise MCPServerError(ErrorCode.InternalError, f"Error creating cylinder in FreeCAD: {result_data['error']}")
 
-                # Get the name of the created object from the environment
-                hammer_id = result.get("environment", {}).get("hammer_id", "Hammer")
+        created_name = result_data.get("object_name")
+        return {
+            "object_name": created_name,
+            "message": f"Created cylinder '{created_name}' with radius {radius}mm and height {height}mm",
+            "success": True
+        }
+    except json.JSONDecodeError:
+        logger.error("Failed to decode cylinder creation result")
+        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+    except Exception as e:
+        logger.error(f"Error creating cylinder: {e}", exc_info=True)
+        if not isinstance(e, MCPServerError):
+             raise MCPServerError(ErrorCode.InternalError, f"Error creating cylinder: {str(e)}")
+        else: raise e
 
-                return {
-                    "hammer_id": hammer_id,
-                    "message": f"Created hammer with handle length {handle_length}mm and head dimensions {head_length}x{head_width}x{head_height}mm",
-                    "success": True,
-                }
 
-            # Similarly implement other smithery tools
-
-            else:
-                return {
-                    "error": f"Tool not yet implemented: {tool_name}",
-                    "message": f"Tool not yet implemented: {tool_name}",
-                }
-
-        except Exception as e:
-            logger.error(f"Error executing smithery tool {tool_name}: {e}")
-            return {
-                "error": f"Error executing tool: {str(e)}",
-                "message": f"Error executing tool: {str(e)}",
-            }
-
-    async def _execute_freecad_tool(self, tool_name, arguments):
-        """Execute a basic FreeCAD tool."""
-        if not self.freecad_connection or not self.freecad_connection.is_connected():
-            return {
-                "error": "Not connected to FreeCAD",
-                "message": "Not connected to FreeCAD",
-            }
-
-        try:
-            if tool_name == "freecad.create_document":
-                name = arguments.get("name", "Unnamed")
-                result = self.freecad_connection.create_document(name)
-                return {
-                    "document_name": result,
-                    "message": f"Created document: {result}",
-                    "success": bool(result),
-                }
-
-            elif tool_name == "freecad.export_stl":
-                file_path = arguments.get("file_path")
-                object_name = arguments.get("object_name")
-                document = arguments.get(
-                    "document", arguments.get("document_name")
-                )  # Allow both keys
-
-                if not file_path:
-                    return {
-                        "error": "File path is required",
-                        "message": "File path is required",
-                    }
-
-                success = self.freecad_connection.export_stl(
-                    object_name=object_name, file_path=file_path, document=document
-                )
-
-                return {
-                    "file_path": file_path,
-                    "message": f"Exported {'model' if not object_name else object_name} to {file_path}",
-                    "success": success,
-                }
-
-            # 3D Primitive Creation Tools
-            elif tool_name == "freecad.create_box":
-                # Extract parameters
-                length = float(arguments.get("length", 100.0))
-                width = float(arguments.get("width", 100.0))
-                height = float(arguments.get("height", 100.0))
-                name = arguments.get("name", "Box")
-                pos_x = float(arguments.get("position_x", 0.0))
-                pos_y = float(arguments.get("position_y", 0.0))
-                pos_z = float(arguments.get("position_z", 0.0))
-
-                # Create the script
-                script = f"""
+@mcp.tool()
+async def freecad_create_sphere(
+    radius: float,
+    name: str = "Sphere",
+    position_x: float = 0.0, position_y: float = 0.0, position_z: float = 0.0
+) -> Dict[str, Any]:
+    """Create a sphere primitive."""
+    logger.info(f"Executing freecad.create_sphere: {name} (r={radius}) at ({position_x},{position_y},{position_z})")
+    safe_name = sanitize_name(name)
+    script = f"""
 import FreeCAD
 import Part
+import json
 
-# Create or get the active document
-doc = FreeCAD.ActiveDocument
-if not doc:
-    doc = FreeCAD.newDocument("Unnamed")
-
-# Create a box
-box = doc.addObject("Part::Box", "{name}")
-box.Length = {length}
-box.Width = {width}
-box.Height = {height}
-box.Placement.Base = FreeCAD.Vector({pos_x}, {pos_y}, {pos_z})
-
-# Recompute
-doc.recompute()
-
-# Return the name
-box_name = box.Name
+sphere_name = None
+try:
+    doc = FreeCAD.ActiveDocument or FreeCAD.newDocument("Unnamed")
+    sphere = doc.addObject("Part::Sphere", "{safe_name}")
+    sphere.Radius = float({radius})
+    sphere.Placement.Base = FreeCAD.Vector(float({position_x}), float({position_y}), float({position_z}))
+    doc.recompute()
+    sphere_name = sphere.Name
+    result_json = json.dumps({{"object_name": sphere_name}})
+except Exception as e:
+    result_json = json.dumps({{"error": str(e)}})
 """
-                # Execute the script
-                result = self.freecad_connection.execute_command(
-                    "execute_script", {"script": script}
-                )
-                if asyncio.iscoroutine(result):
-                    result = await result
+    try:
+        env_data = await execute_script_in_freecad(script, ["result_json"])
+        result_json_str = env_data.get("result_json")
+        result_data = json.loads(result_json_str)
 
-                if "error" in result:
-                    return {"error": result["error"], "message": result["error"]}
+        if isinstance(result_data, dict) and "error" in result_data:
+             raise MCPServerError(ErrorCode.InternalError, f"Error creating sphere in FreeCAD: {result_data['error']}")
 
-                # Get the name of the created object
-                box_name = result.get("environment", {}).get("box_name", name)
+        created_name = result_data.get("object_name")
+        return {
+            "object_name": created_name,
+            "message": f"Created sphere '{created_name}' with radius {radius}mm",
+            "success": True
+        }
+    except json.JSONDecodeError:
+        logger.error("Failed to decode sphere creation result")
+        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+    except Exception as e:
+        logger.error(f"Error creating sphere: {e}", exc_info=True)
+        if not isinstance(e, MCPServerError):
+             raise MCPServerError(ErrorCode.InternalError, f"Error creating sphere: {str(e)}")
+        else: raise e
 
-                return {
-                    "object_name": box_name,
-                    "message": f"Created box with dimensions {length}x{width}x{height}mm",
-                    "success": True
-                }
 
-            elif tool_name == "freecad.create_cylinder":
-                # Extract parameters
-                radius = float(arguments.get("radius", 50.0))
-                height = float(arguments.get("height", 100.0))
-                name = arguments.get("name", "Cylinder")
-                pos_x = float(arguments.get("position_x", 0.0))
-                pos_y = float(arguments.get("position_y", 0.0))
-                pos_z = float(arguments.get("position_z", 0.0))
-
-                # Create the script
-                script = f"""
+@mcp.tool()
+async def freecad_create_cone(
+    radius1: float, height: float,
+    radius2: float = 0.0, # Top radius defaults to 0 for a pointed cone
+    name: str = "Cone",
+    position_x: float = 0.0, position_y: float = 0.0, position_z: float = 0.0
+) -> Dict[str, Any]:
+    """Create a cone primitive."""
+    logger.info(f"Executing freecad.create_cone: {name} (r1={radius1}, r2={radius2}, h={height}) at ({position_x},{position_y},{position_z})")
+    safe_name = sanitize_name(name)
+    script = f"""
 import FreeCAD
 import Part
+import json
 
-# Create or get the active document
-doc = FreeCAD.ActiveDocument
-if not doc:
-    doc = FreeCAD.newDocument("Unnamed")
-
-# Create a cylinder
-cylinder = doc.addObject("Part::Cylinder", "{name}")
-cylinder.Radius = {radius}
-cylinder.Height = {height}
-cylinder.Placement.Base = FreeCAD.Vector({pos_x}, {pos_y}, {pos_z})
-
-# Recompute
-doc.recompute()
-
-# Return the name
-cylinder_name = cylinder.Name
+cone_name = None
+try:
+    doc = FreeCAD.ActiveDocument or FreeCAD.newDocument("Unnamed")
+    cone = doc.addObject("Part::Cone", "{safe_name}")
+    cone.Radius1 = float({radius1})
+    cone.Radius2 = float({radius2})
+    cone.Height = float({height})
+    cone.Placement.Base = FreeCAD.Vector(float({position_x}), float({position_y}), float({position_z}))
+    doc.recompute()
+    cone_name = cone.Name
+    result_json = json.dumps({{"object_name": cone_name}})
+except Exception as e:
+    result_json = json.dumps({{"error": str(e)}})
 """
-                # Execute the script
-                result = self.freecad_connection.execute_command(
-                    "execute_script", {"script": script}
-                )
-                if asyncio.iscoroutine(result):
-                    result = await result
+    try:
+        env_data = await execute_script_in_freecad(script, ["result_json"])
+        result_json_str = env_data.get("result_json")
+        result_data = json.loads(result_json_str)
 
-                if "error" in result:
-                    return {"error": result["error"], "message": result["error"]}
+        if isinstance(result_data, dict) and "error" in result_data:
+             raise MCPServerError(ErrorCode.InternalError, f"Error creating cone in FreeCAD: {result_data['error']}")
 
-                # Get the name of the created object
-                cylinder_name = result.get("environment", {}).get("cylinder_name", name)
+        created_name = result_data.get("object_name")
+        return {
+            "object_name": created_name,
+            "message": f"Created cone '{created_name}' with base radius {radius1}mm, top radius {radius2}mm, and height {height}mm",
+            "success": True
+        }
+    except json.JSONDecodeError:
+        logger.error("Failed to decode cone creation result")
+        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+    except Exception as e:
+        logger.error(f"Error creating cone: {e}", exc_info=True)
+        if not isinstance(e, MCPServerError):
+             raise MCPServerError(ErrorCode.InternalError, f"Error creating cone: {str(e)}")
+        else: raise e
 
-                return {
-                    "object_name": cylinder_name,
-                    "message": f"Created cylinder with radius {radius}mm and height {height}mm",
-                    "success": True
-                }
 
-            elif tool_name == "freecad.create_sphere":
-                # Extract parameters
-                radius = float(arguments.get("radius", 50.0))
-                name = arguments.get("name", "Sphere")
-                pos_x = float(arguments.get("position_x", 0.0))
-                pos_y = float(arguments.get("position_y", 0.0))
-                pos_z = float(arguments.get("position_z", 0.0))
+# == FreeCAD Boolean Operations ==
 
-                # Create the script
-                script = f"""
+@mcp.tool()
+async def freecad_boolean_union(object1: str, object2: str, name: str = "Union") -> Dict[str, Any]:
+    """Create a union of two objects (Fuse)."""
+    logger.info(f"Executing freecad.boolean_union: {name} = {object1} + {object2}")
+    safe_name = sanitize_name(name)
+    safe_obj1 = sanitize_name(object1)
+    safe_obj2 = sanitize_name(object2)
+    script = f"""
 import FreeCAD
 import Part
+import json
 
-# Create or get the active document
-doc = FreeCAD.ActiveDocument
-if not doc:
-    doc = FreeCAD.newDocument("Unnamed")
+union_name = None
+try:
+    doc = FreeCAD.ActiveDocument
+    if not doc: raise Exception("No active document")
+    obj1 = doc.getObject("{safe_obj1}")
+    obj2 = doc.getObject("{safe_obj2}")
+    if not obj1: raise Exception(f"Object '{object1}' not found")
+    if not obj2: raise Exception(f"Object '{object2}' not found")
 
-# Create a sphere
-sphere = doc.addObject("Part::Sphere", "{name}")
-sphere.Radius = {radius}
-sphere.Placement.Base = FreeCAD.Vector({pos_x}, {pos_y}, {pos_z})
-
-# Recompute
-doc.recompute()
-
-# Return the name
-sphere_name = sphere.Name
+    union = doc.addObject("Part::Fuse", "{safe_name}")
+    union.Base = obj1
+    union.Tool = obj2
+    doc.recompute()
+    union_name = union.Name
+    result_json = json.dumps({{"object_name": union_name}})
+except Exception as e:
+    result_json = json.dumps({{"error": str(e)}})
 """
-                # Execute the script
-                result = self.freecad_connection.execute_command(
-                    "execute_script", {"script": script}
-                )
-                if asyncio.iscoroutine(result):
-                    result = await result
+    try:
+        env_data = await execute_script_in_freecad(script, ["result_json"])
+        result_json_str = env_data.get("result_json")
+        result_data = json.loads(result_json_str)
 
-                if "error" in result:
-                    return {"error": result["error"], "message": result["error"]}
+        if isinstance(result_data, dict) and "error" in result_data:
+             raise MCPServerError(ErrorCode.InternalError, f"Error creating union in FreeCAD: {result_data['error']}")
 
-                # Get the name of the created object
-                sphere_name = result.get("environment", {}).get("sphere_name", name)
+        created_name = result_data.get("object_name")
+        return {
+            "object_name": created_name,
+            "message": f"Created union '{created_name}' of {object1} and {object2}",
+            "success": True
+        }
+    except json.JSONDecodeError:
+        logger.error("Failed to decode union result")
+        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+    except Exception as e:
+        logger.error(f"Error performing boolean union: {e}", exc_info=True)
+        if not isinstance(e, MCPServerError):
+             raise MCPServerError(ErrorCode.InternalError, f"Error creating union: {str(e)}")
+        else: raise e
 
-                return {
-                    "object_name": sphere_name,
-                    "message": f"Created sphere with radius {radius}mm",
-                    "success": True
-                }
-
-            elif tool_name == "freecad.create_cone":
-                # Extract parameters
-                radius1 = float(arguments.get("radius1", 50.0))
-                radius2 = float(arguments.get("radius2", 0.0))
-                height = float(arguments.get("height", 100.0))
-                name = arguments.get("name", "Cone")
-                pos_x = float(arguments.get("position_x", 0.0))
-                pos_y = float(arguments.get("position_y", 0.0))
-                pos_z = float(arguments.get("position_z", 0.0))
-
-                # Create the script
-                script = f"""
+@mcp.tool()
+async def freecad_boolean_cut(object1: str, object2: str, name: str = "Cut") -> Dict[str, Any]:
+    """Cut the second object from the first (subtract)."""
+    logger.info(f"Executing freecad.boolean_cut: {name} = {object1} - {object2}")
+    safe_name = sanitize_name(name)
+    safe_obj1 = sanitize_name(object1) # Base object
+    safe_obj2 = sanitize_name(object2) # Tool object
+    script = f"""
 import FreeCAD
 import Part
+import json
 
-# Create or get the active document
-doc = FreeCAD.ActiveDocument
-if not doc:
-    doc = FreeCAD.newDocument("Unnamed")
+cut_name = None
+try:
+    doc = FreeCAD.ActiveDocument
+    if not doc: raise Exception("No active document")
+    obj1 = doc.getObject("{safe_obj1}") # Base
+    obj2 = doc.getObject("{safe_obj2}") # Tool
+    if not obj1: raise Exception(f"Base object '{object1}' not found")
+    if not obj2: raise Exception(f"Tool object '{object2}' not found")
 
-# Create a cone
-cone = doc.addObject("Part::Cone", "{name}")
-cone.Radius1 = {radius1}
-cone.Radius2 = {radius2}
-cone.Height = {height}
-cone.Placement.Base = FreeCAD.Vector({pos_x}, {pos_y}, {pos_z})
-
-# Recompute
-doc.recompute()
-
-# Return the name
-cone_name = cone.Name
+    cut = doc.addObject("Part::Cut", "{safe_name}")
+    cut.Base = obj1
+    cut.Tool = obj2
+    doc.recompute()
+    cut_name = cut.Name
+    result_json = json.dumps({{"object_name": cut_name}})
+except Exception as e:
+    result_json = json.dumps({{"error": str(e)}})
 """
-                # Execute the script
-                result = self.freecad_connection.execute_command(
-                    "execute_script", {"script": script}
-                )
-                if asyncio.iscoroutine(result):
-                    result = await result
+    try:
+        env_data = await execute_script_in_freecad(script, ["result_json"])
+        result_json_str = env_data.get("result_json")
+        result_data = json.loads(result_json_str)
 
-                if "error" in result:
-                    return {"error": result["error"], "message": result["error"]}
+        if isinstance(result_data, dict) and "error" in result_data:
+             raise MCPServerError(ErrorCode.InternalError, f"Error creating cut in FreeCAD: {result_data['error']}")
 
-                # Get the name of the created object
-                cone_name = result.get("environment", {}).get("cone_name", name)
+        created_name = result_data.get("object_name")
+        return {
+            "object_name": created_name,
+            "message": f"Created cut '{created_name}' of {object1} by {object2}",
+            "success": True
+        }
+    except json.JSONDecodeError:
+        logger.error("Failed to decode cut result")
+        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+    except Exception as e:
+        logger.error(f"Error performing boolean cut: {e}", exc_info=True)
+        if not isinstance(e, MCPServerError):
+             raise MCPServerError(ErrorCode.InternalError, f"Error creating cut: {str(e)}")
+        else: raise e
 
-                return {
-                    "object_name": cone_name,
-                    "message": f"Created cone with base radius {radius1}mm, top radius {radius2}mm, and height {height}mm",
-                    "success": True
-                }
 
-            # Boolean operations
-            elif tool_name == "freecad.boolean_union":
-                # Extract parameters
-                object1 = arguments.get("object1")
-                object2 = arguments.get("object2")
-                name = arguments.get("name", "Union")
-
-                if not object1 or not object2:
-                    return {
-                        "error": "Both object names are required",
-                        "message": "Both object names are required for boolean union operation",
-                    }
-
-                # Create the script
-                script = f"""
+@mcp.tool()
+async def freecad_boolean_intersection(object1: str, object2: str, name: str = "Intersection") -> Dict[str, Any]:
+    """Create the intersection of two objects (Common)."""
+    logger.info(f"Executing freecad.boolean_intersection: {name} = {object1} & {object2}")
+    safe_name = sanitize_name(name)
+    safe_obj1 = sanitize_name(object1)
+    safe_obj2 = sanitize_name(object2)
+    script = f"""
 import FreeCAD
 import Part
+import json
 
-# Get the active document
-doc = FreeCAD.ActiveDocument
-if not doc:
-    raise Exception("No active document")
+intersection_name = None
+try:
+    doc = FreeCAD.ActiveDocument
+    if not doc: raise Exception("No active document")
+    obj1 = doc.getObject("{safe_obj1}")
+    obj2 = doc.getObject("{safe_obj2}")
+    if not obj1: raise Exception(f"Object '{object1}' not found")
+    if not obj2: raise Exception(f"Object '{object2}' not found")
 
-# Get the objects
-obj1 = doc.getObject("{object1}")
-obj2 = doc.getObject("{object2}")
-
-if not obj1:
-    raise Exception("Object '{object1}' not found")
-if not obj2:
-    raise Exception("Object '{object2}' not found")
-
-# Create a union
-union = doc.addObject("Part::Fuse", "{name}")
-union.Base = obj1
-union.Tool = obj2
-
-# Recompute
-doc.recompute()
-
-# Return the name
-union_name = union.Name
+    intersection = doc.addObject("Part::Common", "{safe_name}")
+    # Part.Common takes a list of shapes
+    intersection.Shapes = [obj1, obj2]
+    doc.recompute()
+    intersection_name = intersection.Name
+    result_json = json.dumps({{"object_name": intersection_name}})
+except Exception as e:
+    result_json = json.dumps({{"error": str(e)}})
 """
-                # Execute the script
-                result = self.freecad_connection.execute_command(
-                    "execute_script", {"script": script}
-                )
-                if asyncio.iscoroutine(result):
-                    result = await result
+    try:
+        env_data = await execute_script_in_freecad(script, ["result_json"])
+        result_json_str = env_data.get("result_json")
+        result_data = json.loads(result_json_str)
 
-                if "error" in result:
-                    return {"error": result["error"], "message": result["error"]}
+        if isinstance(result_data, dict) and "error" in result_data:
+             raise MCPServerError(ErrorCode.InternalError, f"Error creating intersection in FreeCAD: {result_data['error']}")
 
-                # Get the name of the created object
-                union_name = result.get("environment", {}).get("union_name", name)
+        created_name = result_data.get("object_name")
+        return {
+            "object_name": created_name,
+            "message": f"Created intersection '{created_name}' of {object1} and {object2}",
+            "success": True
+        }
+    except json.JSONDecodeError:
+        logger.error("Failed to decode intersection result")
+        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+    except Exception as e:
+        logger.error(f"Error performing boolean intersection: {e}", exc_info=True)
+        if not isinstance(e, MCPServerError):
+             raise MCPServerError(ErrorCode.InternalError, f"Error creating intersection: {str(e)}")
+        else: raise e
 
-                return {
-                    "object_name": union_name,
-                    "message": f"Created union of {object1} and {object2}",
-                    "success": True
-                }
+# == FreeCAD Transformation Tools ==
 
-            elif tool_name == "freecad.boolean_cut":
-                # Extract parameters
-                object1 = arguments.get("object1")
-                object2 = arguments.get("object2")
-                name = arguments.get("name", "Cut")
+@mcp.tool()
+async def freecad_move_object(
+    object_name: str,
+    x: Optional[float] = None, y: Optional[float] = None, z: Optional[float] = None
+) -> Dict[str, Any]:
+    """Move an object to a new absolute position. Specify at least one coordinate."""
+    if x is None and y is None and z is None:
+         raise MCPServerError(ErrorCode.InvalidParams, "At least one coordinate (x, y, or z) must be provided for move_object")
 
-                if not object1 or not object2:
-                    return {
-                        "error": "Both object names are required",
-                        "message": "Both object names are required for boolean cut operation",
-                    }
+    logger.info(f"Executing freecad.move_object: {object_name} to (x={x}, y={y}, z={z})")
+    safe_obj_name = sanitize_name(object_name)
 
-                # Create the script
-                script = f"""
-import FreeCAD
-import Part
+    # Build the script carefully to handle optional coordinates
+    script_lines = [
+        "import FreeCAD",
+        "import json",
+        "new_pos_x = None; new_pos_y = None; new_pos_z = None", # Vars to store final pos
+        "try:",
+        "    doc = FreeCAD.ActiveDocument",
+        "    if not doc: raise Exception(\"No active document\")",
+        f"   obj = doc.getObject(\"{safe_obj_name}\")",
+        f"   if not obj: raise Exception(\"Object '{object_name}' not found\")",
+        "    current_pos = obj.Placement.Base",
+        "    target_pos = FreeCAD.Vector(current_pos.x, current_pos.y, current_pos.z)" # Start with current
+    ]
+    if x is not None: script_lines.append(f"   target_pos.x = float({x})")
+    if y is not None: script_lines.append(f"   target_pos.y = float({y})")
+    if z is not None: script_lines.append(f"   target_pos.z = float({z})")
 
-# Get the active document
-doc = FreeCAD.ActiveDocument
-if not doc:
-    raise Exception("No active document")
+    script_lines.extend([
+        "    obj.Placement.Base = target_pos",
+        "    doc.recompute()",
+        "    final_pos = obj.Placement.Base", # Read back final position
+        "    new_pos_x = final_pos.x",
+        "    new_pos_y = final_pos.y",
+        "    new_pos_z = final_pos.z",
+        "    result_json = json.dumps({'x': new_pos_x, 'y': new_pos_y, 'z': new_pos_z})",
+        "except Exception as e:",
+        "    result_json = json.dumps({'error': str(e)})"
+    ])
+    script = "\n".join(script_lines)
 
-# Get the objects
-obj1 = doc.getObject("{object1}")
-obj2 = doc.getObject("{object2}")
+    try:
+        env_data = await execute_script_in_freecad(script, ["result_json"])
+        result_json_str = env_data.get("result_json")
+        result_data = json.loads(result_json_str)
 
-if not obj1:
-    raise Exception("Object '{object1}' not found")
-if not obj2:
-    raise Exception("Object '{object2}' not found")
+        if isinstance(result_data, dict) and "error" in result_data:
+             raise MCPServerError(ErrorCode.InternalError, f"Error moving object in FreeCAD: {result_data['error']}")
 
-# Create a cut
-cut = doc.addObject("Part::Cut", "{name}")
-cut.Base = obj1
-cut.Tool = obj2
+        final_pos = result_data # Should contain x, y, z
+        return {
+            "object_name": object_name,
+            "position": final_pos,
+            "message": f"Moved object '{object_name}' to position ({final_pos.get('x'):.2f}, {final_pos.get('y'):.2f}, {final_pos.get('z'):.2f})",
+            "success": True
+        }
+    except json.JSONDecodeError:
+        logger.error("Failed to decode move result")
+        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+    except Exception as e:
+        logger.error(f"Error moving object: {e}", exc_info=True)
+        if not isinstance(e, MCPServerError):
+             raise MCPServerError(ErrorCode.InternalError, f"Error moving object: {str(e)}")
+        else: raise e
 
-# Recompute
-doc.recompute()
 
-# Return the name
-cut_name = cut.Name
-"""
-                # Execute the script
-                result = self.freecad_connection.execute_command(
-                    "execute_script", {"script": script}
-                )
-                if asyncio.iscoroutine(result):
-                    result = await result
+@mcp.tool()
+async def freecad_rotate_object(
+    object_name: str,
+    angle_x: float = 0.0, angle_y: float = 0.0, angle_z: float = 0.0
+) -> Dict[str, Any]:
+    """Rotate an object by Euler angles (degrees) around its placement base point."""
+    logger.info(f"Executing freecad.rotate_object: {object_name} by (x={angle_x}, y={angle_y}, z={angle_z}) deg")
+    safe_obj_name = sanitize_name(object_name)
 
-                if "error" in result:
-                    return {"error": result["error"], "message": result["error"]}
-
-                # Get the name of the created object
-                cut_name = result.get("environment", {}).get("cut_name", name)
-
-                return {
-                    "object_name": cut_name,
-                    "message": f"Created cut of {object1} by {object2}",
-                    "success": True
-                }
-
-            elif tool_name == "freecad.boolean_intersection":
-                # Extract parameters
-                object1 = arguments.get("object1")
-                object2 = arguments.get("object2")
-                name = arguments.get("name", "Intersection")
-
-                if not object1 or not object2:
-                    return {
-                        "error": "Both object names are required",
-                        "message": "Both object names are required for boolean intersection operation",
-                    }
-
-                # Create the script
-                script = f"""
-import FreeCAD
-import Part
-
-# Get the active document
-doc = FreeCAD.ActiveDocument
-if not doc:
-    raise Exception("No active document")
-
-# Get the objects
-obj1 = doc.getObject("{object1}")
-obj2 = doc.getObject("{object2}")
-
-if not obj1:
-    raise Exception("Object '{object1}' not found")
-if not obj2:
-    raise Exception("Object '{object2}' not found")
-
-# Create an intersection
-intersection = doc.addObject("Part::Common", "{name}")
-intersection.Base = obj1
-intersection.Tool = obj2
-
-# Recompute
-doc.recompute()
-
-# Return the name
-intersection_name = intersection.Name
-"""
-                # Execute the script
-                result = self.freecad_connection.execute_command(
-                    "execute_script", {"script": script}
-                )
-                if asyncio.iscoroutine(result):
-                    result = await result
-
-                if "error" in result:
-                    return {"error": result["error"], "message": result["error"]}
-
-                # Get the name of the created object
-                intersection_name = result.get("environment", {}).get("intersection_name", name)
-
-                return {
-                    "object_name": intersection_name,
-                    "message": f"Created intersection of {object1} and {object2}",
-                    "success": True
-                }
-
-            # Transformation tools
-            elif tool_name == "freecad.move_object":
-                # Extract parameters
-                object_name = arguments.get("object_name")
-                pos_x = float(arguments.get("x", 0.0))
-                pos_y = float(arguments.get("y", 0.0))
-                pos_z = float(arguments.get("z", 0.0))
-
-                if not object_name:
-                    return {
-                        "error": "Object name is required",
-                        "message": "Object name is required for move operation",
-                    }
-
-                # Create the script for absolute positioning
-                script = f"""
-import FreeCAD
-
-# Get the active document
-doc = FreeCAD.ActiveDocument
-if not doc:
-    raise Exception("No active document")
-
-# Get the object
-obj = doc.getObject("{object_name}")
-if not obj:
-    raise Exception("Object '{object_name}' not found")
-
-# Move the object to an absolute position
-obj.Placement.Base = FreeCAD.Vector({pos_x}, {pos_y}, {pos_z})
-
-# Recompute
-doc.recompute()
-
-# Return the new position
-new_pos_x = obj.Placement.Base.x
-new_pos_y = obj.Placement.Base.y
-new_pos_z = obj.Placement.Base.z
-"""
-                # Execute the script
-                result = self.freecad_connection.execute_command(
-                    "execute_script", {"script": script}
-                )
-                if asyncio.iscoroutine(result):
-                    result = await result
-
-                if "error" in result:
-                    return {"error": result["error"], "message": result["error"]}
-
-                # Get the new position from the environment
-                new_pos_x = result.get("environment", {}).get("new_pos_x", pos_x)
-                new_pos_y = result.get("environment", {}).get("new_pos_y", pos_y)
-                new_pos_z = result.get("environment", {}).get("new_pos_z", pos_z)
-
-                return {
-                    "object_name": object_name,
-                    "position": {
-                        "x": new_pos_x,
-                        "y": new_pos_y,
-                        "z": new_pos_z
-                    },
-                    "message": f"Moved object {object_name} to position ({new_pos_x}, {new_pos_y}, {new_pos_z})",
-                    "success": True
-                }
-
-            elif tool_name == "freecad.rotate_object":
-                # Extract parameters
-                object_name = arguments.get("object_name")
-                rot_x = float(arguments.get("angle_x", 0.0))
-                rot_y = float(arguments.get("angle_y", 0.0))
-                rot_z = float(arguments.get("angle_z", 0.0))
-
-                if not object_name:
-                    return {
-                        "error": "Object name is required",
-                        "message": "Object name is required for rotation operation",
-                    }
-
-                # Create the script
-                script = f"""
+    script = f"""
 import FreeCAD
 import math
+import json
 
-# Get the active document
-doc = FreeCAD.ActiveDocument
-if not doc:
-    raise Exception("No active document")
-
-# Get the object
-obj = doc.getObject("{object_name}")
-if not obj:
-    raise Exception("Object '{object_name}' not found")
-
-# Convert degrees to radians
-rot_x_rad = math.radians({rot_x})
-rot_y_rad = math.radians({rot_y})
-rot_z_rad = math.radians({rot_z})
-
-# Create rotation
-rotation = FreeCAD.Rotation(rot_x_rad, rot_y_rad, rot_z_rad)
-
-# Create placement with rotation around specified center
-center = FreeCAD.Vector(0, 0, 0)  # Assuming the center is the origin
-displacement = obj.Placement.Base.sub(center)
-displacement = rotation.multVec(displacement)
-new_pos = center.add(displacement)
-
-obj.Placement = FreeCAD.Placement(new_pos, rotation)
-
-# Recompute
-doc.recompute()
-
-# Return rotation values in degrees
-rotation_x = {rot_x}
-rotation_y = {rot_y}
-rotation_z = {rot_z}
-"""
-                # Execute the script
-                result = self.freecad_connection.execute_command(
-                    "execute_script", {"script": script}
-                )
-                if asyncio.iscoroutine(result):
-                    result = await result
-
-                if "error" in result:
-                    return {"error": result["error"], "message": result["error"]}
-
-                return {
-                    "object_name": object_name,
-                    "rotation": {
-                        "x": rot_x,
-                        "y": rot_y,
-                        "z": rot_z
-                    },
-                    "message": f"Rotated object {object_name} by ({rot_x}, {rot_y}, {rot_z}) degrees",
-                    "success": True
-                }
-
-            # Document management
-            elif tool_name == "freecad.list_objects":
-                document = arguments.get("document")
-
-                script = f"""
-import FreeCAD
-
-# Get the document
-doc = None
-if "{document}":
-    doc = FreeCAD.getDocument("{document}")
-else:
+final_rot_x = 0.0; final_rot_y = 0.0; final_rot_z = 0.0 # Store result
+try:
     doc = FreeCAD.ActiveDocument
+    if not doc: raise Exception("No active document")
+    obj = doc.getObject("{safe_obj_name}")
+    if not obj: raise Exception(f"Object '{object_name}' not found")
 
-if not doc:
-    raise Exception("No active document")
+    # Convert degrees to radians
+    rot_x_rad = math.radians(float({angle_x}))
+    rot_y_rad = math.radians(float({angle_y}))
+    rot_z_rad = math.radians(float({angle_z}))
 
-# Get the list of objects
-object_names = [obj.Name for obj in doc.Objects]
-object_types = [obj.TypeId for obj in doc.Objects]
-object_labels = [obj.Label for obj in doc.Objects]
+    # Create rotation object for the *increment*
+    # Assuming XYZ rotation order for the incremental rotation
+    incremental_rotation = FreeCAD.Rotation(rot_x_rad, rot_y_rad, rot_z_rad)
 
-# Create a list of objects with their properties
-objects_list = []
-for i, name in enumerate(object_names):
-    objects_list.append({{"name": name, "type": object_types[i], "label": object_labels[i]}})
+    # Apply the incremental rotation to the object's current placement
+    current_placement = obj.Placement
+    # Rotation is multiplied: new_rot = increment * old_rot
+    new_rotation = incremental_rotation.multiply(current_placement.Rotation)
+    # Keep the same base point
+    new_placement = FreeCAD.Placement(current_placement.Base, new_rotation, current_placement.Base)
+    obj.Placement = new_placement
+
+    doc.recompute()
+
+    # Get final rotation as Euler angles (may differ slightly from input due to quaternion math)
+    # FreeCAD's getYawPitchRoll() returns ZYX order
+    final_angles = obj.Placement.Rotation.getYawPitchRoll()
+    final_rot_z = math.degrees(final_angles[0]) # Yaw
+    final_rot_y = math.degrees(final_angles[1]) # Pitch
+    final_rot_x = math.degrees(final_angles[2]) # Roll
+    result_json = json.dumps({{'applied_x': {angle_x}, 'applied_y': {angle_y}, 'applied_z': {angle_z},
+                               'final_x': final_rot_x, 'final_y': final_rot_y, 'final_z': final_rot_z}})
+
+except Exception as e:
+    result_json = json.dumps({{"error": str(e)}})
 """
-                # Execute the script
-                result = self.freecad_connection.execute_command(
-                    "execute_script", {"script": script}
-                )
-                if asyncio.iscoroutine(result):
-                    result = await result
-
-                if "error" in result:
-                    return {"error": result["error"], "message": result["error"]}
-
-                # Convert the string representation of objects_list to an actual list
-                objects_list = eval(result.get("environment", {}).get("objects_list", "[]"))
-
-                return {
-                    "objects": objects_list,
-                    "count": len(objects_list),
-                    "document": document or "Active Document",
-                    "message": f"Found {len(objects_list)} objects in {'document ' + document if document else 'active document'}",
-                    "success": True
-                }
-
-            elif tool_name == "freecad.list_documents":
-                script = """
-import FreeCAD
-
-# Get the list of documents
-document_names = FreeCAD.listDocuments().keys()
-"""
-                # Execute the script
-                result = self.freecad_connection.execute_command(
-                    "execute_script", {"script": script}
-                )
-                if asyncio.iscoroutine(result):
-                    result = await result
-
-                if "error" in result:
-                    return {"error": result["error"], "message": result["error"]}
-
-                # Get document names from the environment
-                document_names = eval(result.get("environment", {}).get("document_names", "[]"))
-
-                return {
-                    "documents": list(document_names),
-                    "count": len(document_names),
-                    "message": f"Found {len(document_names)} open documents",
-                    "success": True
-                }
-
-            return {
-                "error": f"Tool not implemented: {tool_name}",
-                "message": f"Tool not implemented: {tool_name}",
-            }
-
-        except Exception as e:
-            logger.error(f"Error executing FreeCAD tool {tool_name}: {e}")
-            return {
-                "error": f"Error executing tool: {str(e)}",
-                "message": f"Error executing tool: {str(e)}",
-            }
-
-    def close(self):
-        """Close the server and clean up resources."""
-        if self.freecad_connection:
-            self.freecad_connection.close()
-            logger.info("Closed FreeCAD connection")
-
-    # Legacy methods for tests
-
-    async def _handle_list_tools(self, request, extra):
-        """Handle a request to list available tools (legacy method for tests)."""
-        return {
-            "tools": [
-                {
-                    "name": tool_info["name"],
-                    "description": tool_info["description"],
-                    "inputSchema": tool_info["schema"],
-                }
-                for tool_id, tool_info in self.tools.items()
-            ]
-        }
-
-    async def _handle_list_resources(self, request, extra):
-        """Handle a request to list available resources (legacy method for tests)."""
-        return {
-            "resources": [
-                {"uri": resource_info["uri"], "name": resource_info["name"]}
-                for resource_id, resource_info in self.resources.items()
-            ]
-        }
-
-    async def _handle_execute_tool(self, request, extra):
-        """Handle a request to execute a tool (legacy method for tests)."""
-        tool_name = request.get("name")
-        arguments = request.get("arguments", {})
-
-        logger.info(f"Executing tool: {tool_name} with arguments: {arguments}")
-
-        if not tool_name or tool_name not in self.tools:
-            return {
-                "error": f"Unknown tool: {tool_name}",
-                "message": f"Unknown tool: {tool_name}",
-            }
-
-        try:
-            # Handle smithery tools
-            if tool_name.startswith("smithery."):
-                return await self._execute_smithery_tool(tool_name, arguments)
-
-            # Handle basic FreeCAD tools
-            elif tool_name.startswith("freecad."):
-                return await self._execute_freecad_tool(tool_name, arguments)
-
-            return {
-                "error": f"Tool not implemented: {tool_name}",
-                "message": f"Tool not implemented: {tool_name}",
-            }
-        except Exception as e:
-            logger.error(f"Error executing tool {tool_name}: {e}")
-            return {
-                "error": f"Error executing tool: {str(e)}",
-                "message": f"Error executing tool: {str(e)}",
-            }
-
-    async def _handle_get_resource(self, request, extra):
-        """Handle a request to get a resource (legacy method for tests)."""
-        uri = request.get("uri")
-        logger.info(f"Getting resource: {uri}")
-
-        if not uri or uri not in self.resources:
-            return {
-                "error": f"Unknown resource: {uri}",
-                "message": f"Unknown resource: {uri}",
-            }
-
-        try:
-            if uri == "freecad://info":
-                if self.freecad_connection and self.freecad_connection.is_connected():
-                    version_info = self.freecad_connection.get_version()
-                    version_str = ".".join(
-                        str(v) for v in version_info.get("version", ["Unknown"])
-                    )
-                    connection_type = self.freecad_connection.get_connection_type()
-
-                    return {
-                        "content": f"FreeCAD Version: {version_str}\nConnection Type: {connection_type}",
-                        "mimeType": "text/markdown",
-                    }
-                else:
-                    return {
-                        "content": "Error: Not currently connected to FreeCAD.",
-                        "mimeType": "text/plain",
-                    }
-
-            return {
-                "error": f"Resource not implemented: {uri}",
-                "message": f"Resource not implemented: {uri}",
-            }
-        except Exception as e:
-            logger.error(f"Error getting resource {uri}: {e}")
-            return {
-                "error": f"Error getting resource: {str(e)}",
-                "message": f"Error getting resource: {str(e)}",
-            }
-
-    async def _get_freecad_tools(self):
-        """Get the list of FreeCAD tools."""
-        tools = []
-
-        # Basic document tools
-        tools.append({
-            "name": "freecad.create_document",
-            "description": "Create a new FreeCAD document",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string",
-                        "description": "Name of the document"
-                    }
-                },
-                "required": ["name"]
-            }
-        })
-
-        tools.append({
-            "name": "freecad.list_documents",
-            "description": "List all open documents",
-            "parameters": {
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
-        })
-
-        tools.append({
-            "name": "freecad.list_objects",
-            "description": "List all objects in the active document",
-            "parameters": {
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
-        })
-
-        # Primitive creation tools
-        tools.append({
-            "name": "freecad.create_box",
-            "description": "Create a box primitive",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "length": {
-                        "type": "number",
-                        "description": "Length of the box"
-                    },
-                    "width": {
-                        "type": "number",
-                        "description": "Width of the box"
-                    },
-                    "height": {
-                        "type": "number",
-                        "description": "Height of the box"
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "Name of the box object"
-                    },
-                    "position_x": {
-                        "type": "number",
-                        "description": "X position of the box"
-                    },
-                    "position_y": {
-                        "type": "number",
-                        "description": "Y position of the box"
-                    },
-                    "position_z": {
-                        "type": "number",
-                        "description": "Z position of the box"
-                    }
-                },
-                "required": ["length", "width", "height"]
-            }
-        })
-
-        # Add more tools as needed
-        return tools
-
-    async def _get_smithery_tools(self):
-        """Get the list of smithery tools."""
-        tools = []
-
-        # Smithery tools
-        tools.append({
-            "name": "smithery.create_anvil",
-            "description": "Create an anvil model",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "length": {
-                        "type": "number",
-                        "description": "Length of the anvil"
-                    },
-                    "width": {
-                        "type": "number",
-                        "description": "Width of the anvil"
-                    },
-                    "height": {
-                        "type": "number",
-                        "description": "Height of the anvil"
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "Name of the anvil object"
-                    }
-                },
-                "required": []
-            }
-        })
-
-        # Add more smithery tools as needed
-        return tools
-
-
-# Add the function to get FreeCAD version
-def get_freecad_version():
-    """Get the version of FreeCAD installed on the system"""
     try:
-        import FreeCAD
-        return FreeCAD.Version()
-    except ImportError:
-        return "FreeCAD not found or not installed"
-    except Exception as e:
-        return f"Error detecting FreeCAD version: {str(e)}"
+        env_data = await execute_script_in_freecad(script, ["result_json"])
+        result_json_str = env_data.get("result_json")
+        result_data = json.loads(result_json_str)
 
+        if isinstance(result_data, dict) and "error" in result_data:
+             raise MCPServerError(ErrorCode.InternalError, f"Error rotating object in FreeCAD: {result_data['error']}")
+
+        applied = { k.split('_')[1]: v for k, v in result_data.items() if k.startswith('applied_')}
+        # final = { k.split('_')[1]: v for k, v in result_data.items() if k.startswith('final_')}
+
+        return {
+            "object_name": object_name,
+            "rotation_applied": applied,
+            # "final_rotation_euler_zyx": final, # Optional: return final calculated angles
+            "message": f"Applied rotation ({applied.get('x', 0.0):.1f}, {applied.get('y', 0.0):.1f}, {applied.get('z', 0.0):.1f}) degrees to object '{object_name}'",
+            "success": True
+        }
+    except json.JSONDecodeError:
+        logger.error("Failed to decode rotation result")
+        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+    except Exception as e:
+        logger.error(f"Error rotating object: {e}", exc_info=True)
+        if not isinstance(e, MCPServerError):
+             raise MCPServerError(ErrorCode.InternalError, f"Error rotating object: {str(e)}")
+        else: raise e
+
+
+# == FreeCAD Export Tools ==
+
+@mcp.tool()
+async def freecad_export_stl(file_path: str, objects: Optional[List[str]] = None, document: Optional[str] = None) -> Dict[str, Any]:
+    """Export specified objects (or all if none specified) from a document to an STL file."""
+    logger.info(f"Executing freecad.export_stl to: {file_path} (Objects: {objects}, Doc: {document})")
+
+    # Basic path validation
+    safe_file_path = sanitize_path(file_path)
+    if not safe_file_path.lower().endswith(".stl"):
+         raise MCPServerError(ErrorCode.InvalidParams, "Invalid file_path. Must end with .stl")
+
+    # Ensure objects is a list of strings if provided
+    if objects is not None and (not isinstance(objects, list) or not all(isinstance(o, str) for o in objects)):
+         raise MCPServerError(ErrorCode.InvalidParams, "Parameter 'objects' must be a list of strings.")
+
+    # Use direct API call if available and seems robust enough
+    if FC_CONNECTION and hasattr(FC_CONNECTION, 'export_stl'):
+        try:
+             success = FC_CONNECTION.export_stl(
+                 object_names=objects, # Pass list of names directly
+                 file_path=safe_file_path,
+                 document=document
+             )
+             if success:
+                 return {
+                     "file_path": safe_file_path,
+                     "message": f"Exported {'selected objects' if objects else 'active model'} to {safe_file_path}",
+                     "success": True,
+                 }
+             else:
+                  # export_stl likely raises exception on failure, but handle False return just in case
+                  raise MCPServerError(ErrorCode.InternalError, "FreeCADConnection.export_stl returned False.")
+        except Exception as e:
+             logger.error(f"Error during direct export_stl call: {e}", exc_info=True)
+             raise MCPServerError(ErrorCode.InternalError, f"Failed to export STL (direct call): {str(e)}")
+    else:
+        # Fallback to script execution if direct method isn't available/preferred
+        logger.warning("Falling back to script execution for export_stl")
+        safe_doc_name = sanitize_name(document) if document else ""
+        # Convert list of object names into a Python list string for the script
+        objects_list_str = "None"
+        if objects:
+            sanitized_object_names = [f'"{sanitize_name(o)}"' for o in objects]
+            objects_list_str = f'[{", ".join(sanitized_object_names)}]'
+
+        script = f"""
+import FreeCAD
+import Mesh
+import json
+
+success = False
+error_msg = ''
+try:
+    doc = None
+    if "{safe_doc_name}":
+        doc = FreeCAD.getDocument("{safe_doc_name}")
+        if not doc: raise Exception(f"Document '{document}' not found")
+    else:
+        doc = FreeCAD.ActiveDocument
+        if not doc: raise Exception("No active document found")
+
+    obj_list_to_export = []
+    export_obj_names = {objects_list_str} # Use the generated list string or None
+
+    if export_obj_names is None:
+        # Export all Part::Feature objects if no specific list given
+        obj_list_to_export = [o for o in doc.Objects if hasattr(o, 'Shape') and o.TypeId.startswith('Part::')]
+    else:
+        for name in export_obj_names:
+            obj = doc.getObject(name)
+            if obj and hasattr(obj, 'Shape'):
+                obj_list_to_export.append(obj)
+            else:
+                raise Exception(f"Object '{{name}}' not found or is not exportable.")
+
+    if not obj_list_to_export:
+        raise Exception("No valid objects found to export.")
+
+    # Mesh.export expects list of objects, not names
+    Mesh.export(obj_list_to_export, u"{safe_file_path}")
+    success = True
+except Exception as e:
+    error_msg = str(e)
+
+result_json = json.dumps({{"success": success, "error": error_msg}})
+"""
+        try:
+            env_data = await execute_script_in_freecad(script, ["result_json"])
+            result_json_str = env_data.get("result_json")
+            result_data = json.loads(result_json_str)
+
+            if result_data.get("error"):
+                 raise MCPServerError(ErrorCode.InternalError, f"Error exporting STL in FreeCAD: {result_data['error']}")
+
+            if result_data.get("success"):
+                 return {
+                    "file_path": safe_file_path,
+                    "message": f"Exported {'selected objects' if objects else 'model'} to {safe_file_path} (via script)",
+                    "success": True,
+                 }
+            else:
+                 raise MCPServerError(ErrorCode.InternalError, "STL export script failed silently.")
+
+        except json.JSONDecodeError:
+            logger.error("Failed to decode export result")
+            raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+        except Exception as e:
+            logger.error(f"Error exporting STL (script fallback): {e}", exc_info=True)
+            if not isinstance(e, MCPServerError):
+                 raise MCPServerError(ErrorCode.InternalError, f"Error exporting STL: {str(e)}")
+            else: raise e
+
+
+# --- Resource Definitions ---
+
+@mcp.resource("freecad://info")
+async def get_freecad_info() -> str:
+    """Get information about the connected FreeCAD instance."""
+    logger.info("Executing get_freecad_info resource")
+    if not FC_CONNECTION or not FC_CONNECTION.is_connected():
+        # Resources typically return content or raise errors
+        # Returning an error message string might be acceptable for info resources
+        return "Error: Not currently connected to FreeCAD."
+        # Alternatively, raise an error:
+        # raise MCPServerError(ErrorCode.InternalError, "Not connected to FreeCAD")
+
+    try:
+        version_info = FC_CONNECTION.get_version()
+        version_str = ".".join(str(v) for v in version_info.get("version", ["Unknown"]))
+        connection_type = FC_CONNECTION.get_connection_type()
+        # FastMCP resource handlers typically return the content directly
+        return f"FreeCAD Version: {version_str}\nConnection Type: {connection_type}"
+    except Exception as e:
+        logger.error(f"Error getting FreeCAD info: {e}")
+        # Return error string for info resource
+        return f"Error retrieving FreeCAD info: {str(e)}"
+        # Alternatively, raise:
+        # raise MCPServerError(ErrorCode.InternalError, f"Error getting FreeCAD info: {str(e)}")
+
+# --- Main Execution ---
 def main():
-    """
-    Main entry point for the MCP-FreeCAD server
-    """
-    parser = argparse.ArgumentParser(description="FreeCAD MCP Server")
-    parser.add_argument("--config", help="Path to config file")
-    parser.add_argument("--host", help="Server hostname")
-    parser.add_argument("--port", type=int, help="Server port")
-    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
-    parser.add_argument("--version", action="store_true", help="Show version information")
+    global CONFIG # Allow modifying global config
+
+    # --- Argument Parsing ---
+    parser = argparse.ArgumentParser(description="Advanced FreeCAD MCP Server")
+    parser.add_argument("--config", default=CONFIG_PATH, help=f"Path to config file (default: {CONFIG_PATH})")
+    parser.add_argument("--host", help="Override FreeCAD connection hostname")
+    parser.add_argument("--port", type=int, help="Override FreeCAD connection port")
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+    parser.add_argument("--version", action="store_true", help="Show server version and exit")
     args = parser.parse_args()
 
-    # Show version and exit if requested
+    # --- Version Info ---
     if args.version:
-        print(f"MCP-FreeCAD Server v{VERSION}")
-        print(f"FreeCAD Version: {get_freecad_version()}")
+        print(f"Advanced-MCP-FreeCAD Server v{VERSION}")
+        # Optionally add FreeCAD version check here if needed before full connection init
         return
 
-    # Check if MCP is properly installed
-    if mcp_import_error:
-        print(f"ERROR: MCP SDK (mcp package) not found or import failed: {mcp_import_error}")
-        print("Please install it with: pip install mcp trio")
-        sys.exit(1)
-
-    # Set debug logging if requested
+    # --- Setup Logging ---
     if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
         logger.setLevel(logging.DEBUG)
         logger.debug("Debug logging enabled")
 
-    # Create and start the server
-    config_path = args.config if args.config else "config.json"
-    server = FreeCADMCPServer(config_path=config_path)
+    # --- Check MCP Dependency ---
+    if mcp_import_error:
+        logger.error(f"ERROR: FastMCP SDK (fastmcp package) not found or import failed: {mcp_import_error}")
+        logger.error("Please install it with: pip install fastmcp")
+        sys.exit(1)
 
+    # --- Load Configuration ---
+    CONFIG = load_config(args.config)
     # Override config with command line arguments if provided
     if args.host:
-        server.config["freecad"]["host"] = args.host
+        CONFIG.setdefault("freecad", {})["host"] = args.host
     if args.port:
-        server.config["freecad"]["port"] = args.port
+        CONFIG.setdefault("freecad", {})["port"] = args.port
 
+    # --- Initialize FreeCAD Connection ---
+    initialize_freecad_connection(CONFIG)
+
+    # --- Start Server ---
+    logger.info(f"Starting {server_name} v{VERSION}...")
     try:
-        asyncio.run(server.start())
+        asyncio.run(mcp.run_stdio())
     except KeyboardInterrupt:
         logger.info("Server stopped by user")
     except Exception as e:
-        logger.error(f"Error running server: {e}")
+        logger.error(f"Error running server: {e}", exc_info=True)
         sys.exit(1)
     finally:
-        server.close()
+        # Cleanup FreeCAD connection if it was established
+        if FC_CONNECTION and hasattr(FC_CONNECTION, 'close'):
+            logger.info("Closing FreeCAD connection...")
+            FC_CONNECTION.close()
+        logger.info("Server shutdown complete.")
 
 
 if __name__ == "__main__":
