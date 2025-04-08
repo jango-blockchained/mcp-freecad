@@ -79,7 +79,10 @@ class FreeCADMCPServer:
         Args:
             config_path: Path to the configuration file.
         """
-        self.config = self._load_config(config_path)
+        # Ensure config_path is absolute
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        absolute_config_path = os.path.join(script_dir, config_path)
+        self.config = self._load_config(absolute_config_path)
         self.freecad_connection = None
         self.server = None
         self.tools = {}

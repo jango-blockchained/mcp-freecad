@@ -1,3 +1,8 @@
 #!/bin/bash
-cd "/home/jango/Git/mcp-freecad/scripts/bin"
-python3 "/home/jango/Git/mcp-freecad/scripts/bin/freecad_mcp_server.py" "$@"
+# MCP-FreeCAD global wrapper
+
+# Control Python initialization to prevent "PyImport_AppendInittab after Py_Initialize" errors
+export PYTHONNOUSERSITE=1
+
+# Run the start_mcp_server.sh script with proper initialization
+"/home/jango/Git/mcp-freecad/scripts/start_mcp_server.sh" "$@"

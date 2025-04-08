@@ -11,10 +11,10 @@ import sys
 import json
 import traceback
 
-# Try to setup paths
-freecad_module_path = "/usr/lib/freecad-python3/lib"
-if os.path.exists(freecad_module_path):
-    sys.path.append(freecad_module_path)
+# REMOVED: Hardcoded path assumption - rely on environment (e.g., AppRun setup)
+# freecad_module_path = "/usr/lib/freecad-python3/lib"
+# if os.path.exists(freecad_module_path):
+#     sys.path.append(freecad_module_path)
 
 try:
     import FreeCAD

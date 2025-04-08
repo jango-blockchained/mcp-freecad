@@ -1,0 +1,39 @@
+{
+  "modes": [
+    {
+      "name": "FreeCAD Scripting",
+      "icon": "🔩",
+      "shortcut": "",
+      "tools": ["Edit & Reapply", "Search", "Terminal"],
+      "instructions": "Write and debug Python code interacting with the FreeCAD API. Pay attention to FreeCAD's specific modules (e.g., `App`, `Gui`, `Part`, `Draft`). Ensure scripts handle FreeCAD's document objects and transactions correctly. Use standard Python practices and adhere to `.flake8` rules found in the root directory."
+    },
+    {
+      "name": "Server/Client Dev",
+      "icon": "↔️",
+      "shortcut": "",
+      "tools": ["Edit & Reapply", "Search", "Terminal"],
+      "instructions": "Develop the client-server communication logic (e.g., in `freecad_server.py`, `freecad_client.py`, `freecad_connection.py`) using Python. Focus on robust error handling, message passing, and synchronization. Adhere to `.flake8` rules."
+    },
+    {
+      "name": "Pytest Testing",
+      "icon": "🧪",
+      "shortcut": "",
+      "tools": ["Edit & Reapply", "Search", "Terminal"],
+      "instructions": "Write unit and integration tests for Python modules using `pytest`. Focus on testing FreeCAD interactions (mocking APIs if needed), server-client communication, and core logic. Follow conventions in `pytest.ini` and the `tests/` directory."
+    },
+    {
+      "name": "Documentation",
+      "icon": "📝",
+      "shortcut": "",
+      "tools": ["Edit & Reapply", "Search"],
+      "instructions": "Update project documentation including `README.md`, `CONTRIBUTING.md`, docstrings within Python files, and files in the `docs/` directory. Ensure clarity, accuracy, and consistency."
+    },
+    {
+      "name": "Packaging & Deploy",
+      "icon": "📦",
+      "shortcut": "",
+      "tools": ["Edit & Reapply", "Search", "Terminal"],
+      "instructions": "Manage project packaging and deployment configurations. Update `setup.py`, `setup.cfg`, `pyproject.toml`, `requirements.txt`, `Dockerfile`, and `docker-compose.yml`. Ensure dependencies are correct and build/deployment processes function as expected based on `Makefile` targets if applicable."
+    }
+  ]
+}

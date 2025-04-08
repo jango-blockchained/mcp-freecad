@@ -29,19 +29,19 @@
     "max_delay": 30.0
   },
   "freecad": {
-    "path": "squashfs-root/usr/bin/freecad",
-    "python_path": "squashfs-root/usr/bin/python3",
-    "module_path": "/usr/lib/",
+    "path": "/home/jango/Git/mcp-freecad/squashfs-root/usr/bin/freecad",
+    "python_path": "/home/jango/Git/mcp-freecad/squashfs-root/usr/bin/python",
+    "module_path": "/home/jango/Git/mcp-freecad/squashfs-root/usr/lib/",
     "host": "localhost",
     "port": 12345,
     "auto_connect": false,
     "reconnect_on_failure": true,
     "use_mock": false,
-    "connection_method": "launcher",
-    "script_path": "freecad_script.py",
-    "launcher_path": "freecad_launcher.py",
+    "connection_method": "auto",
+    "script_path": "/home/jango/Git/mcp-freecad/freecad_script.py",
+    "launcher_path": "/home/jango/Git/mcp-freecad/freecad_launcher.py",
     "use_apprun": true,
-    "apprun_path": "squashfs-root/AppRun"
+    "apprun_path": "/home/jango/Git/mcp-freecad/squashfs-root/AppRun"
   },
   "cors": {
     "origins": ["*"],

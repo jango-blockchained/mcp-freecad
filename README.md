@@ -1,24 +1,85 @@
 # 🛠️ MCP-FreeCAD Integration
 
+> **Note:** This repository is under heavy development. Expect daily commits and potential breaking changes.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
+[![Code style: flake8](https://img.shields.io/badge/code%20style-flake8-orange.svg)](https://flake8.pycqa.org/en/latest/)
+[![Project Status: Active](https://img.shields.io/badge/repo%20status-active-green.svg)]()
+
 This project provides a robust integration between AI assistants and FreeCAD CAD software using the **Model Context Protocol (MCP)**. It allows external applications to interact with FreeCAD through a standardized interface, offering multiple connection methods and specialized tools.
 
 ## 🔄 MCP Flow Chart
 
 ```mermaid
 graph TD
-    A[AI Assistant] -->|MCP Protocol| B[MCP Server]
-    B -->|Connection| C[FreeCAD Connection]
-    C -->|Method 1| D[Socket Server]
-    C -->|Method 2| E[CLI Bridge]
-    C -->|Method 3| F[Mock Connection]
-    D -->|Python API| G[FreeCAD]
-    E -->|Command Line| G
-    F -->|Testing| G
+    subgraph "Client"
+        A["AI Assistant / MCP Client"]
+    end
+
+    subgraph "Server & Connection"
+        B["MCP Server (freecad_mcp_server.py)"]
+        C["FreeCAD Connection (freecad_connection.py)"]
+        C_Auto{"Auto-Select Method"}
+    end
+
+    subgraph "Connection Methods (Backends)"
+        D["Server Mode (freecad_server.py)"]
+        E["Bridge Mode (freecad_bridge.py)"]
+        F["Wrapper Mode (freecad_wrapper.py)"]
+        L["Launcher Mode (freecad_launcher.py)"]
+        M["Mock Mode"]
+    end
+
+    subgraph "FreeCAD Execution"
+        FS["Socket Server inside FreeCAD"]
+        FCLI["FreeCAD CLI"]
+        FSub["FreeCAD via Subprocess"]
+        FAppRun["FreeCAD via AppRun"]
+        G["FreeCAD Instance/Modules"]
+    end
+
+    %% Client to Server
+    A --> |MCP Request| B
+
+    %% Server uses Connection Layer
+    B --> |Requests Connection| C
+
+    %% Connection Logic
+    C --> C_Auto
+    C_Auto -- "Pref=Launcher or Auto" --> L
+    C_Auto -- "Pref=Wrapper or Auto Fail" --> F
+    C_Auto -- "Pref=Server or Auto Fail" --> D
+    C_Auto -- "Pref=Bridge or Auto Fail" --> E
+    C_Auto -- "Pref=Mock or Auto Fail" --> M
+
+    %% Backends to Execution
+    L --> |"Uses AppRun"| FAppRun
+    F --> |"Uses freecad_subprocess.py"| FSub
+    D --> |"Connects via Socket"| FS
+    E --> |"Calls CLI"| FCLI
+
+    %% Execution to FreeCAD
+    FAppRun --> G
+    FSub --> G
+    FS --> G
+    FCLI --> G
+
+    %% Style (Optional)
+    classDef client fill:#cde4ff,stroke:#333,stroke-width:1px;
+    classDef server fill:#ccffcc,stroke:#333,stroke-width:1px;
+    classDef backend fill:#fff0cc,stroke:#333,stroke-width:1px;
+    classDef execution fill:#ffcccc,stroke:#333,stroke-width:1px;
+    class A,B,C,C_Auto client;
+    class D,E,F,L,M backend;
+    class FS,FCLI,FSub,FAppRun,G execution;
 ```
+
+This flowchart shows the main components and how different connection methods selected by `freecad_connection.py` lead to various ways of executing commands within FreeCAD. The `launcher` method, often used with extracted AppImages via `AppRun`, is the recommended approach for reliability.
 
 For more detailed flowcharts, see [FLOWCHART.md](docs/FLOWCHART.md).
 
-## 🏗️ Core Components
+## 🔄 Core Components
 
 ### 1. FreeCAD MCP Server (`freecad_mcp_server.py`)
 - **Description**: The main server implementing the Model Context Protocol. It acts as the central hub for AI assistants to communicate with FreeCAD.
@@ -29,15 +90,23 @@ For more detailed flowcharts, see [FLOWCHART.md](docs/FLOWCHART.md).
     - Configurable via `config.json`.
 
 ### 2. FreeCAD Connection (`freecad_connection.py`)
-- **Description**: A unified Python interface for connecting to FreeCAD, used internally by the MCP server and available for direct use.
+- **Description**: A unified Python interface for connecting to FreeCAD, used internally by the MCP server and available for direct use. It intelligently selects the best connection method based on configuration and availability.
 - **Methods**:
-    - **Socket Server Connection**: Communicates with a running `freecad_server.py` instance.
-    - **CLI Bridge Connection**: Uses command-line calls via `freecad_bridge.py`.
+    - **Launcher Connection**: (Recommended with AppImage) Uses `freecad_launcher.py` to start FreeCAD via `AppRun` from an extracted AppImage. Ensures a clean environment.
+    - **Wrapper Connection**: Uses `freecad_wrapper.py` to run FreeCAD logic in a separate Python subprocess, communicating via pipes.
+    - **Socket Server Connection**: Communicates with a running `freecad_server.py` instance via sockets.
+    - **CLI Bridge Connection**: Uses command-line calls via `freecad_bridge.py`. Can be less reliable for complex operations.
     - **Mock Connection**: Provides a fallback for testing without a running FreeCAD instance.
-    - **Auto Connection**: Automatically selects the best available method.
+    - **Auto Connection**: Automatically selects the best available method (default order: launcher, wrapper, server, bridge, mock).
 
-### 3. FreeCAD Server (`freecad_server.py`)
-- **Description**: A standalone socket-based server script designed to run *inside* FreeCAD. It listens for commands from the `FreeCADConnection` (when using the `server` method).
+### 3. FreeCAD Launcher (`freecad_launcher.py`)
+- **Description**: A script responsible for launching the FreeCAD environment, typically using `AppRun` from an extracted AppImage when configured for the `launcher` connection method. It passes commands to `freecad_script.py` running inside the launched FreeCAD environment.
+
+### 4. FreeCAD Wrapper (`freecad_wrapper.py`) & Subprocess (`freecad_subprocess.py`)
+- **Description**: The `freecad_wrapper.py` starts `freecad_subprocess.py` in a clean Python process. `freecad_subprocess.py` imports FreeCAD modules and executes commands received via standard input/output from the wrapper. Used by the `wrapper` connection method.
+
+### 5. FreeCAD Server (`freecad_server.py`)
+- **Description**: A standalone socket-based server script designed to run *inside* FreeCAD. It listens for commands from the `FreeCADConnection` (when using the `server` method). Requires manual setup within FreeCAD or specific launch parameters.
 - **Usage**:
     ```bash
     # Run inside FreeCAD's Python console
@@ -46,17 +115,16 @@ For more detailed flowcharts, see [FLOWCHART.md](docs/FLOWCHART.md).
     # Or run from command line (starts FreeCAD in console mode)
     freecad -c /path/to/freecad_server.py --host localhost --port 12345 --debug
     ```
-
 See [FREECAD_SERVER_SETUP.md](docs/FREECAD_SERVER_SETUP.md) for detailed setup instructions.
 
-### 4. FreeCAD Bridge (`freecad_bridge.py`)
-- **Description**: A Python module enabling command-line interaction with FreeCAD, bypassing direct module import issues. Used by `FreeCADConnection` when using the `bridge` method.
+### 6. FreeCAD Bridge (`freecad_bridge.py`)
+- **Description**: A Python module enabling command-line interaction with FreeCAD, bypassing direct module import issues. Used by `FreeCADConnection` when using the `bridge` method. Less commonly used now compared to `launcher` or `wrapper`.
 
-### 5. FreeCAD Client (`freecad_client.py`)
+### 7. FreeCAD Client (`freecad_client.py`)
 - **Description**: A command-line client utility for interacting directly with the `FreeCADConnection` interface (not the MCP server). Useful for basic testing and scripting outside the MCP context.
 - **Example**: `python freecad_client.py create-box --length 20`
 
-## 📁 Project Structure
+## 🔄 Project Structure
 
 The MCP-FreeCAD project is organized with the following directory structure:
 
@@ -161,36 +229,36 @@ python freecad_mcp_server.py
 
 ### 4. Recommended Setup: Using FreeCAD AppImage (Most Reliable)
 
-For the most reliable FreeCAD connection, especially if you encounter module import issues, we recommend using the FreeCAD AppImage:
+For the most reliable FreeCAD connection, especially if you encounter module import issues or environment conflicts, we strongly recommend using an extracted FreeCAD AppImage with the `launcher` connection method:
 
-1.  **Download a FreeCAD AppImage**: Get the latest stable or weekly build AppImage from the [FreeCAD releases page](https://github.com/FreeCAD/FreeCAD/releases).
+1.  **Download a FreeCAD AppImage**: Get the latest stable or weekly build AppImage (e.g., `.AppImage` format) from the [FreeCAD releases page](https://github.com/FreeCAD/FreeCAD/releases).
 
 2.  **Make it Executable**: `chmod +x /path/to/FreeCAD_*.AppImage`
 
-3.  **Extract the AppImage**: Use the provided utility script to extract the AppImage. This creates a self-contained FreeCAD environment.
+3.  **Extract the AppImage**: Use the provided utility script `extract_appimage.py` from the root of this repository. This creates a self-contained FreeCAD environment directory (`squashfs-root`).
 
     ```bash
     # Navigate to the mcp-freecad directory
     cd /path/to/mcp-freecad
-    
-    # Run the extraction script
-    ./extract_appimage.py /path/to/FreeCAD_*.AppImage
-    
-    # Optional: Specify output directory
-    # ./extract_appimage.py /path/to/FreeCAD_*.AppImage --output /custom/extract/path
+
+    # Run the extraction script, providing the path to your downloaded AppImage
+    python extract_appimage.py /path/to/FreeCAD_*.AppImage
+
+    # Optional: Specify output directory (defaults to creating squashfs-root in the current dir)
+    # python extract_appimage.py /path/to/FreeCAD_*.AppImage --output ./my_freecad_appimage
     ```
     This script will:
-    - Extract the AppImage to a `squashfs-root` directory (by default, next to the AppImage).
-    - **Automatically update your `config.json`** to use the extracted AppImage (`use_apprun: true`, `apprun_path` set correctly, `connection_method: launcher`).
+    - Extract the AppImage contents to a `squashfs-root` directory.
+    - **Automatically update your `config.json`** to use the `launcher` method and set the correct paths (`path`, `script_path`, `launcher_path`, `apprun_path`, `use_apprun: true`).
     - Test the extracted AppImage to ensure it works.
 
-4.  **Start the MCP Server**: The server will now use the `launcher` connection method with the extracted AppImage environment.
+4.  **Start the MCP Server**: The server will now use the `launcher` connection method configured in `config.json` to run FreeCAD operations within the clean, extracted AppImage environment.
 
     ```bash
     python freecad_mcp_server.py
     ```
 
-This method avoids potential conflicts with system Python versions and ensures all necessary FreeCAD dependencies and modules are correctly loaded.
+This method avoids potential conflicts with system Python versions and ensures all necessary FreeCAD dependencies and modules are correctly loaded via `AppRun`.
 
 ### 5. FreeCAD Python Interpreter Setup
 
@@ -245,46 +313,68 @@ This will launch FreeCAD and automatically start the server inside it.
 
 ### MCP Server Configuration (`config.json`)
 
+The `config.json` file controls various aspects of the server. Here is an example reflecting the recommended **launcher setup** after running `extract_appimage.py`:
+
 ```json
 {
-    "server": {
-        "name": "mcp-freecad",
-        "version": "0.1.0"
-    },
-    "freecad": {
-        "path": "/usr/bin/freecad",
-        "python_path": "./squashfs-root/usr/bin/python",
-        "host": "localhost",
-        "port": 12345,
-        "auto_connect": true,
-        "reconnect_on_failure": true,
-        "use_mock": false,
-        "connection_method": "server"
-    },
-    "tools": { // Optional: control which tool groups are enabled
-        "enable_smithery": true,
-        "enable_primitives": true,
-        "enable_model_manipulation": true,
-        "enable_export_import": true,
-        "enable_measurement": true,
-        "enable_code_generator": true
+  "auth": { // Optional authentication settings
+    "api_key": "development",
+    "enabled": false
+  },
+  "server": { // MCP server settings
+    "host": "0.0.0.0",
+    "port": 8000,
+    "debug": true,
+    "workers": 1,
+    "name": "mcp-freecad",
+    "version": "0.3.1", // Example version
+    "mcp": {
+      "transport": "stdio", // Use stdio for Cursor/local clients
+      "protocol_version": "0.1.0"
+      // ... other MCP settings
     }
+  },
+  "freecad": { // FreeCAD connection settings
+    // Paths are set automatically by extract_appimage.py for launcher mode
+    "path": "/home/user/mcp-freecad/squashfs-root/usr/bin/freecad", // Example path
+    "python_path": "/home/user/mcp-freecad/squashfs-root/usr/bin/python", // Example path
+    "module_path": "/home/user/mcp-freecad/squashfs-root/usr/lib/", // Example path
+    "host": "localhost", // Not used by launcher
+    "port": 12345, // Not used by launcher
+    "auto_connect": false, // Connection handled internally
+    "reconnect_on_failure": true,
+    "use_mock": false,
+    "connection_method": "launcher", // *** KEY: Use the launcher method ***
+    "script_path": "/home/user/mcp-freecad/freecad_script.py", // Script run inside FreeCAD
+    "launcher_path": "/home/user/mcp-freecad/freecad_launcher.py", // Script that starts AppRun
+    "use_apprun": true, // *** KEY: Tells launcher to use AppRun ***
+    "apprun_path": "/home/user/mcp-freecad/squashfs-root/AppRun" // Path to AppRun executable
+  },
+  "logging": { // Logging configuration
+    "level": "INFO",
+    "file": "mcp_freecad.log",
+    "max_size": 10485760,
+    "backup_count": 3
+  },
+  "tools": { // Optional: control which tool groups are enabled
+    "enable_smithery": true,
+    "enable_primitives": true,
+    "enable_model_manipulation": true,
+    "enable_export_import": true,
+    "enable_measurement": true,
+    "enable_code_generator": true
+    // ... other tool settings
+  }
+  // ... other sections like cache, recovery, cors, performance ...
 }
 ```
+*Note: Replace example paths with your actual absolute paths.*
 
 See [FREECAD_INTEGRATION.md](docs/FREECAD_INTEGRATION.md) for more details on integration options.
 
 ## 🛠️ Available MCP Tools
 
 The MCP server exposes various tool groups. Here are all available tools:
-
-### 🔨 Smithery Tools (`smithery.*`)
-- Specialized tools for blacksmithing and metalwork design:
-    - `smithery.create_anvil`: Generate an anvil model with customizable dimensions
-    - `smithery.create_hammer`: Generate a blacksmith hammer with adjustable handle and head dimensions
-    - `smithery.create_tongs`: Generate blacksmith tongs with configurable handle and jaw parameters
-    - `smithery.forge_blade`: Create knife/sword blade models with customizable dimensions
-    - `smithery.create_horseshoe`: Create a horseshoe model with adjustable dimensions
 
 ### 📐 Basic FreeCAD Tools (`freecad.*`)
 - `freecad.create_document`: Create a new document
@@ -336,39 +426,41 @@ The MCP server exposes various tool groups. Here are all available tools:
 
 Here are conceptual examples of using the MCP server with an AI assistant:
 
-### Creating an Anvil
+### Creating and Exporting a Box
 
 ```
-User: Can you create a blacksmith anvil model in FreeCAD?
+User: Create a box 50mm long, 30mm wide, and 20mm high.
 
-Assistant: Okay, I can do that. I'll use the `smithery.create_anvil` tool.
-[Tool Call: smithery.create_anvil]
-[Tool Result: {"anvil_id": "Anvil", "message": "Created anvil...", "success": true}]
+Assistant: Okay, I can create that box.
+[Tool Call: primitives.create_box (arguments: {"length": 50.0, "width": 30.0, "height": 20.0})]
+[Tool Result: {"object_name": "Box", "message": "Created box...", "success": true}]
 
-Assistant: I've created the anvil model in FreeCAD. It has the default dimensions. Would you like to customize it or export it?
-```
+User: Now export it as box.stl
 
-### Creating a Hammer
+Assistant: Sure, exporting the model to box.stl.
+[Tool Call: export_import.export_stl (arguments: {"file_path": "box.stl", "object_names": ["Box"]})]
+[Tool Result: {"file_path": "box.stl", "message": "Exported successfully...", "success": true}]
 
-```
-User: Make me a blacksmith hammer with a 400mm handle.
-
-Assistant: Sure, I can create a hammer with a longer handle.
-[Tool Call: smithery.create_hammer (arguments: {"handle_length": 400.0})]
-[Tool Result: {"hammer_id": "Hammer", "message": "Created hammer...", "success": true}]
-
-Assistant: I've created the hammer with a 400mm handle and default head dimensions.
+Assistant: I've exported the box model to `box.stl`.
 ```
 
 ## 🔍 Troubleshooting
 
-- **MCP Server Connection Issues**: Ensure the `freecad_mcp_server.py` script is running and executable. Check firewall settings if connecting remotely (though stdio is typical for local use).
-- **FreeCAD Connection Issues**:
-    - **`auto` or `bridge` method**: Verify FreeCAD is installed and the `freecad` command works in your terminal. Check the `freecad_path` in `config.json`.
-    - **`server` method**: Ensure `freecad_server.py` is running inside an active FreeCAD instance, listening on the correct host/port configured in `config.json`.
-    - **General**: Check FreeCAD logs for errors.
+- **MCP Server Connection Issues**:
+    - Ensure `python freecad_mcp_server.py` can run without immediate errors. Check terminal output.
+    - Check firewall settings if relevant (unlikely for `stdio`).
+    - Verify `config.json` is valid JSON.
+- **FreeCAD Connection Issues (Especially with `launcher` method)**:
+    - **Run `extract_appimage.py`**: Ensure the AppImage was extracted correctly and `config.json` was updated.
+    - **Check `config.json` Paths**: Verify all absolute paths in the `freecad` section are correct for your system.
+    - **Check Permissions**: Ensure `squashfs-root/AppRun` has execute permissions (`chmod +x`).
+    - **Check Logs**: Examine `mcp_freecad.log` (created in the project root if logging starts), `freecad_server_stdout.log`, and `freecad_server_stderr.log` for errors from `freecad_launcher.py`, `AppRun`, or the FreeCAD process itself.
+    - **Environment Variables**: If `AppRun` fails to find libraries, ensure `LD_LIBRARY_PATH` and `PYTHONPATH` are correctly set, potentially within `.cursor/mcp.json` if using Cursor, or exported manually if testing in the terminal. The `extract_appimage.py` script aims to make this less necessary, but it can be a factor.
+    - **Headless Issues**: Sometimes FreeCAD has issues running completely headless (`QT_QPA_PLATFORM=offscreen`). Check logs for GUI-related errors.
+- **`server` method**: Ensure `freecad_server.py` is running inside an active FreeCAD instance, listening on the correct host/port configured in `config.json`.
+- **`bridge` method**: Verify FreeCAD is installed system-wide and the `freecad` command works in your terminal. Check the `freecad_path` in `config.json`.
 - **Missing MCP SDK**: Install via `pip install modelcontextprotocol`.
-- **Python Path Issues**: If FreeCAD modules aren't found, refer to [PYTHON_INTERPRETER_SETUP.md](docs/PYTHON_INTERPRETER_SETUP.md) for detailed guidance.
+- **Python Path Issues**: If FreeCAD modules aren't found when *not* using the recommended AppImage setup, refer to [PYTHON_INTERPRETER_SETUP.md](docs/PYTHON_INTERPRETER_SETUP.md).
 
 ## 📄 License
 
@@ -376,109 +468,85 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🖥️ Cursor Integration
 
-The MCP server is fully compatible with Cursor IDE integration. To use it with Cursor:
+The MCP server is designed for integration with tools like Cursor IDE.
 
-1. Use the provided `cursor_config.json`:
-```bash
-./freecad_mcp_server.py --config cursor_config.json
-```
-
-2. The server uses stdio transport by default, which is compatible with Cursor's communication protocol.
-
-3. Error handling has been enhanced to use proper MCP error responses, ensuring better integration with Cursor's error display.
-
-4. Debug logging is enabled by default in the Cursor configuration to help with troubleshooting.
-
-### Cursor-Specific Features
-
-- Proper stdio transport handling for seamless integration
-- Enhanced error responses using MCP's ErrorResponse format
-- Debug mode for better visibility into server operations
-- Automatic capability detection
-- Improved logging for Cursor's console
-
-### Cursor Configuration
-
-The `cursor_config.json` file includes specific settings for Cursor integration:
-
-```json
-{
-    "cursor": {
-        "debug": true,
-        "log_level": "INFO",
-        "stdio_transport": true
+1.  **Configure Cursor**: Add the MCP server in Cursor's settings (Settings > Features > MCP Servers > Add New MCP Server). Configure it to run the Python script directly, setting the necessary environment variables and working directory. An example configuration in `.cursor/mcp.json` would look like this:
+    ```json
+    {
+        "mcpServers": {
+          "mcp-freecad": {
+            "command": "python3", // Command to run python
+            "args": [
+              "freecad_mcp_server.py" // Script to run
+            ],
+            "env": { // Environment variables needed for headless AppRun
+               "QT_QPA_PLATFORM": "offscreen",
+               "DISPLAY": "",
+               "FREECAD_CONSOLE": "1",
+               "PYTHONNOUSERSITE": "1",
+               // These might be needed if AppRun doesn't set them automatically
+               "LD_LIBRARY_PATH": "/path/to/mcp-freecad/squashfs-root/usr/lib:/path/to/mcp-freecad/squashfs-root/usr/Ext:...",
+               "PYTHONPATH": "/path/to/mcp-freecad/squashfs-root/usr/lib/python3.11/site-packages:..."
+            },
+            "cwd": "/path/to/mcp-freecad" // Set working directory to project root
+          }
+          // ... other servers like memory ...
+        }
     }
-}
-```
+    ```
+    *Replace `/path/to/mcp-freecad` with the actual absolute path to your project.*
+    *Ensure the `LD_LIBRARY_PATH` and `PYTHONPATH` match your AppImage structure if needed.*
 
-These settings ensure optimal performance when using the server with Cursor.
+2.  **Restart Cursor**: Fully restart Cursor for the configuration changes to take effect.
+
+3.  **Server Communication**: The server uses `stdio` transport by default (configured in `config.json` under `server.mcp.transport`), which is compatible with Cursor's communication protocol. Errors should be reported back to Cursor via MCP error responses.
+
+### Cursor-Specific Considerations
+- The `freecad_mcp_server.py` script loads `config.json` by default. Ensure this file contains the correct settings, especially the `freecad` section updated by `extract_appimage.py`.
+- The environment variables set in `.cursor/mcp.json` are crucial for allowing the `launcher` method to work correctly within the environment Cursor provides.
 
 ## 📋 Available Options and Use Cases
 
 ### 🔧 Connection Methods
-1. **Socket Server Connection**
-   - Use when running FreeCAD as a persistent server
-   - Best for high-performance, continuous operations
-   - Configuration:
-   ```json
-   {
-       "freecad": {
-           "connection_method": "server",
-           "host": "localhost",
-           "port": 12345
-       }
-   }
-   ```
-
-2. **CLI Bridge Connection**
-   - Use when you need to start/stop FreeCAD for each operation
-   - Good for occasional use or scripting
-   - Configuration:
-   ```json
-   {
-       "freecad": {
-           "connection_method": "bridge",
-           "freecad_path": "freecad"
-       }
-   }
-   ```
-
-3. **Mock Connection**
-   - Use for testing without FreeCAD
-   - Development and debugging
-   - Configuration:
-   ```json
-   {
-       "freecad": {
-           "connection_method": "mock"
-       }
-   }
-   ```
-
-4. **Auto Connection**
-   - Automatically selects the best available method
-   - Default option
-   - Configuration:
-   ```json
-   {
-       "freecad": {
-           "connection_method": "auto"
-       }
-   }
-   ```
+1.  **Launcher Connection (Recommended)**
+    - Uses `AppRun` from an extracted AppImage. Most reliable.
+    - Configured automatically by `extract_appimage.py`.
+    - Configuration (`config.json`):
+    ```json
+    { "freecad": { "connection_method": "launcher", "use_apprun": true, "apprun_path": "/path/to/squashfs-root/AppRun", ... } }
+    ```
+2.  **Wrapper Connection**
+    - Runs FreeCAD logic in a separate Python subprocess. Good alternative if AppImage/AppRun causes issues.
+    - Configuration (`config.json`):
+    ```json
+    { "freecad": { "connection_method": "wrapper", ... } }
+    ```
+3.  **Socket Server Connection**
+    - Requires running `freecad_server.py` inside FreeCAD.
+    - Use when running FreeCAD as a persistent background server.
+    - Configuration (`config.json`):
+    ```json
+    { "freecad": { "connection_method": "server", "host": "localhost", "port": 12345, ... } }
+    ```
+4.  **CLI Bridge Connection**
+    - Uses the `freecad` command-line tool. Can be slower/less reliable.
+    - Configuration (`config.json`):
+    ```json
+    { "freecad": { "connection_method": "bridge", "freecad_path": "/path/to/system/freecad", ... } }
+    ```
+5.  **Mock Connection**
+    - For testing without FreeCAD.
+    - Configuration (`config.json`):
+    ```json
+    { "freecad": { "connection_method": "mock", "use_mock": true } }
+    ```
+6.  **Auto Connection**
+    - Automatically selects the best available method (launcher > wrapper > server > bridge > mock).
+    - Default if `connection_method` is missing or set to `"auto"`.
 
 ### 🛠️ Tool Categories and Use Cases
 
-1. **Smithery Tools**
-   - Creating blacksmithing equipment models
-   - Use cases:
-     * Design of anvils with custom dimensions
-     * Modeling hammers with specific handle lengths
-     * Creating tongs with adjustable jaw openings
-     * Forging blade designs
-     * Generating horseshoe models
-
-2. **Basic FreeCAD Operations**
+1. **Basic FreeCAD Operations**
    - Essential document management
    - Use cases:
      * Creating new documents
@@ -486,7 +554,7 @@ These settings ensure optimal performance when using the server with Cursor.
      * Exporting to various formats
      * Managing document structure
 
-3. **Model Manipulation**
+2. **Model Manipulation**
    - Transforming and modifying objects
    - Use cases:
      * Rotating objects precisely
@@ -495,7 +563,7 @@ These settings ensure optimal performance when using the server with Cursor.
      * Creating mirrors and copies
      * Boolean operations (union, cut, intersect)
 
-4. **Measurement Tools**
+3. **Measurement Tools**
    - Analysis and verification
    - Use cases:
      * Distance measurements
@@ -504,7 +572,7 @@ These settings ensure optimal performance when using the server with Cursor.
      * Volume calculations
      * Mass properties
 
-5. **Primitive Creation**
+4. **Primitive Creation**
    - Basic shape generation
    - Use cases:
      * Creating boxes and cylinders
@@ -513,7 +581,7 @@ These settings ensure optimal performance when using the server with Cursor.
      * Creating regular polygons
      * Drawing ellipses
 
-6. **Export/Import Operations**
+5. **Export/Import Operations**
    - File format conversion
    - Use cases:
      * STEP file export/import
@@ -521,7 +589,7 @@ These settings ensure optimal performance when using the server with Cursor.
      * DXF file processing
      * STL export for 3D printing
 
-7. **Code Generation**
+6. **Code Generation**
    - Automated code creation
    - Use cases:
      * Python script generation
@@ -567,21 +635,7 @@ primitives.create_box(length=100, width=50, height=20)
 export_import.export_stl("prototype.stl")
 ```
 
-2. **Tool Design**
-```python
-# Create custom blacksmith tools
-smithery.create_hammer(handle_length=400, head_width=45)
-smithery.create_tongs(jaw_length=85, opening_angle=20)
-```
-
-3. **Model Analysis**
-```python
-# Measure object properties
-volume = measurement.volume("Part1")
-mass = measurement.mass("Part1", material="Steel")
-```
-
-4. **Automated Processing**
+2. **Automated Processing**
 ```python
 # Import and modify multiple files
 for file in files:
@@ -637,13 +691,13 @@ for file in files:
 - Object transformations (move, rotate)
 - Export models to STL format
 - Document and object management
-- Specialty smithery tools for blacksmithing models
 
 ## Prerequisites
 
-- FreeCAD 0.20 or newer installed on the system
 - Python 3.8 or newer
 - MCP SDK (`pip install modelcontextprotocol`)
+- **Recommended**: A FreeCAD AppImage (downloaded and extracted using `extract_appimage.py`) for the reliable `launcher` connection method.
+- **Alternatively**: A system installation of FreeCAD 0.20+ (for `bridge` or `server` methods, potentially less reliable).
 
 ## Available Tools
 
@@ -674,14 +728,6 @@ for file in files:
 ### Export
 
 1. **freecad.export_stl** - Export the model to an STL file
-
-### Smithery Tools (Specialty Tools)
-
-1. **smithery.create_anvil** - Create an anvil model
-2. **smithery.create_hammer** - Create a blacksmith hammer model
-3. **smithery.create_tongs** - Create blacksmith tongs model
-4. **smithery.forge_blade** - Create a forged blade model
-5. **smithery.create_horseshoe** - Create a horseshoe model
 
 ## Testing
 

@@ -97,7 +97,7 @@ class FreeCADLauncher:
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=30  # Add a timeout to prevent hanging
+                timeout=90  # Increase timeout to prevent hanging
             )
 
             self.log(f"Command executed with return code: {result.returncode}")
