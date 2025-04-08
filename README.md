@@ -9,6 +9,27 @@
 
 This project provides a robust integration between AI assistants and FreeCAD CAD software using the **Model Context Protocol (MCP)**. It allows external applications to interact with FreeCAD through a standardized interface, offering multiple connection methods and specialized tools.
 
+## Quick Start (Recommended: AppImage + Launcher)
+
+For the most reliable setup, follow these steps:
+
+1.  **Setup Environment (One-time)**: Run the setup script. This clones the repository to `~/.mcp-freecad`, creates a Python virtual environment, downloads the latest stable FreeCAD AppImage, extracts it, and configures the server to use it.
+    ```bash
+    curl -sSL https://raw.githubusercontent.com/jango-blockchained/mcp-freecad/main/scripts/bin/setup_freecad_env.sh | bash
+    ```
+    *Alternatively, clone the repo and run `./scripts/bin/setup_freecad_env.sh` manually.*
+
+2.  **Run the MCP Server**: Use the installer script (which now just ensures the venv is active and runs the server) or the global command if installed.
+    ```bash
+    # Option A: Run via the installer script in the default location
+    ~/.mcp-freecad/scripts/bin/mcp-freecad-installer.sh
+
+    # Option B: Run the global command (if installed via install-global.sh)
+    mcp-freecad
+    ```
+
+This starts the MCP server using the recommended `launcher` method with the downloaded and extracted AppImage.
+
 ## 🔄 MCP Flow Chart
 
 ```mermaid
@@ -82,47 +103,95 @@ For more detailed flowcharts, see [FLOWCHART.md](docs/FLOWCHART.md).
 ## 🔄 Core Components
 
 ### 1. FreeCAD MCP Server (`freecad_mcp_server.py`)
-- **Description**: The main server implementing the Model Context Protocol. It acts as the central hub for AI assistants to communicate with FreeCAD.
+- **Description**: The main server implementing the Model Context Protocol. It acts as the central hub for AI assistants or other clients to communicate with FreeCAD via MCP.
 - **Features**:
-    - Supports standard MCP requests (ListTools, ExecuteTool, ListResources, GetResource).
-    - Connects to FreeCAD using various methods (see below).
-    - Exposes specialized tools, including smithery operations.
+    - Handles standard MCP requests (`mcp/listTools`, `mcp/executeTool`).
+    - Utilizes `FreeCADConnection` to interact with FreeCAD using the configured method.
+    - Exposes various toolsets (primitives, manipulation, export, etc.) based on configuration.
     - Configurable via `config.json`.
-
-### 2. FreeCAD Connection (`freecad_connection.py`)
-- **Description**: A unified Python interface for connecting to FreeCAD, used internally by the MCP server and available for direct use. It intelligently selects the best connection method based on configuration and availability.
-- **Methods**:
-    - **Launcher Connection**: (Recommended with AppImage) Uses `freecad_launcher.py` to start FreeCAD via `AppRun` from an extracted AppImage. Ensures a clean environment.
-    - **Wrapper Connection**: Uses `freecad_wrapper.py` to run FreeCAD logic in a separate Python subprocess, communicating via pipes.
-    - **Socket Server Connection**: Communicates with a running `freecad_server.py` instance via sockets.
-    - **CLI Bridge Connection**: Uses command-line calls via `freecad_bridge.py`. Can be less reliable for complex operations.
-    - **Mock Connection**: Provides a fallback for testing without a running FreeCAD instance.
-    - **Auto Connection**: Automatically selects the best available method (default order: launcher, wrapper, server, bridge, mock).
-
-### 3. FreeCAD Launcher (`freecad_launcher.py`)
-- **Description**: A script responsible for launching the FreeCAD environment, typically using `AppRun` from an extracted AppImage when configured for the `launcher` connection method. It passes commands to `freecad_script.py` running inside the launched FreeCAD environment.
-
-### 4. FreeCAD Wrapper (`freecad_wrapper.py`) & Subprocess (`freecad_subprocess.py`)
-- **Description**: The `freecad_wrapper.py` starts `freecad_subprocess.py` in a clean Python process. `freecad_subprocess.py` imports FreeCAD modules and executes commands received via standard input/output from the wrapper. Used by the `wrapper` connection method.
-
-### 5. FreeCAD Server (`freecad_server.py`)
-- **Description**: A standalone socket-based server script designed to run *inside* FreeCAD. It listens for commands from the `FreeCADConnection` (when using the `server` method). Requires manual setup within FreeCAD or specific launch parameters.
 - **Usage**:
     ```bash
-    # Run inside FreeCAD's Python console
-    exec(open("/path/to/freecad_server.py").read())
+    # Start the server (uses config.json by default)
+    python freecad_mcp_server.py
 
-    # Or run from command line (starts FreeCAD in console mode)
-    freecad -c /path/to/freecad_server.py --host localhost --port 12345 --debug
+    # Start with a specific config
+    python freecad_mcp_server.py --config my_config.json
     ```
-See [FREECAD_SERVER_SETUP.md](docs/FREECAD_SERVER_SETUP.md) for detailed setup instructions.
+
+### 2. FreeCAD Connection (`freecad_connection.py`)
+- **Description**: A unified Python interface encapsulating the logic for connecting to FreeCAD. Used internally by the MCP server and available for direct scripting.
+- **Features**:
+    - Intelligently selects the best connection method based on configuration and availability.
+- **Methods**:
+    - **Launcher**: (Recommended) Uses `freecad_launcher.py` and `AppRun`.
+    - **Wrapper**: Uses `freecad_wrapper.py` and `freecad_subprocess.py`.
+    - **Server**: Connects to a running `freecad_server.py` via sockets.
+    - **Bridge**: Uses the FreeCAD CLI via `freecad_bridge.py`.
+    - **Mock**: Simulates FreeCAD for testing.
+    - **Auto**: Tries methods in recommended order (launcher > wrapper > server > bridge > mock).
+- **Usage (Direct Scripting Example)**:
+    ```python
+    from freecad_connection import FreeCADConnection
+
+    # Auto-connect using settings potentially from config.json
+    # (Ensure config.json is present or provide args)
+    fc = FreeCADConnection(auto_connect=True)
+
+    if fc.is_connected():
+        print(f"Connected via: {fc.get_connection_type()}")
+        version_info = fc.get_version()
+        print(f"FreeCAD Version: {version_info}")
+        fc.create_document("TestDocFromScript")
+    else:
+        print("Failed to connect to FreeCAD.")
+    ```
+
+### 3. FreeCAD Launcher (`freecad_launcher.py`)
+- **Description**: Handles launching the FreeCAD environment, typically using `AppRun` from an extracted AppImage. It executes `freecad_script.py` within the launched environment.
+- **Features**:
+    - Manages the subprocess execution of FreeCAD/AppRun.
+    - Passes commands and parameters to the internal FreeCAD script.
+    - Parses JSON results from the script's output.
+- **Usage**: Primarily used internally by `FreeCADConnection` when the `launcher` method is selected (configured in `config.json`). Not typically run directly by the user.
+
+### 4. FreeCAD Wrapper (`freecad_wrapper.py`) & Subprocess (`freecad_subprocess.py`)
+- **Description**: The `freecad_wrapper.py` starts `freecad_subprocess.py` in a separate Python process. `freecad_subprocess.py` imports FreeCAD modules and communicates with the wrapper via stdio pipes.
+- **Features**:
+    - Isolates FreeCAD module imports into a dedicated process.
+    - Provides an alternative connection method if direct module imports are feasible but AppRun/launcher is problematic.
+- **Usage**: Used internally by `FreeCADConnection` when the `wrapper` method is selected (configured in `config.json`). Requires a Python environment where the subprocess can successfully `import FreeCAD`.
+
+### 5. FreeCAD Server (`freecad_server.py`)
+- **Description**: A standalone socket server designed to run *inside* a FreeCAD instance. Listens for connections from `FreeCADConnection`.
+- **Features**:
+    - Allows connection to a potentially persistent FreeCAD instance.
+    - Can interact with the GUI if run in `--connect` mode.
+- **Usage (Manual Start within FreeCAD)**:
+    ```python
+    # Inside FreeCAD Python Console:
+    exec(open("/path/to/mcp-freecad/freecad_server.py").read())
+    ```
+    *Requires `connection_method: server` in `config.json` for the MCP Server to connect.* (See `docs/FREECAD_SERVER_SETUP.md`)
 
 ### 6. FreeCAD Bridge (`freecad_bridge.py`)
-- **Description**: A Python module enabling command-line interaction with FreeCAD, bypassing direct module import issues. Used by `FreeCADConnection` when using the `bridge` method. Less commonly used now compared to `launcher` or `wrapper`.
+- **Description**: Enables command-line interaction with the FreeCAD executable. Bypasses direct module import issues but can be slower.
+- **Features**:
+    - Executes FreeCAD commands via subprocess calls to the `freecad` executable.
+- **Usage**: Used internally by `FreeCADConnection` when the `bridge` method is selected (configured in `config.json`). Requires `freecad` to be in the system PATH or the `path` correctly set in config.
 
 ### 7. FreeCAD Client (`freecad_client.py`)
-- **Description**: A command-line client utility for interacting directly with the `FreeCADConnection` interface (not the MCP server). Useful for basic testing and scripting outside the MCP context.
-- **Example**: `python freecad_client.py create-box --length 20`
+- **Description**: A command-line utility for interacting directly with the `FreeCADConnection` interface (for testing/debugging connection methods, not the MCP server).
+- **Features**:
+    - Allows testing specific `FreeCADConnection` commands (e.g., creating primitives, getting version) from the terminal.
+    - Uses `config.json` to determine connection settings.
+- **Usage Examples**:
+    ```bash
+    # Test connection and get version
+    python freecad_client.py version
+
+    # Create a box using the configured connection method
+    python freecad_client.py create-box --length 20 --width 10
+    ```
 
 ## 🔄 Project Structure
 
@@ -162,111 +231,52 @@ mcp-freecad/
 
 For more details on scripts, see [scripts/README.md](scripts/README.md).
 
-## ⚙️ Installation
+## ⚙️ Installation & Setup Details
 
-There are several ways to install and use the MCP-FreeCAD server:
+This section provides more details on the different installation and setup options.
 
-### 1. Quick Start for AI Tools
+### Recommended Setup: AppImage + Launcher (Detailed Steps)
 
-To install and run the MCP-FreeCAD server in a single command, run:
+This involves two main scripts:
 
+1.  **`scripts/bin/setup_freecad_env.sh`**: Prepares the environment.
+    - Clones or updates the repository to `~/.mcp-freecad`.
+    - Creates/updates a Python virtual environment (`.venv`) and installs requirements.
+    - Runs `download_appimage.py` to fetch the latest stable FreeCAD Linux AppImage into `~/.mcp-freecad`.
+    - Runs `extract_appimage.py` which:
+        - Extracts the downloaded AppImage to `~/.mcp-freecad/squashfs-root`.
+        - Updates `~/.mcp-freecad/config.json` to use `connection_method: launcher` and `use_apprun: true` with correct absolute paths.
+    - **How to run**: `curl -sSL <URL>/setup_freecad_env.sh | bash` or `./scripts/bin/setup_freecad_env.sh`
+
+2.  **`scripts/bin/mcp-freecad-installer.sh`**: Runs the server.
+    - **Note**: Despite the name, this script *no longer performs the full installation*. It primarily ensures the repository is up-to-date, activates the virtual environment, and starts `freecad_mcp_server.py`.
+    - It assumes the environment (AppImage download/extraction) has been prepared by `setup_freecad_env.sh` or manually.
+    - **How to run**: `~/.mcp-freecad/scripts/bin/mcp-freecad-installer.sh` or `mcp-freecad` (global command).
+
+### Other Installation Methods
+
+#### Global Installation (`install-global.sh`)
+
+- Creates a symbolic link `mcp-freecad` in `/usr/local/bin` pointing to `mcp-freecad-installer.sh` in the repo.
+- Allows running `mcp-freecad` from anywhere.
+- **Requires the environment to be set up first** using `setup_freecad_env.sh` if you want to use the recommended launcher method.
 ```bash
-curl -sSL https://raw.githubusercontent.com/jango-blockchained/mcp-freecad/main/scripts/bin/mcp-freecad-installer.sh | bash
-```
-
-This command will:
-1. Clone the MCP-FreeCAD repository (or update it if already cloned)
-2. Set up a Python virtual environment
-3. Install all dependencies
-4. Start the MCP server
-
-After installation, you can run the server directly with:
-
-```bash
-~/.mcp-freecad/scripts/bin/mcp-freecad.sh
-```
-
-### 2. Global Installation
-
-If you have cloned the repository, you can install the MCP-FreeCAD server globally on your system:
-
-```bash
-# Navigate to the repository
-cd /path/to/mcp-freecad
-
-# Run the global installation script
-./scripts/bin/install-global.sh
-```
-
-After installation, you can run the server from anywhere with:
-
-```bash
+# Navigate to the repository (e.g., ~/.mcp-freecad)
+cd ~/.mcp-freecad 
+# Run the setup script first
+./scripts/bin/setup_freecad_env.sh
+# Then run the global installation script
+sudo ./scripts/bin/install-global.sh # Needs sudo for /usr/local/bin
+# Now you can run the server from anywhere
 mcp-freecad
 ```
 
-### 3. Manual Installation
+#### Manual Installation
 
-You can also install the server manually:
-
-```bash
-# Clone the repository
-git clone https://github.com/jango-blockchained/mcp-freecad.git
-cd mcp-freecad
-
-# Create a virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Install the package in development mode
-pip install -e .
-
-# Run the server
-python freecad_mcp_server.py
-```
-
-### 4. Recommended Setup: Using FreeCAD AppImage (Most Reliable)
-
-For the most reliable FreeCAD connection, especially if you encounter module import issues or environment conflicts, we strongly recommend using an extracted FreeCAD AppImage with the `launcher` connection method:
-
-1.  **Download a FreeCAD AppImage**: Get the latest stable or weekly build AppImage (e.g., `.AppImage` format) from the [FreeCAD releases page](https://github.com/FreeCAD/FreeCAD/releases).
-
-2.  **Make it Executable**: `chmod +x /path/to/FreeCAD_*.AppImage`
-
-3.  **Extract the AppImage**: Use the provided utility script `extract_appimage.py` from the root of this repository. This creates a self-contained FreeCAD environment directory (`squashfs-root`).
-
-    ```bash
-    # Navigate to the mcp-freecad directory
-    cd /path/to/mcp-freecad
-
-    # Run the extraction script, providing the path to your downloaded AppImage
-    python extract_appimage.py /path/to/FreeCAD_*.AppImage
-
-    # Optional: Specify output directory (defaults to creating squashfs-root in the current dir)
-    # python extract_appimage.py /path/to/FreeCAD_*.AppImage --output ./my_freecad_appimage
-    ```
-    This script will:
-    - Extract the AppImage contents to a `squashfs-root` directory.
-    - **Automatically update your `config.json`** to use the `launcher` method and set the correct paths (`path`, `script_path`, `launcher_path`, `apprun_path`, `use_apprun: true`).
-    - Test the extracted AppImage to ensure it works.
-
-4.  **Start the MCP Server**: The server will now use the `launcher` connection method configured in `config.json` to run FreeCAD operations within the clean, extracted AppImage environment.
-
-    ```bash
-    python freecad_mcp_server.py
-    ```
-
-This method avoids potential conflicts with system Python versions and ensures all necessary FreeCAD dependencies and modules are correctly loaded via `AppRun`.
-
-### 5. FreeCAD Python Interpreter Setup
-
-For proper integration with FreeCAD's Python modules, see [PYTHON_INTERPRETER_SETUP.md](docs/PYTHON_INTERPRETER_SETUP.md) which explains how to:
-
-- Extract and use FreeCAD's AppImage Python interpreter
-- Set up a virtual environment with FreeCAD's Python
-- Configure `PYTHONPATH` for FreeCAD module access
+- Clone the repo.
+- Create venv, install requirements.
+- **Manually download and extract AppImage**: Run `python download_appimage.py` and `python extract_appimage.py /path/to/downloaded.AppImage` yourself.
+- Run the server: `python freecad_mcp_server.py`.
 
 ## 🚀 Using the MCP Server
 

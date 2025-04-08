@@ -175,4 +175,28 @@ This flowchart illustrates the decision-making process within `freecad_connectio
 
 **Running the Examples:**
 
-The `
+The `examples/` directory contains various scripts to test the different components and connection methods:
+
+1.  **`test_freecad_import.py`**: Checks if the basic `FreeCAD` module can be imported directly. Useful for debugging path issues. Run with `python examples/test_freecad_import.py`.
+2.  **`test_freecad_subprocess.py`**: Tests running a simple FreeCAD command via `subprocess`, similar to how the bridge *might* work internally. Run with `python examples/test_freecad_subprocess.py`.
+3.  **`freecad_cli_test.py`**: Uses the `freecad_bridge.py` directly to perform some operations. Run with `python examples/freecad_cli_test.py`.
+4.  **`use_freecad.py`**: A simple script demonstrating direct import and use of FreeCAD modules (requires FreeCAD Python environment or correctly set paths). Run with `python examples/use_freecad.py`.
+5.  **`test_freecad_connection.py`**: Tests the `FreeCADConnection` class, attempting to connect using different methods. You might need to start `freecad_server.py` separately for the "server" mode tests to pass. Run with `python examples/test_freecad_connection.py`.
+6.  **`demo.py`**: A comprehensive demo likely using `freecad_client.py` or `freecad_connection.py` to showcase various features. Run with `python examples/demo.py`. You may need `freecad_server.py` running for this, depending on how it connects.
+
+**To run examples effectively:**
+
+*   **For examples using the `launcher` or `wrapper` connection (or `auto` mode with AppImage setup):**
+    *   Ensure the environment is set up (AppImage extracted, `config.json` updated by `extract_appimage.py` or `setup_freecad_env.sh`).
+    *   Run the example script (e.g., `python examples/test_freecad_connection.py`). It should automatically use the configured method.
+*   **For examples using the `server` connection:**
+    *   Start FreeCAD.
+    *   Use the MCP Indicator Addon (or run manually) `python freecad_server.py --connect`.
+    *   Ensure `config.json` is set to `connection_method: server`.
+    *   Run the example script (e.g., `python examples/test_freecad_connection.py`).
+*   **For examples using the `bridge` connection:**
+    *   Ensure the `freecad` executable is in your PATH.
+    *   Ensure `config.json` is set to `connection_method: bridge`.
+    *   Run the example script (e.g., `python examples/freecad_cli_test.py` or `python examples/test_freecad_connection.py`).
+*   **For direct import examples (`use_freecad.py`, `test_freecad_import.py`):**
+    *   Run them using the Python interpreter associated with your FreeCAD installation or ensure `sys.path` is correctly configured.

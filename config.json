@@ -61,7 +61,6 @@
     "sample_rate": 1.0
   },
   "tools": {
-    "enable_smithery": true,
     "enable_primitives": true,
     "enable_model_manipulation": true,
     "enable_export_import": true,
