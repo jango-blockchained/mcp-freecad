@@ -1,0 +1,5681 @@
+{
+  "entities": [
+    {
+      "type": "entity",
+      "name": "Schichtplan",
+      "entityType": "Project",
+      "observations": [
+        "Shift scheduling application",
+        "Consists of Flask backend and React/TypeScript frontend"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Backend",
+      "entityType": "Component",
+      "observations": [
+        "Built with Flask",
+        "Runs on port 5000",
+        "Located in src/backend/",
+        "Main file is run.py",
+        "Uses SQLite database at src/backend/instance/schichtplan.db",
+        "Development URL: http://localhost:5000"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Frontend",
+      "entityType": "Component",
+      "observations": [
+        "Built with React/TypeScript",
+        "Uses Bun as JavaScript runtime",
+        "Uses Tailwind CSS and shadcn-ui",
+        "Runs on port 5173",
+        "Located in src/frontend/",
+        "Development URL: http://localhost:5173"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ProjectStructure",
+      "entityType": "Documentation",
+      "observations": [
+        "src/backend/ contains models/, routes/, services/, utils/, app.py, run.py",
+        "src/frontend/ contains public/, src/ (with components/, hooks/, services/, types/, utils/)",
+        "Key component directories: shifts-editor/ and coverage-editor/",
+        "migrations/ directory for database migrations",
+        "logs/ directory for application logs",
+        "tests/ directory for test files",
+        "start.sh script for application startup"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "BackendTechnologies",
+      "entityType": "TechStack",
+      "observations": [
+        "Flask: Main web framework",
+        "SQLAlchemy: ORM for database operations",
+        "Flask-Migrate: Database migration management",
+        "SQLite: Database engine"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "FrontendTechnologies",
+      "entityType": "TechStack",
+      "observations": [
+        "React: UI framework",
+        "TypeScript: Type-safe JavaScript",
+        "Tailwind CSS: Utility-first CSS framework",
+        "shadcn/ui: UI component library",
+        "Bun: JavaScript runtime"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "APIStructure",
+      "entityType": "Documentation",
+      "observations": [
+        "RESTful principles",
+        "/api/employees: Employee management",
+        "/api/shifts: Shift template management",
+        "/api/schedules: Schedule management",
+        "/api/store/config: Store configuration management"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "DevelopmentWorkflow",
+      "entityType": "Process",
+      "observations": [
+        "Backend setup: Python virtual environment, requirements installation",
+        "Frontend setup: bun install",
+        "Feature development: branch creation, implement backend/frontend changes, testing, commit",
+        "Code style: PEP 8 for backend, TypeScript style guide for frontend",
+        "Debugging: logs in src/logs/backend.log, Flask debug mode, browser dev tools"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ServerManagement",
+      "entityType": "Process",
+      "observations": [
+        "Option 1: Using start.sh script (recommended)",
+        "Option 2: Manual startup of backend and frontend",
+        "Tmux session management for development environment",
+        "Troubleshooting steps for backend and frontend issues"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "RunningApplication",
+      "entityType": "Process",
+      "observations": [
+        "start.sh script runs both backend and frontend in tmux",
+        "Backend port: 5000, Frontend port: 5173",
+        "Tmux session name: schichtplan",
+        "Manual startup requires setting environment variables and running separate commands"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "DataFlow",
+      "entityType": "Architecture",
+      "observations": [
+        "Frontend components make API requests to backend services",
+        "Backend routes handle requests and delegate to service layer",
+        "Service layer implements business logic and interacts with data models",
+        "Models interact with the database using SQLAlchemy",
+        "Results flow back through the stack to the frontend"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "DesignPatterns",
+      "entityType": "Architecture",
+      "observations": [
+        "MVC Pattern: Models (SQLAlchemy models), Views (React components), Controllers (Flask routes)",
+        "Service Layer: Business logic separated from routes",
+        "Repository Pattern: Database access abstracted in models and repositories"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "DatabaseSchema",
+      "entityType": "Architecture",
+      "observations": [
+        "SQLite database stored at src/backend/instance/schichtplan.db",
+        "Managed using SQLAlchemy ORM",
+        "Migrations handled with Flask-Migrate",
+        "Migration files stored in migrations/ directory"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ShiftSchedulingFeatures",
+      "entityType": "Functionality",
+      "observations": [
+        "Core feature of the application",
+        "Allows creating shift templates",
+        "Supports employee management",
+        "Enables schedule generation and management",
+        "Includes coverage requirements"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "TestingInfrastructure",
+      "entityType": "Development",
+      "observations": [
+        "Backend tests located in tests/ directory",
+        "Frontend tests run with 'bun test'",
+        "Pytest used for backend testing",
+        "Manual testing with development environment"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "KeyFiles",
+      "entityType": "Documentation",
+      "observations": [
+        "src/backend/app.py: Flask application setup",
+        "src/backend/run.py: Application entry point",
+        "src/frontend/src/App.tsx: Main frontend component",
+        "start.sh: Application startup script",
+        "requirements.txt: Python dependencies"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "EnvironmentSetup",
+      "entityType": "Configuration",
+      "observations": [
+        "Backend requires FLASK_APP=src.backend.app",
+        "Backend requires FLASK_ENV=development",
+        "Backend optionally uses DEBUG_MODE=1",
+        "Frontend uses Bun for package management"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "FrontendComponents",
+      "entityType": "Architecture",
+      "observations": [
+        "shifts-editor/: Components for managing shift templates",
+        "coverage-editor/: Components for managing coverage requirements",
+        "React components use TypeScript for type safety",
+        "UI built with Tailwind CSS and shadcn/ui",
+        "Components organized in src/frontend/src/components/"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "APIEndpointDetails",
+      "entityType": "Documentation",
+      "observations": [
+        "/api/employees: GET, POST, PUT, DELETE for employee management",
+        "/api/shifts: Manage shift templates and configurations",
+        "/api/schedules: Create and manage scheduling periods",
+        "/api/store/config: Manage store-specific settings"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "DeploymentProcess",
+      "entityType": "Operations",
+      "observations": [
+        "Development environment uses start.sh for local setup",
+        "Production would need environment variable configuration",
+        "Front-end assets should be built and minified for production",
+        "Backend would need proper WSGI server for production"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "TroubleshootingGuide",
+      "entityType": "Operations",
+      "observations": [
+        "Backend logs in src/logs/backend.log",
+        "Tmux session management helps debug both services",
+        "Common frontend issues relate to API connectivity",
+        "Database issues can be debugged through SQLite CLI"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "BackendModels",
+      "entityType": "Architecture",
+      "observations": [
+        "SQLAlchemy models for database entities",
+        "Located in src/backend/models/",
+        "Include Employee, Shift, Schedule, and Store models",
+        "Models define database schema and relationships"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "BackendServices",
+      "entityType": "Architecture",
+      "observations": [
+        "Business logic isolated in service layer",
+        "Located in src/backend/services/",
+        "Handle complex operations like schedule generation",
+        "Abstract database operations from route handlers"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "CodeStyleGuidelines",
+      "entityType": "Development",
+      "observations": [
+        "Backend follows PEP 8 guidelines",
+        "Backend code formatted with Black",
+        "Frontend follows TypeScript style guide",
+        "Frontend code formatted with Prettier",
+        "Linting with flake8 and ESLint"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "DatabaseMigrations",
+      "entityType": "Operations",
+      "observations": [
+        "Managed with Flask-Migrate",
+        "Create migrations: flask db migrate -m \"message\"",
+        "Apply migrations: flask db upgrade",
+        "Migration files stored in migrations/ directory"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "FeatureDevelopmentProcess",
+      "entityType": "Development",
+      "observations": [
+        "Create new git branch for features",
+        "Implement backend models, routes, services",
+        "Implement frontend components and services",
+        "Write tests for new functionality",
+        "Submit changes via git"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "EmployeeManagement",
+      "entityType": "Functionality",
+      "observations": [
+        "CRUD operations for employees",
+        "Employee attributes include name, contact info, skills, availability",
+        "Managed through /api/employees endpoint",
+        "Displayed in frontend employee management component"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ShiftTemplates",
+      "entityType": "Functionality",
+      "observations": [
+        "Define recurring shift patterns",
+        "Include time ranges, required skills, coverage requirements",
+        "Managed through /api/shifts endpoint",
+        "Edited in shifts-editor frontend component"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ScheduleGeneration",
+      "entityType": "Functionality",
+      "observations": [
+        "Creates schedules based on templates and employee availability",
+        "Handles conflict resolution",
+        "Optimizes for employee preferences and business needs",
+        "Managed through /api/schedules endpoint"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "FrontendState",
+      "entityType": "Architecture",
+      "observations": [
+        "Uses React state management",
+        "API calls handled through service layer",
+        "Type definitions ensure data integrity",
+        "Component organization follows feature-based structure"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "PerformanceConsiderations",
+      "entityType": "Development",
+      "observations": [
+        "Backend optimizes database queries",
+        "Frontend minimizes re-renders",
+        "Code splitting for frontend optimization",
+        "Database indexing for common queries"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ScheduleGenerationAlgorithm",
+      "entityType": "Functionality",
+      "observations": [
+        "Uses constraint-based optimization",
+        "Considers employee availability and preferences",
+        "Respects shift template requirements",
+        "Balances workload across employees",
+        "Handles time constraints like minimum rest periods"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ScheduleConstraints",
+      "entityType": "Functionality",
+      "observations": [
+        "Employee availability windows",
+        "Employee skills matching shift requirements",
+        "Maximum working hours per period",
+        "Minimum rest periods between shifts",
+        "Balanced distribution of shifts"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ScheduleOptimization",
+      "entityType": "Functionality",
+      "observations": [
+        "Prioritizes employee preferences where possible",
+        "Minimizes scheduling conflicts",
+        "Ensures adequate coverage for all time periods",
+        "Reduces overtime costs",
+        "Distributes desirable and undesirable shifts fairly"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ScheduleWorkflow",
+      "entityType": "Process",
+      "observations": [
+        "1. Define shift templates with requirements",
+        "2. Update employee availability and preferences",
+        "3. Set scheduling period parameters",
+        "4. Generate initial schedule",
+        "5. Review and manually adjust if needed",
+        "6. Finalize and publish schedule to employees"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ScheduleConflictResolution",
+      "entityType": "Functionality",
+      "observations": [
+        "Identifies hard conflicts (impossible constraints)",
+        "Suggests solutions for conflicting requirements",
+        "Allows manual override by managers",
+        "Flags potential issues in generated schedules",
+        "Provides explanations for scheduling decisions"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ScheduleGenerationImplementation",
+      "entityType": "Architecture",
+      "observations": [
+        "Implemented in backend/services/schedule_generator.py",
+        "Uses specialized algorithms for constraint satisfaction",
+        "Database models provide input data (employees, shifts, constraints)",
+        "Results stored in Schedule model with associated ScheduleEntry items",
+        "API endpoints allow controlling and monitoring the generation process"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ScheduleDataModels",
+      "entityType": "Architecture",
+      "observations": [
+        "Employee model contains availability and skills",
+        "Shift model defines templates and requirements",
+        "Schedule model represents a scheduling period",
+        "ScheduleEntry connects employees to shifts in a schedule",
+        "Constraint models define various scheduling rules"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ScheduleVisualization",
+      "entityType": "Functionality",
+      "observations": [
+        "Frontend provides calendar view of schedules",
+        "Color-coding for different shift types",
+        "Filtering by employee, department, or time period",
+        "Interactive adjustments to generated schedules",
+        "Conflict highlighting for problematic assignments"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ScheduleExport",
+      "entityType": "Functionality",
+      "observations": [
+        "Export to PDF for printing",
+        "Export to CSV for data analysis",
+        "Employee-specific views for personal schedules",
+        "Department-level exports for managers",
+        "Notification system for schedule publication and changes"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "SchedulingAlgorithmDetails",
+      "entityType": "Technical",
+      "observations": [
+        "Initial solution generation using greedy algorithm",
+        "Constraint propagation to reduce search space",
+        "Simulated annealing for optimization",
+        "Fallback to manual resolution for impossible constraints",
+        "Multi-stage process with incremental improvement"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ScheduleGenerationPerformance",
+      "entityType": "Technical",
+      "observations": [
+        "Optimized for mid-sized businesses (up to 100 employees)",
+        "Schedule generation typically completes in under 30 seconds",
+        "Database query optimization for efficient data retrieval",
+        "Background task processing for large schedules",
+        "Progress monitoring through API endpoints"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ScheduleUserInterface",
+      "entityType": "Functionality",
+      "observations": [
+        "Main schedule view implemented in frontend/src/components/schedules/",
+        "Manager interface includes override capabilities",
+        "Employee interface shows personal schedule and allows preference setting",
+        "Responsive design for mobile and desktop viewing",
+        "Drag-and-drop interface for manual adjustments"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Schichtplan Project",
+      "entityType": "Project",
+      "observations": [
+        "A shift scheduling application with a Flask backend and React/TypeScript frontend",
+        "Used for generating employee work schedules with various constraints",
+        "Supports fair distribution of shifts among employees",
+        "Located at /home/jango/Git/schichtplan"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Database",
+      "entityType": "Component",
+      "observations": [
+        "SQLite database",
+        "Uses SQLAlchemy as ORM",
+        "Database file located at: ./src/instance/app.db",
+        "Contains tables for employees, shifts, schedules, coverage, etc."
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ScheduleGenerator",
+      "entityType": "Module",
+      "observations": [
+        "Located in src/backend/services/scheduler/generator.py",
+        "Handles the generation of employee schedules",
+        "Considers employee availability, shift requirements, rest periods",
+        "Faced an issue with method argument mismatch in _get_available_employees()",
+        "Had an issue with all employees being assigned to the same shift (9:00-14:00)",
+        "Fixed distribution mechanism to properly spread employees across different shifts",
+        "Implements integration with DistributionManager for fair shift allocation"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "DistributionManager",
+      "entityType": "Module",
+      "observations": [
+        "Located in src/backend/services/scheduler/distribution.py",
+        "Manages fair distribution of shifts among employees",
+        "Scores shifts based on desirability (early, late, weekend)",
+        "Tracks historical shift assignments for each employee",
+        "Considers employee preferences and seniority",
+        "Calculates metrics for analyzing shift distribution fairness"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Coverage",
+      "entityType": "DataModel",
+      "observations": [
+        "Represents time periods that need to be staffed",
+        "Includes day_index (0-6 for weekdays), start_time, end_time",
+        "Specifies min_employees and max_employees requirements",
+        "Can require specific employee types or keyholder status"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Employee",
+      "entityType": "DataModel",
+      "observations": [
+        "Represents staff members in the system",
+        "Has attributes like first_name, last_name, is_active, contracted_hours",
+        "May have keyholder status (is_keyholder)",
+        "Has an employee_group (TL, VZ, TZ, GFB)"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ShiftTemplate",
+      "entityType": "DataModel",
+      "observations": [
+        "Represents shift patterns used for scheduling",
+        "Has start_time and end_time",
+        "Has a shift_type (EARLY, MIDDLE, LATE)",
+        "May have duration_hours and other attributes"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Schedule",
+      "entityType": "DataModel",
+      "observations": [
+        "Represents an assignment of an employee to a shift on a specific date",
+        "Links employee_id with shift_id and date",
+        "Has a status (DRAFT, etc.) and version"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Method Conflict Issue",
+      "entityType": "Issue",
+      "observations": [
+        "Two implementations of _get_available_employees() with different argument counts",
+        "Two implementations of _calculate_shift_duration() with different parameters",
+        "Resolved by renaming one method to _calculate_shift_template_duration()",
+        "Fixed by updating method calls to use the correct method"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Distribution Issue",
+      "entityType": "Issue",
+      "observations": [
+        "All employees were assigned to the same shift (9:00-14:00) on Monday, 03/10/2025",
+        "The _process_coverage method was assigning too many employees to the same shift",
+        "The _assign_employees_to_slot method wasn't properly checking for existing assignments",
+        "Fixed by improving employee distribution across different shifts and time periods",
+        "Fixed by respecting min_employees and max_employees requirements",
+        "Fixed by removing assigned employees from the candidate pool for other shifts"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "MCP",
+      "entityType": "Component",
+      "observations": [
+        "Located in ./src/mcp/",
+        "Purpose and functionality not fully detailed in the available information"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Schichtplan API",
+      "entityType": "API",
+      "observations": [
+        "The Schichtplan API follows RESTful principles and uses JSON for data exchange",
+        "All endpoints are prefixed with /api",
+        "Authentication is handled through session cookies",
+        "Common response structure includes success flag, data payload, and error messages"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "API Authentication",
+      "entityType": "Authentication",
+      "observations": [
+        "Authentication is handled through session cookies",
+        "Users must log in through the /api/auth/login endpoint before accessing protected resources"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Common Response Structure",
+      "entityType": "Schema",
+      "observations": [
+        "All API responses follow a common JSON structure",
+        "{ \"success\": true|false, \"data\": {...}, \"error\": \"...\", \"message\": \"...\" }",
+        "success is a boolean indicating request success",
+        "data is present on successful requests",
+        "error is present on failed requests",
+        "message is optional and may be present on any request"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "GET /api/employees",
+      "entityType": "API Endpoint",
+      "observations": [
+        "List all employees",
+        "Optional parameters: status=active|inactive|all (default: active)",
+        "Optional parameters: group=VZ|TZ|GfB|TL|all (default: all)",
+        "Returns an array of employee objects with their details",
+        "HTTP Method: GET"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "POST /api/employees",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Create a new employee",
+        "Request body requires: name, employee_id, group, status, hours_per_week",
+        "Returns the created employee object with id, created_at, and updated_at fields",
+        "HTTP Method: POST"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "GET /api/employees/:id",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Get details for a specific employee",
+        "URL parameter: id - The employee's ID",
+        "Returns an employee object with full details",
+        "HTTP Method: GET"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "PUT /api/employees/:id",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Update an employee",
+        "URL parameter: id - The employee's ID",
+        "Request body accepts: name, employee_id, group, status, hours_per_week",
+        "Returns the updated employee object",
+        "HTTP Method: PUT"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "DELETE /api/employees/:id",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Delete an employee",
+        "URL parameter: id - The employee's ID",
+        "Returns a success message",
+        "HTTP Method: DELETE"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "GET /api/shifts",
+      "entityType": "API Endpoint",
+      "observations": [
+        "List all shift templates",
+        "Optional parameters: type=early|middle|late|all (default: all)",
+        "Returns an array of shift template objects",
+        "HTTP Method: GET"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "POST /api/shifts",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Create a new shift template",
+        "Request body requires: name, start_time, end_time, type, break_duration",
+        "Returns the created shift template object",
+        "HTTP Method: POST"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "GET /api/shifts/:id",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Get details for a specific shift template",
+        "URL parameter: id - The shift template's ID",
+        "Returns a shift template object",
+        "HTTP Method: GET"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "PUT /api/shifts/:id",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Update a shift template",
+        "URL parameter: id - The shift template's ID",
+        "Request body accepts: name, start_time, end_time, type, break_duration",
+        "Returns the updated shift template object",
+        "HTTP Method: PUT"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "DELETE /api/shifts/:id",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Delete a shift template",
+        "URL parameter: id - The shift template's ID",
+        "Returns a success message",
+        "HTTP Method: DELETE"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "GET /api/schedules",
+      "entityType": "API Endpoint",
+      "observations": [
+        "List all schedules",
+        "Returns an array of schedule objects",
+        "HTTP Method: GET"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "POST /api/schedules/generate",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Generate a new schedule",
+        "Request body requires: start_date, end_date, store_id",
+        "Returns the generated schedule object or error information",
+        "Uses the ScheduleGenerator class for generation logic",
+        "HTTP Method: POST"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "GET /api/schedules/:id",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Get a specific schedule",
+        "URL parameter: id - The schedule's ID",
+        "Returns a schedule object with its entries",
+        "HTTP Method: GET"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "PUT /api/schedules/:id",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Update a schedule",
+        "URL parameter: id - The schedule's ID",
+        "Returns the updated schedule object",
+        "HTTP Method: PUT"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "POST /api/schedules/export",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Export a schedule as PDF",
+        "Request body requires: schedule_id, format (pdf), include_breaks (boolean)",
+        "Returns the exported schedule document",
+        "HTTP Method: POST"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "GET /api/store/config",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Get store configuration",
+        "Returns the store configuration object",
+        "Contains details like store name, address, opening hours, staffing requirements",
+        "HTTP Method: GET"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "PUT /api/store/config",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Update store configuration",
+        "Request body requires fields like: name, address, opening_hours, min_staff_required",
+        "The opening_hours field is a JSON object mapping days to open/close times",
+        "The min_staff_required field is a JSON object mapping days to staff requirements by time of day",
+        "Returns the updated store configuration",
+        "HTTP Method: PUT"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "GET /api/settings/tables",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Get list of available database tables",
+        "Returns an array of table names",
+        "Excludes the alembic_version table",
+        "HTTP Method: GET"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "POST /api/settings/wipe-tables",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Wipe specific database tables",
+        "Request body requires: tables (array of table names)",
+        "Validates table names against available tables",
+        "Returns success or error message",
+        "HTTP Method: POST"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "PUT /api/settings",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Update settings",
+        "Creates default settings if none exist",
+        "Updates settings from the provided JSON data",
+        "Returns the updated settings object",
+        "HTTP Method: PUT"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "POST /api/settings/reset",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Reset settings to defaults",
+        "Deletes existing settings",
+        "Creates new settings with default values",
+        "Returns the default settings object",
+        "HTTP Method: POST"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "GET /api/availability",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Get all employee availabilities",
+        "Returns an array of availability objects",
+        "HTTP Method: GET"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "GET /api/employees/:employee_id/absences",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Get absences for a specific employee",
+        "URL parameter: employee_id - The employee's ID",
+        "Returns an array of absence objects",
+        "HTTP Method: GET"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "POST /api/employees/:employee_id/absences",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Create a new absence for an employee",
+        "URL parameter: employee_id - The employee's ID",
+        "Request body requires: start_date, end_date",
+        "Optional fields: absence_type_id, note",
+        "Validates that end_date is after start_date",
+        "Returns the created absence object",
+        "HTTP Method: POST"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "DELETE /api/employees/:employee_id/absences/:absence_id",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Delete an employee's absence",
+        "URL parameters: employee_id, absence_id",
+        "Returns empty response with 204 status on success",
+        "HTTP Method: DELETE"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "PUT /api/employees/:employee_id/absences/:absence_id",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Update an employee's absence",
+        "URL parameters: employee_id, absence_id",
+        "Request body accepts: start_date, end_date, absence_type_id, note",
+        "Validates that end_date is after start_date if both are provided",
+        "Returns the updated absence object",
+        "HTTP Method: PUT"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "POST /api/logs",
+      "entityType": "API Endpoint",
+      "observations": [
+        "Save logs from frontend",
+        "Request body requires: logs (array of log objects)",
+        "Each log object must have a level field (error, warning, or info)",
+        "Logs are saved to appropriate log files based on level",
+        "Returns success or error message",
+        "HTTP Method: POST"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ScheduleEntry",
+      "entityType": "Data Model",
+      "observations": [
+        "id: Integer (Primary Key)",
+        "schedule_id: Integer (Foreign Key)",
+        "employee_id: Integer (Foreign Key)",
+        "shift_template_id: Integer (Foreign Key)",
+        "date: Date",
+        "start_time: Time",
+        "end_time: Time",
+        "break_start: Time",
+        "break_end: Time",
+        "created_at: DateTime",
+        "updated_at: DateTime"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "StoreConfiguration",
+      "entityType": "Data Model",
+      "observations": [
+        "id: Integer (Primary Key)",
+        "name: String",
+        "address: String",
+        "opening_hours: JSON",
+        "min_staff_required: JSON",
+        "created_at: DateTime",
+        "updated_at: DateTime"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Absence",
+      "entityType": "Data Model",
+      "observations": [
+        "id: Integer (Primary Key)",
+        "employee_id: Integer (Foreign Key)",
+        "start_date: Date",
+        "end_date: Date",
+        "absence_type_id: Integer",
+        "note: String",
+        "created_at: DateTime",
+        "updated_at: DateTime"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "EmployeeAvailability",
+      "entityType": "Data Model",
+      "observations": [
+        "id: Integer (Primary Key)",
+        "employee_id: Integer (Foreign Key)",
+        "day_of_week: Integer (0-6)",
+        "start_time: Time",
+        "end_time: Time",
+        "availability_type: Enum",
+        "created_at: DateTime",
+        "updated_at: DateTime"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Settings",
+      "entityType": "Data Model",
+      "observations": [
+        "id: Integer (Primary Key)",
+        "various configuration settings",
+        "created_at: DateTime",
+        "updated_at: DateTime"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Employee Model",
+      "entityType": "Data Model",
+      "observations": [
+        "id: Integer (Primary Key)",
+        "name: String",
+        "employee_id: String (Unique)",
+        "group: Enum ('VZ', 'TZ', 'GfB', 'TL')",
+        "status: Enum ('active', 'inactive')",
+        "hours_per_week: Float",
+        "created_at: DateTime",
+        "updated_at: DateTime"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ShiftTemplate Model",
+      "entityType": "Data Model",
+      "observations": [
+        "id: Integer (Primary Key)",
+        "name: String",
+        "start_time: Time",
+        "end_time: Time",
+        "type: Enum ('early', 'middle', 'late')",
+        "break_duration: Integer (minutes)",
+        "created_at: DateTime",
+        "updated_at: DateTime"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Schedule Model",
+      "entityType": "Data Model",
+      "observations": [
+        "id: Integer (Primary Key)",
+        "name: String",
+        "start_date: Date",
+        "end_date: Date",
+        "status: Enum ('draft', 'published', 'archived')",
+        "store_id: Integer (Foreign Key)",
+        "created_at: DateTime",
+        "updated_at: DateTime"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "API Error Codes",
+      "entityType": "Error Codes",
+      "observations": [
+        "400 - Bad Request",
+        "401 - Unauthorized",
+        "403 - Forbidden",
+        "404 - Not Found",
+        "409 - Conflict",
+        "500 - Internal Server Error"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "AvailabilityLoadingIssue",
+      "entityType": "Issue",
+      "observations": [
+        "The _load_availabilities method in generator.py was filtering out UNAVAILABLE records",
+        "This caused the schedule generator to not properly consider employee unavailability",
+        "Fixed by modifying _load_availabilities to load all availability records including UNAVAILABLE ones",
+        "The scheduler now properly evaluates all availability records when generating schedules"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "AvailabilityLoadingFix",
+      "entityType": "CodeFix",
+      "observations": [
+        "Modified _load_availabilities method in generator.py to include all availability records",
+        "Removed the filter that was excluding UNAVAILABLE records",
+        "Ensured the availability_type to shift_type mapping works correctly",
+        "Fixed the issue where shifts were not being assigned during schedule generation"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Schedule Generation Enhancement",
+      "entityType": "Task",
+      "observations": [
+        "Enhance the schedule generation process to improve shift distribution",
+        "Complete the `_calculate_shift_scores` method in DistributionManager",
+        "Add new method `_initialize_distribution_manager` to ScheduleGenerator",
+        "Add new method `_count_consecutive_shift_types` to improve shift distribution",
+        "Enhance `_get_best_employee_by_distribution` to consider consecutive shifts and early-late transitions",
+        "Update the generate method to properly initialize the distribution manager and log metrics"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Cursor IDE",
+      "entityType": "Software",
+      "observations": [
+        "An IDE that uses AI-powered assistance",
+        "Integrates with MCP servers for tool access",
+        "Stores configuration in ~/.cursor/config/config.json",
+        "Uses environment variables to configure MCP server behavior"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "homeassistant-mcp",
+      "entityType": "Software",
+      "observations": [
+        "An MCP server implementation for Home Assistant",
+        "Uses ES Modules as indicated by \"type\": \"module\" in package.json",
+        "Can be run with \"npx homeassistant-mcp\"",
+        "Needs specific environment variables for Cursor compatibility",
+        "Exposes tools like system_info, lights_control, and climate_control"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Cursor Compatibility",
+      "entityType": "Requirement",
+      "observations": [
+        "Requires environment variable CURSOR_COMPATIBLE=true",
+        "Requires environment variable USE_STDIO_TRANSPORT=true",
+        "Benefits from environment variable LOG_LEVEL=info",
+        "May require process cleanup to avoid conflicts",
+        "Must produce valid JSON-RPC 2.0 responses"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Test Scripts",
+      "entityType": "Software",
+      "observations": [
+        "simple-cursor-test.js tests basic MCP protocol compatibility",
+        "test-cursor-requests.js provides more comprehensive testing",
+        "test-mcp-cursor-compat.sh is a convenience wrapper",
+        "Test scripts need to use ES Module syntax (import instead of require)",
+        "Use --experimental-modules flag when running with Node.js"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "MCP Configuration",
+      "entityType": "Configuration",
+      "observations": [
+        "Cursor stores MCP server configuration in .cursor/config/config.json",
+        "Direct command approach uses env with environment variables and npx",
+        "Script approach uses a wrapper script that handles environment and cleanup",
+        "Both approaches should explicitly set CURSOR_COMPATIBLE and USE_STDIO_TRANSPORT"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Common Errors",
+      "entityType": "Error",
+      "observations": [
+        "Already failed to create client - occurs when MCP server fails to initialize",
+        "ES Modules vs CommonJS conflicts - require not defined in ES module scope",
+        "Missing or incorrect environment variables",
+        "Process conflicts with previous MCP server instances",
+        "Incorrect handling of STDIO communication"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "JSON-RPC",
+      "entityType": "Protocol",
+      "observations": [
+        "Remote Procedure Call protocol encoded in JSON",
+        "Used as the communication format for MCP",
+        "Requires proper message format with jsonrpc, id, method, and params",
+        "Version 2.0 is used in MCP implementations",
+        "Messages need to be properly separated when streamed over STDIO"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "STDIO Transport",
+      "entityType": "Communication Method",
+      "observations": [
+        "Uses standard input/output for communication",
+        "Requires USE_STDIO_TRANSPORT=true for homeassistant-mcp",
+        "Can suffer from buffering issues requiring special handling",
+        "Needs to parse potentially fragmented JSON messages",
+        "Critical for proper Cursor and MCP server communication"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "cursor-mcp.sh",
+      "entityType": "Script",
+      "observations": [
+        "Wrapper script for launching homeassistant-mcp in Cursor-compatible mode",
+        "Cleans up any existing MCP processes to prevent conflicts",
+        "Sets essential environment variables like CURSOR_COMPATIBLE=true",
+        "Located at ~/.cursor/cursor-mcp.sh for global access",
+        "Tries multiple paths to find and execute the MCP server"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "simple-cursor-test.js",
+      "entityType": "Script",
+      "observations": [
+        "Tests basic MCP protocol compatibility with Cursor",
+        "Initiates an MCP server with proper environment variables",
+        "Checks for system.info and tools.available messages",
+        "Uses ES Module syntax for imports",
+        "Needs --experimental-modules flag when run with Node.js"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "test-cursor-requests.js",
+      "entityType": "Script",
+      "observations": [
+        "Comprehensive test for Cursor JSON-RPC compatibility",
+        "Simulates complete Cursor interaction patterns",
+        "Tests tool invocation and response handling",
+        "Handles fragmented JSON over STDIO",
+        "Requires uuid package for generating request IDs"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "test-mcp-cursor-compat.sh",
+      "entityType": "Script",
+      "observations": [
+        "Convenience wrapper that runs simple-cursor-test.js",
+        "Accepts a custom MCP command as parameter",
+        "Provides friendly output and guidance based on results",
+        "Sets the MCP_COMMAND environment variable for the test script",
+        "Offers debugging suggestions for failed tests"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ES Modules vs CommonJS",
+      "entityType": "Technical Concept",
+      "observations": [
+        "Project configuration using \"type\": \"module\" in package.json",
+        "ES Modules use import syntax instead of require()",
+        "CommonJS uses require() for imports",
+        "Mixing the two syntaxes causes errors",
+        "Node.js needs --experimental-modules flag when running ES modules with .js extension",
+        "Can use .mjs extension to automatically use ES module mode"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Environment Variables for MCP",
+      "entityType": "Configuration",
+      "observations": [
+        "CURSOR_COMPATIBLE=true - enables Cursor-specific behavior",
+        "USE_STDIO_TRANSPORT=true - ensures proper I/O handling",
+        "LOG_LEVEL=info - sets appropriate logging detail",
+        "CURSOR_SESSION - identifies the current Cursor session",
+        "SILENT_MCP_RUNNING - can cause conflicts if set incorrectly"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Cursor MCP Configuration",
+      "entityType": "Technical Specification",
+      "observations": [
+        "Direct command approach uses env with args array in config.json",
+        "Script approach uses bash -c with path to script",
+        "Both stored in .cursor/config/config.json",
+        "Can have multiple MCP server configurations",
+        "New configurations appear in Cursor's MCP server dropdown"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "ShiftType",
+      "entityType": "Concept",
+      "observations": [
+        "Shift types (EARLY, MIDDLE, LATE) are properties of shifts, not coverage",
+        "Determined by the shift template's start and end times",
+        "Used for fair distribution of different shift types among employees",
+        "Not related to coverage requirements"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "WebSocket Integration",
+      "entityType": "Task",
+      "observations": [
+        "Added WebSocket events to backend routes (schedule_updated, availability_updated, absence_updated, settings_updated, shift_template_updated, coverage_updated)",
+        "Updated ShiftEditModal to use useWebSocketEvents hook instead of custom subscription system",
+        "Enhanced WebSocket connection management in frontend api.ts",
+        "TypeScript typing issues with Socket and Manager types still pending resolution"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Frontend WebSocket Components",
+      "entityType": "Task",
+      "observations": [
+        "Integrate WebSocketContext throughout frontend components",
+        "Ensure WebSocketStatus is visible in key components",
+        "Add WebSocketErrorBoundary to critical components",
+        "Implement real-time validation of schedule conflicts",
+        "Add real-time employee availability checks",
+        "Add real-time coverage requirement updates"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "WebSocket Integration Status",
+      "entityType": "Analysis",
+      "observations": [
+        "The project has begun implementing WebSocket functionality for real-time updates",
+        "Frontend implementation is fairly advanced with WebSocketContext and hooks",
+        "Backend has basic websocket.py with Flask-SocketIO but not integrated into app.py",
+        "WebSocket endpoints are defined but not properly wired to respective services",
+        "Socket.IO client dependencies are installed in package.json",
+        "Flask-SocketIO is missing from requirements.txt",
+        "Components are already using WebSocketErrorBoundary and useWebSocketEvents hooks"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "WebSocket Integration Tasks",
+      "entityType": "TaskList",
+      "observations": [
+        "1. Add Flask-SocketIO to requirements.txt and install it",
+        "2. Integrate SocketIO initialization in app.py with the existing Flask app",
+        "3. Update run.py to properly start the SocketIO server instead of regular Flask server",
+        "4. Implement event emission in backend services (schedule, availability, absences, settings)",
+        "5. Test basic WebSocket connection and event subscription",
+        "6. Implement detailed WebSocket event handling for each component",
+        "7. Add proper error handling and reconnection logic",
+        "8. Create documentation for the WebSocket API",
+        "9. Implement end-to-end testing for WebSocket functionality",
+        "Progress update:",
+        "- Added Flask-SocketIO to requirements.txt",
+        "- Added eventlet dependency",
+        "- Integrated SocketIO initialization in app.py",
+        "- Updated run.py to use socketio.run() instead of app.run()",
+        "- Created event_service.py with emission functions for all event types",
+        "- Integrated WebSocket events in schedules.py for schedule updates",
+        "- Integrated WebSocket events in settings.py for settings updates",
+        "Additional progress update:",
+        "- Integrated WebSocket events in availability.py for availability events",
+        "- Integrated WebSocket events in absences.py for absence events",
+        "- Integrated WebSocket events in shifts.py for shift template events",
+        "- Integrated WebSocket events in coverage.py for coverage events",
+        "Final progress update:",
+        "- Added JWT authentication for WebSocket connections",
+        "- Added PyJWT to requirements.txt",
+        "- Updated WebSocketContext in frontend to support authentication tokens",
+        "- Updated WebSocketStatus component to show authentication status",
+        "- All key tasks are now complete!",
+        "Error fixes for WebSocket integration:",
+        "1. Fixed the async_mode parameter in app.py (changed from 'eventlet' to None)",
+        "2. Added eventlet import and monkey patching in websocket.py",
+        "3. Updated socketio.run parameters in run.py",
+        "4. Added a WebSocket test page at /websocket-test",
+        "5. Created the templates directory"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Backend WebSocket Tasks",
+      "entityType": "TaskList",
+      "observations": [
+        "1. Add Flask-SocketIO to requirements.txt",
+        "2. Install Flask-SocketIO in the virtual environment",
+        "3. Update app.py to properly initialize and configure SocketIO",
+        "4. Update run.py to run the SocketIO server",
+        "5. Implement WebSocket event emission in the following services:",
+        "   - Schedule service (for schedule_updated events)",
+        "   - Availability service (for availability_updated events)",
+        "   - Absence service (for absence_updated events)",
+        "   - Settings service (for settings_updated events)",
+        "   - Coverage service (for coverage_updated events)",
+        "   - Shift template service (for shift_template_updated events)",
+        "6. Implement authentication/authorization for WebSocket connections",
+        "7. Add unit tests for WebSocket event handlers"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Frontend WebSocket Tasks",
+      "entityType": "TaskList",
+      "observations": [
+        "1. Complete the implementation of WebSocketErrorBoundary component",
+        "2. Enhance WebSocketStatus component with reconnection capabilities",
+        "3. Add proper error handling for WebSocket events in all components",
+        "4. Implement debouncing for WebSocket reconnection attempts",
+        "5. Add more granular event subscription mechanisms",
+        "6. Create specialized hooks for each event type:",
+        "   - useScheduleEvents",
+        "   - useAvailabilityEvents",
+        "   - useAbsenceEvents",
+        "   - useSettingsEvents",
+        "   - useCoverageEvents",
+        "   - useShiftTemplateEvents",
+        "7. Implement unit tests for WebSocket hooks and components"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "WebSocket Integration Priorities",
+      "entityType": "Analysis",
+      "observations": [
+        "High priority: Fix backend integration (add Flask-SocketIO, update app.py and run.py)",
+        "High priority: Implement basic event emission in core services",
+        "Medium priority: Complete frontend error handling and reconnection logic",
+        "Medium priority: Implement authentication for WebSocket connections",
+        "Low priority: Specialized hooks for each event type",
+        "Low priority: Comprehensive testing and documentation"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "WebSocket Integration Implementation Notes",
+      "entityType": "Documentation",
+      "observations": [
+        "## Backend WebSocket Implementation",
+        "- Flask-SocketIO is used for WebSocket server implementation",
+        "- The SocketIO instance is initialized in websocket.py",
+        "- The app.py properly initializes the SocketIO server with the Flask app",
+        "- event_service.py provides a consistent API for emitting WebSocket events",
+        "- All WebSocket handlers in websocket.py manage client connections and subscriptions",
+        "",
+        "## Frontend WebSocket Implementation",
+        "- Socket.IO client is used for WebSocket connections",
+        "- WebSocketContext provides context for all components",
+        "- useWebSocket hook gives access to socket, connection state and reconnect function",
+        "- useWebSocketEvents hook manages event subscriptions",
+        "- WebSocketErrorBoundary component handles errors in WebSocket-dependent components",
+        "- WebSocketStatus component shows connection status",
+        "",
+        "## Event Types",
+        "- schedule_updated: Emitted when schedules are created, updated or published",
+        "- availability_updated: Emitted when employee availability changes",
+        "- absence_updated: Emitted when employee absences change",
+        "- settings_updated: Emitted when application settings change",
+        "- coverage_updated: Emitted when coverage requirements change",
+        "- shift_template_updated: Emitted when shift templates change"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Bun_Features",
+      "entityType": "Technology",
+      "observations": [
+        "Bun is an all-in-one JavaScript/TypeScript toolkit",
+        "4x faster startup than Node.js",
+        "Native TypeScript & JSX support without configuration",
+        "Built-in Web APIs like fetch, WebSocket, ReadableStream",
+        "Jest-compatible test runner with better performance",
+        "Integrated bundler with esbuild compatibility",
+        "Hot reloading with --hot flag that preserves connections",
+        "Native SQLite support",
+        "ESM and CommonJS compatibility"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Bun_Performance_Metrics",
+      "entityType": "Metrics",
+      "observations": [
+        "Script runner comparison: npm (176ms), yarn (131ms), pnpm (259ms), bun (7ms)",
+        "13x faster test execution than Jest",
+        "8x faster test execution than Vitest",
+        "expect().toEqual() is 100x faster than Jest",
+        "1.75x faster bundling than esbuild",
+        "150x faster bundling than Parcel 2",
+        "180x faster bundling than Rollup + Terser",
+        "220x faster bundling than Webpack"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Project_Migration_Plan",
+      "entityType": "Plan",
+      "observations": [
+        "Replace Jest with Bun's native testing (bun:test)",
+        "Switch from Axios to native fetch API",
+        "Use Bun's native file system operations",
+        "Replace process.env with Bun.env",
+        "Migrate to Bun's WebSocket implementation",
+        "Update npm scripts to use bun run",
+        "Implement Bun's hot reloading",
+        "Consider using Bun's SQLite for local development"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Migration_Benefits",
+      "entityType": "Benefits",
+      "observations": [
+        "Reduced bundle size",
+        "Faster development experience",
+        "Better memory usage",
+        "Native TypeScript support without configuration",
+        "Simplified tooling stack",
+        "Improved developer experience",
+        "Better performance across all operations",
+        "Reduced dependencies"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "api_migration_progress",
+      "entityType": "progress",
+      "observations": [
+        "Successfully removed Axios interceptors",
+        "Implemented native fetch-based API client",
+        "Fixed many type errors and response handling issues",
+        "Identified remaining linter errors and categorized them"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "remaining_tasks",
+      "entityType": "task_list",
+      "observations": [
+        "Fix import conflicts with Schedule type",
+        "Add missing BaseSchedule type",
+        "Update response type handling",
+        "Fix response.data access patterns"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "api_response_patterns",
+      "entityType": "code_pattern",
+      "observations": [
+        "API responses need consistent type definitions",
+        "Response wrapper type needed for standardization",
+        "Data property access needs to be updated across all endpoints",
+        "Type guards needed for response handling"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "MainSystem",
+      "entityType": "Project",
+      "observations": [
+        "A secure, high-performance automated trading system that executes cryptocurrency grid trading strategies using serverless Cloudflare Workers.",
+        "The system processes TradingView alerts through a webhook system, executes trades on crypto exchanges, and provides real-time notifications via Telegram.",
+        "Consists of four main workers: webhook-receiver, trade-worker, telegram-worker, and d1-worker.",
+        "Updated README files to match actual implementation",
+        "Communication Flow: TradingView Alert → Webhook Receiver → Trade Worker → Exchange API and Telegram Worker → Telegram Bot",
+        "Any Worker ←→ D1 Worker ←→ D1 Database",
+        "Added .dev.vars.example files to all worker modules",
+        "Created dev-start.sh script that sets up a tmux session with all workers",
+        "Created control-panel.sh for managing workers from a menu interface",
+        "Added dev:start script to package.json"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "D1Worker",
+      "entityType": "Component",
+      "observations": [
+        "Provides a centralized database interface for other workers in the grid trading system.",
+        "Manages D1 database operations and provides a secure API for data access.",
+        "Includes endpoints for single queries and batch operations.",
+        "Uses authentication via internal service key.",
+        "Routes include /query and /batch.",
+        "Error handling and logging functionality included.",
+        "SQL injection prevention through parameterized queries.",
+        "Updated README with accurate API format using X-Internal-Key and X-Request-ID headers",
+        "Added response format examples for different operations (SELECT, INSERT/UPDATE/DELETE, batch operations)",
+        "Created test file 'test/d1-worker.test.ts' for testing D1 Worker functionality",
+        "Tests cover: authentication validation, SELECT/INSERT queries, batch operations, error handling",
+        "Mocks used for DB.prepare, DB.batch, and related functions to avoid real database operations",
+        "Tests for D1 Worker are passing successfully",
+        "All 8 tests pass: authentication validation, endpoint routing, query handling, error handling",
+        "Code coverage for d1-worker/src/index.js is 94.81%"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "TelegramWorker",
+      "entityType": "Component",
+      "observations": [
+        "Handles Telegram bot interactions for the grid trading system.",
+        "Manages notifications, commands, and user interactions through Telegram.",
+        "Features include trade notifications, error alerts, message formatting.",
+        "Current implementation is basic - only supports simple message sending.",
+        "README mentions more features (command processing, interactive buttons) that are not yet implemented in the code.",
+        "README updated to reflect current basic implementation",
+        "Removed features that aren't yet implemented",
+        "Added section on future enhancements"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "TradeWorker",
+      "entityType": "Component",
+      "observations": [
+        "Executes cryptocurrency trades across multiple exchanges.",
+        "Provides a unified interface for different cryptocurrency exchanges (Binance, MEXC, Bybit).",
+        "Uses secure authentication with internal service key.",
+        "Includes request/response logging with D1 database integration.",
+        "Handles leverage configuration and position management.",
+        "Has separate client implementations for each supported exchange.",
+        "README updated with details about exchange client implementations",
+        "Added information about specific files: binance-client.js, mexc-client.js, bybit-client.js",
+        "Clarified security requirements including X-Request-ID header",
+        "Updated trade worker tests to properly mock the MEXC API responses",
+        "Fixed the 'executes long position' test by mocking multiple API endpoints",
+        "Tests now pass for all workers in the project"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "WebhookReceiver",
+      "entityType": "Component",
+      "observations": [
+        "Acts as the entry point for TradingView alerts and other trading signals.",
+        "Validates incoming webhooks and forwards them to the appropriate worker services.",
+        "Features include TradingView webhook integration, request validation, secure communication.",
+        "Communicates with Trade Worker, Telegram Worker, and D1 Worker.",
+        "Includes rate limiting support and error handling.",
+        "README updated to match current implementation",
+        "Clarified webhook JSON payload format",
+        "Highlighted that it handles both trade execution and notification"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Installation wizard structure",
+      "entityType": "Plan",
+      "observations": [
+        "Check dependencies (wrangler, bun)",
+        "Cloudflare account setup",
+        "Worker selection menu with dependencies",
+        "D1 database setup if needed",
+        "Secrets configuration",
+        "Worker URL configuration",
+        "Deploy selected workers",
+        "Final success message"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Worker dependencies",
+      "entityType": "Dependencies",
+      "observations": [
+        "webhook-receiver depends on trade-worker and telegram-worker",
+        "trade-worker depends on d1-worker",
+        "telegram-worker is independent",
+        "d1-worker requires D1 database setup"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Helper functions",
+      "entityType": "Code structure",
+      "observations": [
+        "check_dependencies(): Verify required tools are installed",
+        "setup_cloudflare_account(): Get and configure account ID",
+        "select_workers(): Interactive UI for worker selection",
+        "setup_d1_database(): Create D1 database if needed",
+        "configure_secrets(): Set up required secrets",
+        "configure_urls(): Set worker URLs",
+        "deploy_workers(): Deploy the selected workers",
+        "UI helpers (print_header, print_step, etc.)"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Improved installation wizard",
+      "entityType": "Plan",
+      "observations": [
+        "Fix account ID detection with more reliable extraction",
+        "Improve D1 database setup with retry mechanism",
+        "Enhance worker selection with templates and better UI",
+        "Simplify worker URL configuration with auto-detection",
+        "Add detailed logging to a file",
+        "Improve error recovery mechanisms"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Hoox Trading System",
+      "entityType": "Project",
+      "observations": [
+        "A cloud-based trading system deployed on Cloudflare Workers",
+        "Uses an installation wizard script to set up and configure the system",
+        "Version 1.1.0 of the installation wizard",
+        "Designed for algorithmic trading with TradingView integration"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Tech Stack",
+      "entityType": "Technology",
+      "observations": [
+        "Cloudflare Workers for serverless execution",
+        "D1 Database (Cloudflare's serverless SQL database) for data storage",
+        "Bash scripting for installation and configuration",
+        "Wrangler CLI for Cloudflare Worker deployment",
+        "Bun as the JavaScript/TypeScript runtime"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Project Structure",
+      "entityType": "Architecture",
+      "observations": [
+        "Multiple worker components that can be selectively deployed",
+        "Scripts directory containing installation and configuration scripts",
+        "Workers directory containing the individual worker implementations",
+        "Modular design allowing components to be deployed independently",
+        "Configuration stored in wrangler.toml files for each worker"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Worker Components",
+      "entityType": "Architecture",
+      "observations": [
+        "webhook-receiver: Public-facing endpoint for TradingView signals",
+        "trade-worker: Executes trades on cryptocurrency exchanges",
+        "telegram-worker: Sends notifications via Telegram",
+        "d1-worker: Database service for logging and persistence",
+        "Workers can have dependencies on each other (e.g., webhook-receiver depends on trade-worker)"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Installation Wizard",
+      "entityType": "Tool",
+      "observations": [
+        "Interactive bash script for system setup and deployment",
+        "Guides users through dependency checks, worker selection, and configuration",
+        "Supports both local development and production deployment modes",
+        "Includes error handling, logging, and state management for resumable installations",
+        "Detects and configures Cloudflare account ID, worker URLs, and D1 database"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Recent Improvements",
+      "entityType": "Development",
+      "observations": [
+        "Enhanced logging system with different log levels and detailed output",
+        "Improved Cloudflare account ID detection with multiple fallback methods",
+        "Redesigned worker selection UI with predefined templates and better guidance",
+        "Fixed syntax errors in the D1 database setup function",
+        "Implemented robust worker URL configuration with auto-detection and validation",
+        "Added a progress checklist to show installation status",
+        "Implemented proper error handling and state management for resumable installations"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Deployment Process",
+      "entityType": "Workflow",
+      "observations": [
+        "Supports two deployment modes: local development and production",
+        "Local deployment uses dev servers for testing",
+        "Production deployment pushes workers to Cloudflare's infrastructure",
+        "Configuration includes setting up worker URLs, secrets, and database connections",
+        "Can selectively deploy specific workers based on user requirements"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "User Experience Enhancements",
+      "entityType": "Feature",
+      "observations": [
+        "Color-coded output for better readability",
+        "Template-based worker selection for different user needs",
+        "Automatic dependency resolution for worker components",
+        "Detailed logging to a timestamped file for troubleshooting",
+        "Ability to resume interrupted installations",
+        "Validation checks for inputs with helpful error messages"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Configuration Files",
+      "entityType": "Technical",
+      "observations": [
+        "wrangler.toml: Configuration for each Cloudflare Worker",
+        ".install-wizard-state.json: State file for resumable installations",
+        ".dev.vars: Local environment variables for development",
+        "Worker secrets for secure credential storage in production"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "D1 Database Setup",
+      "entityType": "Feature",
+      "observations": [
+        "Component for setting up the Cloudflare D1 database",
+        "Extracts database ID using multiple methods for robustness",
+        "Includes retries and fallbacks for database creation",
+        "Validates database ID format (UUID pattern)",
+        "Updates wrangler.toml configuration for the d1-worker",
+        "Provides options for manual database ID entry if automatic extraction fails"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Worker URL Configuration",
+      "entityType": "Feature",
+      "observations": [
+        "Auto-detects Cloudflare account name for generating worker URLs",
+        "Allows custom domain configuration for each worker",
+        "Validates URL format and provides fallbacks",
+        "Updates routes in wrangler.toml files",
+        "Provides a confirmation UI for the configured URLs"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Worker Selection UI",
+      "entityType": "Feature",
+      "observations": [
+        "Provides templates for different deployment scenarios (Basic, Standard, Advanced)",
+        "Offers custom selection for experienced users",
+        "Shows descriptions of each worker's functionality",
+        "Handles dependency resolution automatically",
+        "Validates selection to ensure at least one worker is selected"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Installation Process Flow",
+      "entityType": "Workflow",
+      "observations": [
+        "Starts with dependency checks and setup",
+        "Provides option to resume interrupted installations",
+        "Selects deployment mode (local or production)",
+        "Sets up Cloudflare account ID and D1 database (if needed)",
+        "Configures worker selection and URLs",
+        "Deploys selected workers",
+        "Shows completion message with next steps"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "State Management",
+      "entityType": "Feature",
+      "observations": [
+        "Uses a JSON format state file (.install-wizard-state.json)",
+        "Allows resuming installation after interruptions",
+        "Stores information about selected workers, deployment mode, and configuration",
+        "Validates JSON structure using jq if available",
+        "Implemented with save_state and load_state functions"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Logging System",
+      "entityType": "Feature",
+      "observations": [
+        "Creates a timestamped log file in /tmp directory",
+        "Supports different log levels (INFO, STEP, SUCCESS, WARNING, ERROR)",
+        "Captures detailed information about each installation step",
+        "Helps with troubleshooting failed installations",
+        "Logs both user actions and system operations"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Installation Challenges",
+      "entityType": "Issue",
+      "observations": [
+        "Account ID detection failures due to JSON parsing errors",
+        "D1 database ID extraction issues from CLI output",
+        "Worker selection UI input handling problems",
+        "Worker URLs configuration complexities",
+        "Dependency handling between workers"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Recent Code Fixes",
+      "entityType": "Development",
+      "observations": [
+        "Fixed syntax errors in the D1 database setup function (missing 'fi' closures)",
+        "Added improved worker selection UI with templates for different user needs",
+        "Implemented robust worker URL configuration with auto-detection",
+        "Added detailed logging throughout the installation process",
+        "Enhanced error handling with appropriate user feedback",
+        "Fixed state file JSON formatting to ensure valid structure"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "MCP-FreeCAD",
+      "entityType": "Project",
+      "observations": [
+        "Integration between AI assistants and FreeCAD CAD software using the Model Context Protocol (MCP)",
+        "Allows external applications to interact with FreeCAD through a standardized interface",
+        "Offers multiple connection methods and specialized tools",
+        "Located at /home/jango/Git/mcp-freecad"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "FreeCAD_MCP_Server",
+      "entityType": "Component",
+      "observations": [
+        "Main server implementing the Model Context Protocol",
+        "Acts as central hub for AI assistants to communicate with FreeCAD",
+        "Supports standard MCP requests (ListTools, ExecuteTool, ListResources, GetResource)",
+        "Exposes specialized tools for FreeCAD operations",
+        "Configurable via config.json",
+        "Located in freecad_mcp_server.py"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "FreeCAD_Connection",
+      "entityType": "Component",
+      "observations": [
+        "Provides a unified Python interface for connecting to FreeCAD",
+        "Used internally by the MCP server",
+        "Supports multiple connection methods: Socket Server, CLI Bridge, and Mock Connection",
+        "Located in freecad_connection.py",
+        "Implements the Auto Connection method to select the best available connection"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "FreeCAD_Server",
+      "entityType": "Component",
+      "observations": [
+        "Standalone socket-based server script designed to run inside FreeCAD",
+        "Listens for commands from FreeCADConnection when using the 'server' method",
+        "Located in freecad_server.py",
+        "Can be run inside FreeCAD's Python console or as a macro"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "FreeCAD_Bridge",
+      "entityType": "Component",
+      "observations": [
+        "Python module enabling command-line interaction with FreeCAD",
+        "Bypasses direct module import issues",
+        "Used by FreeCADConnection when using the 'bridge' method",
+        "Located in freecad_bridge.py"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "FreeCAD_Client",
+      "entityType": "Component",
+      "observations": [
+        "Command-line client utility for interacting with the FreeCADConnection interface",
+        "Useful for basic testing and scripting outside the MCP context",
+        "Located in freecad_client.py",
+        "Example usage: python freecad_client.py create-box --length 20"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Project_Structure",
+      "entityType": "Documentation",
+      "observations": [
+        "scripts/: Contains shell scripts for installation and execution",
+        "scripts/bin/: Contains executable scripts for installation and running the server",
+        "docs/: Documentation files including PYTHON_INTERPRETER_SETUP.md",
+        "tests/: Test files including end-to-end tests in tests/e2e/",
+        "config.json: Main configuration file for the MCP server",
+        "Various Python files including freecad_mcp_server.py, freecad_connection.py, freecad_server.py, etc."
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "MCP_Tools",
+      "entityType": "Feature",
+      "observations": [
+        "Various tool categories exposed through the MCP server",
+        "Smithery tools for blacksmithing equipment design",
+        "Basic FreeCAD tools for document management",
+        "Model manipulation tools for transforming objects",
+        "Measurement tools for analysis",
+        "Primitives tools for creating basic shapes",
+        "Export/Import tools for file conversion"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Python_Interpreter_Setup",
+      "entityType": "Documentation",
+      "observations": [
+        "Documented in docs/PYTHON_INTERPRETER_SETUP.md",
+        "Explains how to extract and use FreeCAD's AppImage Python interpreter",
+        "Details setting up a virtual environment with FreeCAD's Python",
+        "Provides instructions for configuring PYTHONPATH for FreeCAD module access",
+        "Critical for accessing FreeCAD and FreeCADGui modules properly"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "MCP_Flow",
+      "entityType": "Architecture",
+      "observations": [
+        "AI Assistant communicates with MCP Server",
+        "MCP Server connects to FreeCAD through FreeCAD Connection",
+        "FreeCAD Connection uses one of three methods: Socket Server, CLI Bridge, or Mock Connection",
+        "Socket Server and CLI Bridge methods interact with actual FreeCAD",
+        "Mock Connection is used for testing without FreeCAD"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Configuration",
+      "entityType": "Feature",
+      "observations": [
+        "Main configuration is stored in config.json",
+        "Contains sections for server, freecad, tools, etc.",
+        "freecad section configures connection method, paths, and host/port",
+        "tools section enables/disables various tool categories",
+        "Can be overridden with command-line arguments"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Socket_Server_Connection",
+      "entityType": "Feature",
+      "observations": [
+        "Communicates with a running freecad_server.py instance inside FreeCAD",
+        "Requires FreeCAD to be running with the server script loaded",
+        "Uses network sockets for communication",
+        "Configurable host and port (default: localhost:12345)",
+        "Best for high-performance, continuous operations"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "CLI_Bridge_Connection",
+      "entityType": "Feature",
+      "observations": [
+        "Uses command-line calls via freecad_bridge.py",
+        "Starts and stops FreeCAD for each operation",
+        "No persistent FreeCAD process required",
+        "Slower than Socket Server but more flexible",
+        "Good for occasional use or scripting"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Mock_Connection",
+      "entityType": "Feature",
+      "observations": [
+        "Simulates FreeCAD functionality without requiring actual FreeCAD",
+        "Used for testing and development",
+        "Returns mock responses to commands",
+        "No actual CAD operations are performed",
+        "Useful for testing MCP server functionality independently"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "E2E_Tests",
+      "entityType": "Feature",
+      "observations": [
+        "End-to-end tests located in tests/e2e/ directory",
+        "Verify the entire system works correctly from a client perspective",
+        "Include test_primitives.py for basic shape creation and manipulation",
+        "Include test_smithery.py for blacksmith tool operations",
+        "Use mock MCP client implementation to avoid requiring actual dependencies",
+        "Can be run with python -m tests.e2e.run_tests"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Installation_Methods",
+      "entityType": "Documentation",
+      "observations": [
+        "Various installation methods available",
+        "Quick start using mcp-freecad-installer.sh",
+        "Global installation using scripts/bin/install-global.sh",
+        "Manual installation by cloning repo and installing dependencies",
+        "Includes setup for development environment"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Test_Runner",
+      "entityType": "Component",
+      "observations": [
+        "Located in tests/e2e/run_tests.py",
+        "Discovers and runs all E2E tests for the MCP-FreeCAD project",
+        "Supports options like --mock, --real, --single, --verbose, and --debug",
+        "Creates a test configuration file based on command-line arguments",
+        "Provides a summary of test execution with timing information"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Test_Base",
+      "entityType": "Component",
+      "observations": [
+        "Located in tests/e2e/test_base.py",
+        "Provides base classes for E2E tests with common setup/teardown logic",
+        "Includes FreeCADTestBase for general test setup",
+        "Includes MCPClientTestBase for MCP client interface testing",
+        "Implements mock classes to avoid requiring actual dependencies"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Primitives_Tests",
+      "entityType": "Component",
+      "observations": [
+        "Located in tests/e2e/test_primitives.py",
+        "Tests basic shape creation and manipulation",
+        "Includes tests for creating boxes, cylinders, and spheres",
+        "Tests creating multiple primitives in sequence",
+        "Tests exporting primitives to STL format"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Smithery_Tests",
+      "entityType": "Component",
+      "observations": [
+        "Located in tests/e2e/test_smithery.py",
+        "Tests blacksmith tool operations",
+        "Includes tests for creating anvils, hammers, tongs, blades, and horseshoes",
+        "Tests creating a complete blacksmith workshop with multiple tools",
+        "Tests exporting the workshop to STL format"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Test_Config",
+      "entityType": "Component",
+      "observations": [
+        "Located in tests/e2e/config.py",
+        "Contains configuration settings for E2E tests",
+        "Defines test directories, timeout values, and port numbers",
+        "Creates directories for test output if they don't exist",
+        "Provides FreeCAD test configuration with mock mode enabled by default"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Smithery_Tools",
+      "entityType": "Tool Category",
+      "observations": [
+        "Category of specialized tools for blacksmithing and metalwork design",
+        "Includes smithery.create_anvil, smithery.create_hammer, smithery.create_tongs",
+        "Includes smithery.forge_blade and smithery.create_horseshoe",
+        "Allows creation of detailed blacksmith equipment models with customizable dimensions",
+        "Part of the MCP_Tools collection"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Primitives_Tools",
+      "entityType": "Tool Category",
+      "observations": [
+        "Category of tools for creating basic 3D shapes",
+        "Includes primitives.create_box, primitives.create_cylinder, primitives.create_sphere",
+        "Includes primitives.create_cone, primitives.create_torus, primitives.create_polygon, primitives.create_ellipse",
+        "Allows creation of fundamental geometric shapes with customizable dimensions",
+        "Part of the MCP_Tools collection"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Model_Manipulation_Tools",
+      "entityType": "Tool Category",
+      "observations": [
+        "Category of tools for transforming and modifying 3D objects",
+        "Includes model_manipulation.rotate, model_manipulation.translate, model_manipulation.scale",
+        "Includes model_manipulation.mirror, model_manipulation.union, model_manipulation.cut, model_manipulation.intersect",
+        "Enables spatial transformations and boolean operations on models",
+        "Part of the MCP_Tools collection"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Measurement_Tools",
+      "entityType": "Tool Category",
+      "observations": [
+        "Category of tools for measuring and analyzing 3D models",
+        "Includes measurement.distance, measurement.angle, measurement.area, measurement.volume",
+        "Includes measurement.mass, measurement.center_of_mass, measurement.bounding_box",
+        "Provides quantitative analysis of model properties and dimensions",
+        "Part of the MCP_Tools collection"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Export_Import_Tools",
+      "entityType": "Tool Category",
+      "observations": [
+        "Category of tools for file format conversion",
+        "Includes export_import.export_step, export_import.import_step, export_import.export_iges, export_import.import_iges",
+        "Includes export_import.export_stl, export_import.import_stl, export_import.export_dxf, export_import.import_dxf",
+        "Enables interoperability with various CAD file formats",
+        "Part of the MCP_Tools collection"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Basic_FreeCAD_Tools",
+      "entityType": "Tool Category",
+      "observations": [
+        "Category of essential FreeCAD document management tools",
+        "Includes freecad.create_document, freecad.list_documents, freecad.list_objects",
+        "Includes freecad.save_document, freecad.load_document",
+        "Provides core document operations within the FreeCAD environment",
+        "Part of the MCP_Tools collection"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "MCP-FreeCAD Project",
+      "entityType": "Project",
+      "observations": [
+        "A project that implements the Model Context Protocol (MCP) for FreeCAD",
+        "Allows AI assistants to connect to FreeCAD and perform operations",
+        "Located at /home/jango/Git/mcp-freecad"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "FreeCAD",
+      "entityType": "Software",
+      "observations": [
+        "Open-source parametric 3D CAD modeler",
+        "Uses Python for scripting and automation",
+        "Can be extended with workbenches/addons"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "MCP Indicator Workbench",
+      "entityType": "Component",
+      "observations": [
+        "A FreeCAD workbench that shows MCP connection status",
+        "Provides UI controls for starting/stopping MCP servers",
+        "Defined in freecad_mcp_indicator/mcp_indicator/InitGui.py",
+        "Shows connection status in the FreeCAD status bar with colored indicators"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "FreeCAD Server",
+      "entityType": "Component",
+      "observations": [
+        "Legacy socket server (freecad_server.py)",
+        "Executes FreeCAD Python commands via socket connection",
+        "Default port is 12345",
+        "Can run in standalone or connect mode",
+        "Sometimes referred to as 'Socket Server'"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "MCP Server",
+      "entityType": "Component",
+      "observations": [
+        "Main server (freecad_mcp_server.py) that implements the Model Context Protocol",
+        "AI assistants connect to this server",
+        "Default port is 8000",
+        "Can be configured with a config.json file",
+        "Requires dependencies like fastapi, uvicorn, websockets, aiofiles, pydantic"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Flow Visualization",
+      "entityType": "Feature",
+      "observations": [
+        "A feature in the MCP Indicator workbench",
+        "Accessed via the 'Flow Visualization...' menu option",
+        "Defined in mcp_indicator.flow_visualization module"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "InitGui.py",
+      "entityType": "File",
+      "observations": [
+        "Main implementation file for the MCP Indicator Workbench",
+        "Defines the MCPIndicatorWorkbench class",
+        "Contains UI logic and server management functions",
+        "Located at freecad_mcp_indicator/mcp_indicator/InitGui.py",
+        "Has methods for starting, stopping, and monitoring servers"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Settings Dialog",
+      "entityType": "Feature",
+      "observations": [
+        "UI dialog for configuring MCP settings",
+        "Allows setting server paths, config file, and connection parameters",
+        "Has tabs for MCP Server Controls, Client Status Check, and Socket Server (Legacy)",
+        "Implemented in the _show_settings method of MCPIndicatorWorkbench"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Server Configuration",
+      "entityType": "Component",
+      "observations": [
+        "Configuration is stored in FreeCAD user parameters at 'User parameter:BaseApp/Preferences/Mod/MCPIndicator'",
+        "Settings include server paths, host, port, and config file location",
+        "Config file (config.json) can specify Python path and other server options"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Dependencies Installation",
+      "entityType": "Feature",
+      "observations": [
+        "UI dialog for installing required Python dependencies",
+        "Can install packages like fastapi, uvicorn, websockets, aiofiles, pydantic",
+        "Offers options for standard installation or using --break-system-packages flag",
+        "Provides manual installation instructions as fallback",
+        "Implemented in the _install_dependencies method of MCPIndicatorWorkbench"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Model Context Protocol",
+      "entityType": "Concept",
+      "observations": [
+        "Protocol for AI assistants to interact with external tools and systems",
+        "Implemented by the MCP Server in this project",
+        "Enables AI assistants to query and manipulate FreeCAD models"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Connection Status Indicators",
+      "entityType": "UI Component",
+      "observations": [
+        "Three status indicators shown in FreeCAD's status bar",
+        "MCP Client indicator shows connection status with red/green colors",
+        "FreeCAD Server indicator shows server status with orange/blue colors and 'FC' text",
+        "MCP Server indicator shows server status with red/green colors and 'MCP' text"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Connection Info Dialogs",
+      "entityType": "UI Component",
+      "observations": [
+        "Detailed information dialogs shown when clicking on status indicators",
+        "Shows connection details, server status, and active connections",
+        "Different dialog for each server type (Client, FreeCAD Server, MCP Server)",
+        "Includes a refresh button to update status information"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "FreeCAD Server Control",
+      "entityType": "Feature",
+      "observations": [
+        "Menu options to start, stop and restart the FreeCAD socket server",
+        "Can start server in standalone or connect mode",
+        "Manages server process with proper termination handling",
+        "Creates log files in the server script directory"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "MCP Server Control",
+      "entityType": "Feature",
+      "observations": [
+        "Menu options to start, stop and restart the MCP server",
+        "Uses configuration from settings",
+        "Manages server process with proper termination handling",
+        "Creates log files in the server script directory"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Python Executable Detection",
+      "entityType": "Feature",
+      "observations": [
+        "Logic to find the appropriate Python executable for running servers",
+        "Checks config file, FreeCAD's Python, and system paths",
+        "Falls back to various common Python locations",
+        "Implemented in _get_python_executable method"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Error Handling",
+      "entityType": "Feature",
+      "observations": [
+        "Handles port conflicts by offering to kill existing processes",
+        "Detects externally managed Python environments during dependency installation",
+        "Provides alternative installation instructions when automatic installation fails",
+        "Shows detailed error messages in FreeCAD console"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "MCPIndicatorWorkbench Class",
+      "entityType": "Code Component",
+      "observations": [
+        "Main class that extends FreeCADGui.Workbench",
+        "Contains all initialization, UI, and server control logic",
+        "Initializes status indicators and menu options",
+        "Registers itself as a FreeCAD workbench"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Wayland Handling",
+      "entityType": "Feature",
+      "observations": [
+        "Special handling for Wayland session type",
+        "Detects Wayland using XDG_SESSION_TYPE environment variable",
+        "Modifies dialog window flags for proper display on Wayland"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Server Process Management",
+      "entityType": "Feature",
+      "observations": [
+        "Launches server processes with subprocess.Popen",
+        "Handles termination with process.terminate() and kill if needed",
+        "Creates log files for stdout and stderr",
+        "Tracks process status with periodic checks"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Status Checking",
+      "entityType": "Feature",
+      "observations": [
+        "Periodic checking of server status with QTimer",
+        "Updates icons and tooltips based on status",
+        "Enables/disables menu actions based on server status",
+        "Updates connection details by polling servers"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "JSON Bug Fix",
+      "entityType": "Bug",
+      "observations": [
+        "The _load_indicator_config method had a NameError for the json module",
+        "The json module was imported at the top of the file but not available in method scope",
+        "Fixed by adding a local import of json within the method",
+        "Also fixed escaped newline characters in several print statements"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "_load_indicator_config",
+      "entityType": "Method",
+      "observations": [
+        "Method to load the config.json file",
+        "Used primarily to find the Python path for server execution",
+        "Located in the MCPIndicatorWorkbench class",
+        "Had a NameError due to json module scope issue"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "_get_python_executable",
+      "entityType": "Method",
+      "observations": [
+        "Method to determine the Python executable for server processes",
+        "Uses config file, FreeCAD bundled Python, and system paths",
+        "Returns the first valid executable found",
+        "Located in the MCPIndicatorWorkbench class"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Connection Methods",
+      "entityType": "Feature",
+      "observations": [
+        "The MCP Server supports different connection methods to FreeCAD",
+        "The legacy 'server' method uses the socket server (freecad_server.py)",
+        "The recommended 'appimage/launcher' method connects directly",
+        "Connection method can be specified in the config.json file",
+        "Implemented by FreeCADConnection class",
+        "Backend for 'server' connection method",
+        "Backend for 'bridge' connection method",
+        "Backend for 'launcher' connection method",
+        "Uses freecad_script.py helper"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "mcp-freecad",
+      "entityType": "Project",
+      "observations": [
+        "Integrates AI assistants with FreeCAD using MCP",
+        "Provides multiple connection methods to FreeCAD",
+        "Exposes MCP tools for CAD operations",
+        "Configured via config.json",
+        "Uses Python >= 3.8",
+        "Licensed under MIT"
+      ]
+    },
+    {
+      "type": "entity",
+      "observations": [
+        "Main programming language",
+        "Requires version >= 3.8"
+      ],
+      "name": "Python",
+      "entityType": "Technology"
+    },
+    {
+      "type": "entity",
+      "name": "Docker",
+      "entityType": "Technology",
+      "observations": [
+        "Used for containerization (Dockerfile present)"
+      ]
+    },
+    {
+      "type": "entity",
+      "entityType": "Framework",
+      "name": "FastAPI",
+      "observations": [
+        "Python web framework used (likely for MCP server implementation)",
+        "Dependency listed in requirements.txt and pyproject.toml"
+      ]
+    },
+    {
+      "type": "entity",
+      "observations": [
+        "ASGI server used with FastAPI",
+        "Dependency listed"
+      ],
+      "name": "Uvicorn",
+      "entityType": "Framework"
+    },
+    {
+      "type": "entity",
+      "observations": [
+        "Async I/O library used",
+        "Dependency listed"
+      ],
+      "name": "Trio",
+      "entityType": "Framework"
+    },
+    {
+      "type": "entity",
+      "entityType": "Library",
+      "observations": [
+        "Testing framework used",
+        "Configuration in pytest.ini and pyproject.toml"
+      ],
+      "name": "Pytest"
+    },
+    {
+      "type": "entity",
+      "name": "Loguru",
+      "entityType": "Library",
+      "observations": [
+        "Logging library used",
+        "Dependency listed"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Psutil",
+      "observations": [
+        "Used for process and system utilities",
+        "Dependency listed"
+      ],
+      "entityType": "Library"
+    },
+    {
+      "type": "entity",
+      "entityType": "Library",
+      "name": "NumPy",
+      "observations": [
+        "Numerical Python library used",
+        "Dependency listed"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "freecad_mcp_server.py",
+      "observations": [
+        "Main MCP server implementation",
+        "Listens for AI assistant connections",
+        "Coordinates communication with FreeCADConnection",
+        "Uses mcp SDK for server implementation",
+        "Runs using asyncio and stdio_server",
+        "Loads configuration from config.json",
+        "Defines MCP tool schemas (freecad.*, smithery.*)",
+        "Handles ListTools, ExecuteTool, ListResources, ReadResource MCP requests",
+        "Delegates freecad.* tool execution to FreeCADConnection",
+        "Executes hardcoded Python scripts for smithery.* tools via FreeCADConnection",
+        "Contains FreeCADMCPServer class",
+        "Main entry point using argparse"
+      ],
+      "entityType": "File"
+    },
+    {
+      "type": "entity",
+      "entityType": "File",
+      "observations": [
+        "Unified interface for FreeCAD connection",
+        "Supports multiple methods: server, bridge, mock, auto, launcher",
+        "Used by freecad_mcp_server.py",
+        "Provides FreeCADConnection class, a unified interface to FreeCAD",
+        "Abstracts multiple connection methods (server, bridge, wrapper, launcher, mock)",
+        "Performs auto-detection of best connection method (priority: launcher > wrapper > server > bridge > mock)",
+        "Routes commands via execute_command() to the active connection method",
+        "Provides convenience methods for common FreeCAD actions (get_version, create_document, create_box, etc.)",
+        "Depends on freecad_bridge, freecad_wrapper, freecad_launcher for specific methods",
+        "Reads config.json for AppRun settings when using launcher method",
+        "Used by freecad_client.py"
+      ],
+      "name": "freecad_connection.py"
+    },
+    {
+      "type": "entity",
+      "entityType": "File",
+      "observations": [
+        "Socket server script designed to run inside FreeCAD",
+        "Listens for commands from1 FreeCADConnection (server method)",
+        "Implements a socket server intended to run inside FreeCAD",
+        "Acts as backend for the 'server' connection method of FreeCADConnection",
+        "Listens for JSON commands on a configured host/port",
+        "Parses commands and calls internal handle_* functions",
+        "Directly interacts with imported FreeCAD and FreeCADGui modules",
+        "Contains extensive mock implementation of FreeCAD/FreeCADGui for standalone testing",
+        "Attempts to configure sys.path to find FreeCAD modules",
+        "Reads config.json or ~/.freecad_server.json for settings",
+        "Supports --connect mode to attempt GUI interaction"
+      ],
+      "name": "freecad_server.py"
+    },
+    {
+      "type": "entity",
+      "observations": [
+        "Enables CLI interaction with FreeCAD",
+        "Used by FreeCADConnection (bridge method)",
+        "Implements FreeCADBridge class",
+        "Provides backend for the 'bridge' connection method of FreeCADConnection",
+        "Uses subprocess.run() to execute FreeCAD binary with temporary scripts",
+        "Generates Python script strings dynamically for each operation",
+        "Writes scripts to temporary files using tempfile",
+        "Parses JSON output from stdout of the FreeCAD process",
+        "Stateless between calls (likely starts new process each time)"
+      ],
+      "name": "freecad_bridge.py",
+      "entityType": "File"
+    },
+    {
+      "type": "entity",
+      "name": "freecad_launcher.py",
+      "observations": [
+        "Manages starting and stopping FreeCAD instances",
+        "Used by FreeCADConnection (launcher method)",
+        "Supports AppImage execution",
+        "Implements FreeCADLauncher class",
+        "Provides backend for the 'launcher' connection method of FreeCADConnection",
+        "Uses subprocess.run() to launch FreeCAD or AppRun",
+        "Passes commands and JSON parameters as arguments to a helper script (freecad_script.py)",
+        "Parses last JSON object from stdout as result",
+        "Explicitly supports AppRun mode for extracted AppImages",
+        "Depends on freecad_script.py for in-process execution"
+      ],
+      "entityType": "File"
+    },
+    {
+      "type": "entity",
+      "name": "extract_appimage.py",
+      "observations": [
+        "Utility to extract FreeCAD AppImage",
+        "Updates config.json for launcher method",
+        "Utility script to extract FreeCAD AppImage",
+        "Uses AppImage's --appimage-extract command via subprocess",
+        "Updates config.json to use the extracted AppImage via launcher method",
+        "Sets use_apprun=True, apprun_path, connection_method=launcher in config.json",
+        "Includes function to test the extracted AppRun",
+        "Provides command-line interface using argparse",
+        "Supports the recommended AppImage Integration workflow"
+      ],
+      "entityType": "File"
+    },
+    {
+      "type": "entity",
+      "name": "freecad_client.py",
+      "entityType": "File",
+      "observations": [
+        "Command-line client for testing FreeCADConnection directly (not MCP server)",
+        "Provides FreeCADClient class, a CLI tool",
+        "Interacts with FreeCAD via FreeCADConnection (preferred) or direct socket (legacy fallback)",
+        "Uses argparse for command-line interface (version, create-document, create-box, etc.)",
+        "Calls FreeCADConnection.execute_command() or sends socket commands",
+        "Includes experimental Gemini API integration for natural language commands (prompt mode)",
+        "Not intended for direct AI assistant use (that's freecad_mcp_server.py)"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "config.json",
+      "observations": [
+        "Main configuration file",
+        "Defines server settings, FreeCAD path, connection method, port, etc."
+      ],
+      "entityType": "File"
+    },
+    {
+      "type": "entity",
+      "name": "cursor_config.json",
+      "observations": [
+        "Specific configuration for Cursor IDE integration"
+      ],
+      "entityType": "File"
+    },
+    {
+      "type": "entity",
+      "entityType": "File",
+      "observations": [
+        "Lists Python dependencies"
+      ],
+      "name": "requirements.txt"
+    },
+    {
+      "type": "entity",
+      "entityType": "File",
+      "observations": [
+        "Project metadata, build system config, dependencies, tool settings (black, isort, pytest)"
+      ],
+      "name": "pyproject.toml"
+    },
+    {
+      "type": "entity",
+      "observations": [
+        "Defines Docker container setup",
+        "Based on python:3.12-slim"
+      ],
+      "name": "Dockerfile",
+      "entityType": "File"
+    },
+    {
+      "type": "entity",
+      "entityType": "File",
+      "observations": [
+        "Configuration for pytest testing framework"
+      ],
+      "name": "pytest.ini"
+    },
+    {
+      "type": "entity",
+      "entityType": "File",
+      "name": "README.md",
+      "observations": [
+        "Main documentation file",
+        "Describes project purpose, components, installation, usage, tools"
+      ]
+    },
+    {
+      "type": "entity",
+      "entityType": "Directory",
+      "name": "src/",
+      "observations": [
+        "Contains the main source code package"
+      ]
+    },
+    {
+      "type": "entity",
+      "entityType": "Directory",
+      "observations": [
+        "Core Python package directory",
+        "Contains submodules like server, core, tools"
+      ],
+      "name": "src/mcp_freecad/"
+    },
+    {
+      "type": "entity",
+      "entityType": "Directory",
+      "observations": [
+        "Contains test code",
+        "Includes unit and E2E tests"
+      ],
+      "name": "tests/"
+    },
+    {
+      "type": "entity",
+      "name": "tests/e2e/",
+      "observations": [
+        "Contains end-to-end tests",
+        "Includes test runner and specific test files"
+      ],
+      "entityType": "Directory"
+    },
+    {
+      "type": "entity",
+      "entityType": "Directory",
+      "observations": [
+        "Contains helper scripts for running/managing the server and FreeCAD"
+      ],
+      "name": "scripts/"
+    },
+    {
+      "type": "entity",
+      "entityType": "Directory",
+      "observations": [
+        "Contains executable scripts for installation and running the server"
+      ],
+      "name": "scripts/bin/"
+    },
+    {
+      "type": "entity",
+      "entityType": "Directory",
+      "name": "docs/",
+      "observations": [
+        "Contains detailed documentation files (markdown)"
+      ]
+    },
+    {
+      "type": "entity",
+      "observations": [
+        "Functionality exposed via MCP: primitives, booleans, transforms, export/import, measurements, code generation, smithery",
+        "Schemas defined in freecad_mcp_server.py"
+      ],
+      "entityType": "Concept",
+      "name": "MCP Tools"
+    },
+    {
+      "type": "entity",
+      "entityType": "Concept",
+      "observations": [
+        "Specialized MCP tools for blacksmithing models (anvil, hammer, tongs, etc.)",
+        "Implemented via hardcoded Python scripts in freecad_mcp_server.py",
+        "Executed using FreeCADConnection"
+      ],
+      "name": "Smithery Tools"
+    },
+    {
+      "type": "entity",
+      "name": "AppImage Integration",
+      "observations": [
+        "Recommended method using extracted AppImage via extract_appimage.py and freecad_launcher.py",
+        "Used by freecad_launcher.py"
+      ],
+      "entityType": "Concept"
+    },
+    {
+      "type": "entity",
+      "name": "Core Components",
+      "entityType": "Category",
+      "observations": [
+        "FreeCAD MCP Server - Main server implementing MCP",
+        "FreeCAD Connection - Unified interface for connecting to FreeCAD",
+        "Connection Methods - Multiple ways to connect (Launcher, Wrapper, Server, Bridge, Mock)",
+        "Various tool implementations for FreeCAD operations"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Taskplan",
+      "entityType": "Plan",
+      "observations": [
+        "Organized into 6 main categories: Core Functionality, Testing and Validation, Documentation, Performance Optimization, Additional Features, Packaging and Distribution",
+        "Prioritized as High (H), Medium (M), or Low (L)",
+        "Total estimated completion time: 14 weeks (3.5 months)",
+        "Focused plan for high-priority items organized into 3 phases"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Core Functionality",
+      "entityType": "TaskCategory",
+      "observations": [
+        "Implement progress reporting via ToolContext - 2 days (H)",
+        "Test and fix issues with all connection methods - 5 days (H)",
+        "Enhance error handling and reporting - 3 days (H)",
+        "Implement automatic recovery mechanisms - 4 days (M)"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Testing and Validation",
+      "entityType": "TaskCategory",
+      "observations": [
+        "Create unit tests for all tools and components - 7 days (H)",
+        "Develop integration tests for workflows - 5 days (H)",
+        "Cross-platform testing - 5 days (M)",
+        "Compatibility testing with different FreeCAD versions - 3 days (M)"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Documentation",
+      "entityType": "TaskCategory",
+      "observations": [
+        "Update and expand existing documentation - 5 days (H)",
+        "Create more complex modeling examples - 3 days (M)",
+        "Add troubleshooting guide and FAQs - 2 days (M)",
+        "Create video demos/tutorials - 4 days (L)"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Performance Optimization",
+      "entityType": "TaskCategory",
+      "observations": [
+        "Profile and optimize data transfer - 5 days (H)",
+        "Implement caching for frequently used operations - 4 days (M)",
+        "Optimize large model handling - 5 days (M)"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Additional Features",
+      "entityType": "TaskCategory",
+      "observations": [
+        "Add support for FreeCAD sketches and constraints - 7 days (M)",
+        "Implement advanced CAD operations - 7 days (M)",
+        "Create visualization tools for AI assistants - 6 days (L)",
+        "Develop web interface for debugging - 8 days (L)"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Packaging and Distribution",
+      "entityType": "TaskCategory",
+      "observations": [
+        "Improve installation process across platforms - 3 days (H)",
+        "Set up CI/CD pipeline for automated testing - 2 days (M)",
+        "Create Docker container for easy deployment - 2 days (M)",
+        "Publish to PyPI and update installation docs - 1 day (L)"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Phase 1: Core Functionality",
+      "entityType": "Implementation",
+      "observations": [
+        "Timeline: Weeks 1-2",
+        "Focus on progress reporting via ToolContext",
+        "Test and fix connection methods across platforms",
+        "Enhance error handling with clear, actionable messages"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Phase 2: Testing and Validation",
+      "entityType": "Implementation",
+      "observations": [
+        "Timeline: Weeks 3-5",
+        "Create unit tests with >80% code coverage",
+        "Develop integration tests for end-to-end workflows",
+        "Verify results match expected outcomes"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Phase 3: Documentation and Distribution",
+      "entityType": "Implementation",
+      "observations": [
+        "Timeline: Weeks 6-7",
+        "Complete and accurate documentation for all features",
+        "One-command installation on all major platforms",
+        "Refine installation scripts and dependency handling"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "MCP-FreeCAD Project Tasklist",
+      "entityType": "Document",
+      "observations": [
+        "Detailed task breakdown for completing the project",
+        "Organized into 3 phases",
+        "Contains specific tasks with time estimates",
+        "Includes implementation details for each major task category"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Phase 1 Tasks",
+      "entityType": "TaskList",
+      "observations": [
+        "Implement progress reporting via ToolContext (2 days)",
+        "Add progress callbacks to long-running operations",
+        "Update client-side to display progress indicators",
+        "Test and fix connection methods (5 days)",
+        "Create test scripts for each connection method",
+        "Document specific requirements for each method",
+        "Fix issues in launcher, wrapper, server, and bridge modes",
+        "Enhance error handling and reporting (3 days)",
+        "Add detailed try/except blocks with actionable messages",
+        "Create error classes for different failure types",
+        "Implement error logging for debugging",
+        "✅ Implemented progress reporting via ToolContext - Added ToolContext class with progress reporting capabilities",
+        "✅ Added progress callbacks to long-running operations - Updated execute_script_in_freecad, freecad_export_stl, and freecad_boolean_union",
+        "✅ Created progress callback integration with FastMCP in main function",
+        "✅ Added test script (tests/test_progress_reporting.py) to verify progress reporting",
+        "⚙️ Test and fix connection methods - Created test_connection_methods.py script",
+        "✓ Analyzed code for all connection methods (server, bridge, wrapper, launcher, mock)",
+        "Identified potential improvements for the launcher method with AppImage execution",
+        "Identified potential issues in subprocess communication in wrapper method",
+        "✅ Created comprehensive documentation on connection methods in docs/CONNECTION_METHODS.md",
+        "✅ Fixed launcher method for better AppImage path handling",
+        "✅ Improved error handling in launcher method",
+        "✅ Enhanced wrapper method with better subprocess communication and timeout handling",
+        "✅ Enhanced error handling in FreeCADConnection main class to provide clear failure reasons for each connection method",
+        "✅ Enhanced error handling in freecad_server.py for more robust server mode connections",
+        "✅ Improved client request processing in freecad_server.py to handle partial packets and better error reporting",
+        "✅ Enhanced command execution in freecad_server.py with better validation and diagnostic information"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Phase 2 Tasks",
+      "entityType": "TaskList",
+      "observations": [
+        "Create unit tests for all components (7 days)",
+        "Develop test framework with mock FreeCAD environment",
+        "Write tests for each tool function",
+        "Achieve >80% code coverage",
+        "Implement integration tests (5 days)",
+        "Create test cases for complete modeling workflows",
+        "Test document creation, manipulation, and export",
+        "Verify results match expected outcomes"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Phase 3 Tasks",
+      "entityType": "TaskList",
+      "observations": [
+        "Update documentation (5 days)",
+        "Review and update all documentation files",
+        "Add examples for new features",
+        "Create diagrams for complex workflows",
+        "Improve installation process (3 days)",
+        "Refine installation scripts for all platforms",
+        "Add dependency checking and auto-installation",
+        "Test in clean environments"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "MCP Protocol",
+      "entityType": "Technology",
+      "observations": [
+        "MCP (Model Context Protocol) is a standardized interface for AI assistants to interact with external tools",
+        "It allows AI models to execute tools and receive structured data back",
+        "In this project, MCP is used to expose FreeCAD functionality to AI assistants"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "FreeCAD Connection Layer",
+      "entityType": "Component",
+      "observations": [
+        "The connection layer manages how the MCP server connects to FreeCAD",
+        "It supports multiple connection methods: launcher, wrapper, server, bridge, and mock",
+        "It handles the communication between the MCP server and FreeCAD instance",
+        "Implemented in freecad_connection.py"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Launcher Method",
+      "entityType": "Feature",
+      "observations": [
+        "The recommended connection method in the project",
+        "Uses AppRun from an extracted FreeCAD AppImage to execute FreeCAD commands",
+        "More reliable than other connection methods",
+        "Implemented in freecad_launcher.py"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Wrapper Method",
+      "entityType": "Feature",
+      "observations": [
+        "A connection method that uses a separate Python subprocess",
+        "Isolates FreeCAD module imports into a dedicated process",
+        "Alternative when AppRun/launcher method is problematic",
+        "Implemented in freecad_wrapper.py and freecad_subprocess.py"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Server Method",
+      "entityType": "Feature",
+      "observations": [
+        "A connection method using a socket server inside FreeCAD",
+        "Allows connection to a potentially persistent FreeCAD instance",
+        "Can interact with the FreeCAD GUI if available",
+        "Implemented in freecad_server.py"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Bridge Method",
+      "entityType": "Feature",
+      "observations": [
+        "A connection method using the FreeCAD command-line interface",
+        "Bypasses direct module import issues but can be slower",
+        "Uses command-line calls to the FreeCAD executable",
+        "Implemented in freecad_bridge.py"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Mock Method",
+      "entityType": "Feature",
+      "observations": [
+        "A fallback connection method that simulates FreeCAD",
+        "Used for testing when no real FreeCAD is available",
+        "Provides dummy responses for development and testing"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Primitives Tools",
+      "entityType": "ToolSet",
+      "observations": [
+        "MCP tools for creating basic 3D shapes",
+        "Includes tools for creating boxes, cylinders, spheres, cones, tori, polygons, ellipses",
+        "Exposed as primitives.* tools in the MCP server"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Model Manipulation Tools",
+      "entityType": "ToolSet",
+      "observations": [
+        "MCP tools for transforming and modifying 3D objects",
+        "Includes tools for rotation, translation, scaling, mirroring",
+        "Includes boolean operations: union, cut, intersect",
+        "Exposed as model_manipulation.* tools in the MCP server"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Export/Import Tools",
+      "entityType": "ToolSet",
+      "observations": [
+        "MCP tools for exporting and importing models in various formats",
+        "Supports STL, STEP, IGES, DXF formats",
+        "Exposed as export_import.* tools in the MCP server"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Measurement Tools",
+      "entityType": "ToolSet",
+      "observations": [
+        "MCP tools for measuring properties of 3D models",
+        "Includes tools for measuring distance, angle, area, volume, mass",
+        "Exposed as measurement.* tools in the MCP server"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "AppImage Extraction",
+      "entityType": "Feature",
+      "observations": [
+        "The project can download and extract a FreeCAD AppImage for use with the launcher method",
+        "extract_appimage.py script extracts the AppImage to squashfs-root/",
+        "Updates config.json to use the launcher method with the extracted AppImage",
+        "Recommended setup approach for best reliability"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Docker Support",
+      "entityType": "Feature",
+      "observations": [
+        "The project can be run in a Docker container",
+        "Provides easier deployment and isolation",
+        "Uses docker-compose.yml for configuration",
+        "Exposes ports 8080 (MCP server) and 12345 (FreeCAD server)"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Configuration System",
+      "entityType": "Component",
+      "observations": [
+        "Uses config.json for project configuration",
+        "Controls server settings, FreeCAD connection, tool enablement",
+        "Can be customized for different deployment scenarios",
+        "Extract process updates the configuration automatically"
+      ]
+    },
+    {
+      "type": "entity",
+      "name": "Cursor Integration",
+      "entityType": "Feature",
+      "observations": [
+        "The project can be integrated with Cursor IDE",
+        "Uses .cursor/mcp.json for Cursor-specific configuration",
+        "Sets necessary environment variables for the MCP server to run in Cursor",
+        "Enables AI assistants in Cursor to interact with FreeCAD"
+      ]
+    }
+  ],
+  "relations": [
+    {
+      "type": "relation",
+      "from": "Schichtplan",
+      "to": "Backend",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan",
+      "to": "Frontend",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan",
+      "to": "ProjectStructure",
+      "relationType": "has"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan",
+      "to": "APIStructure",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan",
+      "to": "DevelopmentWorkflow",
+      "relationType": "follows"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan",
+      "to": "ServerManagement",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "Backend",
+      "to": "BackendTechnologies",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "Frontend",
+      "to": "FrontendTechnologies",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "DevelopmentWorkflow",
+      "to": "ServerManagement",
+      "relationType": "incorporates"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan",
+      "to": "DataFlow",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan",
+      "to": "DesignPatterns",
+      "relationType": "follows"
+    },
+    {
+      "type": "relation",
+      "from": "ServerManagement",
+      "to": "RunningApplication",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "Backend",
+      "to": "DataFlow",
+      "relationType": "participates in"
+    },
+    {
+      "type": "relation",
+      "from": "Frontend",
+      "to": "DataFlow",
+      "relationType": "participates in"
+    },
+    {
+      "type": "relation",
+      "from": "Backend",
+      "to": "DesignPatterns",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Frontend",
+      "to": "DesignPatterns",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan",
+      "to": "ShiftSchedulingFeatures",
+      "relationType": "provides"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan",
+      "to": "DatabaseSchema",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan",
+      "to": "TestingInfrastructure",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan",
+      "to": "KeyFiles",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan",
+      "to": "EnvironmentSetup",
+      "relationType": "requires"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan",
+      "to": "DeploymentProcess",
+      "relationType": "follows"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan",
+      "to": "TroubleshootingGuide",
+      "relationType": "provides"
+    },
+    {
+      "type": "relation",
+      "from": "Backend",
+      "to": "DatabaseSchema",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Backend",
+      "to": "BackendModels",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "Backend",
+      "to": "BackendServices",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "Backend",
+      "to": "APIEndpointDetails",
+      "relationType": "exposes"
+    },
+    {
+      "type": "relation",
+      "from": "Frontend",
+      "to": "FrontendComponents",
+      "relationType": "organizes"
+    },
+    {
+      "type": "relation",
+      "from": "DevelopmentWorkflow",
+      "to": "CodeStyleGuidelines",
+      "relationType": "enforces"
+    },
+    {
+      "type": "relation",
+      "from": "DevelopmentWorkflow",
+      "to": "FeatureDevelopmentProcess",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "DevelopmentWorkflow",
+      "to": "TestingInfrastructure",
+      "relationType": "incorporates"
+    },
+    {
+      "type": "relation",
+      "from": "ServerManagement",
+      "to": "DeploymentProcess",
+      "relationType": "relates to"
+    },
+    {
+      "type": "relation",
+      "from": "ServerManagement",
+      "to": "TroubleshootingGuide",
+      "relationType": "provides"
+    },
+    {
+      "type": "relation",
+      "from": "DatabaseSchema",
+      "to": "DatabaseMigrations",
+      "relationType": "managed by"
+    },
+    {
+      "type": "relation",
+      "from": "APIStructure",
+      "to": "APIEndpointDetails",
+      "relationType": "specifies"
+    },
+    {
+      "type": "relation",
+      "from": "ProjectStructure",
+      "to": "KeyFiles",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "BackendTechnologies",
+      "to": "DatabaseSchema",
+      "relationType": "supports"
+    },
+    {
+      "type": "relation",
+      "from": "ShiftSchedulingFeatures",
+      "to": "EmployeeManagement",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "ShiftSchedulingFeatures",
+      "to": "ShiftTemplates",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "ShiftSchedulingFeatures",
+      "to": "ScheduleGeneration",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "Frontend",
+      "to": "FrontendState",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "DevelopmentWorkflow",
+      "to": "PerformanceConsiderations",
+      "relationType": "addresses"
+    },
+    {
+      "type": "relation",
+      "from": "BackendServices",
+      "to": "ScheduleGeneration",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "BackendModels",
+      "to": "EmployeeManagement",
+      "relationType": "supports"
+    },
+    {
+      "type": "relation",
+      "from": "BackendModels",
+      "to": "ShiftTemplates",
+      "relationType": "supports"
+    },
+    {
+      "type": "relation",
+      "from": "BackendModels",
+      "to": "ScheduleGeneration",
+      "relationType": "supports"
+    },
+    {
+      "type": "relation",
+      "from": "FrontendComponents",
+      "to": "EmployeeManagement",
+      "relationType": "displays"
+    },
+    {
+      "type": "relation",
+      "from": "FrontendComponents",
+      "to": "ShiftTemplates",
+      "relationType": "edits"
+    },
+    {
+      "type": "relation",
+      "from": "FrontendComponents",
+      "to": "ScheduleGeneration",
+      "relationType": "manages"
+    },
+    {
+      "type": "relation",
+      "from": "APIEndpointDetails",
+      "to": "EmployeeManagement",
+      "relationType": "enables"
+    },
+    {
+      "type": "relation",
+      "from": "APIEndpointDetails",
+      "to": "ShiftTemplates",
+      "relationType": "enables"
+    },
+    {
+      "type": "relation",
+      "from": "APIEndpointDetails",
+      "to": "ScheduleGeneration",
+      "relationType": "enables"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleGeneration",
+      "to": "ScheduleGenerationAlgorithm",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleGeneration",
+      "to": "ScheduleConstraints",
+      "relationType": "enforces"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleGeneration",
+      "to": "ScheduleOptimization",
+      "relationType": "performs"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleGeneration",
+      "to": "ScheduleWorkflow",
+      "relationType": "follows"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleGeneration",
+      "to": "ScheduleConflictResolution",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleGeneration",
+      "to": "ScheduleGenerationImplementation",
+      "relationType": "implemented by"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleGeneration",
+      "to": "ScheduleDataModels",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "BackendServices",
+      "to": "ScheduleGenerationImplementation",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "BackendModels",
+      "to": "ScheduleDataModels",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "FrontendComponents",
+      "to": "ScheduleVisualization",
+      "relationType": "provides"
+    },
+    {
+      "type": "relation",
+      "from": "FrontendComponents",
+      "to": "ScheduleUserInterface",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleGeneration",
+      "to": "ScheduleVisualization",
+      "relationType": "outputs to"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleGeneration",
+      "to": "ScheduleExport",
+      "relationType": "supports"
+    },
+    {
+      "type": "relation",
+      "from": "ShiftSchedulingFeatures",
+      "to": "ScheduleVisualization",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "ShiftSchedulingFeatures",
+      "to": "ScheduleExport",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleGenerationImplementation",
+      "to": "SchedulingAlgorithmDetails",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleGenerationImplementation",
+      "to": "ScheduleGenerationPerformance",
+      "relationType": "characterized by"
+    },
+    {
+      "type": "relation",
+      "from": "PerformanceConsiderations",
+      "to": "ScheduleGenerationPerformance",
+      "relationType": "addresses"
+    },
+    {
+      "type": "relation",
+      "from": "APIEndpointDetails",
+      "to": "ScheduleGenerationImplementation",
+      "relationType": "interfaces with"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleWorkflow",
+      "to": "ScheduleUserInterface",
+      "relationType": "facilitated by"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan Project",
+      "to": "Backend",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan Project",
+      "to": "Frontend",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan Project",
+      "to": "Database",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan Project",
+      "to": "MCP",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "Backend",
+      "to": "ScheduleGenerator",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Backend",
+      "to": "DistributionManager",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Backend",
+      "to": "Database",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleGenerator",
+      "to": "DistributionManager",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleGenerator",
+      "to": "Employee",
+      "relationType": "manages"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleGenerator",
+      "to": "ShiftTemplate",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleGenerator",
+      "to": "Coverage",
+      "relationType": "processes"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleGenerator",
+      "to": "Schedule",
+      "relationType": "generates"
+    },
+    {
+      "type": "relation",
+      "from": "DistributionManager",
+      "to": "Employee",
+      "relationType": "tracks"
+    },
+    {
+      "type": "relation",
+      "from": "DistributionManager",
+      "to": "ShiftTemplate",
+      "relationType": "scores"
+    },
+    {
+      "type": "relation",
+      "from": "Schedule",
+      "to": "Employee",
+      "relationType": "assigns"
+    },
+    {
+      "type": "relation",
+      "from": "Schedule",
+      "to": "ShiftTemplate",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "Method Conflict Issue",
+      "to": "ScheduleGenerator",
+      "relationType": "affected"
+    },
+    {
+      "type": "relation",
+      "from": "Distribution Issue",
+      "to": "ScheduleGenerator",
+      "relationType": "affected"
+    },
+    {
+      "type": "relation",
+      "from": "Distribution Issue",
+      "to": "DistributionManager",
+      "relationType": "related to"
+    },
+    {
+      "type": "relation",
+      "from": "Frontend",
+      "to": "Backend",
+      "relationType": "communicates with"
+    },
+    {
+      "type": "relation",
+      "from": "Schichtplan API",
+      "relationType": "uses",
+      "to": "Common Response Structure"
+    },
+    {
+      "type": "relation",
+      "from": "GET /api/employees",
+      "relationType": "returns",
+      "to": "Employee Model"
+    },
+    {
+      "type": "relation",
+      "from": "POST /api/employees",
+      "relationType": "creates",
+      "to": "Employee Model"
+    },
+    {
+      "type": "relation",
+      "from": "GET /api/employees/:id",
+      "relationType": "returns",
+      "to": "Employee Model"
+    },
+    {
+      "type": "relation",
+      "from": "PUT /api/employees/:id",
+      "relationType": "updates",
+      "to": "Employee Model"
+    },
+    {
+      "type": "relation",
+      "from": "DELETE /api/employees/:id",
+      "relationType": "deletes",
+      "to": "Employee Model"
+    },
+    {
+      "type": "relation",
+      "from": "GET /api/shifts",
+      "relationType": "returns",
+      "to": "ShiftTemplate Model"
+    },
+    {
+      "type": "relation",
+      "from": "POST /api/shifts",
+      "relationType": "creates",
+      "to": "ShiftTemplate Model"
+    },
+    {
+      "type": "relation",
+      "from": "GET /api/shifts/:id",
+      "relationType": "returns",
+      "to": "ShiftTemplate Model"
+    },
+    {
+      "type": "relation",
+      "from": "PUT /api/shifts/:id",
+      "relationType": "updates",
+      "to": "ShiftTemplate Model"
+    },
+    {
+      "type": "relation",
+      "from": "DELETE /api/shifts/:id",
+      "relationType": "deletes",
+      "to": "ShiftTemplate Model"
+    },
+    {
+      "type": "relation",
+      "from": "GET /api/schedules",
+      "relationType": "returns",
+      "to": "Schedule Model"
+    },
+    {
+      "type": "relation",
+      "from": "POST /api/schedules/generate",
+      "relationType": "creates",
+      "to": "Schedule Model"
+    },
+    {
+      "type": "relation",
+      "from": "GET /api/schedules/:id",
+      "relationType": "returns",
+      "to": "Schedule Model"
+    },
+    {
+      "type": "relation",
+      "from": "PUT /api/schedules/:id",
+      "relationType": "updates",
+      "to": "Schedule Model"
+    },
+    {
+      "type": "relation",
+      "from": "GET /api/employees/:employee_id/absences",
+      "relationType": "returns",
+      "to": "Absence"
+    },
+    {
+      "type": "relation",
+      "from": "POST /api/employees/:employee_id/absences",
+      "relationType": "creates",
+      "to": "Absence"
+    },
+    {
+      "type": "relation",
+      "from": "PUT /api/employees/:employee_id/absences/:absence_id",
+      "relationType": "updates",
+      "to": "Absence"
+    },
+    {
+      "type": "relation",
+      "from": "DELETE /api/employees/:employee_id/absences/:absence_id",
+      "relationType": "deletes",
+      "to": "Absence"
+    },
+    {
+      "type": "relation",
+      "from": "GET /api/availability",
+      "relationType": "returns",
+      "to": "EmployeeAvailability"
+    },
+    {
+      "type": "relation",
+      "from": "PUT /api/settings",
+      "relationType": "updates",
+      "to": "Settings"
+    },
+    {
+      "type": "relation",
+      "from": "POST /api/settings/reset",
+      "relationType": "resets",
+      "to": "Settings"
+    },
+    {
+      "type": "relation",
+      "from": "GET /api/store/config",
+      "relationType": "returns",
+      "to": "StoreConfiguration"
+    },
+    {
+      "type": "relation",
+      "from": "PUT /api/store/config",
+      "relationType": "updates",
+      "to": "StoreConfiguration"
+    },
+    {
+      "type": "relation",
+      "from": "Schedule Model",
+      "relationType": "has many",
+      "to": "ScheduleEntry"
+    },
+    {
+      "type": "relation",
+      "from": "Employee Model",
+      "relationType": "has many",
+      "to": "ScheduleEntry"
+    },
+    {
+      "type": "relation",
+      "from": "ShiftTemplate Model",
+      "relationType": "has many",
+      "to": "ScheduleEntry"
+    },
+    {
+      "type": "relation",
+      "from": "Employee Model",
+      "relationType": "has many",
+      "to": "Absence"
+    },
+    {
+      "type": "relation",
+      "from": "Employee Model",
+      "relationType": "has many",
+      "to": "EmployeeAvailability"
+    },
+    {
+      "type": "relation",
+      "from": "AvailabilityLoadingIssue",
+      "to": "ScheduleGenerator",
+      "relationType": "affected"
+    },
+    {
+      "type": "relation",
+      "from": "AvailabilityLoadingIssue",
+      "to": "EmployeeAvailability",
+      "relationType": "involved"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleGeneration",
+      "to": "AvailabilityLoadingIssue",
+      "relationType": "was impacted by"
+    },
+    {
+      "type": "relation",
+      "from": "AvailabilityLoadingFix",
+      "to": "AvailabilityLoadingIssue",
+      "relationType": "resolves"
+    },
+    {
+      "type": "relation",
+      "from": "ScheduleGenerator",
+      "to": "AvailabilityLoadingFix",
+      "relationType": "implemented"
+    },
+    {
+      "type": "relation",
+      "from": "Schedule Generation Enhancement",
+      "to": "ScheduleGenerator",
+      "relationType": "modifies"
+    },
+    {
+      "type": "relation",
+      "from": "Schedule Generation Enhancement",
+      "to": "DistributionManager",
+      "relationType": "modifies"
+    },
+    {
+      "type": "relation",
+      "from": "DistributionManager",
+      "to": "ScheduleGenerator",
+      "relationType": "supports"
+    },
+    {
+      "type": "relation",
+      "from": "Cursor IDE",
+      "to": "MCP",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "homeassistant-mcp",
+      "to": "MCP",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "MCP",
+      "to": "JSON-RPC",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "MCP",
+      "to": "STDIO Transport",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "Cursor IDE",
+      "to": "homeassistant-mcp",
+      "relationType": "integrates with"
+    },
+    {
+      "type": "relation",
+      "from": "Cursor Compatibility",
+      "to": "homeassistant-mcp",
+      "relationType": "is required for"
+    },
+    {
+      "type": "relation",
+      "from": "Test Scripts",
+      "to": "Cursor Compatibility",
+      "relationType": "verifies"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Configuration",
+      "to": "Cursor IDE",
+      "relationType": "configures"
+    },
+    {
+      "type": "relation",
+      "from": "Common Errors",
+      "to": "homeassistant-mcp",
+      "relationType": "affects"
+    },
+    {
+      "type": "relation",
+      "from": "Test Scripts",
+      "to": "simple-cursor-test.js",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "Test Scripts",
+      "to": "test-cursor-requests.js",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "Test Scripts",
+      "to": "test-mcp-cursor-compat.sh",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "cursor-mcp.sh",
+      "to": "homeassistant-mcp",
+      "relationType": "executes"
+    },
+    {
+      "type": "relation",
+      "from": "simple-cursor-test.js",
+      "to": "homeassistant-mcp",
+      "relationType": "tests"
+    },
+    {
+      "type": "relation",
+      "from": "test-cursor-requests.js",
+      "to": "homeassistant-mcp",
+      "relationType": "tests"
+    },
+    {
+      "type": "relation",
+      "from": "test-mcp-cursor-compat.sh",
+      "to": "simple-cursor-test.js",
+      "relationType": "runs"
+    },
+    {
+      "type": "relation",
+      "from": "cursor-mcp.sh",
+      "to": "Cursor Compatibility",
+      "relationType": "ensures"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Configuration",
+      "to": "cursor-mcp.sh",
+      "relationType": "references"
+    },
+    {
+      "type": "relation",
+      "from": "ES Modules vs CommonJS",
+      "to": "homeassistant-mcp",
+      "relationType": "affects"
+    },
+    {
+      "type": "relation",
+      "from": "ES Modules vs CommonJS",
+      "to": "Test Scripts",
+      "relationType": "affects"
+    },
+    {
+      "type": "relation",
+      "from": "Environment Variables for MCP",
+      "to": "Cursor Compatibility",
+      "relationType": "enables"
+    },
+    {
+      "type": "relation",
+      "from": "Cursor MCP Configuration",
+      "to": "MCP Configuration",
+      "relationType": "details"
+    },
+    {
+      "type": "relation",
+      "from": "homeassistant-mcp",
+      "to": "ES Modules vs CommonJS",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "Cursor IDE",
+      "to": "Cursor MCP Configuration",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Environment Variables for MCP",
+      "to": "cursor-mcp.sh",
+      "relationType": "is set by"
+    },
+    {
+      "type": "relation",
+      "from": "Cursor MCP Configuration",
+      "to": "Environment Variables for MCP",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "Coverage",
+      "to": "ShiftType",
+      "relationType": "has no dependency on"
+    },
+    {
+      "type": "relation",
+      "from": "ShiftType",
+      "to": "Coverage",
+      "relationType": "is not determined by"
+    },
+    {
+      "type": "relation",
+      "from": "WebSocket Integration",
+      "relationType": "requires",
+      "to": "Frontend WebSocket Components"
+    },
+    {
+      "type": "relation",
+      "from": "WebSocket Integration Status",
+      "to": "WebSocket Integration Tasks",
+      "relationType": "informs"
+    },
+    {
+      "type": "relation",
+      "from": "WebSocket Integration Tasks",
+      "to": "Backend WebSocket Tasks",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "WebSocket Integration Tasks",
+      "to": "Frontend WebSocket Tasks",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "WebSocket Integration Priorities",
+      "to": "Backend WebSocket Tasks",
+      "relationType": "prioritizes"
+    },
+    {
+      "type": "relation",
+      "from": "WebSocket Integration Priorities",
+      "to": "Frontend WebSocket Tasks",
+      "relationType": "prioritizes"
+    },
+    {
+      "type": "relation",
+      "from": "WebSocket Integration Implementation Notes",
+      "to": "WebSocket Integration Status",
+      "relationType": "documents"
+    },
+    {
+      "type": "relation",
+      "from": "WebSocket Integration Implementation Notes",
+      "to": "WebSocket Integration Tasks",
+      "relationType": "documents"
+    },
+    {
+      "type": "relation",
+      "from": "Project_Migration_Plan",
+      "to": "Migration_Benefits",
+      "relationType": "leads to"
+    },
+    {
+      "type": "relation",
+      "from": "Bun_Features",
+      "to": "Bun_Performance_Metrics",
+      "relationType": "demonstrates"
+    },
+    {
+      "type": "relation",
+      "from": "Bun_Features",
+      "to": "Project_Migration_Plan",
+      "relationType": "enables"
+    },
+    {
+      "type": "relation",
+      "from": "api_migration_progress",
+      "to": "remaining_tasks",
+      "relationType": "leads_to"
+    },
+    {
+      "type": "relation",
+      "from": "api_response_patterns",
+      "to": "remaining_tasks",
+      "relationType": "influences"
+    },
+    {
+      "type": "relation",
+      "from": "api_migration_progress",
+      "to": "api_response_patterns",
+      "relationType": "reveals"
+    },
+    {
+      "type": "relation",
+      "from": "MainSystem",
+      "relationType": "consists of",
+      "to": "WebhookReceiver"
+    },
+    {
+      "type": "relation",
+      "from": "MainSystem",
+      "relationType": "consists of",
+      "to": "TradeWorker"
+    },
+    {
+      "type": "relation",
+      "from": "MainSystem",
+      "relationType": "consists of",
+      "to": "TelegramWorker"
+    },
+    {
+      "type": "relation",
+      "from": "MainSystem",
+      "relationType": "consists of",
+      "to": "D1Worker"
+    },
+    {
+      "type": "relation",
+      "from": "WebhookReceiver",
+      "relationType": "communicates with",
+      "to": "TradeWorker"
+    },
+    {
+      "type": "relation",
+      "from": "WebhookReceiver",
+      "relationType": "communicates with",
+      "to": "TelegramWorker"
+    },
+    {
+      "type": "relation",
+      "from": "WebhookReceiver",
+      "relationType": "communicates with",
+      "to": "D1Worker"
+    },
+    {
+      "type": "relation",
+      "from": "TradeWorker",
+      "relationType": "communicates with",
+      "to": "D1Worker"
+    },
+    {
+      "type": "relation",
+      "from": "Hoox Trading System",
+      "to": "Tech Stack",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "Hoox Trading System",
+      "to": "Worker Components",
+      "relationType": "consists of"
+    },
+    {
+      "type": "relation",
+      "from": "Hoox Trading System",
+      "to": "Installation Wizard",
+      "relationType": "is deployed using"
+    },
+    {
+      "type": "relation",
+      "from": "Worker Components",
+      "to": "Deployment Process",
+      "relationType": "is deployed through"
+    },
+    {
+      "type": "relation",
+      "from": "Installation Wizard",
+      "to": "Recent Improvements",
+      "relationType": "has received"
+    },
+    {
+      "type": "relation",
+      "from": "Installation Wizard",
+      "to": "User Experience Enhancements",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Project Structure",
+      "to": "Worker Components",
+      "relationType": "organizes"
+    },
+    {
+      "type": "relation",
+      "from": "Worker Components",
+      "to": "Configuration Files",
+      "relationType": "is configured by"
+    },
+    {
+      "type": "relation",
+      "from": "Tech Stack",
+      "to": "Deployment Process",
+      "relationType": "enables"
+    },
+    {
+      "type": "relation",
+      "from": "Recent Improvements",
+      "to": "User Experience Enhancements",
+      "relationType": "contributes to"
+    },
+    {
+      "type": "relation",
+      "from": "Installation Wizard",
+      "to": "D1 Database Setup",
+      "relationType": "incorporates"
+    },
+    {
+      "type": "relation",
+      "from": "Installation Wizard",
+      "to": "Worker URL Configuration",
+      "relationType": "incorporates"
+    },
+    {
+      "type": "relation",
+      "from": "Installation Wizard",
+      "to": "Worker Selection UI",
+      "relationType": "incorporates"
+    },
+    {
+      "type": "relation",
+      "from": "Installation Wizard",
+      "to": "Installation Process Flow",
+      "relationType": "follows"
+    },
+    {
+      "type": "relation",
+      "from": "Recent Improvements",
+      "to": "D1 Database Setup",
+      "relationType": "enhanced"
+    },
+    {
+      "type": "relation",
+      "from": "Recent Improvements",
+      "to": "Worker URL Configuration",
+      "relationType": "enhanced"
+    },
+    {
+      "type": "relation",
+      "from": "Recent Improvements",
+      "to": "Worker Selection UI",
+      "relationType": "enhanced"
+    },
+    {
+      "type": "relation",
+      "from": "Installation Process Flow",
+      "to": "Deployment Process",
+      "relationType": "culminates in"
+    },
+    {
+      "type": "relation",
+      "from": "D1 Database Setup",
+      "to": "Worker Components",
+      "relationType": "configures"
+    },
+    {
+      "type": "relation",
+      "from": "Worker URL Configuration",
+      "to": "Worker Components",
+      "relationType": "configures"
+    },
+    {
+      "type": "relation",
+      "from": "Installation Wizard",
+      "to": "State Management",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Installation Wizard",
+      "to": "Logging System",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Recent Improvements",
+      "to": "Logging System",
+      "relationType": "enhanced"
+    },
+    {
+      "type": "relation",
+      "from": "Recent Improvements",
+      "to": "State Management",
+      "relationType": "enhanced"
+    },
+    {
+      "type": "relation",
+      "from": "Installation Challenges",
+      "to": "Recent Improvements",
+      "relationType": "motivated"
+    },
+    {
+      "type": "relation",
+      "from": "State Management",
+      "to": "Installation Process Flow",
+      "relationType": "enables resumable"
+    },
+    {
+      "type": "relation",
+      "from": "User Experience Enhancements",
+      "to": "Logging System",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "Installation Wizard",
+      "to": "Installation Challenges",
+      "relationType": "addressed"
+    },
+    {
+      "type": "relation",
+      "from": "Recent Improvements",
+      "to": "Recent Code Fixes",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "Recent Code Fixes",
+      "to": "D1 Database Setup",
+      "relationType": "improved"
+    },
+    {
+      "type": "relation",
+      "from": "Recent Code Fixes",
+      "to": "Worker Selection UI",
+      "relationType": "enhanced"
+    },
+    {
+      "type": "relation",
+      "from": "Recent Code Fixes",
+      "to": "Worker URL Configuration",
+      "relationType": "implemented"
+    },
+    {
+      "type": "relation",
+      "from": "Recent Code Fixes",
+      "to": "State Management",
+      "relationType": "fixed"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD",
+      "to": "FreeCAD_MCP_Server",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD",
+      "to": "FreeCAD_Connection",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD",
+      "to": "FreeCAD_Server",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD",
+      "to": "FreeCAD_Bridge",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD",
+      "to": "FreeCAD_Client",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD",
+      "to": "Project_Structure",
+      "relationType": "defined by"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD",
+      "to": "MCP_Tools",
+      "relationType": "provides"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD",
+      "to": "Python_Interpreter_Setup",
+      "relationType": "includes documentation on"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD",
+      "to": "MCP_Flow",
+      "relationType": "follows"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD",
+      "to": "Configuration",
+      "relationType": "configured by"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD",
+      "to": "E2E_Tests",
+      "relationType": "tested by"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD",
+      "to": "Installation_Methods",
+      "relationType": "installed via"
+    },
+    {
+      "type": "relation",
+      "from": "FreeCAD_MCP_Server",
+      "to": "FreeCAD_Connection",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "FreeCAD_Connection",
+      "to": "Socket_Server_Connection",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "FreeCAD_Connection",
+      "to": "CLI_Bridge_Connection",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "FreeCAD_Connection",
+      "to": "Mock_Connection",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Socket_Server_Connection",
+      "to": "FreeCAD_Server",
+      "relationType": "communicates with"
+    },
+    {
+      "type": "relation",
+      "from": "CLI_Bridge_Connection",
+      "to": "FreeCAD_Bridge",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "FreeCAD_MCP_Server",
+      "to": "MCP_Tools",
+      "relationType": "exposes"
+    },
+    {
+      "type": "relation",
+      "from": "FreeCAD_MCP_Server",
+      "to": "Configuration",
+      "relationType": "configured by"
+    },
+    {
+      "type": "relation",
+      "from": "E2E_Tests",
+      "to": "Mock_Connection",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "Configuration",
+      "to": "Socket_Server_Connection",
+      "relationType": "configures"
+    },
+    {
+      "type": "relation",
+      "from": "Configuration",
+      "to": "CLI_Bridge_Connection",
+      "relationType": "configures"
+    },
+    {
+      "type": "relation",
+      "from": "Configuration",
+      "to": "Mock_Connection",
+      "relationType": "configures"
+    },
+    {
+      "type": "relation",
+      "from": "E2E_Tests",
+      "to": "Test_Runner",
+      "relationType": "executed by"
+    },
+    {
+      "type": "relation",
+      "from": "E2E_Tests",
+      "to": "Test_Base",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "E2E_Tests",
+      "to": "Primitives_Tests",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "E2E_Tests",
+      "to": "Smithery_Tests",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "E2E_Tests",
+      "to": "Test_Config",
+      "relationType": "configured by"
+    },
+    {
+      "type": "relation",
+      "from": "Test_Runner",
+      "to": "Test_Config",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "Test_Base",
+      "to": "Test_Config",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "Primitives_Tests",
+      "to": "Test_Base",
+      "relationType": "extends"
+    },
+    {
+      "type": "relation",
+      "from": "Smithery_Tests",
+      "to": "Test_Base",
+      "relationType": "extends"
+    },
+    {
+      "type": "relation",
+      "from": "Test_Base",
+      "to": "Mock_Connection",
+      "relationType": "simulates"
+    },
+    {
+      "type": "relation",
+      "from": "MCP_Tools",
+      "to": "Smithery_Tools",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "MCP_Tools",
+      "to": "Primitives_Tools",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "MCP_Tools",
+      "to": "Model_Manipulation_Tools",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "MCP_Tools",
+      "to": "Measurement_Tools",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "MCP_Tools",
+      "to": "Export_Import_Tools",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "MCP_Tools",
+      "to": "Basic_FreeCAD_Tools",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "Smithery_Tests",
+      "to": "Smithery_Tools",
+      "relationType": "tests"
+    },
+    {
+      "type": "relation",
+      "from": "Primitives_Tests",
+      "to": "Primitives_Tools",
+      "relationType": "tests"
+    },
+    {
+      "type": "relation",
+      "from": "Configuration",
+      "to": "Smithery_Tools",
+      "relationType": "enables/disables"
+    },
+    {
+      "type": "relation",
+      "from": "Configuration",
+      "to": "Primitives_Tools",
+      "relationType": "enables/disables"
+    },
+    {
+      "type": "relation",
+      "from": "Configuration",
+      "to": "Model_Manipulation_Tools",
+      "relationType": "enables/disables"
+    },
+    {
+      "type": "relation",
+      "from": "Configuration",
+      "to": "Measurement_Tools",
+      "relationType": "enables/disables"
+    },
+    {
+      "type": "relation",
+      "from": "Configuration",
+      "to": "Export_Import_Tools",
+      "relationType": "enables/disables"
+    },
+    {
+      "type": "relation",
+      "from": "Configuration",
+      "to": "Basic_FreeCAD_Tools",
+      "relationType": "enables/disables"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD Project",
+      "to": "FreeCAD",
+      "relationType": "integrates with"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD Project",
+      "to": "MCP Indicator Workbench",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD Project",
+      "to": "FreeCAD Server",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD Project",
+      "to": "MCP Server",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD Project",
+      "to": "Model Context Protocol",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Indicator Workbench",
+      "to": "InitGui.py",
+      "relationType": "is defined in"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Indicator Workbench",
+      "to": "Flow Visualization",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Indicator Workbench",
+      "to": "Settings Dialog",
+      "relationType": "provides"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Indicator Workbench",
+      "to": "Dependencies Installation",
+      "relationType": "provides"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Indicator Workbench",
+      "to": "FreeCAD",
+      "relationType": "extends"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Server",
+      "to": "FreeCAD Server",
+      "relationType": "communicates with"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Server",
+      "to": "Model Context Protocol",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "FreeCAD Server",
+      "to": "FreeCAD",
+      "relationType": "controls"
+    },
+    {
+      "type": "relation",
+      "from": "Server Configuration",
+      "to": "MCP Server",
+      "relationType": "configures"
+    },
+    {
+      "type": "relation",
+      "from": "Server Configuration",
+      "to": "FreeCAD Server",
+      "relationType": "configures"
+    },
+    {
+      "type": "relation",
+      "from": "InitGui.py",
+      "to": "Settings Dialog",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "InitGui.py",
+      "to": "Dependencies Installation",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "InitGui.py",
+      "to": "Flow Visualization",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "InitGui.py",
+      "to": "Server Configuration",
+      "relationType": "manages"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Indicator Workbench",
+      "to": "Connection Status Indicators",
+      "relationType": "displays"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Indicator Workbench",
+      "to": "Connection Info Dialogs",
+      "relationType": "provides"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Indicator Workbench",
+      "to": "FreeCAD Server Control",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Indicator Workbench",
+      "to": "MCP Server Control",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Indicator Workbench",
+      "to": "Python Executable Detection",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Indicator Workbench",
+      "to": "Error Handling",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "InitGui.py",
+      "to": "Connection Status Indicators",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "InitGui.py",
+      "to": "Connection Info Dialogs",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "InitGui.py",
+      "to": "FreeCAD Server Control",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "InitGui.py",
+      "to": "MCP Server Control",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "FreeCAD Server Control",
+      "to": "FreeCAD Server",
+      "relationType": "manages"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Server Control",
+      "to": "MCP Server",
+      "relationType": "manages"
+    },
+    {
+      "type": "relation",
+      "from": "Python Executable Detection",
+      "to": "FreeCAD Server Control",
+      "relationType": "supports"
+    },
+    {
+      "type": "relation",
+      "from": "Python Executable Detection",
+      "to": "MCP Server Control",
+      "relationType": "supports"
+    },
+    {
+      "type": "relation",
+      "from": "Connection Info Dialogs",
+      "to": "Connection Status Indicators",
+      "relationType": "is triggered by"
+    },
+    {
+      "type": "relation",
+      "from": "Server Configuration",
+      "to": "Python Executable Detection",
+      "relationType": "informs"
+    },
+    {
+      "type": "relation",
+      "from": "InitGui.py",
+      "to": "MCPIndicatorWorkbench Class",
+      "relationType": "defines"
+    },
+    {
+      "type": "relation",
+      "from": "MCPIndicatorWorkbench Class",
+      "to": "Wayland Handling",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "MCPIndicatorWorkbench Class",
+      "to": "Server Process Management",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "MCPIndicatorWorkbench Class",
+      "to": "Status Checking",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "MCPIndicatorWorkbench Class",
+      "to": "Connection Status Indicators",
+      "relationType": "manages"
+    },
+    {
+      "type": "relation",
+      "from": "Server Process Management",
+      "to": "FreeCAD Server Control",
+      "relationType": "enables"
+    },
+    {
+      "type": "relation",
+      "from": "Server Process Management",
+      "to": "MCP Server Control",
+      "relationType": "enables"
+    },
+    {
+      "type": "relation",
+      "from": "Status Checking",
+      "to": "Connection Status Indicators",
+      "relationType": "updates"
+    },
+    {
+      "type": "relation",
+      "from": "Status Checking",
+      "to": "Connection Info Dialogs",
+      "relationType": "provides data for"
+    },
+    {
+      "type": "relation",
+      "from": "JSON Bug Fix",
+      "to": "MCPIndicatorWorkbench Class",
+      "relationType": "fixes issue in"
+    },
+    {
+      "type": "relation",
+      "from": "JSON Bug Fix",
+      "to": "_load_indicator_config",
+      "relationType": "resolves error in"
+    },
+    {
+      "type": "relation",
+      "from": "MCPIndicatorWorkbench Class",
+      "to": "_load_indicator_config",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "MCPIndicatorWorkbench Class",
+      "to": "_get_python_executable",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "_load_indicator_config",
+      "to": "Server Configuration",
+      "relationType": "reads"
+    },
+    {
+      "type": "relation",
+      "from": "_get_python_executable",
+      "to": "_load_indicator_config",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Server",
+      "to": "Connection Methods",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Connection Methods",
+      "to": "FreeCAD Server",
+      "relationType": "may use"
+    },
+    {
+      "type": "relation",
+      "from": "FreeCAD Server",
+      "to": "Connection Methods",
+      "relationType": "supports legacy"
+    },
+    {
+      "type": "relation",
+      "from": "mcp-freecad",
+      "relationType": "uses",
+      "to": "MCP"
+    },
+    {
+      "type": "relation",
+      "relationType": "interacts with",
+      "to": "FreeCAD",
+      "from": "mcp-freecad"
+    },
+    {
+      "type": "relation",
+      "from": "mcp-freecad",
+      "relationType": "written in",
+      "to": "Python"
+    },
+    {
+      "type": "relation",
+      "relationType": "uses",
+      "to": "Docker",
+      "from": "mcp-freecad"
+    },
+    {
+      "type": "relation",
+      "to": "FastAPI",
+      "relationType": "uses",
+      "from": "mcp-freecad"
+    },
+    {
+      "type": "relation",
+      "from": "mcp-freecad",
+      "relationType": "uses",
+      "to": "Uvicorn"
+    },
+    {
+      "type": "relation",
+      "from": "mcp-freecad",
+      "to": "Trio",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "mcp-freecad",
+      "relationType": "uses",
+      "to": "Pytest"
+    },
+    {
+      "type": "relation",
+      "to": "Loguru",
+      "relationType": "uses",
+      "from": "mcp-freecad"
+    },
+    {
+      "type": "relation",
+      "relationType": "uses",
+      "to": "Psutil",
+      "from": "mcp-freecad"
+    },
+    {
+      "type": "relation",
+      "relationType": "uses",
+      "to": "NumPy",
+      "from": "mcp-freecad"
+    },
+    {
+      "type": "relation",
+      "to": "freecad_mcp_server.py",
+      "relationType": "contains",
+      "from": "mcp-freecad"
+    },
+    {
+      "type": "relation",
+      "from": "mcp-freecad",
+      "relationType": "contains",
+      "to": "freecad_connection.py"
+    },
+    {
+      "type": "relation",
+      "from": "mcp-freecad",
+      "to": "freecad_server.py",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "to": "freecad_bridge.py",
+      "from": "mcp-freecad",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "relationType": "contains",
+      "from": "mcp-freecad",
+      "to": "freecad_launcher.py"
+    },
+    {
+      "type": "relation",
+      "relationType": "contains",
+      "to": "extract_appimage.py",
+      "from": "mcp-freecad"
+    },
+    {
+      "type": "relation",
+      "from": "mcp-freecad",
+      "to": "freecad_client.py",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "relationType": "configured by",
+      "from": "mcp-freecad",
+      "to": "config.json"
+    },
+    {
+      "type": "relation",
+      "relationType": "uses",
+      "to": "requirements.txt",
+      "from": "mcp-freecad"
+    },
+    {
+      "type": "relation",
+      "relationType": "uses",
+      "from": "mcp-freecad",
+      "to": "pyproject.toml"
+    },
+    {
+      "type": "relation",
+      "to": "Dockerfile",
+      "from": "mcp-freecad",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "to": "pytest.ini",
+      "relationType": "uses",
+      "from": "mcp-freecad"
+    },
+    {
+      "type": "relation",
+      "to": "README.md",
+      "from": "mcp-freecad",
+      "relationType": "documented by"
+    },
+    {
+      "type": "relation",
+      "relationType": "contains",
+      "to": "src/",
+      "from": "mcp-freecad"
+    },
+    {
+      "type": "relation",
+      "from": "mcp-freecad",
+      "to": "tests/",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "mcp-freecad",
+      "to": "scripts/",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "mcp-freecad",
+      "to": "docs/",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "relationType": "implements",
+      "from": "mcp-freecad",
+      "to": "Connection Methods"
+    },
+    {
+      "type": "relation",
+      "from": "mcp-freecad",
+      "to": "MCP Tools",
+      "relationType": "provides"
+    },
+    {
+      "type": "relation",
+      "to": "AppImage Integration",
+      "relationType": "supports",
+      "from": "mcp-freecad"
+    },
+    {
+      "type": "relation",
+      "relationType": "uses",
+      "to": "MCP",
+      "from": "freecad_mcp_server.py"
+    },
+    {
+      "type": "relation",
+      "from": "freecad_mcp_server.py",
+      "to": "freecad_connection.py",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "freecad_mcp_server.py",
+      "relationType": "uses",
+      "to": "FastAPI"
+    },
+    {
+      "type": "relation",
+      "to": "MCP Tools",
+      "from": "freecad_mcp_server.py",
+      "relationType": "provides"
+    },
+    {
+      "type": "relation",
+      "relationType": "implements",
+      "from": "freecad_connection.py",
+      "to": "Connection Methods"
+    },
+    {
+      "type": "relation",
+      "to": "freecad_server.py",
+      "relationType": "uses",
+      "from": "freecad_connection.py"
+    },
+    {
+      "type": "relation",
+      "from": "freecad_connection.py",
+      "relationType": "uses",
+      "to": "freecad_bridge.py"
+    },
+    {
+      "type": "relation",
+      "relationType": "uses",
+      "to": "freecad_launcher.py",
+      "from": "freecad_connection.py"
+    },
+    {
+      "type": "relation",
+      "to": "FreeCAD",
+      "relationType": "runs inside",
+      "from": "freecad_server.py"
+    },
+    {
+      "type": "relation",
+      "from": "freecad_bridge.py",
+      "to": "FreeCAD",
+      "relationType": "interacts with"
+    },
+    {
+      "type": "relation",
+      "from": "freecad_launcher.py",
+      "to": "FreeCAD",
+      "relationType": "manages"
+    },
+    {
+      "type": "relation",
+      "to": "AppImage Integration",
+      "from": "freecad_launcher.py",
+      "relationType": "supports"
+    },
+    {
+      "type": "relation",
+      "to": "AppImage Integration",
+      "from": "extract_appimage.py",
+      "relationType": "supports"
+    },
+    {
+      "type": "relation",
+      "relationType": "modifies",
+      "from": "extract_appimage.py",
+      "to": "config.json"
+    },
+    {
+      "type": "relation",
+      "to": "Smithery Tools",
+      "relationType": "includes",
+      "from": "MCP Tools"
+    },
+    {
+      "type": "relation",
+      "from": "src/",
+      "relationType": "contains",
+      "to": "src/mcp_freecad/"
+    },
+    {
+      "type": "relation",
+      "from": "tests/",
+      "to": "tests/e2e/",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "scripts/",
+      "to": "scripts/bin/",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "relationType": "uses image",
+      "to": "python:3.12-slim",
+      "from": "Dockerfile"
+    },
+    {
+      "type": "relation",
+      "to": "Pytest",
+      "from": "pytest.ini",
+      "relationType": "configures"
+    },
+    {
+      "type": "relation",
+      "from": "pyproject.toml",
+      "relationType": "configures",
+      "to": "Pytest"
+    },
+    {
+      "type": "relation",
+      "to": "freecad_wrapper.py",
+      "relationType": "uses",
+      "from": "freecad_connection.py"
+    },
+    {
+      "type": "relation",
+      "from": "freecad_connection.py",
+      "relationType": "reads",
+      "to": "config.json"
+    },
+    {
+      "type": "relation",
+      "to": "freecad_script.py",
+      "relationType": "uses",
+      "from": "freecad_launcher.py"
+    },
+    {
+      "type": "relation",
+      "from": "Taskplan",
+      "to": "Core Functionality",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "Taskplan",
+      "to": "Testing and Validation",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "Taskplan",
+      "to": "Documentation",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "Taskplan",
+      "to": "Performance Optimization",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "Taskplan",
+      "to": "Additional Features",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "Taskplan",
+      "to": "Packaging and Distribution",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "Taskplan",
+      "to": "Phase 1: Core Functionality",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Taskplan",
+      "to": "Phase 2: Testing and Validation",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Taskplan",
+      "to": "Phase 3: Documentation and Distribution",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Phase 1: Core Functionality",
+      "to": "Core Functionality",
+      "relationType": "focuses on"
+    },
+    {
+      "type": "relation",
+      "from": "Phase 2: Testing and Validation",
+      "to": "Testing and Validation",
+      "relationType": "focuses on"
+    },
+    {
+      "type": "relation",
+      "from": "Phase 3: Documentation and Distribution",
+      "to": "Documentation",
+      "relationType": "focuses on"
+    },
+    {
+      "type": "relation",
+      "from": "Phase 3: Documentation and Distribution",
+      "to": "Packaging and Distribution",
+      "relationType": "focuses on"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD Project Tasklist",
+      "to": "Phase 1 Tasks",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD Project Tasklist",
+      "to": "Phase 2 Tasks",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD Project Tasklist",
+      "to": "Phase 3 Tasks",
+      "relationType": "contains"
+    },
+    {
+      "type": "relation",
+      "from": "Phase 1 Tasks",
+      "to": "Core Functionality",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Phase 2 Tasks",
+      "to": "Testing and Validation",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Phase 3 Tasks",
+      "to": "Documentation",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "Phase 3 Tasks",
+      "to": "Packaging and Distribution",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD",
+      "to": "FreeCAD",
+      "relationType": "integrates with"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD",
+      "to": "MCP Protocol",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD",
+      "to": "MCP Server",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "MCP-FreeCAD",
+      "to": "FreeCAD Connection Layer",
+      "relationType": "includes"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Server",
+      "to": "FreeCAD Connection Layer",
+      "relationType": "uses"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Server",
+      "to": "Primitives Tools",
+      "relationType": "exposes"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Server",
+      "to": "Model Manipulation Tools",
+      "relationType": "exposes"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Server",
+      "to": "Export/Import Tools",
+      "relationType": "exposes"
+    },
+    {
+      "type": "relation",
+      "from": "MCP Server",
+      "to": "Measurement Tools",
+      "relationType": "exposes"
+    },
+    {
+      "type": "relation",
+      "from": "FreeCAD Connection Layer",
+      "to": "Launcher Method",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "FreeCAD Connection Layer",
+      "to": "Wrapper Method",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "FreeCAD Connection Layer",
+      "to": "Server Method",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "FreeCAD Connection Layer",
+      "to": "Bridge Method",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "FreeCAD Connection Layer",
+      "to": "Mock Method",
+      "relationType": "implements"
+    },
+    {
+      "type": "relation",
+      "from": "AppImage Extraction",
+      "to": "Launcher Method",
+      "relationType": "supports"
+    },
+    {
+      "type": "relation",
+      "from": "Configuration System",
+      "to": "FreeCAD Connection Layer",
+      "relationType": "configures"
+    },
+    {
+      "type": "relation",
+      "from": "Cursor Integration",
+      "to": "MCP-FreeCAD",
+      "relationType": "integrates with"
+    }
+  ]
+}

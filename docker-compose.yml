@@ -10,4 +10,11 @@ services:
       - ./:/app
     environment:
       - PYTHONPATH=/app
+      - QT_QPA_PLATFORM=offscreen
+      - FREECAD_CONSOLE=1
+      - DISPLAY=:99
     restart: unless-stopped
+    command: >
+      bash -c "python download_appimage.py &&
+      python extract_appimage.py $(find . -maxdepth 1 -name '*conda-Linux-x86_64-py311.AppImage' | sort -r | head -n 1) &&
+      python manage_servers.py start all"

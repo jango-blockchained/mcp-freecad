@@ -54,7 +54,7 @@ This starts FreeCAD in console mode and immediately runs the server script.
 
 ## Configuring MCP-FreeCAD to Use the Server Method
 
-To make the main MCP server (`freecad_mcp_server.py`) connect to your manually started `freecad_server.py`, update your `config.json`:
+To make the main MCP server (`src/mcp_freecad/server/freecad_mcp_server.py`) connect to your manually started `freecad_server.py`, update your `config.json`:
 
 ```json
 {
@@ -74,8 +74,8 @@ Ensure the `host` and `port` match how you started `freecad_server.py`.
 
 1.  Start `freecad_server.py` inside FreeCAD using Option 1 or 2 above.
 2.  Ensure your `config.json` is set to use `connection_method: server`.
-3.  Start the main MCP server: `python freecad_mcp_server.py`.
-4.  Check the output of `freecad_mcp_server.py`. It should log a successful connection to FreeCAD using the `server` method.
+3.  Start the main MCP server: `python src/mcp_freecad/server/freecad_mcp_server.py`.
+4.  Check the output of `src/mcp_freecad/server/freecad_mcp_server.py`. It should log a successful connection to FreeCAD using the `server` method.
 
 Alternatively, use the client:
 
@@ -109,7 +109,7 @@ python freecad_client.py export-document --path model.step --document MyDocument
 
 ### Connection Issues
 
-If `freecad_mcp_server.py` or `freecad_client.py` cannot connect:
+If `src/mcp_freecad/server/freecad_mcp_server.py` or `freecad_client.py` cannot connect:
 
 1.  **Verify `freecad_server.py` is running**: Check the FreeCAD console or the terminal where you launched it.
 2.  **Check Host/Port**: Ensure the `host` and `port` in `config.json` match the address `freecad_server.py` is listening on.

@@ -6,7 +6,7 @@ This script implements a Model Context Protocol (MCP) server for FreeCAD
 using the FastMCP library and incorporating best practices.
 
 Usage:
-    python freecad_mcp_server.py
+    python src/mcp_freecad/server/freecad_mcp_server.py
 """
 
 import argparse
@@ -335,7 +335,7 @@ async def freecad_list_objects(document: Optional[str] = None) -> Dict[str, Any]
 import FreeCAD
 import json
 
-doc = None # Initialize doc to None before the try block
+doc = None # Initialize doc to None *before* the try block
 doc_name_for_msg = "Active Document"
 doc_name_used = None # Variable to store the actual doc name
 
@@ -345,11 +345,13 @@ try:
         if not doc: raise Exception(f"Document '{document}' not found")
         doc_name_for_msg = "document '{document}'"
     else:
+        # Try to get active document, it might still be None
         doc = FreeCAD.ActiveDocument
         if not doc: raise Exception("No active document found")
         # Assign doc_name_for_msg only after confirming doc exists
         doc_name_for_msg = f"active document '{doc.Name}'"
 
+    # At this point, doc should be a valid Document object if no exception was raised
     doc_name_used = doc.Name # Store the name
 
     objects_list = []
@@ -365,6 +367,7 @@ try:
 
 except Exception as e:
     objects_json = json.dumps({{"error": str(e)}})
+    # Ensure doc_name_used is captured even on error, if doc was assigned
     doc_name_used = doc.Name if doc else None # Now 'doc' is guaranteed to be defined (as None or the object)
 """
     try:

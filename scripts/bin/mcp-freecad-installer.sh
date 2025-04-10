@@ -11,7 +11,7 @@ INSTALL_DIR="$HOME/.mcp-freecad"
 DOWNLOAD_SCRIPT="download_appimage.py"
 REQUIREMENTS_FILE="requirements.txt"
 VENV_DIR=".venv"
-SERVER_SCRIPT="freecad_mcp_server.py"
+SERVER_SCRIPT="src/mcp_freecad/server/freecad_mcp_server.py"
 # ---------------------
 
 # Function to check if a command exists

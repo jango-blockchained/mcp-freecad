@@ -6,6 +6,7 @@ import sys
 import time
 import json
 import shutil
+import signal # <-- Add import
 
 import FreeCAD
 import FreeCADGui
@@ -98,14 +99,24 @@ static char * mcp_icon_xpm[] = {
 
                 # Try common locations for the MCP server script
                 possible_mcp_paths = [
-                    os.path.join(project_root, "freecad_mcp_server.py"),
+                    os.path.join(project_root, "src", "mcp_freecad", "server", "freecad_mcp_server.py"),
+                    os.path.join(project_root, "freecad_mcp_server.py"), # Legacy check
                     os.path.join(
+                        os.path.expanduser("~"),
+                        "Git",
+                        "mcp-freecad",
+                        "src",
+                        "mcp_freecad",
+                        "server",
+                        "freecad_mcp_server.py",
+                    ),
+                    os.path.join( # Legacy check
                         os.path.expanduser("~"),
                         "Git",
                         "mcp-freecad",
                         "freecad_mcp_server.py",
                     ),
-                    "/usr/local/bin/freecad_mcp_server.py",
+                    "/usr/local/bin/freecad_mcp_server.py", # Legacy check
                 ]
 
                 # Find FreeCAD Server path (first that exists)
@@ -188,17 +199,26 @@ static char * mcp_icon_xpm[] = {
 
         # Check if the shell script exists, otherwise use the Python script
         mcp_shell_path = os.path.join(self.REPO_PATH, "scripts", "start_mcp_server.sh")
-        mcp_py_path = os.path.join(self.REPO_PATH, "freecad_mcp_server.py")
+        mcp_py_path = os.path.join(self.REPO_PATH, "src", "mcp_freecad", "server", "freecad_mcp_server.py")
+        mcp_py_legacy_path = os.path.join(self.REPO_PATH, "freecad_mcp_server.py")
 
+        # Prefer shell script, then new Python path, then legacy Python path
+        preferred_mcp_path = None
         if os.path.exists(mcp_shell_path):
-            self.MCP_SERVER_SCRIPT_PATH = mcp_shell_path
-            self.params.SetString("MCPServerScriptPath", mcp_shell_path)
+            preferred_mcp_path = mcp_shell_path
         elif os.path.exists(mcp_py_path):
-            self.MCP_SERVER_SCRIPT_PATH = mcp_py_path
-            self.params.SetString("MCPServerScriptPath", mcp_py_path)
+            preferred_mcp_path = mcp_py_path
+        elif os.path.exists(mcp_py_legacy_path):
+            FreeCAD.Console.PrintWarning("Using legacy MCP server script path. Please ensure your setup is correct.\n")
+            preferred_mcp_path = mcp_py_legacy_path
 
-        # Create start_mcp_server.sh script if it doesn't exist
-        if os.path.exists(mcp_py_path) and not os.path.exists(mcp_shell_path):
+        if preferred_mcp_path:
+            self.MCP_SERVER_SCRIPT_PATH = preferred_mcp_path
+            self.params.SetString("MCPServerScriptPath", preferred_mcp_path)
+
+        # Create start_mcp_server.sh script if it doesn't exist and the Python script exists
+        if (os.path.exists(mcp_py_path) or os.path.exists(mcp_py_legacy_path)) and not os.path.exists(mcp_shell_path):
+            python_script_to_use = mcp_py_path if os.path.exists(mcp_py_path) else mcp_py_legacy_path
             try:
                 # Check for virtual environments
                 venv_paths = []
@@ -225,7 +245,9 @@ static char * mcp_icon_xpm[] = {
                         f.write('# Activate the virtual environment\n')
                         f.write(f'source "$SCRIPT_DIR/{venv_name}/bin/activate"\n\n')
                         f.write('# Start the MCP server with debug mode\n')
-                        f.write('python "$SCRIPT_DIR/freecad_mcp_server.py" --debug "$@"\n')
+                        # Use the relative path from SCRIPT_DIR to the python script
+                        relative_python_path = os.path.relpath(python_script_to_use, os.path.dirname(mcp_shell_path))
+                        f.write(f'python "$SCRIPT_DIR/{relative_python_path}" --debug "$@"\n')
 
                     # Make the script executable
                     os.chmod(mcp_shell_path, 0o755)
@@ -248,7 +270,8 @@ static char * mcp_icon_xpm[] = {
                             f.write('# Force X11 backend to avoid Wayland issues\n')
                             f.write('export QT_QPA_PLATFORM=xcb\n\n')
                             f.write('# Pass script path directly without --console flag\n')
-                            f.write('"$SCRIPT_DIR/squashfs-root/AppRun" "$SCRIPT_DIR/freecad_mcp_server.py" -- "$@"\n')
+                            relative_python_path = os.path.relpath(python_script_to_use, os.path.dirname(mcp_shell_path))
+                            f.write(f'"$SCRIPT_DIR/squashfs-root/AppRun" "$SCRIPT_DIR/{relative_python_path}" -- "$@"\n')
 
                         # Make the script executable
                         os.chmod(mcp_shell_path, 0o755)
@@ -263,8 +286,9 @@ static char * mcp_icon_xpm[] = {
                             f.write('#!/bin/bash\n\n')
                             f.write('# Get the directory where this script is located\n')
                             f.write('SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"\n\n')
-                            f.write('# Use FreeCAD AppImage Python directly\n')
-                            f.write('"$SCRIPT_DIR/squashfs-root/usr/bin/python" "$SCRIPT_DIR/freecad_mcp_server.py" --debug "$@"\n')
+                            f.write('# Use extracted Python interpreter\n')
+                            relative_python_path = os.path.relpath(python_script_to_use, os.path.dirname(mcp_shell_path))
+                            f.write(f'"$SCRIPT_DIR/squashfs-root/usr/bin/python" "$SCRIPT_DIR/{relative_python_path}" --debug "$@"\n')
 
                         # Make the script executable
                         os.chmod(mcp_shell_path, 0o755)
@@ -519,33 +543,33 @@ static char * mcp_icon_xpm[] = {
         return html
 
     def _get_mcp_server_info_html(self):
-        """Generate HTML content for MCP server details"""
-        server_status = "Running" if self._mcp_server_running else "Stopped"
-        status_color = "green" if self._mcp_server_running else "red"
+        """Generate HTML content for MCP Server info dialog."""
+        if self._mcp_server_running:
+            status_text = "<span style='color: green; font-weight: bold;'>Running</span>"
+        else:
+            status_text = "<span style='color: red; font-weight: bold;'>Stopped</span>"
 
         html = f"""
-        <h2>MCP Server Status</h2>
-        <p>Status: <span style='color:{status_color};font-weight:bold;'>{server_status}</span></p>
-        <p>Server Path: {self.MCP_SERVER_SCRIPT_PATH}</p>
-        <p><strong>Server Type:</strong> MCP Protocol Server (freecad_mcp_server.py)</p>
-        <p><strong>Purpose:</strong> Implements Model Context Protocol for AI assistants</p>
+            <html><body>
+            <h2>MCP Server Status</h2>
+            <p><strong>Status:</strong> {status_text}</p>
+            <p><strong>Script Path:</strong> {self.MCP_SERVER_SCRIPT_PATH or 'Not Set'}</p>
+            <p><strong>Config File:</strong> {self.MCP_SERVER_CONFIG or 'Not Set'}</p>
+            <p><strong>Server Type:</strong> MCP Protocol Server (src/mcp_freecad/server/freecad_mcp_server.py)</p>
+            <p><strong>Purpose:</strong> Allows AI assistants to interact with FreeCAD via the Model Context Protocol.</p>
+            <p><strong>Process ID:</strong> {self._mcp_server_process.pid if self._mcp_server_process else 'N/A'}</p>
         """
-
         if self._mcp_server_running:
             html += f"""
+            <h3>Status</h3>
+            <p>This server provides MCP functionality to AI assistants.</p>
+            <p>It exposes tools and resources through the Model Context Protocol.</p>
             <p>Server Port: {self.MCP_SERVER_PORT}</p>
             <p>Connected Clients: {self._connection_details['connected_clients']}</p>
             <p>Uptime: {self._connection_details['server_uptime']} seconds</p>
             """
-
             if self.MCP_SERVER_CONFIG:
                 html += f"<p>Config File: {self.MCP_SERVER_CONFIG}</p>"
-
-            html += """
-            <h3>Status</h3>
-            <p>This server provides MCP functionality to AI assistants.</p>
-            <p>It exposes tools and resources through the Model Context Protocol.</p>
-            """
 
             html += "<h3>Active Connections</h3>"
             try:
@@ -1614,17 +1638,8 @@ static char * mcp_icon_xpm[] = {
 
     def _start_mcp_server(self):
         """Start the freecad_mcp_server.py script."""
-        # Local imports to ensure modules are available in this scope
-        import os
-        import socket
-        import subprocess
-        import sys
-        import time
-
-        from PySide2 import QtCore, QtWidgets
-
-        if self._is_mcp_server_running():
-            FreeCAD.Console.PrintMessage("MCP Server is already running.\n")
+        if self._mcp_server_running:
+            FreeCAD.Console.PrintWarning("MCP Server is already running.\n")
             return
 
         if not self.MCP_SERVER_SCRIPT_PATH or not os.path.exists(self.MCP_SERVER_SCRIPT_PATH):
@@ -1728,7 +1743,7 @@ static char * mcp_icon_xpm[] = {
                             f.write('#!/bin/bash\n\n')
                             f.write('# Get the directory where this script is located\n')
                             f.write('SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"\n\n')
-                            f.write('# Use FreeCAD AppImage Python directly\n')
+                            f.write('# Use extracted Python interpreter\n')
                             f.write('"$SCRIPT_DIR/squashfs-root/usr/bin/python" "$SCRIPT_DIR/freecad_mcp_server.py" --debug "$@"\n')
 
                         # Make the script executable
@@ -1737,7 +1752,7 @@ static char * mcp_icon_xpm[] = {
                         # Update the MCP server path to use the shell script
                         self.MCP_SERVER_SCRIPT_PATH = shell_script_path
                         self.params.SetString("MCPServerScriptPath", shell_script_path)
-                        FreeCAD.Console.PrintMessage(f"Created start_mcp_server.sh script to use squashfs-root Python\n")
+                        FreeCAD.Console.PrintMessage(f"Created start_mcp_server.sh script to use extracted Python\n")
 
         # Try to kill any existing MCP server processes
         try:
@@ -1906,48 +1921,50 @@ static char * mcp_icon_xpm[] = {
 
     def _stop_mcp_server(self):
         """Stop the running freecad_mcp_server.py script."""
-        # Local import to ensure module is available in this scope
-        import subprocess
+        stopped_count = 0
+        stopped_pids = set()
 
-        if not self._is_mcp_server_running():
-            FreeCAD.Console.PrintMessage("MCP Server is not running.\n")
-            return
+        if self._mcp_server_process:
+            process_to_stop = self._mcp_server_process
+            pid_stopped = process_to_stop.pid # Get PID before trying to stop
+            if self._stop_process(process_to_stop):
+                stopped_count += 1
+                stopped_pids.add(pid_stopped)
+            self._mcp_server_process = None
 
-        try:
-            FreeCAD.Console.PrintMessage(
-                f"Stopping MCP server (PID: {self._mcp_server_process.pid})...\n"
-            )
-            self._mcp_server_process.terminate()
-            try:
-                self._mcp_server_process.wait(timeout=2)
-                FreeCAD.Console.PrintMessage("MCP server stopped.\n")
-            except subprocess.TimeoutExpired:
-                FreeCAD.Console.PrintWarning(
-                    "MCP server did not terminate gracefully, killing...\n"
-                )
-                self._mcp_server_process.kill()
-                self._mcp_server_process.wait()
-                FreeCAD.Console.PrintMessage("MCP server killed.\n")
-        except Exception as e:
-            FreeCAD.Console.PrintError(f"Failed to stop MCP server: {str(e)}\n")
+        # Also try finding and stopping any other lingering processes
+        lingering_processes = self._find_mcp_processes()
+        if lingering_processes:
+            FreeCAD.Console.PrintMessage(f"Found {len(lingering_processes)} potential lingering MCP server processes. Attempting to stop...\n")
+            for proc_or_pid in lingering_processes:
+                 # Get the current PID to check against the set of stopped PIDs
+                 current_pid = -1
+                 if hasattr(proc_or_pid, 'pid'):
+                     current_pid = proc_or_pid.pid
+                 elif isinstance(proc_or_pid, int):
+                     current_pid = proc_or_pid
 
-        self._mcp_server_process = None
-        # Reset server start time
-        if hasattr(self, '_mcp_server_start_time'):
-            delattr(self, '_mcp_server_start_time')
+                 if current_pid > 0 and current_pid not in stopped_pids:
+                    if self._stop_process(proc_or_pid):
+                        stopped_count += 1
+                        stopped_pids.add(current_pid)
+
+        if stopped_count > 0:
+             FreeCAD.Console.PrintMessage(f"Stopped {stopped_count} MCP server process(es).\n")
+        else:
+             FreeCAD.Console.PrintWarning("Could not find running MCP Server process to stop.\n")
+
+        self._mcp_server_running = False
+        self._update_mcp_server_icon()
         self._update_action_states()
+        self._check_status()
 
     def _restart_mcp_server(self):
         """Restart the freecad_mcp_server.py script."""
-        # Local import to ensure Qt module is available in this scope
-        from PySide2 import QtCore
-
-        FreeCAD.Console.PrintMessage("Restarting MCP server...\n")
-        if self._is_mcp_server_running():
-            self._stop_mcp_server()
-            QtCore.QTimer.singleShot(500, self._start_mcp_server)
-        else:
-            self._start_mcp_server()
+        FreeCAD.Console.PrintMessage("Restarting MCP Server...\n")
+        self._stop_mcp_server()
+        # Add a small delay before restarting
+        QtCore.QTimer.singleShot(500, self._start_mcp_server)
 
     def _install_dependencies(self):
         """Install required dependencies for the MCP modules."""
@@ -2182,5 +2199,126 @@ static char * mcp_icon_xpm[] = {
             "sudo apt install python3-fastapi python3-uvicorn python3-websockets python3-aiofiles python3-pydantic"
         )
 
+    def _find_mcp_processes(self):
+        """Find processes running the MCP server script."""
+        processes = []
+        try:
+            # Use psutil if available for cross-platform compatibility
+            import psutil
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    if proc.info['cmdline'] and self.MCP_SERVER_SCRIPT_PATH in " ".join(proc.info['cmdline']):
+                        processes.append(proc)
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    pass # Process might have died or we don't have permission
+        except ImportError:
+            FreeCAD.Console.PrintWarning("psutil not installed. Falling back to platform-specific process finding.\\n")
+            if sys.platform == 'win32':
+                try:
+                    # Note: WMIC might require admin privileges for full details
+                    # Construct command as list to avoid shell quoting issues
+                    path_pattern = self.MCP_SERVER_SCRIPT_PATH.replace('\\\\', '\\\\\\\\') # Escape backslashes for WMIC LIKE
+                    cmd_parts = [
+                        'WMIC', 'PROCESS', 'WHERE',
+                        f'CommandLine LIKE "%{path_pattern}%"', # Use % wildcard for LIKE
+                        'GET', 'ProcessId,CommandLine', # Comma without space might be safer
+                        '/FORMAT:LIST'
+                    ]
+                    # Using shell=False is generally safer
+                    result = subprocess.run(cmd_parts, capture_output=True, text=True, check=True, shell=False, startupinfo=None) # Ensure startupinfo is None or correctly configured if needed, avoid CREATE_NO_WINDOW with shell=False
+
+                    # Very basic parsing - assumes simple structure
+                    pid = None
+                    for line in result.stdout.splitlines():
+                        line = line.strip()
+                        if not line: continue # Skip empty lines
+                        if '=' in line:
+                            key, value = line.split('=', 1)
+                            if key == "ProcessId":
+                                try:
+                                    pid = int(value)
+                                except ValueError:
+                                    pid = None # Reset if ProcessId is not an int
+                            elif key == "CommandLine" and pid is not None:
+                                # Check if the command line actually contains the script path
+                                # This adds an extra check because LIKE might be too broad
+                                if self.MCP_SERVER_SCRIPT_PATH in value:
+                                    processes.append(pid) # Store PID directly for now
+                                pid = None # Reset pid after processing a CommandLine entry
+                except FileNotFoundError:
+                     FreeCAD.Console.PrintError("Error: WMIC command not found. Is it in the system PATH?\\n")
+                except subprocess.CalledProcessError as e:
+                     FreeCAD.Console.PrintError(f"Error finding process with WMIC (return code {e.returncode}): {e.stderr or e.stdout}\\n")
+                except Exception as e:
+                    FreeCAD.Console.PrintError(f"Error finding process with WMIC: {e}\\n")
+            else: # Linux/macOS
+                try:
+                    # Be careful with escaping special characters if script path has them
+                    # pgrep -f should be reasonably safe
+                    cmd = ['pgrep', '-f', self.MCP_SERVER_SCRIPT_PATH]
+                    result = subprocess.run(cmd, capture_output=True, text=True, shell=False) # Use shell=False
+                    if result.returncode == 0:
+                        pids = [int(pid) for pid in result.stdout.splitlines() if pid.isdigit()]
+                        processes.extend(pids) # Store PIDs directly for now
+                    # No error print needed if returncode is non-zero (means not found)
+                except FileNotFoundError:
+                    FreeCAD.Console.PrintError("Error: pgrep command not found. Is it in the system PATH?\\n")
+                except Exception as e:
+                    FreeCAD.Console.PrintError(f"Error finding process with pgrep: {e}\\n")
+        return processes
+
+    def _stop_process(self, process_or_pid):
+        """Stop a process given a psutil process object or a PID."""
+        pid_to_stop = -1
+        try:
+            if hasattr(process_or_pid, 'terminate') and callable(process_or_pid.terminate):
+                # Assume psutil process object
+                pid_to_stop = process_or_pid.pid
+                FreeCAD.Console.PrintMessage(f"Terminating MCP Server process (PID: {pid_to_stop})...\n")
+                process_or_pid.terminate()
+                process_or_pid.wait(timeout=3) # Wait for graceful termination
+                if process_or_pid.is_running():
+                    FreeCAD.Console.PrintWarning(f"Process {pid_to_stop} did not terminate gracefully, killing...\n")
+                    process_or_pid.kill()
+                    process_or_pid.wait(timeout=1)
+            elif isinstance(process_or_pid, int) and process_or_pid > 0:
+                # Assume PID
+                pid_to_stop = process_or_pid
+                FreeCAD.Console.PrintMessage(f"Terminating MCP Server process (PID: {pid_to_stop})...\n")
+                if sys.platform == 'win32':
+                    subprocess.run(["taskkill", "/F", "/PID", str(pid_to_stop)], check=True, capture_output=True)
+                else:
+                    os.kill(pid_to_stop, signal.SIGTERM) # Send TERM signal first
+                    time.sleep(1) # Give it a moment
+                    try:
+                        os.kill(pid_to_stop, 0) # Check if process exists
+                        # If it still exists, force kill
+                        FreeCAD.Console.PrintWarning(f"Process {pid_to_stop} did not terminate gracefully, killing...\n")
+                        os.kill(pid_to_stop, signal.SIGKILL)
+                    except OSError:
+                        pass # Process already terminated
+            else:
+                FreeCAD.Console.PrintError(f"Invalid process object or PID for stopping: {process_or_pid}\n")
+                return False
+
+            FreeCAD.Console.PrintMessage(f"Process {pid_to_stop} terminated.\n")
+            return True
+
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"Error stopping process {pid_to_stop}: {str(e)}\n")
+            # Attempt force kill if termination failed
+            try:
+                if pid_to_stop > 0:
+                    if hasattr(process_or_pid, 'kill') and callable(process_or_pid.kill):
+                        process_or_pid.kill()
+                    elif isinstance(process_or_pid, int):
+                         if sys.platform == 'win32':
+                            subprocess.run(["taskkill", "/F", "/PID", str(pid_to_stop)], check=False, capture_output=True)
+                         else:
+                             os.kill(pid_to_stop, signal.SIGKILL)
+                    FreeCAD.Console.PrintWarning(f"Force killed process {pid_to_stop}.\n")
+            except Exception as kill_e:
+                 FreeCAD.Console.PrintError(f"Error force killing process {pid_to_stop}: {kill_e}\n")
+            return False
 
 FreeCADGui.addWorkbench(MCPIndicatorWorkbench())

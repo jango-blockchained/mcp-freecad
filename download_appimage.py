@@ -15,7 +15,7 @@ GITHUB_REPO = "FreeCAD/FreeCAD"
 RELEASE_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 # Fallback/alternative: list releases if 'latest' doesn't work as expected
 # RELEASE_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases"
-APPIMAGE_FILENAME_CONTAINS = "Linux-x86_64.AppImage" # Common pattern
+APPIMAGE_FILENAME_CONTAINS = "conda-Linux-x86_64-py311.AppImage" # Updated for FreeCAD 1.0 pattern
 # ---------------------
 
 def download_file(url, destination_path, show_progress=True):

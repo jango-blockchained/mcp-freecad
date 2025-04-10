@@ -1,10 +1,16 @@
-FROM python:3.12-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
 # Install needed packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     procps \
+    libgl1-mesa-glx \
+    libx11-6 \
+    libxcb1 \
+    libxext6 \
+    xvfb \
+    libpulse0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
@@ -17,6 +23,9 @@ COPY . .
 
 # Set Python path
 ENV PYTHONPATH=/app
+ENV QT_QPA_PLATFORM=offscreen
+ENV FREECAD_CONSOLE=1
+ENV DISPLAY=:99
 
 # Expose the port the app runs on
 EXPOSE 8080 12345

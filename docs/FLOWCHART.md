@@ -4,7 +4,7 @@ This document outlines the different ways the provided Python scripts interact t
 
 ## Components
 
-1.  **User/Client Application (`freecad_client.py` / `freecad_mcp_server.py`)**: The application that wants to perform actions in FreeCAD.
+1.  **User/Client Application (`freecad_client.py` / `src/mcp_freecad/server/freecad_mcp_server.py`)**: The application that wants to perform actions in FreeCAD.
 2.  **Connection Layer (`freecad_connection.py`)**: A smart layer that determines the best way to talk to FreeCAD.
 3.  **Execution Backends**:
     *   **Launcher (`freecad_launcher.py`)**: (Recommended) Launches FreeCAD (often via AppRun) and runs `freecad_script.py` inside it.

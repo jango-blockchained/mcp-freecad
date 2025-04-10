@@ -26,7 +26,7 @@ import psutil
 # Configuration
 DEFAULT_CONFIG_PATH = "config.json"
 FREECAD_SERVER_SCRIPT = "freecad_server.py"
-MCP_SERVER_SCRIPT = "freecad_mcp_server.py"
+MCP_SERVER_SCRIPT = "src/mcp_freecad/server/freecad_mcp_server.py"
 FREECAD_SERVER_LOG = "freecad_server_stdout.log"
 FREECAD_SERVER_ERR_LOG = "freecad_server_stderr.log"
 MCP_SERVER_LOG = "freecad_mcp_server_stdout.log"

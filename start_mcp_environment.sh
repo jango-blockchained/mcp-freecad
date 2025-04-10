@@ -105,9 +105,9 @@ if pgrep -f "freecad_server.py" > /dev/null; then
     restart=true
 fi
 
-if pgrep -f "freecad_mcp_server.py" > /dev/null; then
+if pgrep -f "src/mcp_freecad/server/freecad_mcp_server.py" > /dev/null; then
     echo "Stopping existing MCP server..."
-    pkill -f "freecad_mcp_server.py" || true
+    pkill -f "src/mcp_freecad/server/freecad_mcp_server.py" || true
     restart=true
 fi
 

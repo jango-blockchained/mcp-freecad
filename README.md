@@ -30,6 +30,36 @@ For the most reliable setup, follow these steps:
 
 This starts the MCP server using the recommended `launcher` method with the downloaded and extracted AppImage.
 
+## Docker Support
+
+You can also run MCP-FreeCAD in a Docker container for easier deployment and isolation.
+
+### Running with Docker Compose
+
+1. **Start the container**:
+   ```bash
+   docker compose up
+   ```
+
+2. **Build from scratch** (if you've made changes):
+   ```bash
+   docker compose build --no-cache
+   docker compose up
+   ```
+
+The Docker container exposes the following ports:
+- 8080: MCP server
+- 12345: FreeCAD server
+
+### Docker Configuration
+
+The Docker setup consists of:
+- `Dockerfile`: Defines the container with Python 3.12, installs dependencies, and sets up the environment
+- `docker-compose.yml`: Configures the service, ports, volumes, and restart policies
+- `.dockerignore`: Excludes unnecessary files from the container
+
+This approach is especially useful for CI/CD pipelines or when you need to isolate the MCP-FreeCAD environment from your system.
+
 ## 🔄 MCP Flow Chart
 
 ```mermaid
@@ -112,10 +142,10 @@ For more detailed flowcharts, see [FLOWCHART.md](docs/FLOWCHART.md).
 - **Usage**:
     ```bash
     # Start the server (uses config.json by default)
-    python freecad_mcp_server.py
+    python src/mcp_freecad/server/freecad_mcp_server.py
 
     # Start with a specific config
-    python freecad_mcp_server.py --config my_config.json
+    python src/mcp_freecad/server/freecad_mcp_server.py --config my_config.json
     ```
 
 ### 2. FreeCAD Connection (`freecad_connection.py`)
@@ -286,13 +316,13 @@ This is the primary way to interact with FreeCAD using AI assistants like Claude
 
 ```bash
 # Start the server using the default config.json
-python freecad_mcp_server.py
+python src/mcp_freecad/server/freecad_mcp_server.py
 
 # Start with a specific configuration file
-python freecad_mcp_server.py --config /path/to/your/config.json
+python src/mcp_freecad/server/freecad_mcp_server.py --config /path/to/your/config.json
 
 # Enable debug logging
-python freecad_mcp_server.py --debug
+python src/mcp_freecad/server/freecad_mcp_server.py --debug
 ```
 The server will run and listen for connections from MCP clients.
 
@@ -302,13 +332,13 @@ Use any MCP-compatible client. Example using the reference `mcp client`:
 
 ```bash
 # Replace 'mcp client' with the actual client command if different
-mcp client connect stdio --command "python freecad_mcp_server.py"
+mcp client connect stdio --command "python src/mcp_freecad/server/freecad_mcp_server.py"
 ```
 
 Or using `uv` if you have a client script like the one in the MCP docs:
 
 ```bash
-uv run path/to/your/mcp_client.py python freecad_mcp_server.py
+uv run path/to/your/mcp_client.py python src/mcp_freecad/server/freecad_mcp_server.py
 ```
 
 ### Alternative: Starting FreeCAD with Integrated Server
@@ -457,7 +487,7 @@ Assistant: I've exported the box model to `box.stl`.
 ## 🔍 Troubleshooting
 
 - **MCP Server Connection Issues**:
-    - Ensure `python freecad_mcp_server.py` can run without immediate errors. Check terminal output.
+    - Ensure `python src/mcp_freecad/server/freecad_mcp_server.py` can run without immediate errors. Check terminal output.
     - Check firewall settings if relevant (unlikely for `stdio`).
     - Verify `config.json` is valid JSON.
 - **FreeCAD Connection Issues (Especially with `launcher` method)**:
@@ -487,7 +517,7 @@ The MCP server is designed for integration with tools like Cursor IDE.
           "mcp-freecad": {
             "command": "python3", // Command to run python
             "args": [
-              "freecad_mcp_server.py" // Script to run
+              "src/mcp_freecad/server/freecad_mcp_server.py" // Script to run
             ],
             "env": { // Environment variables needed for headless AppRun
                "QT_QPA_PLATFORM": "offscreen",
@@ -509,7 +539,7 @@ The MCP server is designed for integration with tools like Cursor IDE.
 
 2.  **Restart Cursor**: Fully restart Cursor for the configuration changes to take effect.
 
-3.  **Server Communication**: The server uses `stdio` transport by default (configured in `config.json` under `server.mcp.transport`), which is compatible with Cursor's communication protocol. Errors should be reported back to Cursor via MCP error responses.
+3. **Server Communication**: The server uses `stdio` transport by default (configured in `config.json` under `server.mcp.transport`), which is compatible with Cursor's communication protocol. Errors should be reported back to Cursor via MCP error responses.
 
 ### Cursor-Specific Considerations
 - The `freecad_mcp_server.py` script loads `config.json` by default. Ensure this file contains the correct settings, especially the `freecad` section updated by `extract_appimage.py`.

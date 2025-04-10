@@ -36,3 +36,12 @@ tests/
 # OS specific
 .DS_Store
 Thumbs.db
+
+# AppImage files
+*.AppImage
+*.AppImage.sha256sum
+*.AppImage.sha512sum
+*.AppImage.sha384sum
+*.AppImage.sha224sum
+*.AppImage.sha1sum
+*.AppImage.md5sum

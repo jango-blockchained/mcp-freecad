@@ -15,11 +15,14 @@ def main():
     # Get the directory where this script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Path to the MCP server script
-    mcp_script = os.path.join(script_dir, "freecad_mcp_server.py")
+    # Path to the MCP server script (corrected path)
+    mcp_script = os.path.join(script_dir, "..", "src", "mcp_freecad", "server", "freecad_mcp_server.py")
 
-    # Path to the AppRun executable
-    apprun_path = os.path.join(script_dir, "squashfs-root", "AppRun")
+    # Path to the AppRun executable (relative to the script's original intended location)
+    # Adjust based on where AppRun is actually located relative to the *new* script location if needed.
+    # Assuming AppRun is still intended to be found via ../squashfs-root relative to the script's parent dir.
+    project_root = os.path.dirname(script_dir)
+    apprun_path = os.path.join(project_root, "squashfs-root", "AppRun")
 
     # Check if files exist
     if not os.path.exists(mcp_script):

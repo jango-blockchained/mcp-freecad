@@ -70,3 +70,12 @@ uv.lock
 # Generated files
 mcp-freecad
 scripts/bin/mcp-freecad
+
+# AppImage files
+*.AppImage
+*.AppImage.sha256sum
+*.AppImage.sha512sum
+*.AppImage.sha384sum
+*.AppImage.sha224sum
+*.AppImage.sha1sum
+*.AppImage.md5sum

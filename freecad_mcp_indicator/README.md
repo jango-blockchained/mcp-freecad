@@ -121,7 +121,7 @@ These scripts will automatically find your FreeCAD Mod directory and install the
 1. Right-click any indicator and select "Settings..."
 2. In the Settings dialog, configure:
    - FreeCAD Server tab: Path to FreeCAD socket server script (freecad_server.py)
-   - MCP Server tab: Path to MCP server script (freecad_mcp_server.py) and configuration file
+   - MCP Server tab: Path to MCP server script (src/mcp_freecad/server/freecad_mcp_server.py) and configuration file
    - Client Settings tab: Host and port for MCP server connection
 
 ### Server Control
@@ -144,7 +144,7 @@ Right-click any indicator to access server control menus:
 ### FreeCAD Socket Server (freecad_server.py)
 This is a low-level socket server that runs inside FreeCAD and allows external scripts to execute FreeCAD Python commands. It acts as the bridge between the MCP server and FreeCAD's API.
 
-### MCP Server (freecad_mcp_server.py)
+### MCP Server (src/mcp_freecad/server/freecad_mcp_server.py)
 This server implements the Model Context Protocol (MCP) and allows AI assistants to interact with FreeCAD through a standardized interface. It communicates with the FreeCAD Socket Server to execute commands.
 
 ## Troubleshooting
