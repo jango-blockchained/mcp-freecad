@@ -1,938 +1,531 @@
 #!/usr/bin/env python3
 """
-FreeCAD Server Script
+FreeCAD Server
 
-This script provides a socket-based interface for communicating with external applications
-like the MCP server.
+This script provides a socket-based interface to FreeCAD for use with external
+applications, particularly the MCP server.
 
 Usage:
-   Run directly with Python: python3 freecad_server.py
+Run from within FreeCAD's Python console: exec(open('freecad_server.py').read())
+Run directly with Python: python3 freecad_server.py
 
-Command-line arguments:
-   --host HOST     Server hostname (default: localhost or from config)
-   --port PORT     Server port (default: 12345 or from config)
-   --debug         Enable debug logging
-   --config FILE   Path to config file (default: ~/.freecad_server.json)
-   --connect       Try to connect to a running FreeCAD instance instead of using mock mode
+Options:
+--host HOST     Hostname or IP to listen on (default: localhost)
+--port PORT     Port to listen on (default: 12345)
+--debug         Enable verbose debug logging
+--config PATH   Path to configuration file
+--connect       Connect to a running FreeCAD instance
 """
 
 import argparse
 import json
-import logging
 import os
+import signal
 import socket
 import sys
-import threading
-import time
 import traceback
-import subprocess
+import logging
+from typing import Dict, Any, Optional, List, Tuple
 
-logger = logging.getLogger(__name__)
-
-# Default settings
-DEFAULT_HOST = "localhost"
-DEFAULT_PORT = 12345
-CONFIG_FILE = os.path.expanduser("~/.freecad_server.json")
-
-# Load config and parse command line args first, so we can use the paths
-parser = argparse.ArgumentParser(description="FreeCAD Server")
-parser.add_argument("--host", help="Server hostname")
-parser.add_argument("--port", type=int, help="Server port")
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description="FreeCAD socket server")
+parser.add_argument(
+    "--host",
+    default="localhost",
+    help="Hostname or IP to listen on (default: localhost)",
+)
+parser.add_argument(
+    "--port", type=int, default=12345, help="Port to listen on (default: 12345)"
+)
 parser.add_argument("--debug", action="store_true", help="Enable debug logging")
-parser.add_argument("--config", help="Path to config file")
+parser.add_argument(
+    "--config", default="config.json", help="Path to configuration file"
+)
 parser.add_argument(
     "--connect",
     action="store_true",
-    help="Connect to running FreeCAD instead of using mock mode",
+    help="Connect to running FreeCAD instead of starting a new instance",
 )
 
 args = parser.parse_args()
 
-# Load config
-config = {
-    "host": DEFAULT_HOST,
-    "port": DEFAULT_PORT,
-    "debug": True,
-    "connect_to_freecad": False,
-}
+# Initialize logging
+logging.basicConfig(
+    level=logging.DEBUG if args.debug else logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger("freecad_server")
 
-# First try explicitly provided config file
-if args.config and os.path.exists(args.config):
-    try:
-        with open(args.config, "r") as f:
-            config.update(json.load(f))
-    except Exception as e:
-        print(f"Error loading config file {args.config}: {e}")
-# Then try default config file
-elif os.path.exists(CONFIG_FILE):
-    try:
-        with open(CONFIG_FILE, "r") as f:
-            config.update(json.load(f))
-    except Exception as e:
-        print(f"Error loading config: {e}")
-
-# Also look for config.json in current directory
-if os.path.exists("config.json"):
-    try:
-        with open("config.json", "r") as f:
-            loaded_config = json.load(f)
-            if "freecad" in loaded_config:
-                config["freecad"] = loaded_config["freecad"]
-    except Exception as e:
-        print(f"Error loading config.json: {e}")
-
-# Update config with command line arguments
-if args.debug:
-    config["debug"] = True
-
-if args.connect:
-    config["connect_to_freecad"] = True
-    print("Running in connect mode - will try to connect to a running FreeCAD instance")
-
-# Configure logging
-DEBUG = config.get("debug", False)
-
-
-def log(message):
-    """Log message if debug is enabled"""
-    if DEBUG:
-        print(f"[FreeCAD Server] {message}")
-
-
-# Try to add FreeCAD module path before importing
-freecad_config = config.get("freecad", {})
-freecad_path = freecad_config.get("path", "freecad")
-freecad_python_path = freecad_config.get("python_path")
-module_path = freecad_config.get("module_path")
-use_mock = freecad_config.get("use_mock", False)
-
-# If we're being told explicitly not to use mock mode, we'll try harder to find FreeCAD
-if not use_mock:
-    print("Mock mode disabled. Attempting to locate and load actual FreeCAD modules...")
-
-    # Step 1: Check if module_path is specified and valid
-    if module_path and os.path.exists(module_path):
-        print(f"Using module path from config: {module_path}")
-        sys.path.append(module_path)
-
-    # Step 2: Try to find FreeCAD executable and get its Python environment
-    if freecad_path and os.path.exists(freecad_path):
-        try:
-            # Since --write-python-path is not supported, let's just add the known paths
-            # for an extracted AppImage
-            if os.path.exists(os.path.join(os.path.dirname(freecad_path), "usr/lib")):
-                # AppImage structure
-                lib_path = os.path.join(os.path.dirname(freecad_path), "usr/lib")
-                print(f"Adding AppImage lib path: {lib_path}")
-                sys.path.append(lib_path)
-            else:
-                # Traditional FreeCAD installation
-                print(f"Using standard FreeCAD paths")
-        except Exception as e:
-            print(f"Error getting FreeCAD Python paths: {e}")
-
-    # Step 3: Look in common system locations
-    common_freecad_paths = [
-        "/usr/lib/freecad-python3/lib",
-        "/usr/lib/freecad/lib",
-        "/usr/lib/freecad",
-        "/usr/lib/python3/dist-packages/freecad",
-        "/usr/share/freecad/lib",
-    ]
-
-    for path in common_freecad_paths:
-        if os.path.exists(path):
-            print(f"Found potential FreeCAD path: {path}")
-            sys.path.append(path)
+# Load configuration
+config_path = args.config
+freecad_config = {}
+try:
+    if os.path.exists(config_path):
+        with open(config_path, "r") as f:
+            config = json.load(f)
+            freecad_config = config.get("freecad", {})
+            logger.debug(f"Loaded configuration from {config_path}")
+    else:
+        logger.debug(f"Configuration file {config_path} not found, using defaults")
+except Exception as e:
+    logger.error(f"Error loading configuration: {e}")
 
 # Try to import FreeCAD
-try:
-    import FreeCAD
+if args.connect:
+    print("Running in connect mode - will try to connect to a running FreeCAD instance")
 
-    # FreeCAD module imported successfully
-    # Verify that essential methods and attributes exist
-    if (
-        not hasattr(FreeCAD, "ActiveDocument")
-        or not hasattr(FreeCAD, "newDocument")
-        or not hasattr(FreeCAD, "Version")
-    ):
-        print(
-            "WARNING: FreeCAD module imported but appears incomplete. Using mock implementation instead."
-        )
-        FREECAD_AVAILABLE = False
-        # Define a mock FreeCAD module
-        # ... (existing mock code) ...
+# Load FreeCAD module
+try:
+    # Try to add FreeCAD module path from config if provided
+    freecad_module_path = freecad_config.get("freecad_module_path")
+    if freecad_module_path:
+        print(f"Using module path from config: {freecad_module_path}")
+        sys.path.append(freecad_module_path)
     else:
-        # FreeCAD module appears to be valid
-        FREECAD_AVAILABLE = True
-        print("FreeCAD module found and imported successfully.")
-        print(f"FreeCAD Version: {FreeCAD.Version}")
-except ImportError as e:
-    # FreeCAD module not available, mock it for development
-    print(f"WARNING: FreeCAD module not found ({e}). Using mock implementation.")
+        # Try standard FreeCAD paths
+        print("Using standard FreeCAD paths")
+        standard_paths = [
+            "/usr/lib/freecad/lib",  # Linux
+            "/usr/local/lib/freecad/lib",  # Linux (alternative)
+            "/Applications/FreeCAD.app/Contents/lib",  # macOS
+            "C:/Program Files/FreeCAD/lib",  # Windows
+            "./squashfs-root/usr/lib/",  # Linux AppImage
+        ]
+        for path in standard_paths:
+            if os.path.exists(path):
+                sys.path.append(path)
+
+    # Print current Python path for debugging
     print(f"Current Python path: {sys.path}")
     print(f"Current directory: {os.getcwd()}")
-    FREECAD_AVAILABLE = False
 
-    # Create a mock FreeCAD module
-    class MockFreeCAD:
-        Version = ["0.21.0", "mock", "2025"]
-        BuildDate = "2025/03/31"
-        BuildVersionMajor = "mock"
-        GuiUp = False
-        ActiveDocument = None
+    # Try to import FreeCAD
+    import FreeCAD
 
-        class Vector:
-            def __init__(self, x=0, y=0, z=0):
-                self.x = x
-                self.y = y
-                self.z = z
+    # Verify that FreeCAD is properly imported
+    if not hasattr(FreeCAD, "Version"):
+        raise ImportError("FreeCAD module imported but appears incomplete.")
 
-            def distanceToPoint(self, other):
-                return (
-                    (self.x - other.x) ** 2
-                    + (self.y - other.y) ** 2
-                    + (self.z - other.z) ** 2
-                ) ** 0.5
+    print(f"Loaded FreeCAD {'.'.join(FreeCAD.Version)}")
 
-        def getDocument(self, name):
-            return MockDocument(name)
-
-        def newDocument(self, name):
-            self.ActiveDocument = MockDocument(name)
-            return self.ActiveDocument
-
-        def listDocuments(self):
-            return []
-
-    class MockDocument:
-        def __init__(self, name):
-            self.Name = name
-            self.Label = name
-            self.Objects = []
-            self.Modified = False
-
-        def addObject(self, obj_type, name):
-            obj = MockObject(obj_type, name)
-            self.Objects.append(obj)
-            return obj
-
-        def removeObject(self, name):
-            self.Objects = [obj for obj in self.Objects if obj.Name != name]
-
-        def recompute(self):
-            pass
-
-        def getObject(self, name):
-            for obj in self.Objects:
-                if obj.Name == name:
-                    return obj
-            return None
-
-    class MockObject:
-        def __init__(self, type_id, name):
-            self.TypeId = type_id
-            self.Name = name
-            self.Label = name
-            self.Visibility = True
-            self.PropertiesList = []
-
-            # Add properties based on type
-            if type_id == "Part::Box":
-                self.Length = 10.0
-                self.Width = 10.0
-                self.Height = 10.0
-                self.PropertiesList = ["Length", "Width", "Height"]
-            elif type_id == "Part::Cylinder":
-                self.Radius = 5.0
-                self.Height = 10.0
-                self.PropertiesList = ["Radius", "Height"]
-            elif type_id == "Part::Sphere":
-                self.Radius = 5.0
-                self.PropertiesList = ["Radius"]
-
-        def getTypeIdOfProperty(self, prop):
-            if prop in ["Length", "Width", "Height", "Radius"]:
-                return "App::PropertyLength"
-            return "App::PropertyString"
-
-    # Create mock FreeCAD instance
-    FreeCAD = MockFreeCAD()
-
-# Try to import FreeCADGui for GUI operations
-try:
-    import FreeCADGui
-
-    # Check if essential methods and attributes exist
-    gui_available = True
-
-    # Basic test to ensure the GUI module is actually functional
-    if not hasattr(FreeCADGui, "ActiveDocument") or not hasattr(
-        FreeCADGui, "getDocument"
-    ):
-        print(
-            "FreeCADGui module found but appears to be incomplete. Some GUI operations may fail."
-        )
-        print(
-            "This is normal when running in connect mode without a proper GUI environment."
-        )
-        gui_available = False
-
-    FREECADGUI_AVAILABLE = gui_available
-    print("FreeCADGui module found and imported successfully.")
-except ImportError:
-    FREECADGUI_AVAILABLE = False
-    print("FreeCADGui module not available. GUI operations will not be possible.")
-
-# Use command line arguments if provided, otherwise use config values
-host = args.host or config["host"]
-port = args.port or config["port"]
-
-
-def handle_client(conn, addr):
-    """Handle a client connection"""
-    log(f"Connection from {addr}")
+    # Try to import FreeCADGui
     try:
-        # Receive data
-        data = conn.recv(4096)
-        if not data:
-            return
+        import FreeCADGui
+        print("FreeCADGui module available.")
+    except ImportError:
+        print("FreeCADGui module not available. GUI operations will not be possible.")
+        FreeCADGui = None
 
-        # Parse command
-        command = json.loads(data.decode())
-        log(f"Received command: {command}")
+except ImportError as e:
+    print(f"ERROR: Failed to import FreeCAD module: {e}")
+    print("This server requires a valid FreeCAD installation accessible in PYTHONPATH.")
+    print("Please install FreeCAD or correct your Python path settings.")
+    sys.exit(1)
 
-        # Execute command
-        result = execute_command(command)
+# Server implementation
+class FreeCADServer:
+    def __init__(self, host="localhost", port=12345, debug=False):
+        self.host = host
+        self.port = port
+        self.debug = debug
+        self.socket = None
+        self.running = False
 
-        # Send response (append newline as delimiter)
-        response = json.dumps(result).encode() + b"\n"
-        conn.sendall(response)
-        log(f"Sent response: {result}")
-    except Exception as e:
-        error_message = traceback.format_exc()
-        log(f"Error handling client: {error_message}")
+        # Set up signal handlers for graceful shutdown
+        signal.signal(signal.SIGINT, self.signal_handler)
+        signal.signal(signal.SIGTERM, self.signal_handler)
+
+    def signal_handler(self, sig, frame):
+        """Handle termination signals"""
+        if sig in (signal.SIGINT, signal.SIGTERM):
+            logger.info("Received termination signal. Shutting down...")
+            self.stop()
+            sys.exit(0)
+
+    def start(self):
+        """Start the server"""
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # Allow reusing the address
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
         try:
-            conn.sendall(
-                json.dumps({"error": str(e), "traceback": error_message}).encode()
-            )
-        except (ConnectionError, OSError) as send_error:
-            log(f"Failed to send error response: {send_error}")
-    finally:
-        conn.close()
+            self.socket.bind((self.host, self.port))
+            self.socket.listen(5)
+            self.running = True
 
+            connect_mode = "connect" if args.connect else "standalone"
+            print(f"Starting FreeCAD server on {self.host}:{self.port} in {connect_mode} mode")
 
-def execute_command(command):
-    """Execute a command and return the result"""
-    cmd_type = command.get("type")
-    params = command.get("params", {})
+            # Handle clients
+            while self.running:
+                try:
+                    client_socket, client_address = self.socket.accept()
+                    self.handle_client(client_socket, client_address)
+                except socket.timeout:
+                    continue
+                except OSError as e:
+                    # Socket was closed by another thread
+                    if not self.running:
+                        break
+                    logger.error(f"Socket error: {e}")
 
-    command_handlers = {
-        "ping": handle_ping,
-        "get_version": handle_get_version,
-        "get_model_info": handle_get_model_info,
-        "create_document": handle_create_document,
-        "close_document": handle_close_document,
-        "create_object": handle_create_object,
-        "modify_object": handle_modify_object,
-        "delete_object": handle_delete_object,
-        "execute_script": handle_execute_script,
-        "measure_distance": handle_measure_distance,
-        "export_document": handle_export_document,
-    }
-
-    handler = command_handlers.get(cmd_type)
-    if handler:
-        try:
-            return handler(params)
         except Exception as e:
-            return {"error": str(e), "traceback": traceback.format_exc()}
+            logger.error(f"Server error: {e}")
+            if self.debug:
+                traceback.print_exc()
+        finally:
+            self.stop()
 
-    return {"error": f"Unknown command: {cmd_type}"}
-
-
-# Command handlers
-
-
-def handle_ping(params):
-    """Handle ping command"""
-    return {
-        "pong": True,
-        "timestamp": time.time(),
-        "freecad_available": FREECAD_AVAILABLE,
-        "freecadgui_available": FREECADGUI_AVAILABLE,
-        "connect_mode": config.get("connect_to_freecad", False),
-    }
-
-
-def handle_get_version(params):
-    """Get FreeCAD version information"""
-    version_info = {}
-
-    # Get version information with safety checks
-    if hasattr(FreeCAD, "Version"):
-        # Handle Version which could be a variety of types
-        try:
-            if callable(FreeCAD.Version):
-                try:
-                    version = FreeCAD.Version()
-                    if isinstance(version, (list, tuple)):
-                        version_info["version"] = list(version)
-                    else:
-                        version_info["version"] = [str(version)]
-                except (AttributeError, TypeError):
-                    version_info["version"] = ["Unknown (callable error)"]
-            # If it's a list or tuple, convert to list
-            elif isinstance(FreeCAD.Version, (list, tuple)):
-                version_info["version"] = list(FreeCAD.Version)
-            # Otherwise convert to string in a list
-            else:
-                version_info["version"] = [str(FreeCAD.Version)]
-        except (AttributeError, TypeError):
-            version_info["version"] = ["Unknown (error)"]
-    else:
-        version_info["version"] = ["Unknown (missing)"]
-
-    # BuildDate might not be available in all FreeCAD builds
-    if hasattr(FreeCAD, "BuildDate"):
-        # Handle BuildDate similarly
-        try:
-            if callable(FreeCAD.BuildDate):
-                try:
-                    version_info["build_date"] = str(FreeCAD.BuildDate())
-                except (AttributeError, TypeError):
-                    version_info["build_date"] = "Unknown (callable)"
-            else:
-                version_info["build_date"] = str(FreeCAD.BuildDate)
-        except (AttributeError, TypeError):
-            version_info["build_date"] = "Unknown (error)"
-    else:
-        version_info["build_date"] = "Unknown (missing)"
-
-    # Add system information
-    version_info["os_platform"] = sys.platform
-    version_info["freecad_available"] = FREECAD_AVAILABLE
-    version_info["freecadgui_available"] = FREECADGUI_AVAILABLE
-
-    return version_info
-
-
-def handle_get_model_info(params):
-    """Get information about the current document and objects"""
-    doc_name = params.get("document")
-
-    # Get the specified document or active document
-    if doc_name:
-        doc = FreeCAD.getDocument(doc_name)
-    else:
-        doc = FreeCAD.ActiveDocument
-
-    if not doc:
-        return {"error": "No active document"}
-
-    # Get objects
-    objects = []
-    for obj in doc.Objects:
-        # Get properties
-        properties = {}
-        for prop in obj.PropertiesList:
+    def stop(self):
+        """Stop the server"""
+        self.running = False
+        if self.socket:
             try:
-                prop_type = obj.getTypeIdOfProperty(prop)
-                prop_value = getattr(obj, prop)
-
-                # Convert to serializable type if needed
-                if hasattr(prop_value, "__dict__"):
-                    prop_value = str(prop_value)
-
-                properties[prop] = {"type": prop_type, "value": prop_value}
-            except (AttributeError, TypeError, ValueError) as e:
-                # Skip properties that can't be serialized
-                log(f"Failed to serialize property {prop}: {e}")
-                continue
-
-        objects.append(
-            {
-                "name": obj.Name,
-                "label": obj.Label,
-                "type": obj.TypeId,
-                "visibility": obj.Visibility,
-                "properties": properties,
-            }
-        )
-
-    return {
-        "document": {
-            "name": doc.Name,
-            "label": doc.Label,
-            "modified": doc.Modified,
-            "objects_count": len(doc.Objects),
-        },
-        "objects": objects,
-        "freecad_available": FREECAD_AVAILABLE,
-    }
-
-
-def handle_create_document(params):
-    """Create a new document"""
-    name = params.get("name", "Unnamed")
-
-    # Check if document already exists
-    if name in FreeCAD.listDocuments():
-        return {"error": f"Document '{name}' already exists"}
-
-    # Create document
-    doc = FreeCAD.newDocument(name)
-
-    # If in connect mode and GUI is available, make the document visible
-    if config.get("connect_to_freecad", False) and FREECADGUI_AVAILABLE:
-        try:
-            # Check if the required methods exist before calling them
-            if hasattr(FreeCADGui, "getDocument") and callable(FreeCADGui.getDocument):
-                FreeCADGui.getDocument(name)
-                if hasattr(FreeCADGui, "ActiveDocument"):
-                    FreeCADGui.ActiveDocument = FreeCADGui.getDocument(name)
-                    if hasattr(FreeCADGui.ActiveDocument, "resetEdit") and callable(
-                        FreeCADGui.ActiveDocument.resetEdit
-                    ):
-                        FreeCADGui.ActiveDocument.resetEdit()
-        except Exception as e:
-            log(f"GUI activation error (non-fatal): {e}")
-
-    return {
-        "success": True,
-        "document": {"name": doc.Name, "label": doc.Label},
-        "freecad_available": FREECAD_AVAILABLE,
-    }
-
-
-def handle_close_document(params):
-    """Close a document"""
-    name = params.get("name")
-
-    if not name:
-        if FreeCAD.ActiveDocument:
-            name = FreeCAD.ActiveDocument.Name
-        else:
-            return {"error": "No active document"}
-
-    if name not in FreeCAD.listDocuments():
-        return {"error": f"Document '{name}' does not exist"}
-
-    FreeCAD.closeDocument(name)
-
-    return {"success": True, "freecad_available": FREECAD_AVAILABLE}
-
-
-def handle_create_object(params):
-    """Create a new object"""
-    doc_name = params.get("document")
-    obj_type = params.get("type")
-    obj_name = params.get("name", "")
-    properties = params.get("properties", {})
-
-    # Get or create document
-    if doc_name:
-        if doc_name in FreeCAD.listDocuments():
-            doc = FreeCAD.getDocument(doc_name)
-        else:
-            doc = FreeCAD.newDocument(doc_name)
-            if config.get("connect_to_freecad", False) and FREECADGUI_AVAILABLE:
-                try:
-                    # Check if the required methods exist before calling them
-                    if hasattr(FreeCADGui, "getDocument") and callable(
-                        FreeCADGui.getDocument
-                    ):
-                        FreeCADGui.getDocument(doc_name)
-                        if hasattr(FreeCADGui, "ActiveDocument"):
-                            FreeCADGui.ActiveDocument = FreeCADGui.getDocument(doc_name)
-                except Exception as e:
-                    log(f"GUI activation error (non-fatal): {e}")
-    else:
-        if FreeCAD.ActiveDocument:
-            doc = FreeCAD.ActiveDocument
-        else:
-            doc = FreeCAD.newDocument("Unnamed")
-            if config.get("connect_to_freecad", False) and FREECADGUI_AVAILABLE:
-                try:
-                    # Check if the required methods exist before calling them
-                    if hasattr(FreeCADGui, "getDocument") and callable(
-                        FreeCADGui.getDocument
-                    ):
-                        FreeCADGui.getDocument("Unnamed")
-                        if hasattr(FreeCADGui, "ActiveDocument"):
-                            FreeCADGui.ActiveDocument = FreeCADGui.getDocument(
-                                "Unnamed"
-                            )
-                except Exception as e:
-                    log(f"GUI activation error (non-fatal): {e}")
-
-    # Create object based on type
-    if obj_type == "box":
-        obj = doc.addObject("Part::Box", obj_name or "Box")
-        if "length" in properties:
-            obj.Length = properties["length"]
-        if "width" in properties:
-            obj.Width = properties["width"]
-        if "height" in properties:
-            obj.Height = properties["height"]
-
-    elif obj_type == "cylinder":
-        obj = doc.addObject("Part::Cylinder", obj_name or "Cylinder")
-        if "radius" in properties:
-            obj.Radius = properties["radius"]
-        if "height" in properties:
-            obj.Height = properties["height"]
-
-    elif obj_type == "sphere":
-        obj = doc.addObject("Part::Sphere", obj_name or "Sphere")
-        if "radius" in properties:
-            obj.Radius = properties["radius"]
-
-    else:
-        return {"error": f"Unsupported object type: {obj_type}"}
-
-    # Apply other properties
-    for prop, value in properties.items():
-        if hasattr(obj, prop) and prop not in ["length", "width", "height", "radius"]:
-            try:
-                setattr(obj, prop, value)
-            except Exception:
-                pass
-
-    # Recompute document
-    doc.recompute()
-
-    # Update GUI if in connect mode
-    if config.get("connect_to_freecad", False) and FREECADGUI_AVAILABLE:
-        try:
-            # Check if updateGui method exists
-            if hasattr(FreeCADGui, "updateGui") and callable(FreeCADGui.updateGui):
-                FreeCADGui.updateGui()
-
-                # Force view update - with safety checks
-                if hasattr(FreeCADGui, "ActiveDocument") and FreeCADGui.ActiveDocument:
-                    try:
-                        # Check if getMainWindow and findChildren are available
-                        if (
-                            hasattr(FreeCADGui, "getMainWindow")
-                            and callable(FreeCADGui.getMainWindow)
-                            and hasattr(FreeCADGui, "View3DInventor")
-                        ):
-                            main_window = FreeCADGui.getMainWindow()
-                            if main_window and hasattr(main_window, "findChildren"):
-                                for view in main_window.findChildren(
-                                    FreeCADGui.View3DInventor
-                                ):
-                                    if hasattr(view, "update") and callable(
-                                        view.update
-                                    ):
-                                        view.update()
-                    except Exception as e:
-                        log(f"View update error (non-fatal): {e}")
-        except Exception as e:
-            log(f"GUI update error (non-fatal): {e}")
-
-    return {
-        "success": True,
-        "object": {"name": obj.Name, "label": obj.Label, "type": obj.TypeId},
-        "freecad_available": FREECAD_AVAILABLE,
-    }
-
-
-def handle_modify_object(params):
-    """Modify an existing object"""
-    doc_name = params.get("document")
-    obj_name = params.get("object")
-    properties = params.get("properties", {})
-
-    # Get document
-    if doc_name:
-        if doc_name in FreeCAD.listDocuments():
-            doc = FreeCAD.getDocument(doc_name)
-        else:
-            return {"error": f"Document '{doc_name}' does not exist"}
-    else:
-        if FreeCAD.ActiveDocument:
-            doc = FreeCAD.ActiveDocument
-        else:
-            return {"error": "No active document"}
-
-    # Get object
-    if not obj_name:
-        return {"error": "No object specified"}
-
-    try:
-        obj = doc.getObject(obj_name)
-    except (AttributeError, RuntimeError):
-        return {"error": f"Object '{obj_name}' not found"}
-
-    if not obj:
-        return {"error": f"Object '{obj_name}' not found"}
-
-    # Modify properties
-    modified_props = []
-    for prop, value in properties.items():
-        if hasattr(obj, prop):
-            try:
-                setattr(obj, prop, value)
-                modified_props.append(prop)
+                self.socket.close()
             except Exception as e:
-                return {"error": f"Failed to set property '{prop}': {e}"}
+                logger.error(f"Error closing socket: {e}")
 
-    # Recompute document
-    doc.recompute()
-
-    # Update GUI if in connect mode
-    if config.get("connect_to_freecad", False) and FREECADGUI_AVAILABLE:
+    def handle_client(self, client_socket, address):
+        """Handle client connection"""
         try:
-            if hasattr(FreeCADGui, "updateGui") and callable(FreeCADGui.updateGui):
-                FreeCADGui.updateGui()
+            data = b""
+            while True:
+                chunk = client_socket.recv(4096)
+                if not chunk:
+                    break
+                data += chunk
+                if b"\n" in data:
+                    break
+
+            if not data:
+                return
+
+            # Parse the command
+            command_str = data.decode().strip()
+            try:
+                command = json.loads(command_str)
+            except json.JSONDecodeError:
+                self.send_response(
+                    client_socket, {"error": "Invalid JSON command format"}
+                )
+                return
+
+            if self.debug:
+                logger.debug(f"Received command: {command}")
+
+            # Process the command
+            response = self.process_command(command)
+
+            # Send the response
+            self.send_response(client_socket, response)
+
         except Exception as e:
-            log(f"GUI update error (non-fatal): {e}")
+            logger.error(f"Error handling client: {e}")
+            if self.debug:
+                traceback.print_exc()
+            self.send_response(client_socket, {"error": str(e)})
+        finally:
+            client_socket.close()
 
-    return {
-        "success": True,
-        "modified_properties": modified_props,
-        "freecad_available": FREECAD_AVAILABLE,
-    }
-
-
-def handle_delete_object(params):
-    """Delete an object"""
-    doc_name = params.get("document")
-    obj_name = params.get("object")
-
-    # Get document
-    if doc_name:
-        if doc_name in FreeCAD.listDocuments():
-            doc = FreeCAD.getDocument(doc_name)
-        else:
-            return {"error": f"Document '{doc_name}' does not exist"}
-    else:
-        if FreeCAD.ActiveDocument:
-            doc = FreeCAD.ActiveDocument
-        else:
-            return {"error": "No active document"}
-
-    # Get object
-    if not obj_name:
-        return {"error": "No object specified"}
-
-    try:
-        obj = doc.getObject(obj_name)
-    except (AttributeError, RuntimeError):
-        return {"error": f"Object '{obj_name}' not found"}
-
-    if not obj:
-        return {"error": f"Object '{obj_name}' not found"}
-
-    # Delete object
-    doc.removeObject(obj_name)
-
-    # Update GUI if in connect mode
-    if config.get("connect_to_freecad", False) and FREECADGUI_AVAILABLE:
+    def send_response(self, client_socket, response):
+        """Send response to client"""
         try:
-            if hasattr(FreeCADGui, "updateGui") and callable(FreeCADGui.updateGui):
-                FreeCADGui.updateGui()
+            response_str = json.dumps(response)
+            client_socket.sendall((response_str + "\n").encode())
         except Exception as e:
-            log(f"GUI update error (non-fatal): {e}")
+            logger.error(f"Error sending response: {e}")
 
-    return {"success": True, "freecad_available": FREECAD_AVAILABLE}
+    def process_command(self, command: Dict[str, Any]) -> Dict[str, Any]:
+        """Process a command and return a response"""
+        command_type = command.get("type", "")
+        params = command.get("params", {})
 
+        # Built-in commands
+        if command_type == "ping":
+            return {"pong": True}
 
-def handle_execute_script(params):
-    """Execute a Python script in FreeCAD context"""
-    script = params.get("script")
+        elif command_type == "get_version":
+            return {
+                "version": FreeCAD.Version,
+                "build_date": getattr(FreeCAD, "BuildDate", "N/A"),
+            }
 
-    if not script:
-        return {"error": "No script provided"}
-
-    # Create a local environment for the script
-    local_env = {"FreeCAD": FreeCAD}
-
-    # Add FreeCADGui if available
-    if FREECADGUI_AVAILABLE:
-        local_env["FreeCADGui"] = FreeCADGui
-
-    # Execute script
-    try:
-        exec(script, {}, local_env)
-
-        # Filter out non-serializable values from the environment
-        result_env = {}
-        for key, value in local_env.items():
-            if key not in ["FreeCAD", "FreeCADGui"] and not key.startswith("__"):
-                try:
-                    # Test if it's serializable
-                    json.dumps({key: value})
-                    result_env[key] = value
-                except (TypeError, ValueError):
-                    result_env[key] = str(value)
-
-        return {
-            "success": True,
-            "environment": result_env,
-            "freecad_available": FREECAD_AVAILABLE,
-        }
-    except (AttributeError, RuntimeError) as e:
-        logger.error(f"Error executing script: {e}")
-        return {"error": str(e)}
-
-
-def handle_measure_distance(params):
-    """Measure distance between points, edges, or faces"""
-    from_obj = params.get("from")
-    to_obj = params.get("to")
-
-    if not from_obj or not to_obj:
-        return {"error": "Missing 'from' or 'to' parameters"}
-
-    # This is a simplistic implementation - would need to be expanded based on
-    # actual requirements and FreeCAD's measurement capabilities
-    try:
-        # For demonstration, assuming from_obj and to_obj are points
-        from_point = FreeCAD.Vector(from_obj[0], from_obj[1], from_obj[2])
-        to_point = FreeCAD.Vector(to_obj[0], to_obj[1], to_obj[2])
-
-        distance = from_point.distanceToPoint(to_point)
-
-        return {
-            "success": True,
-            "distance": distance,
-            "units": "mm",
-            "freecad_available": FREECAD_AVAILABLE,
-        }
-    except Exception as e:
-        return {"error": str(e), "traceback": traceback.format_exc()}
-
-
-def handle_export_document(params):
-    """Export the document to a file"""
-    doc_name = params.get("document")
-    file_path = params.get("path")
-    file_type = params.get("type", "step")
-
-    if not file_path:
-        return {"error": "No file path specified"}
-
-    # Get document
-    if doc_name:
-        if doc_name in FreeCAD.listDocuments():
-            doc = FreeCAD.getDocument(doc_name)
-        else:
-            return {"error": f"Document '{doc_name}' does not exist"}
-    else:
-        if FreeCAD.ActiveDocument:
-            doc = FreeCAD.ActiveDocument
-        else:
-            return {"error": "No active document"}
-
-    # Export based on file type
-    try:
-        if not FREECAD_AVAILABLE:
+        # Document management
+        elif command_type == "create_document":
+            name = params.get("name", "Unnamed")
+            doc = FreeCAD.newDocument(name)
             return {
                 "success": True,
-                "path": file_path,
-                "mock": True,
-                "freecad_available": FREECAD_AVAILABLE,
+                "document": {"name": doc.Name, "label": doc.Label},
             }
 
-        if file_type.lower() == "step":
-            try:
-                # Try to import the module with error handling
-                import importlib
+        elif command_type == "close_document":
+            name = params.get("name")
+            if name:
+                FreeCAD.closeDocument(name)
+                return {"success": True}
+            return {"error": "Document name not specified"}
 
-                try:
-                    # Try ImportGui first
-                    ImportGui = importlib.import_module("ImportGui")
-                    ImportGui.export(doc.Objects, file_path)
-                except (ImportError, AttributeError) as e:
-                    log(f"ImportGui not available: {e}, trying Part module")
-                    # Fallback to Part module
+        elif command_type == "get_active_document":
+            if FreeCAD.ActiveDocument:
+                return {
+                    "document": {
+                        "name": FreeCAD.ActiveDocument.Name,
+                        "label": FreeCAD.ActiveDocument.Label,
+                    }
+                }
+            return {"error": "No active document"}
+
+        elif command_type == "list_documents":
+            docs = []
+            for doc in FreeCAD.listDocuments().values():
+                docs.append({"name": doc.Name, "label": doc.Label})
+            return {"documents": docs}
+
+        # Object creation and manipulation
+        elif command_type == "create_object":
+            obj_type = params.get("type", "")
+            doc_name = params.get("document", None)
+            name = params.get("name", None)
+            properties = params.get("properties", {})
+
+            # Get the document to work with
+            doc = None
+            if doc_name:
+                docs = FreeCAD.listDocuments()
+                if doc_name in docs:
+                    doc = docs[doc_name]
+                else:
+                    return {"error": f"Document '{doc_name}' not found"}
+            else:
+                if FreeCAD.ActiveDocument:
+                    doc = FreeCAD.ActiveDocument
+                else:
+                    return {"error": "No active document and no document specified"}
+
+            # Create the object based on type
+            try:
+                if obj_type == "box":
+                    # Get parameters
+                    length = properties.get("length", 10.0)
+                    width = properties.get("width", 10.0)
+                    height = properties.get("height", 10.0)
+
+                    # Create the object
+                    box = doc.addObject("Part::Box", name or "Box")
+                    box.Length = length
+                    box.Width = width
+                    box.Height = height
+                    doc.recompute()
+
+                    return {
+                        "success": True,
+                        "object": {"name": box.Name, "type": box.TypeId},
+                    }
+
+                elif obj_type == "cylinder":
+                    # Get parameters
+                    radius = properties.get("radius", 5.0)
+                    height = properties.get("height", 10.0)
+
+                    # Create the object
+                    cylinder = doc.addObject("Part::Cylinder", name or "Cylinder")
+                    cylinder.Radius = radius
+                    cylinder.Height = height
+                    doc.recompute()
+
+                    return {
+                        "success": True,
+                        "object": {"name": cylinder.Name, "type": cylinder.TypeId},
+                    }
+
+                else:
+                    return {"error": f"Unsupported object type: {obj_type}"}
+            except Exception as e:
+                return {"error": f"Error creating object: {str(e)}"}
+
+        # Object listing and information
+        elif command_type == "list_objects":
+            doc_name = params.get("document", None)
+
+            # Get the document to work with
+            doc = None
+            if doc_name:
+                docs = FreeCAD.listDocuments()
+                if doc_name in docs:
+                    doc = docs[doc_name]
+                else:
+                    return {"error": f"Document '{doc_name}' not found"}
+            else:
+                if FreeCAD.ActiveDocument:
+                    doc = FreeCAD.ActiveDocument
+                else:
+                    return {"error": "No active document and no document specified"}
+
+            # List objects
+            objects = []
+            for obj in doc.Objects:
+                objects.append(
+                    {
+                        "name": obj.Name,
+                        "label": obj.Label,
+                        "type": obj.TypeId,
+                        "visible": obj.ViewObject.Visibility
+                        if hasattr(obj, "ViewObject")
+                        else True,
+                    }
+                )
+            return {"objects": objects}
+
+        # Export operations
+        elif command_type == "export_document":
+            doc_name = params.get("document", None)
+            file_path = params.get("path", "")
+            objects = params.get("objects", [])
+            format = params.get("format", "").lower()  # e.g., "step", "stl"
+
+            if not file_path:
+                return {"error": "No file path specified"}
+
+            # Get the document to work with
+            doc = None
+            if doc_name:
+                docs = FreeCAD.listDocuments()
+                if doc_name in docs:
+                    doc = docs[doc_name]
+                else:
+                    return {"error": f"Document '{doc_name}' not found"}
+            else:
+                if FreeCAD.ActiveDocument:
+                    doc = FreeCAD.ActiveDocument
+                else:
+                    return {"error": "No active document and no document specified"}
+
+            # Handle different export formats
+            try:
+                if format == "step":
                     import Part
 
-                    Part.export(doc.Objects, file_path)
-            except Exception as e:
-                return {"error": f"Failed to export STEP: {e}"}
+                    if objects:
+                        shapes = []
+                        for obj_name in objects:
+                            obj = doc.getObject(obj_name)
+                            if obj and hasattr(obj, "Shape"):
+                                shapes.append(obj.Shape)
 
-        elif file_type.lower() == "stl":
+                        if shapes:
+                            Part.export(shapes, file_path)
+                        else:
+                            return {"error": "No valid shapes found in specified objects"}
+                    else:
+                        # Export all objects with shapes
+                        shapes = []
+                        for obj in doc.Objects:
+                            if hasattr(obj, "Shape"):
+                                shapes.append(obj.Shape)
+
+                        if shapes:
+                            Part.export(shapes, file_path)
+                        else:
+                            return {"error": "No valid shapes found in document"}
+
+                elif format == "stl":
+                    import Mesh
+
+                    if objects:
+                        for obj_name in objects:
+                            obj = doc.getObject(obj_name)
+                            if obj and hasattr(obj, "Shape"):
+                                mesh = Mesh.Mesh(obj.Shape.tessellate(0.1))
+                                mesh.write(file_path)
+                                break  # Only export the first one for now
+                        else:
+                            return {"error": "No valid shapes found in specified objects"}
+                    else:
+                        # Export all objects with shapes
+                        for obj in doc.Objects:
+                            if hasattr(obj, "Shape"):
+                                mesh = Mesh.Mesh(obj.Shape.tessellate(0.1))
+                                mesh.write(file_path)
+                                break  # Only export the first one for now
+                        else:
+                            return {"error": "No valid shapes found in document"}
+
+                else:
+                    return {"error": f"Unsupported export format: {format}"}
+
+                return {"success": True, "path": file_path}
+
+            except Exception as e:
+                return {"error": f"Error exporting document: {str(e)}"}
+
+        # Script execution
+        elif command_type == "execute_script":
+            script = params.get("script", "")
+
+            if not script:
+                return {"error": "No script provided"}
+
             try:
-                # Try to import the module with error handling
-                import importlib
+                # Create a local environment for script execution
+                script_env = {"FreeCAD": FreeCAD}
 
-                try:
-                    # Try Mesh module first
-                    Mesh = importlib.import_module("Mesh")
-                    Mesh.export(doc.Objects, file_path)
-                except (ImportError, AttributeError) as e:
-                    return {"error": f"Mesh module not available: {e}"}
+                # Add FreeCADGui if available
+                if FreeCADGui:
+                    script_env["FreeCADGui"] = FreeCADGui
+
+                # Add return values environment
+                script_env["_env_values"] = {}
+
+                # Execute the script
+                exec(script, script_env)
+
+                # Return any values that were stored in _env_values
+                return {
+                    "success": True,
+                    "environment": script_env.get("_env_values", {})
+                }
+
             except Exception as e:
-                return {"error": f"Failed to export STL: {e}"}
+                traceback_info = traceback.format_exc()
+                return {
+                    "error": str(e),
+                    "traceback": traceback_info
+                }
 
         else:
-            return {"error": f"Unsupported file type: {file_type}"}
-
-        return {
-            "success": True,
-            "path": file_path,
-            "freecad_available": FREECAD_AVAILABLE,
-        }
-    except Exception as e:
-        return {"error": str(e), "traceback": traceback.format_exc()}
+            return {"error": f"Unknown command: {command_type}"}
 
 
-def start_server(host=None, port=None):
-    """Start the FreeCAD server"""
-    host = host or config["host"]
-    port = port or config["port"]
+# Main function
+def main():
+    host = args.host
+    port = args.port
 
-    connect_mode = config.get("connect_to_freecad", False)
-    mode_text = "in connect mode" if connect_mode else "in standalone mode"
-    freecad_status = (
-        "available"
-        if FREECAD_AVAILABLE
-        else "not available - using mock implementation"
-    )
-
-    print(
-        f"Starting FreeCAD server on {host}:{port} {mode_text} (FreeCAD {freecad_status})"
-    )
-
-    # Create socket
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    # Create and start the server
+    server = FreeCADServer(host=host, port=port, debug=args.debug)
 
     try:
-        server_socket.bind((host, port))
-        server_socket.listen(5)
-        print(f"FreeCAD server listening on {host}:{port}")
-
-        while True:
-            try:
-                # Accept connections
-                conn, addr = server_socket.accept()
-
-                # Handle client in a new thread
-                client_thread = threading.Thread(
-                    target=handle_client, args=(conn, addr)
-                )
-                client_thread.daemon = True
-                client_thread.start()
-            except KeyboardInterrupt:
-                break
-            except Exception as e:
-                print(f"Error accepting connection: {e}")
-    finally:
-        server_socket.close()
-        print("FreeCAD server stopped")
+        # If in a GUI context and not being run from the console, run in a thread
+        if args.connect and FreeCADGui:
+            print("Running in a GUI context, starting server in a thread...")
+            import threading
+            server_thread = threading.Thread(target=server.start)
+            server_thread.daemon = True
+            server_thread.start()
+            # Keep thread reference to avoid garbage collection
+            FreeCAD.ServerThread = server_thread
+        else:
+            # Run directly in this process
+            server.start()
+    except KeyboardInterrupt:
+        print("\nShutting down server...")
+        server.stop()
+    except Exception as e:
+        print(f"Error running server: {e}")
+        if args.debug:
+            traceback.print_exc()
 
 
 if __name__ == "__main__":
-    # Start the server directly (not as a background thread)
-    try:
-        start_server(host, port)
-    except KeyboardInterrupt:
-        print("Server stopped by user")
-    except Exception as e:
-        print(f"Error starting server: {e}")
-        traceback.print_exc()
+    main()

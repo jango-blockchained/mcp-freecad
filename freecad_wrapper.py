@@ -103,6 +103,13 @@ class FreeCADWrapper:
             return {"error": "Not connected to FreeCAD"}
 
         try:
+            # Check if process is still running
+            if self.process.poll() is not None:
+                self.connected = False
+                stderr = self.process.stderr.read() if self.process.stderr else "No stderr output"
+                self.log(f"FreeCAD subprocess has terminated unexpectedly. Exit code: {self.process.returncode}. Stderr: {stderr}")
+                return {"error": f"FreeCAD subprocess has terminated. Exit code: {self.process.returncode}"}
+
             # Prepare the command
             command = {
                 "type": cmd_type,
@@ -111,23 +118,67 @@ class FreeCADWrapper:
 
             # Send the command
             command_json = json.dumps(command) + "\n"
+            self.log(f"Sending command: {command_json.strip()}")
             self.process.stdin.write(command_json)
             self.process.stdin.flush()
 
-            # Read the response
-            response_line = self.process.stdout.readline()
+            # Read the response with timeout
+            response_line = None
+            start_time = time.time()
+            timeout = 60  # seconds
+
+            while time.time() - start_time < timeout:
+                # Check if process is still alive
+                if self.process.poll() is not None:
+                    self.connected = False
+                    stderr = self.process.stderr.read() if self.process.stderr else "No stderr output"
+                    self.log(f"FreeCAD subprocess terminated during command. Exit code: {self.process.returncode}. Stderr: {stderr}")
+                    return {"error": f"FreeCAD subprocess terminated during command. Exit code: {self.process.returncode}"}
+
+                # Check if there's data to read (non-blocking)
+                import select
+                rlist, _, _ = select.select([self.process.stdout], [], [], 0.1)
+                if rlist:
+                    response_line = self.process.stdout.readline()
+                    if response_line:
+                        break
 
             if not response_line:
-                self.log("No response from FreeCAD subprocess")
-                return {"error": "No response from FreeCAD"}
+                self.log(f"No response from FreeCAD subprocess after {timeout} seconds")
+                # Try to read any error output
+                stderr = ""
+                try:
+                    rlist, _, _ = select.select([self.process.stderr], [], [], 0.1)
+                    if rlist:
+                        stderr = self.process.stderr.read()
+                except Exception:
+                    pass
+
+                return {
+                    "error": f"No response from FreeCAD subprocess after {timeout} seconds",
+                    "stderr": stderr
+                }
 
             # Parse the response
-            response = json.loads(response_line)
-            return response
+            self.log(f"Received response: {response_line.strip()}")
+            try:
+                response = json.loads(response_line)
+                return response
+            except json.JSONDecodeError as e:
+                self.log(f"Failed to parse JSON response: {response_line.strip()}")
+                return {
+                    "error": f"Invalid JSON response: {str(e)}",
+                    "raw_response": response_line.strip()
+                }
 
         except Exception as e:
-            self.log(f"Error sending command to FreeCAD subprocess: {e}")
-            return {"error": str(e), "traceback": traceback.format_exc()}
+            self.log(f"Error sending command to FreeCAD subprocess: {type(e).__name__}: {e}")
+            # Try to check if the process is still running
+            if self.process and self.process.poll() is not None:
+                self.connected = False
+                self.log(f"Process has terminated. Exit code: {self.process.returncode}")
+
+            return {"error": f"Command error: {type(e).__name__}: {str(e)}", "traceback": traceback.format_exc()}
 
     def create_document(self, name: str = "Unnamed") -> Dict[str, Any]:
         """Create a new FreeCAD document"""

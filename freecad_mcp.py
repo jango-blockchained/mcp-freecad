@@ -36,7 +36,7 @@ def main():
         logging.getLogger().setLevel(logging.DEBUG)
 
     try:
-        from src.mcp_freecad.server.freecad_mcp_server import FreeCADMCPServer, main as server_main
+        from src.mcp_freecad.server.freecad_mcp_server import main as server_main
 
         # If imported directly, run the server's main function
         server_main()

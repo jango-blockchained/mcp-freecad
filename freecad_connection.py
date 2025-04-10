@@ -111,6 +111,7 @@ class FreeCADConnection:
         """
         # Try connecting in the preferred order
         methods = self._get_connection_methods(prefer_method)
+        last_errors = {}  # Store errors from each method
 
         for method in methods:
             # Skip mock mode if use_mock is False
@@ -118,23 +119,52 @@ class FreeCADConnection:
                 continue
 
             success = False
+            error_message = None
 
-            if method == self.CONNECTION_SERVER:
-                success = self._connect_server()
-            elif method == self.CONNECTION_BRIDGE:
-                success = self._connect_bridge()
-            elif method == self.CONNECTION_WRAPPER:
-                success = self._connect_wrapper()
-            elif method == self.CONNECTION_LAUNCHER:
-                success = self._connect_launcher()
-            elif method == self.CONNECTION_MOCK:
-                success = self._connect_mock()
+            try:
+                if method == self.CONNECTION_SERVER:
+                    print(f"Trying to connect using {method} method...")
+                    success = self._connect_server()
+                    if not success:
+                        error_message = "Failed to connect to FreeCAD server. Is it running?"
+                elif method == self.CONNECTION_BRIDGE:
+                    print(f"Trying to connect using {method} method...")
+                    success = self._connect_bridge()
+                    if not success:
+                        error_message = "Failed to connect using bridge method. Check FreeCAD installation."
+                elif method == self.CONNECTION_WRAPPER:
+                    print(f"Trying to connect using {method} method...")
+                    success = self._connect_wrapper()
+                    if not success:
+                        error_message = "Failed to connect using wrapper method. Python environment may not be able to import FreeCAD."
+                elif method == self.CONNECTION_LAUNCHER:
+                    print(f"Trying to connect using {method} method...")
+                    success = self._connect_launcher()
+                    if not success:
+                        error_message = "Failed to connect using launcher method. Check FreeCAD executable path."
+                elif method == self.CONNECTION_MOCK:
+                    print(f"Trying to connect using {method} method...")
+                    success = self._connect_mock()
+                    if not success:
+                        error_message = "Failed to connect using mock method."
+            except Exception as e:
+                success = False
+                error_message = f"Error during {method} connection: {str(e)}"
+                print(error_message)
 
             if success:
                 self.connection_type = method
+                print(f"Successfully connected using {method} method.")
                 return True
+            else:
+                # Store the error message for this method
+                last_errors[method] = error_message
 
         # If we got here, all methods failed
+        print("Failed to connect to FreeCAD using any method.")
+        for method, error in last_errors.items():
+            print(f"  - {method}: {error}")
+
         return False
 
     def _get_connection_methods(self, prefer_method: Optional[str] = None) -> List[str]:

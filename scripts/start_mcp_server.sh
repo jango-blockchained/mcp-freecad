@@ -35,16 +35,18 @@ if [ -d "$REPO_ROOT/squashfs-root" ]; then
         fi
         # Run with Python directly
         cd "$REPO_ROOT"
-        echo "Running MCP server with command: $PYTHON_EXEC $REPO_ROOT/freecad_mcp_server.py $@"
-        "$PYTHON_EXEC" "$REPO_ROOT/freecad_mcp_server.py" "$@"
+        echo "Running MCP server with command: $PYTHON_EXEC -m mcp_freecad.server.freecad_mcp_server $@"
+        "$PYTHON_EXEC" -m mcp_freecad.server.freecad_mcp_server "$@"
     else
         echo "Python not found in AppImage, falling back to system Python"
         cd "$REPO_ROOT"
-        python3 "$REPO_ROOT/freecad_mcp_server.py" "$@"
+        echo "Running MCP server with command: python3 -m mcp_freecad.server.freecad_mcp_server $@"
+        python3 -m mcp_freecad.server.freecad_mcp_server "$@"
     fi
 else
     echo "AppImage not extracted. Using system Python"
     # Fallback to running with system Python
     cd "$REPO_ROOT"
-    python3 "$REPO_ROOT/freecad_mcp_server.py" "$@"
+    echo "Running MCP server with command: python3 -m mcp_freecad.server.freecad_mcp_server $@"
+    python3 -m mcp_freecad.server.freecad_mcp_server "$@"
 fi

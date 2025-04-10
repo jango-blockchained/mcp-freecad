@@ -13,13 +13,14 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import sys
 from typing import Any, Dict, List, Optional
 
 
 # --- FastMCP Import ---
 try:
-    from fastmcp import FastMCP, error, ToolContext
+    from fastmcp import FastMCP
     from fastmcp.error import MCPServerError, ErrorCode
     from fastmcp.server.stdio import stdio_server
     mcp_import_error = None
@@ -33,7 +34,7 @@ except ImportError as e:
         async def run_stdio(self): pass
     class MCPServerError(Exception): pass
     class ErrorCode: InvalidParams = -32602; InternalError = -32603; MethodNotFound = -32601
-    class ToolContext: pass
+    class ToolContext: pass # Keep dummy for type hint usage in comments
     async def stdio_server(): pass # Simplified dummy
 
 # --- FreeCAD Connection Import ---
@@ -64,13 +65,23 @@ except ImportError:
 
 # --- Configuration & Globals ---
 VERSION = "1.0.0" # Server version
-CONFIG_PATH = "config.json"
+CONFIG_PATH = "../../config.json"
 CONFIG: Dict[str, Any] = {}
 FC_CONNECTION: Optional[FreeCADConnection] = None
 
+# Ensure logs directory exists
+LOG_DIR = "logs"
+os.makedirs(LOG_DIR, exist_ok=True)
+LOG_FILE_PATH = os.path.join(LOG_DIR, "freecad_mcp_server.log")
+
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler(LOG_FILE_PATH),
+        logging.StreamHandler()  # Keep logging to console as well
+    ]
 )
 logger = logging.getLogger("advanced_freecad_mcp")
 
@@ -92,7 +103,10 @@ def load_config(config_path: str) -> Dict[str, Any]:
                 "freecad_path": "freecad",
             },
             "tools": {
-                 "enable_smithery": True # Example: Control tool availability via config
+                "enable_primitives": True,  # Enable primitive creation tools
+                "enable_sketcher": True,    # Enable sketcher tools
+                "enable_constraints": True, # Enable constraint tools
+                "enable_measurements": True # Enable measurement tools
             }
         }
 
@@ -136,44 +150,6 @@ def initialize_freecad_connection(config: Dict[str, Any]):
         logger.error(f"Error initializing FreeCAD connection: {e}")
         FC_CONNECTION = None
 
-# --- Helper for script execution ---
-async def execute_script_in_freecad(script: str, env_vars_to_get: List[str] = None) -> Dict[str, Any]:
-    """Executes a script in FreeCAD and handles errors/results."""
-    if not FC_CONNECTION or not FC_CONNECTION.is_connected():
-        raise MCPServerError(ErrorCode.InternalError, "Not connected to FreeCAD")
-
-    env_vars_to_get = env_vars_to_get or []
-    logger.debug(f"Executing script in FreeCAD: requesting env vars {env_vars_to_get}\n---\n{script}\n---")
-
-    # TODO: Add progress reporting if needed via ToolContext
-    # ctx: ToolContext = ToolContext.get() # Get context if needed
-    # await ctx.send_progress(...)
-
-    try:
-        result = FC_CONNECTION.execute_command(
-            "execute_script", {"script": script}
-        )
-        # Await if the connection method is async
-        if asyncio.iscoroutine(result):
-            result = await result
-
-        if "error" in result:
-            error_msg = result.get("error", "Unknown error from FreeCAD script execution")
-            logger.error(f"FreeCAD script execution failed: {error_msg}")
-            # Raise specific error type recognized by FastMCP
-            raise MCPServerError(ErrorCode.InternalError, f"FreeCAD execution error: {error_msg}")
-
-        env = result.get("environment", {})
-        extracted_data = {var: env.get(var) for var in env_vars_to_get}
-        logger.debug(f"Script execution successful. Env data received: {extracted_data}")
-        return extracted_data
-
-    except MCPServerError: # Re-raise MCP errors
-         raise
-    except Exception as e:
-        logger.error(f"Error during script execution call: {e}", exc_info=True)
-        raise MCPServerError(ErrorCode.InternalError, f"Server error during script execution: {str(e)}")
-
 # --- Input Sanitization Helper ---
 def sanitize_name(name: str) -> str:
     """Basic sanitization for names used in scripts (prevents breaking string literals)."""
@@ -189,10 +165,98 @@ def sanitize_path(path: str) -> str:
     #     raise MCPServerError(ErrorCode.InvalidParams, "Absolute paths are not allowed")
     return path
 
+# --- Progress Reporting ---
+class ToolContext:
+    """Context for tool execution, including progress reporting capabilities."""
+
+    _instance = None
+
+    def __init__(self):
+        self.progress_callback = None
+
+    @classmethod
+    def get(cls):
+        """Get the singleton instance of ToolContext."""
+        if cls._instance is None:
+            cls._instance = ToolContext()
+        return cls._instance
+
+    def set_progress_callback(self, callback):
+        """Set the callback function for progress reporting."""
+        self.progress_callback = callback
+
+    async def send_progress(self, progress: float, message: str = None):
+        """
+        Send a progress update.
+
+        Args:
+            progress: Progress value between 0.0 and 1.0
+            message: Optional message describing the current progress
+        """
+        if self.progress_callback and callable(self.progress_callback):
+            await self.progress_callback(progress, message)
+        else:
+            logger.debug(f"Progress update: {progress:.2%} - {message or 'Processing...'}")
+
 
 # --- MCP Server Initialization ---
 server_name = CONFIG.get("server", {}).get("name", "advanced-freecad-mcp-server")
 mcp = FastMCP(server_name, version=VERSION)
+
+# --- Helper for script execution ---
+async def execute_script_in_freecad(script: str, env_vars_to_get: List[str] = None) -> Dict[str, Any]:
+    """Executes a script in FreeCAD and handles errors/results."""
+    if not FC_CONNECTION or not FC_CONNECTION.is_connected():
+        raise MCPServerError(ErrorCode.InternalError, "Not connected to FreeCAD")
+
+    env_vars_to_get = env_vars_to_get or []
+    logger.debug(f"Executing script in FreeCAD: requesting env vars {env_vars_to_get}\n---\n{script}\n---")
+
+    # Send initial progress update
+    ctx = ToolContext.get()
+    await ctx.send_progress(0.0, "Starting script execution...")
+
+    try:
+        # Send progress update before execution
+        await ctx.send_progress(0.1, "Sending script to FreeCAD...")
+
+        result = FC_CONNECTION.execute_command(
+            "execute_script", {"script": script}
+        )
+
+        # Send progress update after sending command
+        await ctx.send_progress(0.4, "Script sent, waiting for execution...")
+
+        # Await if the connection method is async
+        if asyncio.iscoroutine(result):
+            result = await result
+
+        # Send progress update after execution
+        await ctx.send_progress(0.8, "Script executed, processing results...")
+
+        if "error" in result:
+            error_msg = result.get("error", "Unknown error from FreeCAD script execution")
+            logger.error(f"FreeCAD script execution failed: {error_msg}")
+            # Send error progress
+            await ctx.send_progress(1.0, f"Error: {error_msg}")
+            # Raise specific error type recognized by FastMCP
+            raise MCPServerError(ErrorCode.InternalError, f"FreeCAD execution error: {error_msg}")
+
+        env = result.get("environment", {})
+        extracted_data = {var: env.get(var) for var in env_vars_to_get}
+        logger.debug(f"Script execution successful. Env data received: {extracted_data}")
+
+        # Send completion progress
+        await ctx.send_progress(1.0, "Script execution completed successfully")
+        return extracted_data
+
+    except MCPServerError: # Re-raise MCP errors
+         raise
+    except Exception as e:
+        logger.error(f"Error during script execution call: {e}", exc_info=True)
+        # Send error progress
+        await ctx.send_progress(1.0, f"Error: {str(e)}")
+        raise MCPServerError(ErrorCode.InternalError, f"Server error during script execution: {str(e)}")
 
 # --- Tool Definitions ---
 
@@ -283,6 +347,7 @@ try:
     else:
         doc = FreeCAD.ActiveDocument
         if not doc: raise Exception("No active document found")
+        # Assign doc_name_for_msg only after confirming doc exists
         doc_name_for_msg = f"active document '{doc.Name}'"
 
     doc_name_used = doc.Name # Store the name
@@ -546,9 +611,17 @@ except Exception as e:
 async def freecad_boolean_union(object1: str, object2: str, name: str = "Union") -> Dict[str, Any]:
     """Create a union of two objects (Fuse)."""
     logger.info(f"Executing freecad.boolean_union: {name} = {object1} + {object2}")
+
+    # Get the ToolContext for progress reporting
+    ctx = ToolContext.get()
+    await ctx.send_progress(0.1, "Starting boolean union operation...")
+
     safe_name = sanitize_name(name)
     safe_obj1 = sanitize_name(object1)
     safe_obj2 = sanitize_name(object2)
+
+    await ctx.send_progress(0.2, "Preparing union operation script...")
+
     script = f"""
 import FreeCAD
 import Part
@@ -573,14 +646,19 @@ except Exception as e:
     result_json = json.dumps({{"error": str(e)}})
 """
     try:
+        await ctx.send_progress(0.4, "Executing union operation in FreeCAD...")
         env_data = await execute_script_in_freecad(script, ["result_json"])
+
+        await ctx.send_progress(0.8, "Processing union operation results...")
         result_json_str = env_data.get("result_json")
         result_data = json.loads(result_json_str)
 
         if isinstance(result_data, dict) and "error" in result_data:
+             await ctx.send_progress(1.0, f"Union operation failed: {result_data['error']}")
              raise MCPServerError(ErrorCode.InternalError, f"Error creating union in FreeCAD: {result_data['error']}")
 
         created_name = result_data.get("object_name")
+        await ctx.send_progress(1.0, f"Union operation completed: created {created_name}")
         return {
             "object_name": created_name,
             "message": f"Created union '{created_name}' of {object1} and {object2}",
@@ -588,9 +666,11 @@ except Exception as e:
         }
     except json.JSONDecodeError:
         logger.error("Failed to decode union result")
+        await ctx.send_progress(1.0, "Failed to parse response from FreeCAD")
         raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
     except Exception as e:
         logger.error(f"Error performing boolean union: {e}", exc_info=True)
+        await ctx.send_progress(1.0, f"Union operation error: {str(e)}")
         if not isinstance(e, MCPServerError):
              raise MCPServerError(ErrorCode.InternalError, f"Error creating union: {str(e)}")
         else: raise e
@@ -858,6 +938,10 @@ async def freecad_export_stl(file_path: str, objects: Optional[List[str]] = None
     """Export specified objects (or all if none specified) from a document to an STL file."""
     logger.info(f"Executing freecad.export_stl to: {file_path} (Objects: {objects}, Doc: {document})")
 
+    # Get the ToolContext for progress reporting
+    ctx = ToolContext.get()
+    await ctx.send_progress(0.1, "Starting STL export...")
+
     # Basic path validation
     safe_file_path = sanitize_path(file_path)
     if not safe_file_path.lower().endswith(".stl"):
@@ -867,15 +951,20 @@ async def freecad_export_stl(file_path: str, objects: Optional[List[str]] = None
     if objects is not None and (not isinstance(objects, list) or not all(isinstance(o, str) for o in objects)):
          raise MCPServerError(ErrorCode.InvalidParams, "Parameter 'objects' must be a list of strings.")
 
+    await ctx.send_progress(0.2, "Validating export parameters...")
+
     # Use direct API call if available and seems robust enough
     if FC_CONNECTION and hasattr(FC_CONNECTION, 'export_stl'):
         try:
+             await ctx.send_progress(0.3, "Using direct export method...")
              success = FC_CONNECTION.export_stl(
                  object_names=objects, # Pass list of names directly
                  file_path=safe_file_path,
                  document=document
              )
+             await ctx.send_progress(0.9, "Export operation completed, finalizing...")
              if success:
+                 await ctx.send_progress(1.0, "Export completed successfully")
                  return {
                      "file_path": safe_file_path,
                      "message": f"Exported {'selected objects' if objects else 'active model'} to {safe_file_path}",
@@ -883,19 +972,25 @@ async def freecad_export_stl(file_path: str, objects: Optional[List[str]] = None
                  }
              else:
                   # export_stl likely raises exception on failure, but handle False return just in case
+                  await ctx.send_progress(1.0, "Export failed")
                   raise MCPServerError(ErrorCode.InternalError, "FreeCADConnection.export_stl returned False.")
         except Exception as e:
              logger.error(f"Error during direct export_stl call: {e}", exc_info=True)
+             await ctx.send_progress(1.0, f"Export error: {str(e)}")
              raise MCPServerError(ErrorCode.InternalError, f"Failed to export STL (direct call): {str(e)}")
     else:
         # Fallback to script execution if direct method isn't available/preferred
         logger.warning("Falling back to script execution for export_stl")
+        await ctx.send_progress(0.3, "Using script-based export method...")
+
         safe_doc_name = sanitize_name(document) if document else ""
         # Convert list of object names into a Python list string for the script
         objects_list_str = "None"
         if objects:
             sanitized_object_names = [f'"{sanitize_name(o)}"' for o in objects]
             objects_list_str = f'[{", ".join(sanitized_object_names)}]'
+
+        await ctx.send_progress(0.4, "Preparing export script...")
 
         script = f"""
 import FreeCAD
@@ -939,27 +1034,35 @@ except Exception as e:
 result_json = json.dumps({{"success": success, "error": error_msg}})
 """
         try:
+            await ctx.send_progress(0.5, "Executing export script in FreeCAD...")
             env_data = await execute_script_in_freecad(script, ["result_json"])
+            await ctx.send_progress(0.9, "Processing export results...")
+
             result_json_str = env_data.get("result_json")
             result_data = json.loads(result_json_str)
 
             if result_data.get("error"):
+                 await ctx.send_progress(1.0, f"Export failed: {result_data['error']}")
                  raise MCPServerError(ErrorCode.InternalError, f"Error exporting STL in FreeCAD: {result_data['error']}")
 
             if result_data.get("success"):
+                 await ctx.send_progress(1.0, "Export completed successfully")
                  return {
                     "file_path": safe_file_path,
                     "message": f"Exported {'selected objects' if objects else 'model'} to {safe_file_path} (via script)",
                     "success": True,
                  }
             else:
+                 await ctx.send_progress(1.0, "Export failed silently")
                  raise MCPServerError(ErrorCode.InternalError, "STL export script failed silently.")
 
         except json.JSONDecodeError:
             logger.error("Failed to decode export result")
+            await ctx.send_progress(1.0, "Failed to parse response from FreeCAD")
             raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
         except Exception as e:
             logger.error(f"Error exporting STL (script fallback): {e}", exc_info=True)
+            await ctx.send_progress(1.0, f"Export error: {str(e)}")
             if not isinstance(e, MCPServerError):
                  raise MCPServerError(ErrorCode.InternalError, f"Error exporting STL: {str(e)}")
             else: raise e
@@ -1032,6 +1135,28 @@ def main():
 
     # --- Initialize FreeCAD Connection ---
     initialize_freecad_connection(CONFIG)
+
+    # --- Configure Progress Reporting ---
+    tool_context = ToolContext.get()
+    try:
+        # Try to import and use FastMCP progress reporting if available
+        from fastmcp.server.context import get_current_context
+
+        # Set up progress callback that integrates with FastMCP's progress reporting
+        async def progress_callback(progress_value, message=None):
+            try:
+                context = get_current_context()
+                if hasattr(context, 'send_progress'):
+                    await context.send_progress(progress_value, message)
+                else:
+                    logger.debug(f"Progress: {progress_value:.0%} - {message or ''}")
+            except Exception as e:
+                logger.debug(f"Error sending progress: {e}")
+
+        tool_context.set_progress_callback(progress_callback)
+        logger.info("Progress reporting configured with FastMCP")
+    except ImportError:
+        logger.info("FastMCP progress context not available, using local progress reporting")
 
     # --- Start Server ---
     logger.info(f"Starting {server_name} v{VERSION}...")

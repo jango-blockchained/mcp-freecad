@@ -36,14 +36,33 @@ class FreeCADLauncher:
         if not os.path.exists(self.script_path):
             raise FileNotFoundError(f"FreeCAD script not found at {self.script_path}")
 
-        # Check if freecad executable or AppRun exists
-        if not os.path.exists(self.freecad_path):
-            raise FileNotFoundError(f"FreeCAD executable not found at {self.freecad_path}")
-
-        self.log(f"Initialized FreeCAD launcher with executable: {self.freecad_path}")
-        self.log(f"Using script: {self.script_path}")
+        # Handle AppRun path detection
         if use_apprun:
-            self.log("Using AppRun mode - treating path as AppImage extraction directory")
+            # First, check if the path is directly to AppRun
+            if os.path.basename(self.freecad_path) == "AppRun":
+                self.apprun_path = self.freecad_path
+            else:
+                # Then check if AppRun is in the same directory
+                potential_apprun = os.path.join(os.path.dirname(self.freecad_path), "AppRun")
+                if os.path.exists(potential_apprun):
+                    self.apprun_path = potential_apprun
+                else:
+                    # Finally, check if this is a directory containing AppRun
+                    potential_apprun = os.path.join(self.freecad_path, "AppRun")
+                    if os.path.exists(potential_apprun):
+                        self.apprun_path = potential_apprun
+                    else:
+                        raise FileNotFoundError(f"AppRun not found at or near {self.freecad_path}. Please specify the correct path.")
+
+            self.log(f"Using AppRun at: {self.apprun_path}")
+        else:
+            # Check if freecad executable exists
+            if not os.path.exists(self.freecad_path):
+                raise FileNotFoundError(f"FreeCAD executable not found at {self.freecad_path}")
+
+            self.log(f"Using FreeCAD executable at: {self.freecad_path}")
+
+        self.log(f"Using script: {self.script_path}")
 
     def log(self, message):
         """Log a message if debug is enabled"""
@@ -60,19 +79,8 @@ class FreeCADLauncher:
 
         # Build the command
         if self.use_apprun:
-            # If using AppRun from extracted AppImage
-            apprun_path = os.path.join(os.path.dirname(self.freecad_path), "AppRun")
-            if not os.path.exists(apprun_path):
-                # If path is to extraction directory itself, not the freecad binary inside it
-                apprun_path = os.path.join(self.freecad_path, "AppRun")
-                if not os.path.exists(apprun_path):
-                    return {
-                        "success": False,
-                        "error": f"AppRun not found at {apprun_path}"
-                    }
-
             cmd = [
-                apprun_path,
+                self.apprun_path,  # Use the resolved AppRun path
                 self.script_path,  # Script path as direct argument
                 "--",  # Separate script arguments
                 command,
@@ -93,48 +101,74 @@ class FreeCADLauncher:
 
         try:
             # Run the command
-            result = subprocess.run(
+            process = subprocess.Popen(
                 cmd,
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
-                timeout=90  # Increase timeout to prevent hanging
+                encoding='utf-8',
+                errors='replace'  # Handle encoding errors gracefully
             )
 
-            self.log(f"Command executed with return code: {result.returncode}")
+            # Set a timeout for the process
+            timeout = 90  # seconds
 
-            # If we got output on stderr, log it for debugging
-            if result.stderr:
-                self.log(f"Command stderr: {result.stderr}")
-
-            # Check for errors
-            if result.returncode != 0:
-                self.log(f"Error executing command: {result.stderr}")
+            try:
+                stdout, stderr = process.communicate(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                stdout, stderr = process.communicate()
+                self.log(f"Command execution timed out after {timeout} seconds")
                 return {
                     "success": False,
-                    "error": f"FreeCAD execution failed with code {result.returncode}",
-                    "stderr": result.stderr
+                    "error": f"Command execution timed out after {timeout} seconds"
+                }
+
+            self.log(f"Command executed with return code: {process.returncode}")
+
+            # If we got output on stderr, log it for debugging
+            if stderr:
+                self.log(f"Command stderr: {stderr}")
+
+            # Check for errors
+            if process.returncode != 0:
+                self.log(f"Error executing command: {stderr}")
+                return {
+                    "success": False,
+                    "error": f"FreeCAD execution failed with code {process.returncode}",
+                    "stderr": stderr
                 }
 
             # Parse the output
             try:
                 # Look for JSON output in stdout
-                output_lines = result.stdout.strip().split('\n')
-                for line in reversed(output_lines):  # Start from the end to find the last JSON
+                output_lines = stdout.strip().split('\n')
+
+                # Detailed logging for debugging
+                if self.debug:
+                    self.log(f"Output lines: {len(output_lines)}")
+                    for i, line in enumerate(output_lines):
+                        self.log(f"Line {i}: {line[:100]}{'...' if len(line) > 100 else ''}")
+
+                # Start from the end to find the last JSON
+                for line in reversed(output_lines):
                     line = line.strip()
                     if line and line[0] == '{' and line[-1] == '}':
                         try:
-                            return json.loads(line)
+                            result = json.loads(line)
+                            self.log(f"Found valid JSON result")
+                            return result
                         except json.JSONDecodeError:
                             continue
 
                 # If we didn't find any valid JSON, return the error
                 self.log(f"No valid JSON output found")
-                self.log(f"Command stdout: {result.stdout}")
+                self.log(f"Command stdout: {stdout}")
                 return {
                     "success": False,
-                    "error": "No valid JSON output found",
-                    "stdout": result.stdout,
-                    "stderr": result.stderr
+                    "error": "No valid JSON output found in FreeCAD response",
+                    "stdout": stdout,
+                    "stderr": stderr
                 }
 
             except json.JSONDecodeError as e:
@@ -142,21 +176,15 @@ class FreeCADLauncher:
                 return {
                     "success": False,
                     "error": f"Error parsing output: {e}",
-                    "stdout": result.stdout,
-                    "stderr": result.stderr
+                    "stdout": stdout,
+                    "stderr": stderr
                 }
 
-        except subprocess.TimeoutExpired:
-            self.log("Command execution timed out")
-            return {
-                "success": False,
-                "error": "Command execution timed out"
-            }
         except Exception as e:
-            self.log(f"Error executing command: {e}")
+            self.log(f"Error executing command: {type(e).__name__}: {e}")
             return {
                 "success": False,
-                "error": f"Error executing command: {e}"
+                "error": f"Error executing command: {type(e).__name__}: {e}"
             }
 
     def get_version(self):
