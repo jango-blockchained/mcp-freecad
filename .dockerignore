@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+env/
+venv/
+ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Project specific
+squashfs-root/
+.git/
+tmp/
+logs/
+.vscode/
+.cursor/
+.github/
+docs/
+tests/
+.pytest_cache/
+
+# Editor config
+.editorconfig
+.flake8
+.cursorignore
+.cursorindexingignore
+
+# Logs
+*.log
+
+# OS specific
+.DS_Store
+Thumbs.db

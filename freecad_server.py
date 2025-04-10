@@ -106,7 +106,17 @@ try:
     if not hasattr(FreeCAD, "Version"):
         raise ImportError("FreeCAD module imported but appears incomplete.")
 
-    print(f"Loaded FreeCAD {'.'.join(FreeCAD.Version)}")
+    # Convert Version to string properly, handling different possible types
+    version_str = ""
+    try:
+        if isinstance(FreeCAD.Version, (list, tuple)):
+            version_str = '.'.join(str(v) for v in FreeCAD.Version)
+        else:
+            version_str = str(FreeCAD.Version)
+    except Exception as e:
+        version_str = f"Unknown (error: {e})"
+
+    print(f"Loaded FreeCAD {version_str}")
 
     # Try to import FreeCADGui
     try:
@@ -245,10 +255,24 @@ class FreeCADServer:
             return {"pong": True}
 
         elif command_type == "get_version":
-            return {
-                "version": FreeCAD.Version,
-                "build_date": getattr(FreeCAD, "BuildDate", "N/A"),
-            }
+            version_info = {}
+
+            # Handle different Version formats
+            try:
+                if isinstance(FreeCAD.Version, (list, tuple)):
+                    version_info["version"] = [str(v) for v in FreeCAD.Version]
+                else:
+                    version_info["version"] = [str(FreeCAD.Version)]
+            except Exception:
+                version_info["version"] = ["Unknown"]
+
+            # Handle different BuildDate formats
+            try:
+                version_info["build_date"] = str(getattr(FreeCAD, "BuildDate", "N/A"))
+            except Exception:
+                version_info["build_date"] = "Unknown"
+
+            return version_info
 
         # Document management
         elif command_type == "create_document":
