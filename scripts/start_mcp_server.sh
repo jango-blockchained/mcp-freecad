@@ -22,6 +22,8 @@ if [ -d "$REPO_ROOT/squashfs-root" ]; then
     if [ -x "$PYTHON_EXEC" ]; then
         echo "Using Python from extracted AppImage"
         # Set up Python environment for FreeCAD modules
+        # Prepend the project source directory to find the mcp_freecad package
+        export PYTHONPATH="$REPO_ROOT/src:$PYTHONPATH"
         export PYTHONPATH="$REPO_ROOT/squashfs-root/usr/lib:$PYTHONPATH"
         # Add additional module paths if they exist
         if [ -d "$REPO_ROOT/squashfs-root/usr/lib/python3.1" ]; then

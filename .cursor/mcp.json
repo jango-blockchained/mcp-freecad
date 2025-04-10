@@ -3,7 +3,7 @@
       "mcp-freecad": {
         "command": "python3",
         "args": [
-          "freecad_mcp_server.py"
+          "src/mcp_freecad/server/freecad_mcp_server.py"
         ],
         "env": {
            "QT_QPA_PLATFORM": "offscreen",
@@ -11,7 +11,7 @@
            "FREECAD_CONSOLE": "1",
            "PYTHONNOUSERSITE": "1",
            "LD_LIBRARY_PATH": "/home/jango/Git/mcp-freecad/squashfs-root/usr/lib:/home/jango/Git/mcp-freecad/squashfs-root/usr/Ext:/home/jango/Git/mcp-freecad/squashfs-root/libexec",
-           "PYTHONPATH": "/home/jango/Git/mcp-freecad/squashfs-root/usr/lib/python3.11/site-packages:/home/jango/Git/mcp-freecad/squashfs-root/usr/lib:/home/jango/Git/mcp-freecad/squashfs-root/usr/bin"
+           "PYTHONPATH": "/home/jango/Git/mcp-freecad/.venv/lib/python3.11/site-packages:/home/jango/Git/mcp-freecad/squashfs-root/usr/lib/python3.11/site-packages:/home/jango/Git/mcp-freecad/squashfs-root/usr/lib:/home/jango/Git/mcp-freecad/squashfs-root/usr/bin"
         },
         "cwd": "/home/jango/Git/mcp-freecad"
       },
