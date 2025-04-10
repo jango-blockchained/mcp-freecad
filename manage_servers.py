@@ -70,8 +70,10 @@ def find_pid_by_name(name):
     pids = []
     for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
         try:
-            if name in ' '.join(proc.info['cmdline']):
-                pids.append(proc.info['pid'])
+            cmdline = proc.info['cmdline']
+            if cmdline:
+                if name in ' '.join(cmdline):
+                    pids.append(proc.info['pid'])
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
     return pids

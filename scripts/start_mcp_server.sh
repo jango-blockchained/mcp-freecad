@@ -23,6 +23,7 @@ if [ -d "$REPO_ROOT/squashfs-root" ]; then
         echo "Using Python from extracted AppImage"
         # Set up Python environment for FreeCAD modules
         # Prepend the project source directory to find the mcp_freecad package
+        export PYTHONPATH="$REPO_ROOT:$PYTHONPATH"
         export PYTHONPATH="$REPO_ROOT/src:$PYTHONPATH"
         export PYTHONPATH="$REPO_ROOT/squashfs-root/usr/lib:$PYTHONPATH"
         # Add additional module paths if they exist
@@ -37,18 +38,22 @@ if [ -d "$REPO_ROOT/squashfs-root" ]; then
         fi
         # Run with Python directly
         cd "$REPO_ROOT"
-        echo "Running MCP server with command: $PYTHON_EXEC -m mcp_freecad.server.freecad_mcp_server $@"
-        "$PYTHON_EXEC" -m mcp_freecad.server.freecad_mcp_server "$@"
+        echo "Running MCP server with command: $PYTHON_EXEC src/mcp_freecad/server/freecad_mcp_server.py $@"
+        "$PYTHON_EXEC" src/mcp_freecad/server/freecad_mcp_server.py "$@"
     else
         echo "Python not found in AppImage, falling back to system Python"
         cd "$REPO_ROOT"
-        echo "Running MCP server with command: python3 -m mcp_freecad.server.freecad_mcp_server $@"
-        python3 -m mcp_freecad.server.freecad_mcp_server "$@"
+        # Add repo root here too for consistency
+        export PYTHONPATH="$REPO_ROOT:$PYTHONPATH"
+        echo "Running MCP server with command: python3 src/mcp_freecad/server/freecad_mcp_server.py $@"
+        python3 src/mcp_freecad/server/freecad_mcp_server.py "$@"
     fi
 else
     echo "AppImage not extracted. Using system Python"
     # Fallback to running with system Python
     cd "$REPO_ROOT"
-    echo "Running MCP server with command: python3 -m mcp_freecad.server.freecad_mcp_server $@"
-    python3 -m mcp_freecad.server.freecad_mcp_server "$@"
+    # Add repo root here too for consistency
+    export PYTHONPATH="$REPO_ROOT:$PYTHONPATH"
+    echo "Running MCP server with command: python3 src/mcp_freecad/server/freecad_mcp_server.py $@"
+    python3 src/mcp_freecad/server/freecad_mcp_server.py "$@"
 fi

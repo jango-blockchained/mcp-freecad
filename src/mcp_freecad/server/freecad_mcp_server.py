@@ -21,8 +21,7 @@ from typing import Any, Dict, List, Optional
 # --- FastMCP Import ---
 try:
     from fastmcp import FastMCP
-    from fastmcp.error import MCPServerError, ErrorCode
-    from fastmcp.server.stdio import stdio_server
+    from fastmcp.exceptions import FastMCPError # Use actual exception name
     mcp_import_error = None
 except ImportError as e:
     mcp_import_error = str(e)
@@ -32,10 +31,10 @@ except ImportError as e:
         def tool(self): return lambda f: f
         def resource(self, pattern: str): return lambda f: f
         async def run_stdio(self): pass
-    class MCPServerError(Exception): pass
-    class ErrorCode: InvalidParams = -32602; InternalError = -32603; MethodNotFound = -32601
+    class FastMCPError(Exception): pass # Define dummy for the actual exception
+    # ErrorCode is not defined in fastmcp 0.4.1 exceptions
+    # class ErrorCode: InvalidParams = -32602; InternalError = -32603; MethodNotFound = -32601
     class ToolContext: pass # Keep dummy for type hint usage in comments
-    async def stdio_server(): pass # Simplified dummy
 
 # --- FreeCAD Connection Import ---
 # Adjust path based on actual location relative to this file
@@ -65,7 +64,7 @@ except ImportError:
 
 # --- Configuration & Globals ---
 VERSION = "1.0.0" # Server version
-CONFIG_PATH = "../../config.json"
+CONFIG_PATH = "config.json" # Path relative to repo root
 CONFIG: Dict[str, Any] = {}
 FC_CONNECTION: Optional[FreeCADConnection] = None
 
@@ -97,7 +96,7 @@ def load_config(config_path: str) -> Dict[str, Any]:
         return {
             "server": {"name": "advanced-freecad-mcp-server", "version": VERSION},
             "freecad": {
-                "connection_method": "auto",  # auto, server, bridge, or mock
+                "connection_method": "auto",  # auto, server, or bridge
                 "host": "localhost",
                 "port": 12345,
                 "freecad_path": "freecad",
@@ -122,14 +121,15 @@ def initialize_freecad_connection(config: Dict[str, Any]):
         return
 
     freecad_config = config.get("freecad", {})
-    logger.info("Attempting to connect to FreeCAD...")
+    logger.info("Attempting to connect to FreeCAD (preferring bridge mode)...")
     try:
+        # Force prefer_method to 'bridge' for headless server
         FC_CONNECTION = FreeCADConnection(
             host=freecad_config.get("host", "localhost"),
             port=freecad_config.get("port", 12345),
             freecad_path=freecad_config.get("freecad_path", "freecad"),
-            auto_connect=True, # Attempt connection immediately
-            prefer_method=freecad_config.get("connection_method", "auto"),
+            auto_connect=True,
+            prefer_method="bridge" # Explicitly set bridge as preferred
         )
 
         if FC_CONNECTION.is_connected():
@@ -144,7 +144,7 @@ def initialize_freecad_connection(config: Dict[str, Any]):
             except Exception as e:
                  logger.warning(f"Could not retrieve FreeCAD version: {e}")
         else:
-            logger.warning("Failed to connect to FreeCAD initially. Tools requiring connection may fail.")
+            logger.warning("Failed to connect to FreeCAD using bridge method.")
             FC_CONNECTION = None # Set to None if connection failed
     except Exception as e:
         logger.error(f"Error initializing FreeCAD connection: {e}")
@@ -153,16 +153,16 @@ def initialize_freecad_connection(config: Dict[str, Any]):
 # --- Input Sanitization Helper ---
 def sanitize_name(name: str) -> str:
     """Basic sanitization for names used in scripts (prevents breaking string literals)."""
-    return name.replace('"', '\"').replace('\\', '\\\\')
+    return name.replace('"', '\\"').replace('\\\\', '\\\\\\\\')
 
 def sanitize_path(path: str) -> str:
     """Basic path sanitization."""
     # Add more robust checks if needed (e.g., check against allowed directories)
     if ".." in path:
-        raise MCPServerError(ErrorCode.InvalidParams, "Path cannot contain '..'")
+        raise FastMCPError("Path cannot contain '..'")
     # Ensure absolute paths aren't used unexpectedly if desired
     # if os.path.isabs(path):
-    #     raise MCPServerError(ErrorCode.InvalidParams, "Absolute paths are not allowed")
+    #     raise FastMCPError("Absolute paths are not allowed")
     return path
 
 # --- Progress Reporting ---
@@ -203,11 +203,73 @@ class ToolContext:
 server_name = CONFIG.get("server", {}).get("name", "advanced-freecad-mcp-server")
 mcp = FastMCP(server_name, version=VERSION)
 
+# --- Background Connection Check ---
+async def connection_check_loop(config: Dict[str, Any]):
+    """Periodically checks and attempts to establish FreeCAD connection if not already connected."""
+    global FC_CONNECTION
+    check_interval = 5 # seconds
+    freecad_config = config.get("freecad", {})
+    logger.info(f"Starting background FreeCAD connection check (interval: {check_interval}s)")
+
+    while True:
+        try:
+            if FC_CONNECTION is None or not FC_CONNECTION.is_connected():
+                logger.info("Attempting to establish FreeCAD connection (background check)...")
+                temp_connection = None
+                try:
+                    # Attempt connection using the preferred bridge method
+                    temp_connection = FreeCADConnection(
+                        host=freecad_config.get("host", "localhost"),
+                        port=freecad_config.get("port", 12345),
+                        freecad_path=freecad_config.get("freecad_path", "freecad"),
+                        auto_connect=False, # Connect manually below
+                        prefer_method="bridge"
+                    )
+                    if temp_connection.connect(prefer_method="bridge"): # Explicitly connect
+                        connection_type = temp_connection.get_connection_type()
+                        logger.info(f"Successfully connected to FreeCAD via {connection_type} (background check)")
+                        # Check version info (optional, but good feedback)
+                        try:
+                             version_info = temp_connection.get_version()
+                             version_str = ".".join(
+                                 str(v) for v in version_info.get("version", ["Unknown"])
+                             )
+                             logger.info(f"FreeCAD version: {version_str} (background check)")
+                        except Exception as e:
+                             logger.warning(f"Could not retrieve FreeCAD version (background check): {e}")
+
+                        # Assign to global connection object
+                        FC_CONNECTION = temp_connection
+                    else:
+                        # Connection failed, FC_CONNECTION remains None
+                        # Logger warning happens inside connect() or FreeCADConnection init implicitly
+                        logger.debug("Background connection attempt failed.")
+                        # Explicitly close if connection object was created but connect failed
+                        if temp_connection and hasattr(temp_connection, 'close'):
+                             temp_connection.close()
+
+                except Exception as e:
+                    logger.error(f"Error during background FreeCAD connection attempt: {e}", exc_info=False) # Log less verbosely
+                    # Explicitly close if connection object was created but failed during setup
+                    if temp_connection and hasattr(temp_connection, 'close'):
+                         temp_connection.close()
+
+            # Wait for the next check interval
+            await asyncio.sleep(check_interval)
+
+        except asyncio.CancelledError:
+            logger.info("Connection check loop cancelled.")
+            break # Exit the loop if cancelled
+        except Exception as e:
+            # Log unexpected errors in the loop itself
+            logger.error(f"Unexpected error in connection_check_loop: {e}", exc_info=True)
+            await asyncio.sleep(check_interval) # Still wait before retrying
+
 # --- Helper for script execution ---
 async def execute_script_in_freecad(script: str, env_vars_to_get: List[str] = None) -> Dict[str, Any]:
     """Executes a script in FreeCAD and handles errors/results."""
     if not FC_CONNECTION or not FC_CONNECTION.is_connected():
-        raise MCPServerError(ErrorCode.InternalError, "Not connected to FreeCAD")
+        raise FastMCPError("Not connected to FreeCAD")
 
     env_vars_to_get = env_vars_to_get or []
     logger.debug(f"Executing script in FreeCAD: requesting env vars {env_vars_to_get}\n---\n{script}\n---")
@@ -239,8 +301,7 @@ async def execute_script_in_freecad(script: str, env_vars_to_get: List[str] = No
             logger.error(f"FreeCAD script execution failed: {error_msg}")
             # Send error progress
             await ctx.send_progress(1.0, f"Error: {error_msg}")
-            # Raise specific error type recognized by FastMCP
-            raise MCPServerError(ErrorCode.InternalError, f"FreeCAD execution error: {error_msg}")
+            raise FastMCPError(f"FreeCAD execution error: {error_msg}")
 
         env = result.get("environment", {})
         extracted_data = {var: env.get(var) for var in env_vars_to_get}
@@ -248,211 +309,215 @@ async def execute_script_in_freecad(script: str, env_vars_to_get: List[str] = No
 
         # Send completion progress
         await ctx.send_progress(1.0, "Script execution completed successfully")
+
         return extracted_data
 
-    except MCPServerError: # Re-raise MCP errors
-         raise
+    except FastMCPError: # Catch specific error type
+        raise
     except Exception as e:
         logger.error(f"Error during script execution call: {e}", exc_info=True)
         # Send error progress
         await ctx.send_progress(1.0, f"Error: {str(e)}")
-        raise MCPServerError(ErrorCode.InternalError, f"Server error during script execution: {str(e)}")
+        raise FastMCPError(f"Server error during script execution: {str(e)}")
 
 # --- Tool Definitions ---
 
-# == FreeCAD Document Tools ==
-
+# == FreeCAD Document/Object Tools ==
 @mcp.tool()
 async def freecad_create_document(name: str = "Unnamed") -> Dict[str, Any]:
     """Create a new FreeCAD document."""
     if not FC_CONNECTION:
-         raise MCPServerError(ErrorCode.InternalError, "FreeCAD connection not available")
+         raise FastMCPError("FreeCAD connection not available")
 
     logger.info(f"Executing freecad.create_document with name: {name}")
+    ctx = ToolContext.get()
+    await ctx.send_progress(0.1, f"Creating document '{name}'...")
     try:
-        # Use direct API call - safer than script for simple ops
         doc_name = FC_CONNECTION.create_document(name)
         if not doc_name:
-             raise MCPServerError(ErrorCode.InternalError, f"Failed to create document '{name}' in FreeCAD.")
+             raise FastMCPError(f"Failed to create document '{name}' in FreeCAD.")
+        await ctx.send_progress(1.0, "Document created successfully")
         return {
             "document_name": doc_name,
-            "message": f"Created document: {doc_name}",
-            "success": True,
+            "message": f"Successfully created document '{doc_name}'",
+            "success": True
         }
     except Exception as e:
         logger.error(f"Error in freecad.create_document: {e}", exc_info=True)
-        raise MCPServerError(ErrorCode.InternalError, f"Failed to create document: {str(e)}")
+        await ctx.send_progress(1.0, f"Failed to create document: {str(e)}")
+        raise FastMCPError(f"Failed to create document: {str(e)}")
 
 
 @mcp.tool()
 async def freecad_list_documents() -> Dict[str, Any]:
-    """List all open documents."""
+    """List all open documents in FreeCAD."""
     logger.info("Executing freecad.list_documents")
-    script = """
+    ctx = ToolContext.get()
+    await ctx.send_progress(0.1, "Listing documents...")
+
+    script = f"""
 import FreeCAD
 import json
 try:
-    document_names = list(FreeCAD.listDocuments().keys())
-    docs_json = json.dumps(document_names)
+    docs = [doc.Name for doc in FreeCAD.listDocuments().values()]
+    result_json = json.dumps(docs)
 except Exception as e:
-    # Propagate script errors back
-    docs_json = json.dumps({"error": str(e)})
+    result_json = json.dumps({{"error": str(e)}})
 """
     try:
-        env_data = await execute_script_in_freecad(script, ["docs_json"])
-        docs_json_str = env_data.get("docs_json", "[]")
-        docs_data = json.loads(docs_json_str)
+        await ctx.send_progress(0.3, "Executing document list script...")
+        env_data = await execute_script_in_freecad(script, ["result_json"])
+        result_json_str = env_data.get("result_json")
+        if not result_json_str:
+            raise FastMCPError("Did not receive result from FreeCAD script")
+        docs_data = json.loads(result_json_str)
 
         if isinstance(docs_data, dict) and "error" in docs_data:
-             raise MCPServerError(ErrorCode.InternalError, f"Error listing documents in FreeCAD: {docs_data['error']}")
+             raise FastMCPError(f"Error listing documents in FreeCAD: {docs_data['error']}")
 
         document_names = docs_data # Should be the list
+        await ctx.send_progress(1.0, "Documents listed successfully")
         return {
             "documents": document_names,
             "count": len(document_names),
-            "message": f"Found {len(document_names)} open documents",
+            "message": f"Found {len(document_names)} open documents.",
             "success": True
         }
     except json.JSONDecodeError:
         logger.error("Failed to decode document list from FreeCAD script")
-        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+        await ctx.send_progress(1.0, "Failed to parse response")
+        raise FastMCPError("Failed to parse response from FreeCAD")
     except Exception as e:
         logger.error(f"Error listing documents: {e}", exc_info=True)
-        # Ensure MCP error is raised if not already
-        if not isinstance(e, MCPServerError):
-            raise MCPServerError(ErrorCode.InternalError, f"Error listing documents: {str(e)}")
+        await ctx.send_progress(1.0, f"Error: {str(e)}")
+        if not isinstance(e, FastMCPError):
+             raise FastMCPError(f"Error listing documents: {str(e)}")
         else:
             raise e
 
 
 @mcp.tool()
 async def freecad_list_objects(document: Optional[str] = None) -> Dict[str, Any]:
-    """List all objects in the specified or active document."""
-    logger.info(f"Executing freecad.list_objects for document: {document or 'Active'}")
+    """List objects in a specific document (or active one if none specified)."""
+    logger.info(f"Executing freecad.list_objects (Document: {document})")
+    ctx = ToolContext.get()
+    await ctx.send_progress(0.1, "Listing objects...")
+
     safe_doc_name = sanitize_name(document) if document else ""
 
     script = f"""
 import FreeCAD
 import json
-
-doc = None # Initialize doc to None *before* the try block
-doc_name_for_msg = "Active Document"
-doc_name_used = None # Variable to store the actual doc name
-
 try:
+    doc = None
     if "{safe_doc_name}":
         doc = FreeCAD.getDocument("{safe_doc_name}")
         if not doc: raise Exception(f"Document '{document}' not found")
-        doc_name_for_msg = "document '{document}'"
     else:
-        # Try to get active document, it might still be None
         doc = FreeCAD.ActiveDocument
         if not doc: raise Exception("No active document found")
-        # Assign doc_name_for_msg only after confirming doc exists
-        doc_name_for_msg = f"active document '{doc.Name}'"
 
-    # At this point, doc should be a valid Document object if no exception was raised
-    doc_name_used = doc.Name # Store the name
-
-    objects_list = []
-    for obj in doc.Objects:
-        try:
-            label = obj.Label if obj.Label else obj.Name # Use Name if Label is empty
-        except AttributeError:
-            label = obj.Name # Fallback if Label attribute doesn't exist
-        objects_list.append({{"name": obj.Name, "type": obj.TypeId, "label": label}})
-
-    # Serialize safely
-    objects_json = json.dumps(objects_list)
-
+    objects = [obj.Name for obj in doc.Objects]
+    result_json = json.dumps(objects)
 except Exception as e:
-    objects_json = json.dumps({{"error": str(e)}})
-    # Ensure doc_name_used is captured even on error, if doc was assigned
-    doc_name_used = doc.Name if doc else None # Now 'doc' is guaranteed to be defined (as None or the object)
+    result_json = json.dumps({{"error": str(e)}})
 """
     try:
-        env_data = await execute_script_in_freecad(script, ["objects_json", "doc_name_used", "doc_name_for_msg"])
-        objects_json_str = env_data.get("objects_json", "[]")
-        objects_data = json.loads(objects_json_str)
+        await ctx.send_progress(0.3, "Executing object list script...")
+        env_data = await execute_script_in_freecad(script, ["result_json"])
+        result_json_str = env_data.get("result_json")
+        if not result_json_str:
+            raise FastMCPError("Did not receive result from FreeCAD script")
+        objects_data = json.loads(result_json_str)
 
         if isinstance(objects_data, dict) and "error" in objects_data:
-             raise MCPServerError(ErrorCode.InternalError, f"Error listing objects in FreeCAD: {objects_data['error']}")
+             raise FastMCPError(f"Error listing objects in FreeCAD: {objects_data['error']}")
 
         objects_list = objects_data
-        doc_name_used = env_data.get("doc_name_used")
-        doc_name_for_msg = env_data.get("doc_name_for_msg", doc_name_used or "unknown document")
-
+        await ctx.send_progress(1.0, "Objects listed successfully")
         return {
             "objects": objects_list,
             "count": len(objects_list),
-            "document": doc_name_used,
-            "message": f"Found {len(objects_list)} objects in {doc_name_for_msg}",
+            "document": document or (FC_CONNECTION.get_active_document_name() if FC_CONNECTION else "Active"),
+            "message": f"Found {len(objects_list)} objects.",
             "success": True
         }
     except json.JSONDecodeError:
         logger.error("Failed to decode object list from FreeCAD script")
-        raise MCPServerError(ErrorCode.InternalError, "Failed to parse object list from FreeCAD")
+        await ctx.send_progress(1.0, "Failed to parse response")
+        raise FastMCPError("Failed to parse object list from FreeCAD")
     except Exception as e:
         logger.error(f"Error listing objects: {e}", exc_info=True)
-        if not isinstance(e, MCPServerError):
-            raise MCPServerError(ErrorCode.InternalError, f"Error listing objects: {str(e)}")
+        await ctx.send_progress(1.0, f"Error: {str(e)}")
+        if not isinstance(e, FastMCPError):
+             raise FastMCPError(f"Error listing objects: {str(e)}")
         else:
             raise e
 
-
-# == FreeCAD Primitive Tools ==
-
+# == Part Primitive Creation Tools ==
 @mcp.tool()
 async def freecad_create_box(
     length: float, width: float, height: float,
     name: str = "Box",
     position_x: float = 0.0, position_y: float = 0.0, position_z: float = 0.0
 ) -> Dict[str, Any]:
-    """Create a box primitive in the active or new document."""
-    logger.info(f"Executing freecad.create_box: {name} ({length}x{width}x{height}) at ({position_x},{position_y},{position_z})")
+    """Create a box primitive."""
+    logger.info(f"Executing freecad.create_box: {name}")
+    ctx = ToolContext.get()
+    await ctx.send_progress(0.1, f"Creating box '{name}'...")
+
     safe_name = sanitize_name(name)
     script = f"""
 import FreeCAD
 import Part
 import json
-
-box_name = None
+result_json = ''
 try:
-    doc = FreeCAD.ActiveDocument or FreeCAD.newDocument("Unnamed")
+    doc = FreeCAD.ActiveDocument
+    if not doc: raise Exception("No active document")
     box = doc.addObject("Part::Box", "{safe_name}")
     box.Length = float({length})
     box.Width = float({width})
     box.Height = float({height})
-    box.Placement.Base = FreeCAD.Vector(float({position_x}), float({position_y}), float({position_z}))
+    box.Placement.Base.x = float({position_x})
+    box.Placement.Base.y = float({position_y})
+    box.Placement.Base.z = float({position_z})
     doc.recompute()
-    box_name = box.Name # Get the actual name assigned by FreeCAD
-    result_json = json.dumps({{"object_name": box_name}})
+    result_json = json.dumps({{"object_name": box.Name, "type": "Box"}})
 except Exception as e:
     result_json = json.dumps({{"error": str(e)}})
 """
     try:
+        await ctx.send_progress(0.3, "Executing box creation script...")
         env_data = await execute_script_in_freecad(script, ["result_json"])
         result_json_str = env_data.get("result_json")
+        if not result_json_str:
+            raise FastMCPError("Did not receive result from FreeCAD script")
         result_data = json.loads(result_json_str)
 
         if isinstance(result_data, dict) and "error" in result_data:
-             raise MCPServerError(ErrorCode.InternalError, f"Error creating box in FreeCAD: {result_data['error']}")
+             raise FastMCPError(f"Error creating box in FreeCAD: {result_data['error']}")
 
         created_name = result_data.get("object_name")
+        await ctx.send_progress(1.0, "Box created successfully")
         return {
             "object_name": created_name,
-            "message": f"Created box '{created_name}' with dimensions {length}x{width}x{height}mm",
+            "type": "Box",
+            "message": f"Successfully created box '{created_name}'",
             "success": True
         }
     except json.JSONDecodeError:
         logger.error("Failed to decode box creation result from FreeCAD script")
-        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+        await ctx.send_progress(1.0, "Failed to parse response")
+        raise FastMCPError("Failed to parse response from FreeCAD")
     except Exception as e:
         logger.error(f"Error creating box: {e}", exc_info=True)
-        if not isinstance(e, MCPServerError):
-            raise MCPServerError(ErrorCode.InternalError, f"Error creating box: {str(e)}")
+        await ctx.send_progress(1.0, f"Error: {str(e)}")
+        if not isinstance(e, FastMCPError):
+             raise FastMCPError(f"Error creating box: {str(e)}")
         else:
             raise e
+
 
 @mcp.tool()
 async def freecad_create_cylinder(
@@ -461,47 +526,58 @@ async def freecad_create_cylinder(
     position_x: float = 0.0, position_y: float = 0.0, position_z: float = 0.0
 ) -> Dict[str, Any]:
     """Create a cylinder primitive."""
-    logger.info(f"Executing freecad.create_cylinder: {name} (r={radius}, h={height}) at ({position_x},{position_y},{position_z})")
+    logger.info(f"Executing freecad.create_cylinder: {name}")
+    ctx = ToolContext.get()
+    await ctx.send_progress(0.1, f"Creating cylinder '{name}'...")
+
     safe_name = sanitize_name(name)
     script = f"""
 import FreeCAD
 import Part
 import json
-
-cylinder_name = None
+result_json = ''
 try:
-    doc = FreeCAD.ActiveDocument or FreeCAD.newDocument("Unnamed")
-    cylinder = doc.addObject("Part::Cylinder", "{safe_name}")
-    cylinder.Radius = float({radius})
-    cylinder.Height = float({height})
-    cylinder.Placement.Base = FreeCAD.Vector(float({position_x}), float({position_y}), float({position_z}))
+    doc = FreeCAD.ActiveDocument
+    if not doc: raise Exception("No active document")
+    cyl = doc.addObject("Part::Cylinder", "{safe_name}")
+    cyl.Radius = float({radius})
+    cyl.Height = float({height})
+    cyl.Placement.Base.x = float({position_x})
+    cyl.Placement.Base.y = float({position_y})
+    cyl.Placement.Base.z = float({position_z})
     doc.recompute()
-    cylinder_name = cylinder.Name
-    result_json = json.dumps({{"object_name": cylinder_name}})
+    result_json = json.dumps({{"object_name": cyl.Name, "type": "Cylinder"}})
 except Exception as e:
     result_json = json.dumps({{"error": str(e)}})
 """
     try:
+        await ctx.send_progress(0.3, "Executing cylinder creation script...")
         env_data = await execute_script_in_freecad(script, ["result_json"])
         result_json_str = env_data.get("result_json")
+        if not result_json_str:
+            raise FastMCPError("Did not receive result from FreeCAD script")
         result_data = json.loads(result_json_str)
 
         if isinstance(result_data, dict) and "error" in result_data:
-             raise MCPServerError(ErrorCode.InternalError, f"Error creating cylinder in FreeCAD: {result_data['error']}")
+             raise FastMCPError(f"Error creating cylinder in FreeCAD: {result_data['error']}")
 
         created_name = result_data.get("object_name")
+        await ctx.send_progress(1.0, "Cylinder created successfully")
         return {
             "object_name": created_name,
-            "message": f"Created cylinder '{created_name}' with radius {radius}mm and height {height}mm",
+            "type": "Cylinder",
+            "message": f"Successfully created cylinder '{created_name}'",
             "success": True
         }
     except json.JSONDecodeError:
         logger.error("Failed to decode cylinder creation result")
-        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+        await ctx.send_progress(1.0, "Failed to parse response")
+        raise FastMCPError("Failed to parse response from FreeCAD")
     except Exception as e:
         logger.error(f"Error creating cylinder: {e}", exc_info=True)
-        if not isinstance(e, MCPServerError):
-             raise MCPServerError(ErrorCode.InternalError, f"Error creating cylinder: {str(e)}")
+        await ctx.send_progress(1.0, f"Error: {str(e)}")
+        if not isinstance(e, FastMCPError):
+              raise FastMCPError(f"Error creating cylinder: {str(e)}")
         else: raise e
 
 
@@ -512,46 +588,57 @@ async def freecad_create_sphere(
     position_x: float = 0.0, position_y: float = 0.0, position_z: float = 0.0
 ) -> Dict[str, Any]:
     """Create a sphere primitive."""
-    logger.info(f"Executing freecad.create_sphere: {name} (r={radius}) at ({position_x},{position_y},{position_z})")
+    logger.info(f"Executing freecad.create_sphere: {name}")
+    ctx = ToolContext.get()
+    await ctx.send_progress(0.1, f"Creating sphere '{name}'...")
+
     safe_name = sanitize_name(name)
     script = f"""
 import FreeCAD
 import Part
 import json
-
-sphere_name = None
+result_json = ''
 try:
-    doc = FreeCAD.ActiveDocument or FreeCAD.newDocument("Unnamed")
-    sphere = doc.addObject("Part::Sphere", "{safe_name}")
-    sphere.Radius = float({radius})
-    sphere.Placement.Base = FreeCAD.Vector(float({position_x}), float({position_y}), float({position_z}))
+    doc = FreeCAD.ActiveDocument
+    if not doc: raise Exception("No active document")
+    sph = doc.addObject("Part::Sphere", "{safe_name}")
+    sph.Radius = float({radius})
+    sph.Placement.Base.x = float({position_x})
+    sph.Placement.Base.y = float({position_y})
+    sph.Placement.Base.z = float({position_z})
     doc.recompute()
-    sphere_name = sphere.Name
-    result_json = json.dumps({{"object_name": sphere_name}})
+    result_json = json.dumps({{"object_name": sph.Name, "type": "Sphere"}})
 except Exception as e:
     result_json = json.dumps({{"error": str(e)}})
 """
     try:
+        await ctx.send_progress(0.3, "Executing sphere creation script...")
         env_data = await execute_script_in_freecad(script, ["result_json"])
         result_json_str = env_data.get("result_json")
+        if not result_json_str:
+            raise FastMCPError("Did not receive result from FreeCAD script")
         result_data = json.loads(result_json_str)
 
         if isinstance(result_data, dict) and "error" in result_data:
-             raise MCPServerError(ErrorCode.InternalError, f"Error creating sphere in FreeCAD: {result_data['error']}")
+             raise FastMCPError(f"Error creating sphere in FreeCAD: {result_data['error']}")
 
         created_name = result_data.get("object_name")
+        await ctx.send_progress(1.0, "Sphere created successfully")
         return {
             "object_name": created_name,
-            "message": f"Created sphere '{created_name}' with radius {radius}mm",
+            "type": "Sphere",
+            "message": f"Successfully created sphere '{created_name}'",
             "success": True
         }
     except json.JSONDecodeError:
         logger.error("Failed to decode sphere creation result")
-        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+        await ctx.send_progress(1.0, "Failed to parse response")
+        raise FastMCPError("Failed to parse response from FreeCAD")
     except Exception as e:
         logger.error(f"Error creating sphere: {e}", exc_info=True)
-        if not isinstance(e, MCPServerError):
-             raise MCPServerError(ErrorCode.InternalError, f"Error creating sphere: {str(e)}")
+        await ctx.send_progress(1.0, f"Error: {str(e)}")
+        if not isinstance(e, FastMCPError):
+              raise FastMCPError(f"Error creating sphere: {str(e)}")
         else: raise e
 
 
@@ -563,230 +650,270 @@ async def freecad_create_cone(
     position_x: float = 0.0, position_y: float = 0.0, position_z: float = 0.0
 ) -> Dict[str, Any]:
     """Create a cone primitive."""
-    logger.info(f"Executing freecad.create_cone: {name} (r1={radius1}, r2={radius2}, h={height}) at ({position_x},{position_y},{position_z})")
+    logger.info(f"Executing freecad.create_cone: {name}")
+    ctx = ToolContext.get()
+    await ctx.send_progress(0.1, f"Creating cone '{name}'...")
+
     safe_name = sanitize_name(name)
     script = f"""
 import FreeCAD
 import Part
 import json
-
-cone_name = None
+result_json = ''
 try:
-    doc = FreeCAD.ActiveDocument or FreeCAD.newDocument("Unnamed")
+    doc = FreeCAD.ActiveDocument
+    if not doc: raise Exception("No active document")
     cone = doc.addObject("Part::Cone", "{safe_name}")
     cone.Radius1 = float({radius1})
     cone.Radius2 = float({radius2})
     cone.Height = float({height})
-    cone.Placement.Base = FreeCAD.Vector(float({position_x}), float({position_y}), float({position_z}))
+    cone.Placement.Base.x = float({position_x})
+    cone.Placement.Base.y = float({position_y})
+    cone.Placement.Base.z = float({position_z})
     doc.recompute()
-    cone_name = cone.Name
-    result_json = json.dumps({{"object_name": cone_name}})
+    result_json = json.dumps({{"object_name": cone.Name, "type": "Cone"}})
 except Exception as e:
     result_json = json.dumps({{"error": str(e)}})
 """
     try:
+        await ctx.send_progress(0.3, "Executing cone creation script...")
         env_data = await execute_script_in_freecad(script, ["result_json"])
         result_json_str = env_data.get("result_json")
+        if not result_json_str:
+            raise FastMCPError("Did not receive result from FreeCAD script")
         result_data = json.loads(result_json_str)
 
         if isinstance(result_data, dict) and "error" in result_data:
-             raise MCPServerError(ErrorCode.InternalError, f"Error creating cone in FreeCAD: {result_data['error']}")
+             raise FastMCPError(f"Error creating cone in FreeCAD: {result_data['error']}")
 
         created_name = result_data.get("object_name")
+        await ctx.send_progress(1.0, "Cone created successfully")
         return {
             "object_name": created_name,
-            "message": f"Created cone '{created_name}' with base radius {radius1}mm, top radius {radius2}mm, and height {height}mm",
+            "type": "Cone",
+            "message": f"Successfully created cone '{created_name}'",
             "success": True
         }
     except json.JSONDecodeError:
         logger.error("Failed to decode cone creation result")
-        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+        await ctx.send_progress(1.0, "Failed to parse response")
+        raise FastMCPError("Failed to parse response from FreeCAD")
     except Exception as e:
         logger.error(f"Error creating cone: {e}", exc_info=True)
-        if not isinstance(e, MCPServerError):
-             raise MCPServerError(ErrorCode.InternalError, f"Error creating cone: {str(e)}")
+        await ctx.send_progress(1.0, f"Error: {str(e)}")
+        if not isinstance(e, FastMCPError):
+              raise FastMCPError(f"Error creating cone: {str(e)}")
         else: raise e
 
 
-# == FreeCAD Boolean Operations ==
-
+# == Part Boolean Operation Tools ==
 @mcp.tool()
 async def freecad_boolean_union(object1: str, object2: str, name: str = "Union") -> Dict[str, Any]:
-    """Create a union of two objects (Fuse)."""
-    logger.info(f"Executing freecad.boolean_union: {name} = {object1} + {object2}")
-
-    # Get the ToolContext for progress reporting
+    """Perform a boolean union (fuse) between two objects."""
+    logger.info(f"Executing freecad.boolean_union: {object1} + {object2} -> {name}")
     ctx = ToolContext.get()
-    await ctx.send_progress(0.1, "Starting boolean union operation...")
+    await ctx.send_progress(0.1, "Starting boolean union...")
 
-    safe_name = sanitize_name(name)
-    safe_obj1 = sanitize_name(object1)
-    safe_obj2 = sanitize_name(object2)
-
-    await ctx.send_progress(0.2, "Preparing union operation script...")
+    safe_obj1_name = sanitize_name(object1)
+    safe_obj2_name = sanitize_name(object2)
+    safe_result_name = sanitize_name(name)
 
     script = f"""
 import FreeCAD
 import Part
 import json
-
-union_name = None
+result_json = ''
 try:
     doc = FreeCAD.ActiveDocument
     if not doc: raise Exception("No active document")
-    obj1 = doc.getObject("{safe_obj1}")
-    obj2 = doc.getObject("{safe_obj2}")
+    obj1 = doc.getObject("{safe_obj1_name}")
+    obj2 = doc.getObject("{safe_obj2_name}")
     if not obj1: raise Exception(f"Object '{object1}' not found")
     if not obj2: raise Exception(f"Object '{object2}' not found")
 
-    union = doc.addObject("Part::Fuse", "{safe_name}")
+    union = doc.addObject("Part::Fuse", "{safe_result_name}")
     union.Base = obj1
     union.Tool = obj2
+    # Hide original objects after operation? Optional.
+    # obj1.ViewObject.Visibility = False
+    # obj2.ViewObject.Visibility = False
     doc.recompute()
-    union_name = union.Name
-    result_json = json.dumps({{"object_name": union_name}})
+    if union.Shape.isNull():
+         raise Exception("Boolean operation resulted in empty shape.")
+    result_json = json.dumps({{"object_name": union.Name, "type": "Union"}})
 except Exception as e:
     result_json = json.dumps({{"error": str(e)}})
 """
     try:
-        await ctx.send_progress(0.4, "Executing union operation in FreeCAD...")
-        env_data = await execute_script_in_freecad(script, ["result_json"])
+         await ctx.send_progress(0.3, "Executing boolean union script...")
+         env_data = await execute_script_in_freecad(script, ["result_json"])
+         result_json_str = env_data.get("result_json")
+         if not result_json_str:
+             raise FastMCPError("Did not receive result from FreeCAD script")
+         result_data = json.loads(result_json_str)
 
-        await ctx.send_progress(0.8, "Processing union operation results...")
-        result_json_str = env_data.get("result_json")
-        result_data = json.loads(result_json_str)
+         if isinstance(result_data, dict) and "error" in result_data:
+              await ctx.send_progress(1.0, f"Union operation failed: {result_data['error']}")
+              raise FastMCPError(f"Error creating union in FreeCAD: {result_data['error']}")
 
-        if isinstance(result_data, dict) and "error" in result_data:
-             await ctx.send_progress(1.0, f"Union operation failed: {result_data['error']}")
-             raise MCPServerError(ErrorCode.InternalError, f"Error creating union in FreeCAD: {result_data['error']}")
-
-        created_name = result_data.get("object_name")
-        await ctx.send_progress(1.0, f"Union operation completed: created {created_name}")
-        return {
-            "object_name": created_name,
-            "message": f"Created union '{created_name}' of {object1} and {object2}",
-            "success": True
-        }
+         created_name = result_data.get("object_name")
+         await ctx.send_progress(1.0, "Union completed successfully")
+         return {
+             "object_name": created_name,
+             "type": "Union",
+             "message": f"Successfully created union '{created_name}' from '{object1}' and '{object2}'",
+             "success": True
+         }
     except json.JSONDecodeError:
-        logger.error("Failed to decode union result")
-        await ctx.send_progress(1.0, "Failed to parse response from FreeCAD")
-        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+         logger.error("Failed to decode union result")
+         await ctx.send_progress(1.0, "Failed to parse response from FreeCAD")
+         raise FastMCPError("Failed to parse response from FreeCAD")
     except Exception as e:
-        logger.error(f"Error performing boolean union: {e}", exc_info=True)
-        await ctx.send_progress(1.0, f"Union operation error: {str(e)}")
-        if not isinstance(e, MCPServerError):
-             raise MCPServerError(ErrorCode.InternalError, f"Error creating union: {str(e)}")
-        else: raise e
+         logger.error(f"Error performing boolean union: {e}", exc_info=True)
+         await ctx.send_progress(1.0, f"Union operation error: {str(e)}")
+         if not isinstance(e, FastMCPError):
+              raise FastMCPError(f"Error creating union: {str(e)}")
+         else: raise e
+
 
 @mcp.tool()
 async def freecad_boolean_cut(object1: str, object2: str, name: str = "Cut") -> Dict[str, Any]:
-    """Cut the second object from the first (subtract)."""
-    logger.info(f"Executing freecad.boolean_cut: {name} = {object1} - {object2}")
-    safe_name = sanitize_name(name)
-    safe_obj1 = sanitize_name(object1) # Base object
-    safe_obj2 = sanitize_name(object2) # Tool object
+    """Perform a boolean cut (difference) between two objects (object1 - object2)."""
+    logger.info(f"Executing freecad.boolean_cut: {object1} - {object2} -> {name}")
+    ctx = ToolContext.get()
+    await ctx.send_progress(0.1, "Starting boolean cut...")
+
+    safe_obj1_name = sanitize_name(object1)
+    safe_obj2_name = sanitize_name(object2)
+    safe_result_name = sanitize_name(name)
+
     script = f"""
 import FreeCAD
 import Part
 import json
-
-cut_name = None
+result_json = ''
 try:
     doc = FreeCAD.ActiveDocument
     if not doc: raise Exception("No active document")
-    obj1 = doc.getObject("{safe_obj1}") # Base
-    obj2 = doc.getObject("{safe_obj2}") # Tool
-    if not obj1: raise Exception(f"Base object '{object1}' not found")
-    if not obj2: raise Exception(f"Tool object '{object2}' not found")
+    obj1 = doc.getObject("{safe_obj1_name}") # Base object
+    obj2 = doc.getObject("{safe_obj2_name}") # Tool object to subtract
+    if not obj1: raise Exception(f"Object '{object1}' not found")
+    if not obj2: raise Exception(f"Object '{object2}' not found")
 
-    cut = doc.addObject("Part::Cut", "{safe_name}")
+    cut = doc.addObject("Part::Cut", "{safe_result_name}")
     cut.Base = obj1
     cut.Tool = obj2
+    # Hide original objects? Optional.
+    # obj1.ViewObject.Visibility = False
+    # obj2.ViewObject.Visibility = False
     doc.recompute()
-    cut_name = cut.Name
-    result_json = json.dumps({{"object_name": cut_name}})
+    if cut.Shape.isNull():
+         raise Exception("Boolean operation resulted in empty shape.")
+    result_json = json.dumps({{"object_name": cut.Name, "type": "Cut"}})
 except Exception as e:
     result_json = json.dumps({{"error": str(e)}})
 """
     try:
+        await ctx.send_progress(0.3, "Executing boolean cut script...")
         env_data = await execute_script_in_freecad(script, ["result_json"])
         result_json_str = env_data.get("result_json")
+        if not result_json_str:
+            raise FastMCPError("Did not receive result from FreeCAD script")
         result_data = json.loads(result_json_str)
 
         if isinstance(result_data, dict) and "error" in result_data:
-             raise MCPServerError(ErrorCode.InternalError, f"Error creating cut in FreeCAD: {result_data['error']}")
+             await ctx.send_progress(1.0, f"Cut operation failed: {result_data['error']}")
+             raise FastMCPError(f"Error creating cut in FreeCAD: {result_data['error']}")
 
         created_name = result_data.get("object_name")
+        await ctx.send_progress(1.0, "Cut completed successfully")
         return {
             "object_name": created_name,
-            "message": f"Created cut '{created_name}' of {object1} by {object2}",
+            "type": "Cut",
+            "message": f"Successfully created cut '{created_name}' ({object1} - {object2})",
             "success": True
         }
     except json.JSONDecodeError:
         logger.error("Failed to decode cut result")
-        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+        await ctx.send_progress(1.0, "Failed to parse response")
+        raise FastMCPError("Failed to parse response from FreeCAD")
     except Exception as e:
         logger.error(f"Error performing boolean cut: {e}", exc_info=True)
-        if not isinstance(e, MCPServerError):
-             raise MCPServerError(ErrorCode.InternalError, f"Error creating cut: {str(e)}")
+        await ctx.send_progress(1.0, f"Cut operation error: {str(e)}")
+        if not isinstance(e, FastMCPError):
+              raise FastMCPError(f"Error creating cut: {str(e)}")
         else: raise e
 
 
 @mcp.tool()
 async def freecad_boolean_intersection(object1: str, object2: str, name: str = "Intersection") -> Dict[str, Any]:
-    """Create the intersection of two objects (Common)."""
-    logger.info(f"Executing freecad.boolean_intersection: {name} = {object1} & {object2}")
-    safe_name = sanitize_name(name)
-    safe_obj1 = sanitize_name(object1)
-    safe_obj2 = sanitize_name(object2)
+    """Perform a boolean intersection (common) between two objects."""
+    logger.info(f"Executing freecad.boolean_intersection: {object1} & {object2} -> {name}")
+    ctx = ToolContext.get()
+    await ctx.send_progress(0.1, "Starting boolean intersection...")
+
+    safe_obj1_name = sanitize_name(object1)
+    safe_obj2_name = sanitize_name(object2)
+    safe_result_name = sanitize_name(name)
+
     script = f"""
 import FreeCAD
 import Part
 import json
-
-intersection_name = None
+result_json = ''
 try:
     doc = FreeCAD.ActiveDocument
     if not doc: raise Exception("No active document")
-    obj1 = doc.getObject("{safe_obj1}")
-    obj2 = doc.getObject("{safe_obj2}")
+    obj1 = doc.getObject("{safe_obj1_name}")
+    obj2 = doc.getObject("{safe_obj2_name}")
     if not obj1: raise Exception(f"Object '{object1}' not found")
     if not obj2: raise Exception(f"Object '{object2}' not found")
 
-    intersection = doc.addObject("Part::Common", "{safe_name}")
-    # Part.Common takes a list of shapes
-    intersection.Shapes = [obj1, obj2]
+    common = doc.addObject("Part::Common", "{safe_result_name}")
+    common.Shapes = [obj1, obj2] # Intersection takes a list of shapes
+    # Hide original objects? Optional.
+    # obj1.ViewObject.Visibility = False
+    # obj2.ViewObject.Visibility = False
     doc.recompute()
-    intersection_name = intersection.Name
-    result_json = json.dumps({{"object_name": intersection_name}})
+    if common.Shape.isNull():
+         raise Exception("Boolean operation resulted in empty shape.")
+    result_json = json.dumps({{"object_name": common.Name, "type": "Intersection"}})
 except Exception as e:
     result_json = json.dumps({{"error": str(e)}})
 """
     try:
+        await ctx.send_progress(0.3, "Executing boolean intersection script...")
         env_data = await execute_script_in_freecad(script, ["result_json"])
         result_json_str = env_data.get("result_json")
+        if not result_json_str:
+            raise FastMCPError("Did not receive result from FreeCAD script")
         result_data = json.loads(result_json_str)
 
         if isinstance(result_data, dict) and "error" in result_data:
-             raise MCPServerError(ErrorCode.InternalError, f"Error creating intersection in FreeCAD: {result_data['error']}")
+             await ctx.send_progress(1.0, f"Intersection operation failed: {result_data['error']}")
+             raise FastMCPError(f"Error creating intersection in FreeCAD: {result_data['error']}")
 
         created_name = result_data.get("object_name")
+        await ctx.send_progress(1.0, "Intersection completed successfully")
         return {
             "object_name": created_name,
-            "message": f"Created intersection '{created_name}' of {object1} and {object2}",
+            "type": "Intersection",
+            "message": f"Successfully created intersection '{created_name}' between '{object1}' and '{object2}'",
             "success": True
         }
     except json.JSONDecodeError:
         logger.error("Failed to decode intersection result")
-        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+        await ctx.send_progress(1.0, "Failed to parse response")
+        raise FastMCPError("Failed to parse response from FreeCAD")
     except Exception as e:
         logger.error(f"Error performing boolean intersection: {e}", exc_info=True)
-        if not isinstance(e, MCPServerError):
-             raise MCPServerError(ErrorCode.InternalError, f"Error creating intersection: {str(e)}")
+        await ctx.send_progress(1.0, f"Intersection operation error: {str(e)}")
+        if not isinstance(e, FastMCPError):
+              raise FastMCPError(f"Error creating intersection: {str(e)}")
         else: raise e
 
-# == FreeCAD Transformation Tools ==
 
+# == FreeCAD Object Manipulation Tools ==
 @mcp.tool()
 async def freecad_move_object(
     object_name: str,
@@ -794,63 +921,73 @@ async def freecad_move_object(
 ) -> Dict[str, Any]:
     """Move an object to a new absolute position. Specify at least one coordinate."""
     if x is None and y is None and z is None:
-         raise MCPServerError(ErrorCode.InvalidParams, "At least one coordinate (x, y, or z) must be provided for move_object")
+         raise FastMCPError("At least one coordinate (x, y, or z) must be provided for move_object")
 
     logger.info(f"Executing freecad.move_object: {object_name} to (x={x}, y={y}, z={z})")
+    ctx = ToolContext.get()
+    await ctx.send_progress(0.1, "Starting object move...")
+
     safe_obj_name = sanitize_name(object_name)
+    # Construct parts of the placement update based on provided args
+    updates = []
+    if x is not None: updates.append(f"obj.Placement.Base.x = float({x})")
+    if y is not None: updates.append(f"obj.Placement.Base.y = float({y})")
+    if z is not None: updates.append(f"obj.Placement.Base.z = float({z})")
+    update_str = "\\n    ".join(updates)
 
-    # Build the script carefully to handle optional coordinates
-    script_lines = [
-        "import FreeCAD",
-        "import json",
-        "new_pos_x = None; new_pos_y = None; new_pos_z = None", # Vars to store final pos
-        "try:",
-        "    doc = FreeCAD.ActiveDocument",
-        "    if not doc: raise Exception(\"No active document\")",
-        f"   obj = doc.getObject(\"{safe_obj_name}\")",
-        f"   if not obj: raise Exception(\"Object '{object_name}' not found\")",
-        "    current_pos = obj.Placement.Base",
-        "    target_pos = FreeCAD.Vector(current_pos.x, current_pos.y, current_pos.z)" # Start with current
-    ]
-    if x is not None: script_lines.append(f"   target_pos.x = float({x})")
-    if y is not None: script_lines.append(f"   target_pos.y = float({y})")
-    if z is not None: script_lines.append(f"   target_pos.z = float({z})")
+    script = f"""
+import FreeCAD
+import json
+result_json = ''
+try:
+    doc = FreeCAD.ActiveDocument
+    if not doc: raise Exception("No active document")
+    obj = doc.getObject("{safe_obj_name}")
+    if not obj: raise Exception(f"Object '{object_name}' not found")
 
-    script_lines.extend([
-        "    obj.Placement.Base = target_pos",
-        "    doc.recompute()",
-        "    final_pos = obj.Placement.Base", # Read back final position
-        "    new_pos_x = final_pos.x",
-        "    new_pos_y = final_pos.y",
-        "    new_pos_z = final_pos.z",
-        "    result_json = json.dumps({'x': new_pos_x, 'y': new_pos_y, 'z': new_pos_z})",
-        "except Exception as e:",
-        "    result_json = json.dumps({'error': str(e)})"
-    ])
-    script = "\n".join(script_lines)
+    # Apply updates
+    {update_str}
 
+    doc.recompute()
+    # Report final position
+    final_pos = obj.Placement.Base
+    result_json = json.dumps({{
+        "final_x": final_pos.x,
+        "final_y": final_pos.y,
+        "final_z": final_pos.z
+    }})
+except Exception as e:
+    result_json = json.dumps({{"error": str(e)}})
+"""
     try:
+        await ctx.send_progress(0.3, "Executing move script...")
         env_data = await execute_script_in_freecad(script, ["result_json"])
         result_json_str = env_data.get("result_json")
+        if not result_json_str:
+            raise FastMCPError("Did not receive result from FreeCAD script")
         result_data = json.loads(result_json_str)
 
         if isinstance(result_data, dict) and "error" in result_data:
-             raise MCPServerError(ErrorCode.InternalError, f"Error moving object in FreeCAD: {result_data['error']}")
+             await ctx.send_progress(1.0, f"Move operation failed: {result_data['error']}")
+             raise FastMCPError(f"Error moving object in FreeCAD: {result_data['error']}")
 
         final_pos = result_data # Should contain x, y, z
+        await ctx.send_progress(1.0, "Move completed successfully")
         return {
             "object_name": object_name,
-            "position": final_pos,
-            "message": f"Moved object '{object_name}' to position ({final_pos.get('x'):.2f}, {final_pos.get('y'):.2f}, {final_pos.get('z'):.2f})",
+            "final_position": final_pos,
+            "message": f"Successfully moved object '{object_name}' to ({final_pos.get('x',0):.2f}, {final_pos.get('y',0):.2f}, {final_pos.get('z',0):.2f})",
             "success": True
         }
     except json.JSONDecodeError:
         logger.error("Failed to decode move result")
-        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+        await ctx.send_progress(1.0, "Failed to parse response")
+        raise FastMCPError("Failed to parse response from FreeCAD")
     except Exception as e:
         logger.error(f"Error moving object: {e}", exc_info=True)
-        if not isinstance(e, MCPServerError):
-             raise MCPServerError(ErrorCode.InternalError, f"Error moving object: {str(e)}")
+        await ctx.send_progress(1.0, f"Move error: {str(e)}")
+        if not isinstance(e, FastMCPError):
+             raise FastMCPError(f"Error moving object: {str(e)}")
         else: raise e
 
 
@@ -859,16 +996,22 @@ async def freecad_rotate_object(
     object_name: str,
     angle_x: float = 0.0, angle_y: float = 0.0, angle_z: float = 0.0
 ) -> Dict[str, Any]:
-    """Rotate an object by Euler angles (degrees) around its placement base point."""
-    logger.info(f"Executing freecad.rotate_object: {object_name} by (x={angle_x}, y={angle_y}, z={angle_z}) deg")
+    """Rotate an object by specified angles around its placement base point (XYZ order)."""
+    logger.info(f"Executing freecad.rotate_object: {object_name} by (x={angle_x}, y={angle_y}, z={angle_z})")
+
+    ctx = ToolContext.get()
+    await ctx.send_progress(0.1, "Starting object rotation...")
+
     safe_obj_name = sanitize_name(object_name)
 
     script = f"""
 import FreeCAD
+import Part
 import math
 import json
 
 final_rot_x = 0.0; final_rot_y = 0.0; final_rot_z = 0.0 # Store result
+result_json = ''
 try:
     doc = FreeCAD.ActiveDocument
     if not doc: raise Exception("No active document")
@@ -888,8 +1031,8 @@ try:
     current_placement = obj.Placement
     # Rotation is multiplied: new_rot = increment * old_rot
     new_rotation = incremental_rotation.multiply(current_placement.Rotation)
-    # Keep the same base point
-    new_placement = FreeCAD.Placement(current_placement.Base, new_rotation, current_placement.Base)
+    # Rotation applied relative to Base
+    new_placement = FreeCAD.Placement(current_placement.Base, new_rotation)
     obj.Placement = new_placement
 
     doc.recompute()
@@ -906,32 +1049,39 @@ try:
 except Exception as e:
     result_json = json.dumps({{"error": str(e)}})
 """
+
+    await ctx.send_progress(0.3, "Executing rotation script...")
     try:
         env_data = await execute_script_in_freecad(script, ["result_json"])
         result_json_str = env_data.get("result_json")
+        if not result_json_str:
+            raise FastMCPError("Did not receive result from FreeCAD script")
         result_data = json.loads(result_json_str)
 
         if isinstance(result_data, dict) and "error" in result_data:
-             raise MCPServerError(ErrorCode.InternalError, f"Error rotating object in FreeCAD: {result_data['error']}")
+             raise FastMCPError(f"Error rotating object in FreeCAD: {result_data['error']}")
 
         applied = { k.split('_')[1]: v for k, v in result_data.items() if k.startswith('applied_')}
-        # final = { k.split('_')[1]: v for k, v in result_data.items() if k.startswith('final_')}
+        final = { k.split('_')[1]: v for k, v in result_data.items() if k.startswith('final_')} # Include final angles
 
+        await ctx.send_progress(1.0, "Rotation completed successfully")
         return {
             "object_name": object_name,
             "rotation_applied": applied,
-            # "final_rotation_euler_zyx": final, # Optional: return final calculated angles
+            "final_rotation_euler_zyx": final, # Return final calculated angles
             "message": f"Applied rotation ({applied.get('x', 0.0):.1f}, {applied.get('y', 0.0):.1f}, {applied.get('z', 0.0):.1f}) degrees to object '{object_name}'",
             "success": True
         }
     except json.JSONDecodeError:
         logger.error("Failed to decode rotation result")
-        raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+        await ctx.send_progress(1.0, "Failed to parse response from FreeCAD")
+        raise FastMCPError("Failed to parse response from FreeCAD")
+    except FastMCPError: # Catch specific error type
+        raise
     except Exception as e:
         logger.error(f"Error rotating object: {e}", exc_info=True)
-        if not isinstance(e, MCPServerError):
-             raise MCPServerError(ErrorCode.InternalError, f"Error rotating object: {str(e)}")
-        else: raise e
+        await ctx.send_progress(1.0, f"Rotation error: {str(e)}")
+        raise FastMCPError(f"Error rotating object: {str(e)}")
 
 
 # == FreeCAD Export Tools ==
@@ -948,11 +1098,11 @@ async def freecad_export_stl(file_path: str, objects: Optional[List[str]] = None
     # Basic path validation
     safe_file_path = sanitize_path(file_path)
     if not safe_file_path.lower().endswith(".stl"):
-         raise MCPServerError(ErrorCode.InvalidParams, "Invalid file_path. Must end with .stl")
+         raise FastMCPError("Invalid file_path. Must end with .stl")
 
     # Ensure objects is a list of strings if provided
     if objects is not None and (not isinstance(objects, list) or not all(isinstance(o, str) for o in objects)):
-         raise MCPServerError(ErrorCode.InvalidParams, "Parameter 'objects' must be a list of strings.")
+         raise FastMCPError("Parameter 'objects' must be a list of strings.")
 
     await ctx.send_progress(0.2, "Validating export parameters...")
 
@@ -961,7 +1111,7 @@ async def freecad_export_stl(file_path: str, objects: Optional[List[str]] = None
         try:
              await ctx.send_progress(0.3, "Using direct export method...")
              success = FC_CONNECTION.export_stl(
-                 object_names=objects, # Pass list of names directly
+                 object_names=objects,
                  file_path=safe_file_path,
                  document=document
              )
@@ -974,15 +1124,14 @@ async def freecad_export_stl(file_path: str, objects: Optional[List[str]] = None
                      "success": True,
                  }
              else:
-                  # export_stl likely raises exception on failure, but handle False return just in case
                   await ctx.send_progress(1.0, "Export failed")
-                  raise MCPServerError(ErrorCode.InternalError, "FreeCADConnection.export_stl returned False.")
+                  raise FastMCPError("FreeCADConnection.export_stl returned False.")
         except Exception as e:
              logger.error(f"Error during direct export_stl call: {e}", exc_info=True)
              await ctx.send_progress(1.0, f"Export error: {str(e)}")
-             raise MCPServerError(ErrorCode.InternalError, f"Failed to export STL (direct call): {str(e)}")
+             raise FastMCPError(f"Failed to export STL (direct call): {str(e)}")
     else:
-        # Fallback to script execution if direct method isn't available/preferred
+        # Fallback to script execution
         logger.warning("Falling back to script execution for export_stl")
         await ctx.send_progress(0.3, "Using script-based export method...")
 
@@ -997,11 +1146,12 @@ async def freecad_export_stl(file_path: str, objects: Optional[List[str]] = None
 
         script = f"""
 import FreeCAD
-import Mesh
+import Mesh # Use Mesh module for STL export
 import json
 
 success = False
 error_msg = ''
+result_json = ''
 try:
     doc = None
     if "{safe_doc_name}":
@@ -1015,8 +1165,8 @@ try:
     export_obj_names = {objects_list_str} # Use the generated list string or None
 
     if export_obj_names is None:
-        # Export all Part::Feature objects if no specific list given
-        obj_list_to_export = [o for o in doc.Objects if hasattr(o, 'Shape') and o.TypeId.startswith('Part::')]
+        # Export all visible objects with a Shape if no specific list given
+        obj_list_to_export = [o for o in doc.Objects if hasattr(o, 'Shape') and getattr(o.ViewObject, 'Visibility', False)]
     else:
         for name in export_obj_names:
             obj = doc.getObject(name)
@@ -1028,7 +1178,7 @@ try:
     if not obj_list_to_export:
         raise Exception("No valid objects found to export.")
 
-    # Mesh.export expects list of objects, not names
+    # Mesh.export expects list of objects
     Mesh.export(obj_list_to_export, u"{safe_file_path}")
     success = True
 except Exception as e:
@@ -1042,11 +1192,13 @@ result_json = json.dumps({{"success": success, "error": error_msg}})
             await ctx.send_progress(0.9, "Processing export results...")
 
             result_json_str = env_data.get("result_json")
+            if not result_json_str:
+                raise FastMCPError("Did not receive result from FreeCAD export script")
             result_data = json.loads(result_json_str)
 
             if result_data.get("error"):
                  await ctx.send_progress(1.0, f"Export failed: {result_data['error']}")
-                 raise MCPServerError(ErrorCode.InternalError, f"Error exporting STL in FreeCAD: {result_data['error']}")
+                 raise FastMCPError(f"Error exporting STL in FreeCAD: {result_data['error']}")
 
             if result_data.get("success"):
                  await ctx.send_progress(1.0, "Export completed successfully")
@@ -1057,17 +1209,17 @@ result_json = json.dumps({{"success": success, "error": error_msg}})
                  }
             else:
                  await ctx.send_progress(1.0, "Export failed silently")
-                 raise MCPServerError(ErrorCode.InternalError, "STL export script failed silently.")
+                 raise FastMCPError("STL export script failed silently.")
 
         except json.JSONDecodeError:
             logger.error("Failed to decode export result")
             await ctx.send_progress(1.0, "Failed to parse response from FreeCAD")
-            raise MCPServerError(ErrorCode.InternalError, "Failed to parse response from FreeCAD")
+            raise FastMCPError("Failed to parse response from FreeCAD")
         except Exception as e:
             logger.error(f"Error exporting STL (script fallback): {e}", exc_info=True)
             await ctx.send_progress(1.0, f"Export error: {str(e)}")
-            if not isinstance(e, MCPServerError):
-                 raise MCPServerError(ErrorCode.InternalError, f"Error exporting STL: {str(e)}")
+            if not isinstance(e, FastMCPError):
+                 raise FastMCPError(f"Error exporting STL: {str(e)}")
             else: raise e
 
 
@@ -1078,28 +1230,24 @@ async def get_freecad_info() -> str:
     """Get information about the connected FreeCAD instance."""
     logger.info("Executing get_freecad_info resource")
     if not FC_CONNECTION or not FC_CONNECTION.is_connected():
-        # Resources typically return content or raise errors
-        # Returning an error message string might be acceptable for info resources
         return "Error: Not currently connected to FreeCAD."
-        # Alternatively, raise an error:
-        # raise MCPServerError(ErrorCode.InternalError, "Not connected to FreeCAD")
+        # Alternatively, raise:
+        # raise FastMCPError("Not connected to FreeCAD")
 
     try:
         version_info = FC_CONNECTION.get_version()
         version_str = ".".join(str(v) for v in version_info.get("version", ["Unknown"]))
         connection_type = FC_CONNECTION.get_connection_type()
-        # FastMCP resource handlers typically return the content directly
-        return f"FreeCAD Version: {version_str}\nConnection Type: {connection_type}"
+        return f"FreeCAD Version: {version_str}\\nConnection Type: {connection_type}"
     except Exception as e:
         logger.error(f"Error getting FreeCAD info: {e}")
-        # Return error string for info resource
         return f"Error retrieving FreeCAD info: {str(e)}"
         # Alternatively, raise:
-        # raise MCPServerError(ErrorCode.InternalError, f"Error getting FreeCAD info: {str(e)}")
+        # raise FastMCPError(f"Error getting FreeCAD info: {str(e)}")
 
 # --- Main Execution ---
-def main():
-    global CONFIG # Allow modifying global config
+async def main():
+    global CONFIG, FC_CONNECTION # Ensure global access
 
     # --- Argument Parsing ---
     parser = argparse.ArgumentParser(description="Advanced FreeCAD MCP Server")
@@ -1112,8 +1260,7 @@ def main():
 
     # --- Version Info ---
     if args.version:
-        print(f"Advanced-MCP-FreeCAD Server v{VERSION}")
-        # Optionally add FreeCAD version check here if needed before full connection init
+        print(f"MCP-FreeCAD Server v{VERSION}")
         return
 
     # --- Setup Logging ---
@@ -1130,13 +1277,12 @@ def main():
 
     # --- Load Configuration ---
     CONFIG = load_config(args.config)
-    # Override config with command line arguments if provided
     if args.host:
         CONFIG.setdefault("freecad", {})["host"] = args.host
     if args.port:
         CONFIG.setdefault("freecad", {})["port"] = args.port
 
-    # --- Initialize FreeCAD Connection ---
+    # --- Initialize FreeCAD Connection (Initial Attempt) ---
     initialize_freecad_connection(CONFIG)
 
     # --- Configure Progress Reporting ---
@@ -1145,7 +1291,6 @@ def main():
         # Try to import and use FastMCP progress reporting if available
         from fastmcp.server.context import get_current_context
 
-        # Set up progress callback that integrates with FastMCP's progress reporting
         async def progress_callback(progress_value, message=None):
             try:
                 context = get_current_context()
@@ -1159,18 +1304,40 @@ def main():
         tool_context.set_progress_callback(progress_callback)
         logger.info("Progress reporting configured with FastMCP")
     except ImportError:
-        logger.info("FastMCP progress context not available, using local progress reporting")
+        logger.info("FastMCP progress context not available, using local progress logging")
+        async def local_progress_callback(progress_value, message=None):
+            logger.debug(f"Progress (local): {progress_value:.2%} - {message or 'Processing...'}")
+        tool_context.set_progress_callback(local_progress_callback)
 
-    # --- Start Server ---
+    # --- Start Server and Connection Check Loop ---
     logger.info(f"Starting {server_name} v{VERSION}...")
+    server_task = None
+    connection_check_task = None
     try:
-        asyncio.run(mcp.run_stdio())
+        # Create tasks for the server and the connection checker
+        server_task = asyncio.create_task(mcp.run_stdio_async()) # Use async version
+        connection_check_task = asyncio.create_task(connection_check_loop(CONFIG))
+
+        # Run them concurrently
+        await asyncio.gather(server_task, connection_check_task)
+
+    except asyncio.CancelledError:
+         logger.info("Main tasks cancelled.")
     except KeyboardInterrupt:
         logger.info("Server stopped by user")
     except Exception as e:
-        logger.error(f"Error running server: {e}", exc_info=True)
+        logger.error(f"Error running server tasks: {e}", exc_info=True)
         sys.exit(1)
     finally:
+        # Gracefully cancel tasks on exit
+        if connection_check_task and not connection_check_task.done():
+            connection_check_task.cancel()
+        if server_task and not server_task.done():
+            server_task.cancel()
+        # Wait for tasks to finish cancelling
+        if server_task or connection_check_task:
+             await asyncio.gather(server_task, connection_check_task, return_exceptions=True)
+
         # Cleanup FreeCAD connection if it was established
         if FC_CONNECTION and hasattr(FC_CONNECTION, 'close'):
             logger.info("Closing FreeCAD connection...")
@@ -1179,4 +1346,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main()) # Run the async main function

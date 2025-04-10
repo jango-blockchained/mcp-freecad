@@ -79,20 +79,23 @@ class FreeCADLauncher:
 
         # Build the command
         if self.use_apprun:
+            # ---- REVERT TO ORIGINAL COMMAND ----
             cmd = [
-                self.apprun_path,  # Use the resolved AppRun path
-                self.script_path,  # Script path as direct argument
-                "--",  # Separate script arguments
-                command,
-                params_json
+                self.apprun_path,      # Use the resolved AppRun path
+                self.script_path,      # Script path as direct argument
+                "--",                  # Separate script arguments
+                command,              # Pass command name as arg to our script
+                params_json           # Pass params JSON as arg to our script
             ]
+            # ---- END REVERTED COMMAND ----
         else:
             # Standard mode using FreeCAD executable
+            # This mode likely needs refinement to work consistently
             cmd = [
-                self.freecad_path,
-                "--console",  # Run in console mode
-                self.script_path,  # Script path as direct argument
-                "--",  # Separate script arguments
+                self.freecad_path,     # e.g., /usr/bin/freecad
+                "--console",
+                self.script_path,
+                "--",                 # Separator might be needed depending on FreeCAD version
                 command,
                 params_json
             ]
@@ -100,6 +103,12 @@ class FreeCADLauncher:
         self.log(f"Running command: {' '.join(map(str, cmd))}")
 
         try:
+            # ---> REMOVE Environment Modification <---
+            # env = os.environ.copy()
+            # env["QT_QPA_PLATFORM"] = "offscreen"
+            # self.log(f"Setting QT_QPA_PLATFORM=offscreen")
+            # --------------------------------------
+
             # Run the command
             process = subprocess.Popen(
                 cmd,
@@ -108,6 +117,7 @@ class FreeCADLauncher:
                 text=True,
                 encoding='utf-8',
                 errors='replace'  # Handle encoding errors gracefully
+                # env=env # ---> REMOVE Modified Environment <---
             )
 
             # Set a timeout for the process

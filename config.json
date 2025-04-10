@@ -37,11 +37,11 @@
     "auto_connect": false,
     "reconnect_on_failure": true,
     "use_mock": false,
-    "connection_method": "launcher",
+    "connection_method": "server",
     "script_path": "/home/jango/Git/mcp-freecad/freecad_script.py",
     "launcher_path": "/home/jango/Git/mcp-freecad/freecad_launcher.py",
     "use_apprun": true,
-    "apprun_path": "/app/squashfs-root"
+    "apprun_path": "/home/jango/Git/mcp-freecad/squashfs-root/AppRun"
   },
   "cors": {
     "origins": [

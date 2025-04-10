@@ -1191,32 +1191,36 @@ static char * mcp_icon_xpm[] = {
 
             # If the FreeCAD server is running, update its details
             if self._freecad_server_running:
-                # Record uptime if not already tracked
-                if not hasattr(self, '_freecad_server_start_time'):
-                    self._freecad_server_start_time = time.time()
-
-                # Calculate uptime
-                freecad_uptime = int(time.time() - self._freecad_server_start_time)
-
-                # Add to connection details
-                self._connection_details['freecad_server_uptime'] = freecad_uptime
+                # Only calculate uptime if we started it internally
+                if hasattr(self, '_freecad_server_start_time') and self._freecad_server_process:
+                    freecad_uptime = int(time.time() - self._freecad_server_start_time)
+                    self._connection_details['freecad_server_uptime'] = freecad_uptime
+                else:
+                    # Indicate it was likely started externally
+                    self._connection_details['freecad_server_uptime'] = "Externally Started"
+            else:
+                # Clear uptime if server stopped
+                 if 'freecad_server_uptime' in self._connection_details:
+                      del self._connection_details['freecad_server_uptime']
+                 if hasattr(self, '_freecad_server_start_time'):
+                     delattr(self, '_freecad_server_start_time')
 
             # If the MCP server is running, update its details
             if self._mcp_server_running:
-                # Record uptime if not already tracked
-                if not hasattr(self, '_mcp_server_start_time'):
-                    self._mcp_server_start_time = time.time()
+                # Only calculate uptime if we started it internally
+                if hasattr(self, '_mcp_server_start_time') and self._mcp_server_process:
+                    mcp_uptime = int(time.time() - self._mcp_server_start_time)
+                    self._connection_details["server_uptime"] = mcp_uptime
+                else:
+                    # Indicate it was likely started externally
+                    self._connection_details["server_uptime"] = "Externally Started"
 
-                # Calculate uptime
-                mcp_uptime = int(time.time() - self._mcp_server_start_time)
-
-                # Set connection details
+                # Set other connection details (some might need actual querying)
                 self._connection_details.update({
                     "type": "WebSocket" if self._connection_status else "None",
-                    "client_port": 9000 if self._connection_status else 0,
+                    "client_port": 9000 if self._connection_status else 0, # Example port
                     "server_port": self.MCP_SERVER_PORT,
-                    "connected_clients": 1 if self._connection_status else 0,
-                    "server_uptime": mcp_uptime,
+                    "connected_clients": 1 if self._connection_status else 0, # Placeholder
                 })
             else:
                 # Reset MCP connection details when server is not running
@@ -1227,16 +1231,61 @@ static char * mcp_icon_xpm[] = {
                     "connected_clients": 0,
                     "server_uptime": 0,
                 })
+                if hasattr(self, '_mcp_server_start_time'):
+                    delattr(self, '_mcp_server_start_time')
+
         except Exception as e:
             FreeCAD.Console.PrintError(f"Error updating connection details: {str(e)}\n")
 
     def _is_freecad_server_running(self):
-        """Check if the FreeCAD server process is running."""
+        """Check if the FreeCAD server process is running (internally or externally)."""
+        # First check if we have an internal process running
+        internal_running = False
         try:
-            return bool(
+            internal_running = bool(
                 self._freecad_server_process is not None and self._freecad_server_process.poll() is None
             )
         except Exception:
+            internal_running = False
+
+        if internal_running:
+            return True
+
+        # If no internal process, check if the port (default 12345) is in use
+        try:
+            import socket # <-- Import socket inside the function
+            # Assume default host/port for external check for now
+            # TODO: Make this configurable if needed
+            host = "localhost"
+            port = 12345
+
+            # Method 1: Try connecting
+            connect_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            connect_socket.settimeout(0.5)
+            result = connect_socket.connect_ex((host, port))
+            connect_socket.close()
+            port_in_use = (result == 0)
+
+            # Method 2: Try binding (more reliable check if service exists but isn't accepting)
+            if not port_in_use:
+                try:
+                    bind_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    bind_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    bind_socket.bind((host, port))
+                    bind_socket.close()
+                    port_in_use = False # Bind successful means port is NOT in use
+                except socket.error:
+                    port_in_use = True # Bind failed means port IS in use
+
+            if port_in_use and self._freecad_server_process is None:
+                 import time
+                 if not hasattr(self, '_freecad_server_start_time'):
+                     self._freecad_server_start_time = time.time() # Record approximate start
+                     FreeCAD.Console.PrintMessage("External FreeCAD server detected on port {}. Not starting new instance.\n".format(port))
+
+            return port_in_use
+        except Exception as e:
+            FreeCAD.Console.PrintWarning(f"Error checking FreeCAD server port: {e}\n")
             return False
 
     def _is_mcp_server_running(self):
@@ -1638,6 +1687,18 @@ static char * mcp_icon_xpm[] = {
 
     def _start_mcp_server(self):
         """Start the freecad_mcp_server.py script."""
+        # ---> Add check if server is already running using the dedicated function
+        if self._is_mcp_server_running():
+            FreeCAD.Console.PrintMessage("MCP Server is already running (checked via _is_mcp_server_running).\\n")
+            self._update_indicator_state(server_running=True) # Ensure UI reflects the state
+            return
+        # <---------------------\
+
+        # ---> Add local imports
+        import socket
+        import subprocess
+        from PySide2 import QtCore # <-- Add this import
+        # <---------------------
         if self._mcp_server_running:
             FreeCAD.Console.PrintWarning("MCP Server is already running.\n")
             return

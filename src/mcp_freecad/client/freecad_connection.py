@@ -28,14 +28,45 @@ import os
 import socket
 import sys
 from typing import Any, Dict, List, Optional
+import logging
 
-# Import FreeCADBridge class if available
+# -- Add Repo Root to sys.path --
+# Assuming this script is run from src/mcp_freecad/client/
+# or the start script cds to repo root
+# repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+# if repo_root not in sys.path:
+#     sys.path.insert(0, repo_root)
+# ------------------------------
+
+# Set up logger for this module
+logger = logging.getLogger(__name__)
+
+# --- FreeCADBridge Import Attempt ---
+logger.critical("!!! Attempting to import FreeCADBridge !!!") # VERY LOUD LOG
+_bridge_import_error_msg = "Unknown import failure" # Renamed variable
+BRIDGE_AVAILABLE = False # Default to False
+logger.critical(">>> Right before TRY block <<<")
 try:
-    from freecad_bridge import FreeCADBridge
+    # Attempt to import FreeCADBridge if FreeCAD is available
+    # from src.mcp_freecad.client.freecad_bridge import FreeCADBridge # NEW absolute import
+    from freecad_bridge import FreeCADBridge # Direct import
 
     BRIDGE_AVAILABLE = True
-except ImportError:
-    BRIDGE_AVAILABLE = False
+    _bridge_import_error_msg = "" # Reset error message on successful import
+    logger.info("Successfully imported FreeCADBridge!")
+
+except BaseException as e:  # Catch BaseException instead of just Exception
+    # Log the failure but allow the program to continue without bridge functionality
+    _bridge_import_error_msg = f"Failed to import FreeCADBridge: {e}" # Use renamed variable
+    # Keep the print for now to confirm fix
+    # print(f"!!! EXCEPTION CAUGHT: {type(e).__name__} - {e} !!!")
+    logger.warning(_bridge_import_error_msg) # Revert back to logger
+    # BRIDGE_AVAILABLE remains False
+
+logger.critical(">>> Immediately after TRY...EXCEPT block <<<")
+
+if not BRIDGE_AVAILABLE:
+     logger.error(f"!!! FreeCADBridge NOT available. Last error: {_bridge_import_error_msg} !!!") # Use renamed variable
 
 
 class FreeCADConnection:
@@ -45,7 +76,6 @@ class FreeCADConnection:
 
     CONNECTION_SERVER = "server"
     CONNECTION_BRIDGE = "bridge"
-    CONNECTION_MOCK = "mock"
 
     def __init__(
         self,
@@ -63,7 +93,7 @@ class FreeCADConnection:
             port: Server port for socket connection (default: 12345)
             freecad_path: Path to FreeCAD executable for CLI bridge (default: 'freecad')
             auto_connect: Whether to automatically connect (default: True)
-            prefer_method: Preferred connection method (default: None = auto-detect)
+            prefer_method: Preferred connection method (server or bridge)
         """
         self.host = host
         self.port = port
@@ -80,7 +110,7 @@ class FreeCADConnection:
         Connect to FreeCAD using the best available method
 
         Args:
-            prefer_method: Preferred connection method (server, bridge, or mock)
+            prefer_method: Preferred connection method (server or bridge)
 
         Returns:
             bool: True if successfully connected
@@ -95,8 +125,6 @@ class FreeCADConnection:
                 success = self._connect_server()
             elif method == self.CONNECTION_BRIDGE:
                 success = self._connect_bridge()
-            elif method == self.CONNECTION_MOCK:
-                success = self._connect_mock()
 
             if success:
                 self.connection_type = method
@@ -107,27 +135,17 @@ class FreeCADConnection:
 
     def _get_connection_methods(self, prefer_method: Optional[str] = None) -> List[str]:
         """
-        Get ordered list of connection methods to try
+        Get ordered list of connection methods to try.
+        FORCED TO BRIDGE ONLY FOR DEBUGGING.
 
         Args:
-            prefer_method: Preferred method
+            prefer_method: Preferred method (ignored)
 
         Returns:
-            List of methods to try in order
+            List containing only the bridge method.
         """
-        all_methods = [
-            self.CONNECTION_SERVER,
-            self.CONNECTION_BRIDGE,
-            self.CONNECTION_MOCK,
-        ]
-
-        if prefer_method in all_methods:
-            # Move preferred method to the front
-            methods = [prefer_method]
-            methods.extend([m for m in all_methods if m != prefer_method])
-            return methods
-
-        return all_methods
+        # Force bridge only
+        return [self.CONNECTION_BRIDGE]
 
     def _connect_server(self) -> bool:
         """
@@ -151,23 +169,18 @@ class FreeCADConnection:
             bool: True if successful
         """
         if not BRIDGE_AVAILABLE:
+            logger.warning("FreeCADBridge dependency not found. Bridge connection unavailable.")
             return False
 
         try:
+            logger.debug(f"Attempting to initialize FreeCADBridge with path: {self.freecad_path}")
             self._bridge = FreeCADBridge(self.freecad_path)
-            return self._bridge.is_available()
-        except Exception:
+            is_avail = self._bridge.is_available()
+            logger.debug(f"FreeCADBridge.is_available() returned: {is_avail}")
+            return is_avail
+        except Exception as e:
+            logger.error(f"Failed to initialize or check FreeCADBridge: {type(e).__name__} - {e}", exc_info=True)
             return False
-
-    def _connect_mock(self) -> bool:
-        """
-        Connect using mock implementation
-
-        Returns:
-            bool: Always True
-        """
-        # Mock connection is always available as fallback
-        return True
 
     def is_connected(self) -> bool:
         """
@@ -183,7 +196,7 @@ class FreeCADConnection:
         Get the current connection type
 
         Returns:
-            str: Connection type (server, bridge, or mock)
+            str: Connection type (server or bridge)
         """
         return self.connection_type
 
@@ -255,84 +268,6 @@ class FreeCADConnection:
                 except Exception:
                     pass
 
-    def _execute_mock_command(
-        self, command_type: str, params: Dict[str, Any] = None
-    ) -> Dict[str, Any]:
-        """
-        Execute a mock command when no real FreeCAD is available
-
-        Args:
-            command_type: Command type
-            params: Command parameters
-
-        Returns:
-            dict: Mock response
-        """
-        params = params or {}
-
-        if command_type == "ping":
-            return {"pong": True, "mock": True}
-
-        elif command_type == "get_version":
-            return {
-                "version": ["0.21.0", "mock", "2023"],
-                "build_date": "2023/01/01",
-                "mock": True,
-            }
-
-        elif command_type == "create_document":
-            return {
-                "success": True,
-                "document": {
-                    "name": params.get("name", "Unnamed"),
-                    "label": params.get("name", "Unnamed"),
-                },
-                "mock": True,
-            }
-
-        elif command_type == "create_object":
-            obj_type = params.get("type", "box")
-            obj_name = params.get("name", f"Mock{obj_type.capitalize()}")
-
-            obj_properties = {}
-            if obj_type == "box":
-                obj_properties = {
-                    "length": params.get("properties", {}).get("length", 10.0),
-                    "width": params.get("properties", {}).get("width", 10.0),
-                    "height": params.get("properties", {}).get("height", 10.0),
-                }
-            elif obj_type == "cylinder":
-                obj_properties = {
-                    "radius": params.get("properties", {}).get("radius", 5.0),
-                    "height": params.get("properties", {}).get("height", 10.0),
-                }
-
-            return {
-                "success": True,
-                "object": {
-                    "name": obj_name,
-                    "label": obj_name,
-                    "type": f"Part::{obj_type.capitalize()}",
-                },
-                "properties": obj_properties,
-                "mock": True,
-            }
-
-        elif command_type == "export_document":
-            return {
-                "success": True,
-                "path": params.get("path", "mock_export.stl"),
-                "mock": True,
-            }
-
-        # Default mock response
-        return {
-            "success": True,
-            "command": command_type,
-            "params": params,
-            "mock": True,
-        }
-
     def execute_command(
         self, command_type: str, params: Dict[str, Any] = None
     ) -> Dict[str, Any]:
@@ -340,29 +275,26 @@ class FreeCADConnection:
         Execute a command using the current connection method
 
         Args:
-            command_type: Command type
-            params: Command parameters
+            command_type: Type of command (e.g., 'get_version', 'create_box')
+            params: Optional parameters for the command
 
         Returns:
-            dict: Command response
+            dict: Response from FreeCAD or error dictionary
         """
-        params = params or {}
-
         if not self.is_connected():
             return {"error": "Not connected to FreeCAD"}
 
+        params = params or {}
+
         if self.connection_type == self.CONNECTION_SERVER:
-            # Use socket server
             command = {"type": command_type, "params": params}
             return self._send_server_command(command)
-
         elif self.connection_type == self.CONNECTION_BRIDGE:
-            # Use bridge
+            if not self._bridge:
+                return {"error": "Bridge not initialized correctly"}
             return self._execute_bridge_command(command_type, params)
-
         else:
-            # Use mock implementation
-            return self._execute_mock_command(command_type, params)
+            return {"error": f"Unknown connection type: {self.connection_type}"}
 
     def _execute_bridge_command(
         self, command_type: str, params: Dict[str, Any]
