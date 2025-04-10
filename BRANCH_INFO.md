@@ -64,9 +64,54 @@ git checkout mock-implementation
 To switch to the main branch:
 ```bash
 git checkout main
-# Make sure you have Python 3.11 installed
-sudo apt-get install python3.11 python3.11-venv python3.11-dev
-./start_mcp_environment.sh  # Requires Python 3.11
+# Install Python 3.11 (if not available in standard repositories)
+```
+
+### Installing Python 3.11
+
+Since Python 3.11 might not be available in standard repositories, here are several options:
+
+#### Option 1: Using deadsnakes PPA (Ubuntu)
+```bash
+# Add the deadsnakes PPA
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt update
+
+# Install Python 3.11
+sudo apt install python3.11 python3.11-venv python3.11-dev
+```
+
+#### Option 2: Using pyenv (Any Linux)
+```bash
+# Install pyenv
+curl https://pyenv.run | bash
+
+# Add to your shell configuration (.bashrc or .zshrc)
+echo 'export PATH="$HOME/.pyenv/bin:$PATH"' >> ~/.bashrc
+echo 'eval "$(pyenv init --path)"' >> ~/.bashrc
+echo 'eval "$(pyenv virtualenv-init -)"' >> ~/.bashrc
+source ~/.bashrc
+
+# Install Python 3.11
+pyenv install 3.11.0
+
+# Set as local version
+pyenv local 3.11.0
+```
+
+#### Option 3: Use the FreeCAD's built-in Python
+If you've extracted the FreeCAD AppImage, you can use its built-in Python:
+```bash
+# Use FreeCAD's Python to create a virtual environment
+./squashfs-root/usr/bin/python -m venv freecad-py-venv
+source freecad-py-venv/bin/activate
+
+# Then modify the start_mcp_environment.sh script to use this Python
+```
+
+After installing Python 3.11 using one of these methods, you can run:
+```bash
+./start_mcp_environment.sh  # Now it will find Python 3.11
 ```
 
 ## Implementation Differences
@@ -83,4 +128,4 @@ The main differences between branches:
 
 3. **Dependencies**:
    - `main`: Requires actual FreeCAD installation
-   - `mock-implementation`: Can work without FreeCAD 
+   - `mock-implementation`: Can work without FreeCAD

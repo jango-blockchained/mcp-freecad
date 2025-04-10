@@ -9,20 +9,82 @@ cd "$SCRIPT_DIR"
 echo "Setting up MCP-FreeCAD environment..."
 
 # Check for Python 3.11
-if ! command -v python3.11 &> /dev/null; then
+PYTHON_CMD=""
+
+check_python() {
+    local cmd=$1
+    if command -v $cmd &> /dev/null; then
+        local version=$($cmd --version 2>&1 | awk '{print $2}')
+        if [[ $version == 3.11* ]]; then
+            PYTHON_CMD=$cmd
+            echo "Found compatible Python: $cmd (version $version)"
+            return 0
+        else
+            echo "Found $cmd, but version $version is not compatible (need 3.11.x)"
+        fi
+    fi
+    return 1
+}
+
+# Try different possible Python 3.11 commands
+if check_python python3.11; then
+    :  # Already set PYTHON_CMD
+elif check_python python3; then
+    :  # Already set PYTHON_CMD if it's 3.11.x
+else
+    # Check other possible locations
+    if [ -e "$SCRIPT_DIR/squashfs-root/usr/bin/python" ]; then
+        if check_python "$SCRIPT_DIR/squashfs-root/usr/bin/python"; then
+            :  # Already set PYTHON_CMD
+        fi
+    fi
+
+    if [ -z "$PYTHON_CMD" ] && [ -d "$HOME/.pyenv/versions/3.11.0/bin" ]; then
+        if check_python "$HOME/.pyenv/versions/3.11.0/bin/python"; then
+            :  # Already set PYTHON_CMD
+        fi
+    fi
+
+    # Check if we have any virtual environment with Python 3.11
+    if [ -z "$PYTHON_CMD" ] && [ -d "$HOME/freecad-py-venv/bin" ]; then
+        if check_python "$HOME/freecad-py-venv/bin/python"; then
+            :  # Already set PYTHON_CMD
+        fi
+    fi
+fi
+
+if [ -z "$PYTHON_CMD" ]; then
     echo "ERROR: Python 3.11 is required but not found"
-    echo "Please install Python 3.11 with: sudo apt-get install python3.11 python3.11-venv python3.11-dev"
+    echo ""
+    echo "Please install Python 3.11 using one of these methods:"
+    echo ""
+    echo "1. Using deadsnakes PPA (Ubuntu):"
+    echo "   sudo add-apt-repository ppa:deadsnakes/ppa"
+    echo "   sudo apt update"
+    echo "   sudo apt install python3.11 python3.11-venv python3.11-dev"
+    echo ""
+    echo "2. Using pyenv:"
+    echo "   curl https://pyenv.run | bash"
+    echo "   # Add pyenv to your shell configuration"
+    echo "   pyenv install 3.11.0"
+    echo ""
+    echo "3. Use FreeCAD's built-in Python:"
+    echo "   ./squashfs-root/usr/bin/python -m venv freecad-py-venv"
+    echo ""
+    echo "For detailed instructions, see BRANCH_INFO.md"
     exit 1
 fi
 
 # Make sure virtual environment exists and packages are installed
-if [ ! -d ~/freecad-py311-venv ]; then
-    echo "Creating Python 3.11 virtual environment..."
-    python3.11 -m venv ~/freecad-py311-venv
-    source ~/freecad-py311-venv/bin/activate
+VENV_DIR="$HOME/freecad-py311-venv"
+
+if [ ! -d "$VENV_DIR" ]; then
+    echo "Creating Python 3.11 virtual environment at $VENV_DIR..."
+    $PYTHON_CMD -m venv "$VENV_DIR"
+    source "$VENV_DIR/bin/activate"
     pip install -e .
 else
-    source ~/freecad-py311-venv/bin/activate
+    source "$VENV_DIR/bin/activate"
 fi
 
 # Set environment variables for server operation
@@ -56,7 +118,7 @@ fi
 
 # Start the FreeCAD server (no mock mode)
 echo "Starting FreeCAD server..."
-python3.11 "$SCRIPT_DIR/freecad_server.py" --debug > freecad_server_stdout.log 2> freecad_server_stderr.log &
+$PYTHON_CMD "$SCRIPT_DIR/freecad_server.py" --debug > freecad_server_stdout.log 2> freecad_server_stderr.log &
 FREECAD_SERVER_PID=$!
 echo "FreeCAD server started with PID: $FREECAD_SERVER_PID"
 
@@ -65,7 +127,7 @@ sleep 2
 
 # Start the MCP server
 echo "Starting MCP server..."
-python3.11 "$SCRIPT_DIR/src/mcp_freecad/server/freecad_mcp_server.py" > mcp_server_stdout.log 2> mcp_server_stderr.log &
+$PYTHON_CMD "$SCRIPT_DIR/src/mcp_freecad/server/freecad_mcp_server.py" > mcp_server_stdout.log 2> mcp_server_stderr.log &
 MCP_SERVER_PID=$!
 echo "MCP server started with PID: $MCP_SERVER_PID"
 
