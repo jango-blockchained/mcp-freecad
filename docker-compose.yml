@@ -5,7 +5,9 @@ services:
     build: .
     ports:
       - "8080:8080"
+      - "12345:12345"
     volumes:
       - ./:/app
     environment:
-      - PYTHONPATH=/app 
+      - PYTHONPATH=/app
+    restart: unless-stopped
