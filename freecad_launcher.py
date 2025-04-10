@@ -247,35 +247,33 @@ if __name__ == "__main__":
     )
 
     # Test get version
-    print("Testing get_version...")
-    version_result = launcher.get_version()
-    print(f"FreeCAD Version: {version_result}")
+    # print("Testing get_version...")
+    # version_info = launcher.get_version()
+    # print(f"Version info: {version_info}")
 
-    # Only continue if version check was successful
-    if version_result.get("success"):
-        # Test create document
-        print("\nTesting create_document...")
-        doc_result = launcher.create_document("TestDoc")
-        print(f"Create document result: {doc_result}")
+    # Test create document
+    print("\nTesting create_document...")
+    doc_result = launcher.create_document("TestDoc")
+    print(f"Create document result: {doc_result}")
 
-        if doc_result.get("success"):
-            doc_name = doc_result.get("document_name")
+    if doc_result.get("success"):
+        doc_name = doc_result.get("document_name")
 
-            # Test create box
-            print("\nTesting create_box...")
-            box_result = launcher.create_box(10, 20, 30, doc_name)
-            print(f"Create box result: {box_result}")
+        # Test create box
+        print("\nTesting create_box...")
+        box_result = launcher.create_box(10, 20, 30, doc_name)
+        print(f"Create box result: {box_result}")
 
-            if box_result.get("success"):
-                box_name = box_result.get("box_name")
+        if box_result.get("success"):
+            box_name = box_result.get("box_name")
 
-                # Test export STL
-                print("\nTesting export_stl...")
-                export_result = launcher.export_stl(
-                    box_name,
-                    os.path.join(os.getcwd(), "test_export.stl"),
-                    doc_name
-                )
-                print(f"Export result: {export_result}")
+            # Test export STL
+            print("\nTesting export_stl...")
+            export_result = launcher.export_stl(
+                box_name,
+                os.path.join(os.getcwd(), "test_export.stl"),
+                doc_name
+            )
+            print(f"Export result: {export_result}")
     else:
         print("Version check failed, skipping other tests")

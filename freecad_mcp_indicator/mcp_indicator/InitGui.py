@@ -7,10 +7,16 @@ import time
 import json
 import shutil
 import signal # <-- Add import
+import platform
+import shlex
+import threading
+import logging # <-- Add this import
 
 import FreeCAD
 import FreeCADGui
 from PySide2 import QtCore, QtGui, QtWidgets
+from PySide2.QtWidgets import QDockWidget, QTextEdit, QVBoxLayout, QPushButton, QWidget, QMenu, QAction
+from PySide2.QtCore import QFileSystemWatcher, QTimer, QStandardPaths, Qt # Add Qt
 
 # Import the flow visualization once to ensure it's available
 try:
@@ -171,6 +177,23 @@ static char * mcp_icon_xpm[] = {
         self._connection_info_dialog = None
         self._flow_visualization_action = None
 
+        # --- Log Viewer Elements ---
+        self._mcp_log_dock_widget = None
+        self._mcp_log_text_edit = None
+        self._mcp_log_watcher = None
+        self._mcp_log_file_path = None
+        self._show_mcp_log_action = None
+
+        # Determine MCP log file path if possible
+        if self.MCP_SERVER_SCRIPT_PATH and os.path.exists(os.path.dirname(self.MCP_SERVER_SCRIPT_PATH)):
+            script_dir = os.path.dirname(self.MCP_SERVER_SCRIPT_PATH)
+            # The log file is expected in a 'logs' subdirectory relative to the script's dir
+            self._mcp_log_file_path = os.path.normpath(os.path.join(script_dir, "logs", "freecad_mcp_server.log"))
+            FreeCAD.Console.PrintMessage(f"MCP Log Viewer: Target log file path: {self._mcp_log_file_path}\\n")
+        else:
+             FreeCAD.Console.PrintWarning("MCP Log Viewer: MCP_SERVER_SCRIPT_PATH not set or invalid, log viewer will be disabled.\\n")
+        # --------------------------
+
         # Process and status tracking
         self._freecad_server_process = None
         self._mcp_server_process = None
@@ -303,7 +326,10 @@ static char * mcp_icon_xpm[] = {
     def Initialize(self):
         """Initialize the workbench"""
         # Import necessary PySide modules locally for this scope
-        from PySide2 import QtCore, QtWidgets  # Add QtCore here
+        # Ensure QFileSystemWatcher and QDockWidget related classes are available
+        from PySide2 import QtCore, QtWidgets
+        from PySide2.QtWidgets import QDockWidget, QTextEdit, QVBoxLayout, QPushButton, QWidget, QMenu, QAction
+        from PySide2.QtCore import QFileSystemWatcher, Qt
 
         # Create the main MCP client connection indicator
         self._control_button = QtWidgets.QToolButton()
@@ -407,6 +433,88 @@ static char * mcp_icon_xpm[] = {
         self._freecad_server_status_button.setMenu(self._freecad_server_menu)
         self._mcp_server_status_button.setMenu(self._mcp_server_menu)
         self._control_button.setMenu(self._control_menu)
+
+        # --- MCP Log Viewer Setup ---
+        mw = FreeCADGui.getMainWindow()
+        # Check if main window exists and if the log path was successfully determined in __init__
+        if mw and self._mcp_log_file_path:
+            try:
+                # Create Dock Widget
+                self._mcp_log_dock_widget = QDockWidget("MCP Server Log", mw)
+                self._mcp_log_dock_widget.setObjectName("MCPLogDockWidget") # Important for saving layout state
+                self._mcp_log_dock_widget.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea | Qt.BottomDockWidgetArea)
+
+                # Create container widget and layout for the dock contents
+                log_container_widget = QWidget()
+                log_layout = QVBoxLayout(log_container_widget) # Set layout on the container
+
+                # Create Text Edit for log display
+                self._mcp_log_text_edit = QTextEdit()
+                self._mcp_log_text_edit.setReadOnly(True)
+                self._mcp_log_text_edit.setFontFamily("monospace") # Use fixed-width font
+                log_layout.addWidget(self._mcp_log_text_edit)
+
+                # Create Refresh Button
+                refresh_button = QPushButton("Refresh Log")
+                # Use a lambda to avoid issues with default arguments if _load_mcp_log_content gains parameters later
+                refresh_button.clicked.connect(lambda: self._load_mcp_log_content())
+                log_layout.addWidget(refresh_button)
+
+                # Set the container widget as the dock widget's main widget
+                self._mcp_log_dock_widget.setWidget(log_container_widget)
+
+                # Initially hide the dock widget (user can show it via menu)
+                self._mcp_log_dock_widget.setVisible(False)
+                # Add the dock widget to the main window (it starts hidden)
+                mw.addDockWidget(Qt.BottomDockWidgetArea, self._mcp_log_dock_widget)
+
+                # Create File System Watcher
+                self._mcp_log_watcher = QFileSystemWatcher() # Initialize without parent
+                log_dir = os.path.dirname(self._mcp_log_file_path)
+
+                # Watch the directory to detect file creation/deletion
+                if os.path.exists(log_dir):
+                     if not self._mcp_log_watcher.addPath(log_dir):
+                          FreeCAD.Console.PrintError(f"MCP Log Watcher: Failed to add directory {log_dir} to watcher.\\n")
+                else:
+                     FreeCAD.Console.PrintWarning(f"MCP Log Watcher: Log directory {log_dir} does not exist.\\n")
+
+                # Watch the file itself if it exists
+                if os.path.exists(self._mcp_log_file_path):
+                    if not self._mcp_log_watcher.addPath(self._mcp_log_file_path):
+                         FreeCAD.Console.PrintError(f"MCP Log Watcher: Failed to add file {self._mcp_log_file_path} to watcher.\\n")
+
+                # Connect the watcher signal
+                self._mcp_log_watcher.fileChanged.connect(self._handle_log_file_change)
+                # Also connect directory changed to handle file creation/deletion within dir
+                self._mcp_log_watcher.directoryChanged.connect(self._handle_log_directory_change)
+
+                # Load initial content if file exists
+                self._load_mcp_log_content()
+
+            except Exception as e:
+                 FreeCAD.Console.PrintError(f"Error initializing MCP Log Viewer UI: {e}\\n")
+                 self._mcp_log_dock_widget = None # Ensure widget is None if setup failed
+
+        # Add menu action for log viewer (AFTER the menu itself is created)
+        # Ensure _control_menu exists before trying to add actions
+        if hasattr(self, '_control_menu') and self._control_menu:
+             self._control_menu.addSeparator() # Separator before log viewer action
+             self._show_mcp_log_action = QAction("Show MCP Server Log", self._control_menu)
+             self._show_mcp_log_action.setCheckable(True)
+             self._show_mcp_log_action.setChecked(False) # Initially hidden
+
+             # Only enable the action if the dock widget was successfully created
+             if self._mcp_log_dock_widget:
+                 self._show_mcp_log_action.toggled.connect(self._toggle_mcp_log_viewer)
+             else:
+                 self._show_mcp_log_action.setEnabled(False)
+                 self._show_mcp_log_action.setToolTip("MCP log viewer setup failed or path is invalid.")
+
+             self._control_menu.addAction(self._show_mcp_log_action)
+        else:
+            FreeCAD.Console.PrintError("Could not find _control_menu to add log viewer action.\\n")
+        # --------------------------
 
         # Update both server and MCP indicator states
         self._update_indicator_icon()
@@ -2381,5 +2489,108 @@ static char * mcp_icon_xpm[] = {
             except Exception as kill_e:
                  FreeCAD.Console.PrintError(f"Error force killing process {pid_to_stop}: {kill_e}\n")
             return False
+
+    def _handle_log_file_change(self, path):
+        """Handle changes detected specifically to the log file."""
+        if path == self._mcp_log_file_path:
+            FreeCAD.Console.PrintMessage(f"MCP Log Watcher: Detected change in {path}. Reloading content.\\n")
+            self._load_mcp_log_content()
+        # If the watcher reports the file changed, ensure it's still being watched
+        if self._mcp_log_watcher and path not in self._mcp_log_watcher.files() and os.path.exists(path):
+             self._mcp_log_watcher.addPath(path)
+
+    def _handle_log_directory_change(self, path):
+        """Handle changes detected in the log file's directory."""
+        log_dir = os.path.dirname(self._mcp_log_file_path)
+        if path == log_dir:
+            FreeCAD.Console.PrintMessage(f"MCP Log Watcher: Detected change in directory {path}. Checking log file.\\n")
+            # Check if the log file now exists and add it to watcher if it wasn't already
+            if os.path.exists(self._mcp_log_file_path) and self._mcp_log_watcher:
+                 if self._mcp_log_file_path not in self._mcp_log_watcher.files():
+                      self._mcp_log_watcher.addPath(self._mcp_log_file_path)
+                      FreeCAD.Console.PrintMessage(f"MCP Log Watcher: Log file created. Added {self._mcp_log_file_path} to watcher.\\n")
+            # Reload content regardless, as the file might have appeared or disappeared
+            self._load_mcp_log_content()
+
+
+    def _load_mcp_log_content(self, max_lines=500):
+        """Load (tail) content from the MCP log file into the text edit."""
+        if not self._mcp_log_text_edit or not self._mcp_log_file_path:
+            if self._mcp_log_text_edit:
+                 self._mcp_log_text_edit.setPlainText("(Log viewer not configured - missing log file path)")
+            return
+
+        log_content = f"--- Log file: {self._mcp_log_file_path} ---\\n"
+        log_content += f"--- Last updated: {time.strftime('%Y-%m-%d %H:%M:%S')} ---\\n\\n"
+        try:
+            if os.path.exists(self._mcp_log_file_path):
+                # Try reading the last N lines efficiently if possible (platform dependent?)
+                # Simple approach: read all, take last N
+                with open(self._mcp_log_file_path, 'r', encoding='utf-8', errors='replace') as f:
+                    lines = f.readlines()
+                    log_lines = lines[-max_lines:] # Get the last max_lines
+                    if len(lines) > max_lines:
+                         log_content += f"(Showing last {max_lines} lines of {len(lines)})\\n\\n"
+                    log_content += "".join(log_lines)
+
+                # Ensure watcher is watching the file if it exists now
+                if self._mcp_log_watcher and self._mcp_log_file_path not in self._mcp_log_watcher.files():
+                     self._mcp_log_watcher.addPath(self._mcp_log_file_path)
+
+            else:
+                log_content += "(Log file does not exist)"
+                 # Ensure watcher is watching the directory if file doesn't exist
+                log_dir = os.path.dirname(self._mcp_log_file_path)
+                if self._mcp_log_watcher and os.path.exists(log_dir) and log_dir not in self._mcp_log_watcher.directories():
+                    self._mcp_log_watcher.addPath(log_dir)
+
+
+        except Exception as e:
+            error_msg = f"Error reading log file: {type(e).__name__} - {e}"
+            log_content += f"\\n\\n{error_msg}"
+            FreeCAD.Console.PrintError(f"Error reading MCP log file {self._mcp_log_file_path}: {error_msg}\\n")
+
+        current_text = self._mcp_log_text_edit.toPlainText()
+        # Only update if content changed to avoid unnecessary UI updates/scroll jumps
+        if current_text != log_content:
+            self._mcp_log_text_edit.setPlainText(log_content)
+            # Scroll to the bottom after updating
+            scrollbar = self._mcp_log_text_edit.verticalScrollBar()
+            scrollbar.setValue(scrollbar.maximum())
+
+    def _toggle_mcp_log_viewer(self, checked):
+        """Show or hide the MCP log dock widget."""
+        if self._mcp_log_dock_widget:
+            self._mcp_log_dock_widget.setVisible(checked)
+            if checked:
+                 # Ensure content is fresh when shown
+                 self._load_mcp_log_content()
+                 # Bring dock to front / raise it
+                 self._mcp_log_dock_widget.raise_()
+
+
+    # Add __del__ for potential cleanup (might need refinement)
+    def __del__(self):
+        try:
+            FreeCAD.Console.PrintMessage("MCPIndicatorWorkbench cleaning up...\\n")
+            if self._mcp_log_watcher:
+                # Disconnect signals safely
+                try: self._mcp_log_watcher.fileChanged.disconnect(self._handle_log_file_change)
+                except RuntimeError: pass # Signal already disconnected
+                try: self._mcp_log_watcher.directoryChanged.disconnect(self._handle_log_directory_change)
+                except RuntimeError: pass # Signal already disconnected
+
+                paths_to_remove = self._mcp_log_watcher.files() + self._mcp_log_watcher.directories()
+                if paths_to_remove:
+                     self._mcp_log_watcher.removePaths(paths_to_remove)
+                self._mcp_log_watcher.deleteLater() # Schedule for deletion
+
+            mw = FreeCADGui.getMainWindow()
+            if mw and self._mcp_log_dock_widget:
+                 mw.removeDockWidget(self._mcp_log_dock_widget)
+                 self._mcp_log_dock_widget.deleteLater() # Schedule for deletion
+
+        except Exception as e:
+             FreeCAD.Console.PrintError(f"Error during MCPIndicatorWorkbench cleanup: {type(e).__name__} - {e}\\n")
 
 FreeCADGui.addWorkbench(MCPIndicatorWorkbench())

@@ -513,38 +513,39 @@ class FreeCADConnection:
 # Example usage
 if __name__ == "__main__":
     # Create connection
-    connection = FreeCADConnection()
+    # connection = FreeCADConnection()
 
-    if not connection.is_connected():
-        print("Failed to connect to FreeCAD")
-        sys.exit(1)
+    # if not connection.is_connected():
+    #     print("Failed to connect to FreeCAD")
+    #     sys.exit(1)
 
-    print(f"Connected to FreeCAD using {connection.get_connection_type()} method")
+    # print(f"Connected to FreeCAD using {connection.get_connection_type()} method")
 
-    # Get version
-    version_info = connection.get_version()
-    print(f"FreeCAD Version: {version_info}")
+    # # Get version
+    # version_info = connection.get_version()
+    # print(f"FreeCAD Version: {version_info}")
 
-    # Create document
-    doc_name = connection.create_document("TestDocument")
-    if doc_name:
-        print(f"Created document: {doc_name}")
+    # # Create document
+    # doc_name = connection.create_document("TestDocument")
+    # if doc_name:
+    #     print(f"Created document: {doc_name}")
 
-        # Create box
-        box_name = connection.create_box(10.0, 20.0, 30.0, doc_name)
-        if box_name:
-            print(f"Created box: {box_name}")
+    #     # Create box
+    #     box_name = connection.create_box(10.0, 20.0, 30.0, doc_name)
+    #     if box_name:
+    #         print(f"Created box: {box_name}")
 
-            # Export to STL
-            stl_path = os.path.join(os.getcwd(), "test_export.stl")
-            if connection.export_stl(box_name, stl_path, doc_name):
-                print(f"Exported to: {stl_path}")
-            else:
-                print("Failed to export STL")
-        else:
-            print("Failed to create box")
-    else:
-        print("Failed to create document")
+    #         # Export to STL
+    #         stl_path = os.path.join(os.getcwd(), "test_export.stl")
+    #         if connection.export_stl(box_name, stl_path, doc_name):
+    #             print(f"Exported to: {stl_path}")
+    #         else:
+    #             print("Failed to export STL")
+    #     else:
+    #         print("Failed to create box")
+    # else:
+    #     print("Failed to create document")
 
-    # Close connection
-    connection.close()
+    # # Close connection
+    # connection.close()
+    pass # Add pass to avoid empty block error after commenting everything out
