@@ -11,6 +11,7 @@ import sys
 import asyncio
 import logging
 import json
+import pytest
 from typing import Dict, Any, List, Optional, Callable, Tuple
 
 # Set up logging
@@ -39,6 +40,7 @@ async def progress_callback(progress: float, message: Optional[str] = None):
     progress_updates.append(update)
     logger.info(f"Progress: {progress:.0%} - {message or ''}")
 
+@pytest.mark.asyncio
 async def test_progress_reporting():
     """Test progress reporting functionality."""
     # Get the ToolContext singleton

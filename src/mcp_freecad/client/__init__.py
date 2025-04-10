@@ -1,6 +1,6 @@
 """FreeCAD MCP Client package."""
 
-from .freecad_client import Client
-from .freecad_connection import Connection
+from .freecad_client import FreeCADClient
+from .freecad_connection import FreeCADConnection
 
-__all__ = ["Client", "Connection"]
+__all__ = ["FreeCADClient", "FreeCADConnection"]
