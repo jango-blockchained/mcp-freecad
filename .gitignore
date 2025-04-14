@@ -63,7 +63,7 @@ Thumbs.db
 squashfs-root/
 backups/
 tmp/
-
+config.json
 # Lock files
 uv.lock
 
