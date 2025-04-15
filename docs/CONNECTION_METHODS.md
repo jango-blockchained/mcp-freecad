@@ -9,8 +9,9 @@ MCP-FreeCAD supports multiple methods to connect to FreeCAD:
 1. **Launcher Mode** (Recommended) - Uses AppRun from an extracted AppImage to execute FreeCAD with our script
 2. **Wrapper Mode** - Runs FreeCAD in a subprocess with direct module imports
 3. **Server Mode** - Connects to a running FreeCAD instance via sockets
-4. **Bridge Mode** - Uses CLI-based communication with the FreeCAD executable
-5. **Mock Mode** - Simulates FreeCAD for testing when no real FreeCAD is available
+4. **RPC Mode** - Connects to a running FreeCAD instance via XML-RPC
+5. **Bridge Mode** - Uses CLI-based communication with the FreeCAD executable
+6. **Mock Mode** - Simulates FreeCAD for testing when no real FreeCAD is available
 
 The system will try these methods in the order listed above by default, unless a specific method is configured.
 
@@ -20,7 +21,7 @@ The system will try these methods in the order listed above by default, unless a
 
 **Requirements:**
 - FreeCAD executable or AppRun from an extracted AppImage
-- `freecad_script.py` in the same directory as `freecad_launcher.py`
+- `freecad_launcher_script.py` in the same directory as `freecad_connection_launcher.py`
 
 **Configuration:**
 ```json
@@ -36,7 +37,7 @@ The system will try these methods in the order listed above by default, unless a
 
 **Troubleshooting:**
 - Ensure the AppImage is properly extracted if using AppRun mode
-- Check that `freecad_script.py` exists and is accessible
+- Check that `freecad_launcher_script.py` exists and is accessible
 - Verify the FreeCAD or AppRun path is correct and the file exists
 - Check console output for Python errors when executing the script
 
@@ -44,7 +45,7 @@ The system will try these methods in the order listed above by default, unless a
 
 **Requirements:**
 - Python environment where `import FreeCAD` works
-- `freecad_subprocess.py` in the same directory as `freecad_wrapper.py`
+- `freecad_subprocess.py` in the same directory as `freecad_connection_wrapper.py`
 
 **Configuration:**
 ```json
@@ -64,7 +65,7 @@ The system will try these methods in the order listed above by default, unless a
 ### 3. Server Mode
 
 **Requirements:**
-- Running `freecad_server.py` inside a FreeCAD instance
+- Running `freecad_socket_server.py` inside a FreeCAD instance
 - Network access to the server (typically localhost)
 
 **Configuration:**
@@ -79,12 +80,36 @@ The system will try these methods in the order listed above by default, unless a
 ```
 
 **Troubleshooting:**
-- Ensure `freecad_server.py` is running inside FreeCAD
+- Ensure `freecad_socket_server.py` is running inside FreeCAD
 - Check that the host and port match the server configuration
 - Verify no firewall is blocking the connection
 - Check the server logs for any connection errors
 
-### 4. Bridge Mode
+### 4. RPC Mode
+
+**Requirements:**
+- Running XML-RPC server inside a FreeCAD instance (similar to the FreeCADMCP addon)
+- Network access to the server (typically localhost)
+
+**Configuration:**
+```json
+{
+  "freecad": {
+    "connection_method": "rpc",
+    "host": "localhost",
+    "rpc_port": 9875
+  }
+}
+```
+
+**Troubleshooting:**
+- Ensure the XML-RPC server is running inside FreeCAD
+- Check that the host and rpc_port match the server configuration
+- Verify no firewall is blocking the connection
+- Check the server logs for any connection errors
+- This method is compatible with the FreeCADMCP addon's RPC server
+
+### 5. Bridge Mode
 
 **Requirements:**
 - FreeCAD executable in the system PATH or configured path
@@ -106,7 +131,7 @@ The system will try these methods in the order listed above by default, unless a
 - Verify FreeCAD version (should be 0.19 or newer)
 - This method can be slower than others due to process overhead
 
-### 5. Mock Mode
+### 6. Mock Mode
 
 **Requirements:**
 - None (fallback mode)
@@ -138,13 +163,15 @@ By default, MCP-FreeCAD will try each method in order until one succeeds. You ca
 }
 ```
 
+The default order is: RPC > Server > Bridge > Wrapper > Launcher > Mock
+
 ## Testing Connection Methods
 
 Use the `tests/test_connection_methods.py` script to test different connection methods:
 
 ```bash
 # Test all methods
-python tests/test_connection_methods.py
+
 
 # Test a specific method
 python tests/test_connection_methods.py --method launcher

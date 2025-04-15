@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Wrapper script to run freecad_server.py with the correct environment
+# Wrapper script to run freecad_socket_server.py with the correct environment
 
 # Get the absolute path to the script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -54,16 +54,16 @@ if [[ -f "$REPO_ROOT/config.json" ]]; then
 
             # Run the server using the specified Python
             echo "Starting server with $PYTHON_PATH $CONNECT_MODE"
-            exec "$PYTHON_PATH" "$REPO_ROOT/freecad_server.py" $CONNECT_MODE "$@"
+            exec "$PYTHON_PATH" "$REPO_ROOT/freecad_socket_server.py" $CONNECT_MODE "$@"
         else
             echo "No Python path in config, trying to run with FreeCAD"
             # Try to run using FreeCAD as the Python interpreter
             echo "Starting server with $FREECAD_PATH $CONNECT_MODE"
-            exec "$FREECAD_PATH" "$REPO_ROOT/freecad_server.py" $CONNECT_MODE "$@"
+            exec "$FREECAD_PATH" "$REPO_ROOT/freecad_socket_server.py" $CONNECT_MODE "$@"
         fi
     fi
 fi
 
 # Fallback to system Python if we couldn't find FreeCAD or its not properly configured
 echo "Using system Python $CONNECT_MODE"
-exec python3 "$REPO_ROOT/freecad_server.py" $CONNECT_MODE "$@"
+exec python3 "$REPO_ROOT/freecad_socket_server.py" $CONNECT_MODE "$@"

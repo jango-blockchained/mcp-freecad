@@ -21,6 +21,6 @@
 - Improved configuration UI with descriptive labels
 
 ### Fixed
-- Resolved confusion between freecad_server.py and freecad_mcp_server.py
+- Resolved confusion between freecad_socket_server.py and freecad_mcp_server.py
 - Fixed potential issues with server path detection and configuration
 - Improved handling of server process management 

@@ -17,14 +17,14 @@ from typing import Optional, Dict, Any
 
 # Import the FreeCADConnection class
 try:
-    from freecad_connection import FreeCADConnection
+    from freecad_connection_manager import FreeCADConnection
 
     UNIFIED_CONNECTION_AVAILABLE = True
 except ImportError:
     UNIFIED_CONNECTION_AVAILABLE = False
     print("Warning: FreeCADConnection not found. Using legacy socket connection mode.")
     print(
-        "You may need to install the freecad_connection.py module in the same directory."
+        "You may need to install the freecad_connection_manager.py module in the same directory."
     )
 
 # Define Gemini API constants

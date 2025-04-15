@@ -6,8 +6,8 @@ This script provides a socket-based interface to FreeCAD for use with external
 applications, particularly the MCP server.
 
 Usage:
-Run from within FreeCAD's Python console: exec(open('freecad_server.py').read())
-Run directly with Python: python3 freecad_server.py
+Run from within FreeCAD's Python console: exec(open('freecad_socket_server.py').read())
+Run directly with Python: python3 freecad_socket_server.py
 
 Options:
 --host HOST     Hostname or IP to listen on (default: localhost)

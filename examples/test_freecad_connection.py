@@ -16,7 +16,7 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from freecad_connection import FreeCADConnection
+from freecad_connection_manager import FreeCADConnection
 
 
 def test_connection(connection_type=None):
@@ -90,7 +90,7 @@ def start_freecad_server():
     try:
         # Using freecad command-line to start the server
         process = subprocess.Popen(
-            ["freecad", "-c", "freecad_server.py"],
+            ["freecad", "-c", "freecad_socket_server.py"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )

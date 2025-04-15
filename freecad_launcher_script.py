@@ -81,7 +81,7 @@ def get_version():
 def main():
     """Main function to execute commands from arguments"""
     # --- Remove Debug Print ---
-    # print(f"DEBUG freecad_script.py sys.argv: {sys.argv}", file=sys.stderr)
+    # print(f"DEBUG freecad_launcher_script.py sys.argv: {sys.argv}", file=sys.stderr)
     # -----------------------
 
     # Check for command line arguments

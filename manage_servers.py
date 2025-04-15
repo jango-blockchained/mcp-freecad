@@ -3,7 +3,7 @@
 Server Management Script for FreeCAD MCP Integration
 
 This script helps to start, stop, and check the status of:
-- FreeCAD Server (freecad_server.py)
+- FreeCAD Server (freecad_socket_server.py)
 - MCP Server (freecad_mcp_server.py)
 
 Usage:
@@ -25,7 +25,7 @@ import psutil
 
 # Configuration
 DEFAULT_CONFIG_PATH = "config.json"
-FREECAD_SERVER_SCRIPT = "freecad_server.py"
+FREECAD_SERVER_SCRIPT = "freecad_socket_server.py"
 MCP_SERVER_SCRIPT = "src/mcp_freecad/server/freecad_mcp_server.py"
 FREECAD_SERVER_LOG = "freecad_server_stdout.log"
 FREECAD_SERVER_ERR_LOG = "freecad_server_stderr.log"

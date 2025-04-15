@@ -3,12 +3,12 @@
 FreeCAD Connection Manager
 
 This module provides a unified interface for connecting to FreeCAD using either:
-1. Socket-based communication with freecad_server.py running inside FreeCAD
+1. Socket-based communication with freecad_socket_server.py running inside FreeCAD
 2. CLI-based communication using the FreeCAD executable directly
-3. Subprocess-based communication using freecad_wrapper.py (new method)
+3. Subprocess-based communication using freecad_connection_wrapper.py (new method)
 
 Usage:
-    from freecad_connection import FreeCADConnection
+    from freecad_connection_manager import FreeCADConnection
 
     # Create a connection
     fc = FreeCADConnection()
@@ -32,21 +32,21 @@ from typing import Any, Dict, List, Optional
 
 # Import FreeCADBridge class if available
 try:
-    from freecad_bridge import FreeCADBridge
+    from freecad_connection_bridge import FreeCADBridge
     BRIDGE_AVAILABLE = True
 except ImportError:
     BRIDGE_AVAILABLE = False
 
 # Import our new FreeCADWrapper
 try:
-    from freecad_wrapper import FreeCADWrapper
+    from freecad_connection_wrapper import FreeCADWrapper
     WRAPPER_AVAILABLE = True
 except ImportError:
     WRAPPER_AVAILABLE = False
 
 # Import our new FreeCADLauncher
 try:
-    from freecad_launcher import FreeCADLauncher
+    from freecad_connection_launcher import FreeCADLauncher
     LAUNCHER_AVAILABLE = True
 except ImportError:
     LAUNCHER_AVAILABLE = False

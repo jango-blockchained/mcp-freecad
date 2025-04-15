@@ -23,9 +23,9 @@ if project_root not in sys.path:
 
 # Try importing the connection module
 try:
-    from freecad_connection import FreeCADConnection
+    from freecad_connection_manager import FreeCADConnection
 except ImportError:
-    print("Error: freecad_connection.py not found in the Python path.")
+    print("Error: freecad_connection_manager.py not found in the Python path.")
     print(
         "Ensure it's in the same directory or the parent directory has been added to sys.path."
     )
@@ -133,7 +133,7 @@ def start_freecad_server():
     try:
         freecad_path = "freecad"  # Adjust if needed
         server_script = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "freecad_server.py"
+            os.path.dirname(os.path.abspath(__file__)), "freecad_socket_server.py"
         )
 
         if not os.path.exists(server_script):

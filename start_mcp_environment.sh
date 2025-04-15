@@ -99,9 +99,9 @@ fi
 
 # Check if we need to restart servers
 restart=false
-if pgrep -f "freecad_server.py" > /dev/null; then
+if pgrep -f "freecad_socket_server.py" > /dev/null; then
     echo "Stopping existing FreeCAD server..."
-    pkill -f "freecad_server.py" || true
+    pkill -f "freecad_socket_server.py" || true
     restart=true
 fi
 
@@ -118,7 +118,7 @@ fi
 
 # Start the FreeCAD server (no mock mode)
 echo "Starting FreeCAD server..."
-$PYTHON_CMD "$SCRIPT_DIR/freecad_server.py" --debug > freecad_server_stdout.log 2> freecad_server_stderr.log &
+$PYTHON_CMD "$SCRIPT_DIR/freecad_socket_server.py" --debug > freecad_server_stdout.log 2> freecad_server_stderr.log &
 FREECAD_SERVER_PID=$!
 echo "FreeCAD server started with PID: $FREECAD_SERVER_PID"
 

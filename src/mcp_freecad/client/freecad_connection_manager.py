@@ -3,11 +3,12 @@
 FreeCAD Connection Manager
 
 This module provides a unified interface for connecting to FreeCAD using either:
-1. Socket-based communication with freecad_server.py running inside FreeCAD
+1. Socket-based communication with freecad_socket_server.py running inside FreeCAD
 2. CLI-based communication using the FreeCAD executable directly
+3. XML-RPC-based communication with an RPC server running inside FreeCAD
 
 Usage:
-    from freecad_connection import FreeCADConnection
+    from freecad_connection_manager import FreeCADConnection
 
     # Create a connection
     fc = FreeCADConnection()
@@ -27,6 +28,7 @@ import json
 import os
 import socket
 import sys
+import xmlrpc.client
 from typing import Any, Dict, List, Optional
 import logging
 
@@ -49,7 +51,7 @@ logger.critical(">>> Right before TRY block <<<")
 try:
     # Attempt to import FreeCADBridge if FreeCAD is available
     # from src.mcp_freecad.client.freecad_bridge import FreeCADBridge # NEW absolute import
-    from freecad_bridge import FreeCADBridge # Direct import
+    from freecad_connection_bridge import FreeCADBridge # Direct import
 
     BRIDGE_AVAILABLE = True
     _bridge_import_error_msg = "" # Reset error message on successful import
@@ -76,11 +78,13 @@ class FreeCADConnection:
 
     CONNECTION_SERVER = "server"
     CONNECTION_BRIDGE = "bridge"
+    CONNECTION_RPC = "rpc"
 
     def __init__(
         self,
         host: str = "localhost",
         port: int = 12345,
+        rpc_port: int = 9875,
         freecad_path: str = "freecad",
         auto_connect: bool = True,
         prefer_method: Optional[str] = None,
@@ -89,18 +93,21 @@ class FreeCADConnection:
         Initialize the FreeCAD connection
 
         Args:
-            host: Server hostname for socket connection (default: localhost)
+            host: Server hostname for socket/RPC connection (default: localhost)
             port: Server port for socket connection (default: 12345)
+            rpc_port: Server port for XML-RPC connection (default: 9875)
             freecad_path: Path to FreeCAD executable for CLI bridge (default: 'freecad')
             auto_connect: Whether to automatically connect (default: True)
-            prefer_method: Preferred connection method (server or bridge)
+            prefer_method: Preferred connection method (server, bridge, or rpc)
         """
         self.host = host
         self.port = port
+        self.rpc_port = rpc_port
         self.freecad_path = freecad_path
         self.connection_type = None
         self._bridge = None
         self._socket = None
+        self._rpc = None
 
         if auto_connect:
             self.connect(prefer_method)
@@ -110,7 +117,7 @@ class FreeCADConnection:
         Connect to FreeCAD using the best available method
 
         Args:
-            prefer_method: Preferred connection method (server or bridge)
+            prefer_method: Preferred connection method (server, bridge, or rpc)
 
         Returns:
             bool: True if successfully connected
@@ -125,6 +132,8 @@ class FreeCADConnection:
                 success = self._connect_server()
             elif method == self.CONNECTION_BRIDGE:
                 success = self._connect_bridge()
+            elif method == self.CONNECTION_RPC:
+                success = self._connect_rpc()
 
             if success:
                 self.connection_type = method
@@ -144,8 +153,17 @@ class FreeCADConnection:
         Returns:
             List containing only the bridge method.
         """
-        # Force bridge only
-        return [self.CONNECTION_BRIDGE]
+        # If a preferred method is specified, we'll try that first
+        if prefer_method:
+            if prefer_method == self.CONNECTION_RPC:
+                return [self.CONNECTION_RPC, self.CONNECTION_BRIDGE, self.CONNECTION_SERVER]
+            elif prefer_method == self.CONNECTION_SERVER:
+                return [self.CONNECTION_SERVER, self.CONNECTION_RPC, self.CONNECTION_BRIDGE]
+            elif prefer_method == self.CONNECTION_BRIDGE:
+                return [self.CONNECTION_BRIDGE, self.CONNECTION_RPC, self.CONNECTION_SERVER]
+
+        # Default order: RPC first (higher performance), then Server, then Bridge
+        return [self.CONNECTION_RPC, self.CONNECTION_SERVER, self.CONNECTION_BRIDGE]
 
     def _connect_server(self) -> bool:
         """
@@ -182,6 +200,27 @@ class FreeCADConnection:
             logger.error(f"Failed to initialize or check FreeCADBridge: {type(e).__name__} - {e}", exc_info=True)
             return False
 
+    def _connect_rpc(self) -> bool:
+        """
+        Connect using XML-RPC server
+
+        Returns:
+            bool: True if successful
+        """
+        try:
+            # Create XML-RPC client
+            rpc_url = f"http://{self.host}:{self.rpc_port}"
+            self._rpc = xmlrpc.client.ServerProxy(rpc_url, allow_none=True)
+
+            # Test connection with ping
+            ping_response = self._rpc.ping()
+            logger.debug(f"XML-RPC ping response: {ping_response}")
+            return ping_response is True
+        except Exception as e:
+            logger.error(f"Failed to connect to FreeCAD XML-RPC server: {type(e).__name__} - {e}")
+            self._rpc = None
+            return False
+
     def is_connected(self) -> bool:
         """
         Check if connected to FreeCAD
@@ -196,7 +235,7 @@ class FreeCADConnection:
         Get the current connection type
 
         Returns:
-            str: Connection type (server or bridge)
+            str: Connection type (server, bridge, or rpc)
         """
         return self.connection_type
 
@@ -293,6 +332,10 @@ class FreeCADConnection:
             if not self._bridge:
                 return {"error": "Bridge not initialized correctly"}
             return self._execute_bridge_command(command_type, params)
+        elif self.connection_type == self.CONNECTION_RPC:
+            if not self._rpc:
+                return {"error": "RPC client not initialized correctly"}
+            return self._execute_rpc_command(command_type, params)
         else:
             return {"error": f"Unknown connection type: {self.connection_type}"}
 
@@ -371,6 +414,93 @@ class FreeCADConnection:
                     return {"success": True, "path": file_path}
                 else:
                     return {"error": "Failed to export document"}
+
+            # Add more command mappings as needed
+
+            return {"error": f"Unsupported command: {command_type}"}
+
+        except Exception as e:
+            return {"error": str(e)}
+
+    def _execute_rpc_command(
+        self, command_type: str, params: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Execute a command using the XML-RPC connection
+
+        Args:
+            command_type: Command type
+            params: Command parameters
+
+        Returns:
+            dict: Command response
+        """
+        if not self._rpc:
+            return {"error": "RPC client not initialized"}
+
+        try:
+            if command_type == "ping":
+                return {"pong": True, "rpc": True}
+
+            elif command_type == "get_version":
+                # Assuming the FreeCAD RPC server has a version-related method
+                # This might need adjustment based on the actual RPC API
+                return {"success": True, "version": "RPC version info"}  # Placeholder
+
+            elif command_type == "create_document":
+                doc_name = params.get("name", "Unnamed")
+                response = self._rpc.create_document(doc_name)
+                if response.get("success"):
+                    return {
+                        "success": True,
+                        "document": {"name": response.get("document_name"), "label": response.get("document_name")},
+                    }
+                else:
+                    return {"error": response.get("error", "Unknown error")}
+
+            elif command_type == "create_object":
+                obj_type = params.get("type")
+                properties = params.get("properties", {})
+                doc_name = params.get("document")
+
+                obj_data = {
+                    "Name": f"{obj_type.split('::', 1)[-1] if '::' in obj_type else obj_type}",
+                    "Type": obj_type,
+                    "Properties": properties
+                }
+
+                if obj_type == "box":
+                    # Handle box creation specifically
+                    obj_data = {
+                        "Name": "Box",
+                        "Type": "Part::Box",
+                        "Properties": {
+                            "Length": properties.get("length", 10.0),
+                            "Width": properties.get("width", 10.0),
+                            "Height": properties.get("height", 10.0)
+                        }
+                    }
+
+                response = self._rpc.create_object(doc_name, obj_data)
+                if response.get("success"):
+                    return {
+                        "success": True,
+                        "object": {"name": response.get("object_name"), "type": obj_type},
+                    }
+                else:
+                    return {"error": response.get("error", "Unknown error")}
+
+            elif command_type == "export_document":
+                obj_name = params.get("object")
+                file_path = params.get("path")
+                doc_name = params.get("document")
+
+                if not file_path:
+                    return {"error": "No file path specified"}
+
+                # Implement export functionality if available in RPC API
+                # This is a placeholder
+                return {"error": "Export functionality not yet implemented for RPC connection"}
 
             # Add more command mappings as needed
 

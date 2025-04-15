@@ -19,7 +19,7 @@ import Mesh
 import Part
 
 # Now imports should work
-from freecad_bridge import FreeCADBridge
+from freecad_connection_bridge import FreeCADBridge
 
 
 def main():

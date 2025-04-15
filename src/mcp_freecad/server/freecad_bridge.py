@@ -7,7 +7,7 @@ allowing execution of FreeCAD commands without directly importing
 the FreeCAD modules.
 
 Usage:
-    from freecad_bridge import FreeCADBridge
+    from freecad_connection_bridge import FreeCADBridge
 
     # Create a bridge instance
     fc = FreeCADBridge()

@@ -52,8 +52,8 @@ except ImportError:
             "FreeCAD connection module not found. Trying relative import."
         )
         try:
-            # Final fallback - assumes freecad_connection.py is findable
-            from freecad_connection import FreeCADConnection
+            # Final fallback - assumes freecad_connection_manager.py is findable
+            from freecad_connection_manager import FreeCADConnection
             FREECAD_CONNECTION_AVAILABLE = True
         except ImportError:
             logging.warning(

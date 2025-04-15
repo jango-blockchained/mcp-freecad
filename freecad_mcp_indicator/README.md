@@ -34,7 +34,7 @@ A FreeCAD workbench that shows MCP connection status in the status bar and provi
   - Configure server settings through an intuitive interface
   
 - **Configuration Options**:
-  - Set custom FreeCAD server path (freecad_server.py)
+  - Set custom FreeCAD server path (freecad_socket_server.py)
   - Set custom MCP server path (freecad_mcp_server.py)
   - Configure server configuration file location
   - Customize client connection settings (host, port)
@@ -120,7 +120,7 @@ These scripts will automatically find your FreeCAD Mod directory and install the
 
 1. Right-click any indicator and select "Settings..."
 2. In the Settings dialog, configure:
-   - FreeCAD Server tab: Path to FreeCAD socket server script (freecad_server.py)
+   - FreeCAD Server tab: Path to FreeCAD socket server script (freecad_socket_server.py)
    - MCP Server tab: Path to MCP server script (src/mcp_freecad/server/freecad_mcp_server.py) and configuration file
    - Client Settings tab: Host and port for MCP server connection
 
@@ -141,7 +141,7 @@ Right-click any indicator to access server control menus:
 
 ## Understanding the Servers
 
-### FreeCAD Socket Server (freecad_server.py)
+### FreeCAD Socket Server (freecad_socket_server.py)
 This is a low-level socket server that runs inside FreeCAD and allows external scripts to execute FreeCAD Python commands. It acts as the bridge between the MCP server and FreeCAD's API.
 
 ### MCP Server (src/mcp_freecad/server/freecad_mcp_server.py)

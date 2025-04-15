@@ -29,7 +29,7 @@ class FreeCADLauncher:
         else:
             self.script_path = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                "freecad_script.py"
+                "freecad_launcher_script.py"
             )
 
         # Check if the script exists

@@ -31,7 +31,7 @@ This repository has been organized into multiple branches to support different F
 
 The following files were modified to remove mock implementation:
 
-1. **freecad_server.py**:
+1. **freecad_socket_server.py**:
    - Removed all mock classes (MockFreeCAD, MockDocument, MockObject)
    - Added explicit error handling that exits if FreeCAD modules can't be loaded
    - Improved error messages to guide users to install FreeCAD properly

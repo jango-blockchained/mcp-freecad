@@ -23,6 +23,14 @@
         "env": {
           "MEMORY_FILE_PATH": "/home/jango/Git/mcp-freecad/.cursor/knowledge-graph.json"
         }
+      },
+      "filesystem": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-filesystem",
+          "/home/jango/Git/mcp-freecad"
+        ]
       }
     }
   }

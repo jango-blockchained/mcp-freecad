@@ -118,9 +118,9 @@ def test_extracted_freecad(squashfs_path):
         log(f"FreeCAD version info: {result.stdout.strip()}")
 
         # Now test with our launcher
-        if os.path.exists("freecad_launcher.py"):
-            log("Testing with freecad_launcher.py")
-            launcher_cmd = ["python3", "freecad_launcher.py", "--apprun", "--path", squashfs_path]
+        if os.path.exists("freecad_connection_launcher.py"):
+            log("Testing with freecad_connection_launcher.py")
+            launcher_cmd = ["python3", "freecad_connection_launcher.py", "--apprun", "--path", squashfs_path]
             launcher_result = subprocess.run(launcher_cmd, capture_output=True, text=True)
 
             if launcher_result.returncode != 0:
