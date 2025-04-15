@@ -2282,7 +2282,7 @@
       "observations": [
         "A FreeCAD workbench that shows MCP connection status",
         "Provides UI controls for starting/stopping MCP servers",
-        "Defined in freecad_mcp_indicator/mcp_indicator/InitGui.py",
+        "Defined in freecad_addon/mcp_indicator/InitGui.py",
         "Shows connection status in the FreeCAD status bar with colored indicators"
       ]
     },
@@ -2328,7 +2328,7 @@
         "Main implementation file for the MCP Indicator Workbench",
         "Defines the MCPIndicatorWorkbench class",
         "Contains UI logic and server management functions",
-        "Located at freecad_mcp_indicator/mcp_indicator/InitGui.py",
+        "Located at freecad_addon/mcp_indicator/InitGui.py",
         "Has methods for starting, stopping, and monitoring servers"
       ]
     },

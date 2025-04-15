@@ -1,4 +1,4 @@
-# freecad_mcp_indicator/mcp_indicator/path_finder.py
+# freecad_addon/mcp_indicator/path_finder.py
 import os
 import sys
 import inspect

@@ -5,8 +5,8 @@
     <version>0.2.0</version>
     <maintainer email="example@example.com">MCP-FreeCAD Team</maintainer>
     <license>MIT</license>
-    <url type="repository">https://github.com/yourusername/freecad_mcp_indicator</url>
-    <url type="bugtracker">https://github.com/yourusername/freecad_mcp_indicator/issues</url>
+    <url type="repository">https://github.com/yourusername/freecad_addon</url>
+    <url type="bugtracker">https://github.com/yourusername/freecad_addon/issues</url>
 
     <content>
         <workbench>

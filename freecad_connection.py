@@ -284,6 +284,15 @@ class FreeCADConnection:
                 use_apprun=use_apprun
             )
 
+            # Verify launcher is properly initialized and has the get_version method
+            if self._launcher is None:
+                print("Error: Launcher failed to initialize")
+                return False
+
+            if not hasattr(self._launcher, 'get_version') or not callable(self._launcher.get_version):
+                print("Error: Launcher's get_version method is not callable")
+                return False
+
             # Test the connection by getting the version
             version_result = self._launcher.get_version()
             return version_result.get("success", False)

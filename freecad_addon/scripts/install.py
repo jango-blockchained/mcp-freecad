@@ -90,7 +90,7 @@ def main():
     # Determine the script directory and source directory
     script_dir = os.path.dirname(os.path.abspath(__file__))
     src_dir = os.path.dirname(script_dir)
-    target_name = "freecad_mcp_indicator"
+    target_name = "freecad_addon"
 
     print_info(f"Source directory: {src_dir}")
 

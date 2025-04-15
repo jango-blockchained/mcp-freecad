@@ -1,12 +1,12 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="freecad_mcp_indicator",
+    name="freecad_addon",
     version="0.2.0",
     description="FreeCAD workbench that shows MCP connection status",
     author="MCP-FreeCAD Team",
     author_email="example@example.com",
-    url="https://github.com/yourusername/freecad_mcp_indicator",
+    url="https://github.com/yourusername/freecad_addon",
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     python_requires=">=3.8",

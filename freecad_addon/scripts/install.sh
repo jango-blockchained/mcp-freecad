@@ -26,7 +26,7 @@ print_error() {
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PARENT_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 SRC_DIR="$PARENT_DIR"
-TARGET_NAME="freecad_mcp_indicator"
+TARGET_NAME="freecad_addon"
 
 print_info "FreeCAD MCP Indicator Installation"
 print_info "=================================="
@@ -35,6 +35,7 @@ print_info "Source directory: $SRC_DIR"
 # Determine the FreeCAD Mod directory
 # Check common locations
 FREECAD_MOD_DIRS=(
+    "$HOME/.local/share/FreeCAD/Mod"
     "$HOME/.FreeCAD/Mod"
     "$HOME/.freecad/Mod"
     "/usr/share/freecad/Mod"

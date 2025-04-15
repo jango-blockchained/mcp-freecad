@@ -1,6 +1,6 @@
 # Refactoring Plan for InitGui.py
 
-This plan outlines the steps to break down the large mcp-freecad/freecad_mcp_indicator/mcp_indicator/InitGui.py file into smaller, more manageable components based on functionality.
+This plan outlines the steps to break down the large mcp-freecad/freecad_addon/mcp_indicator/InitGui.py file into smaller, more manageable components based on functionality.
 
 1. Analyze InitGui.py
 
@@ -34,7 +34,7 @@ Based on the analysis and existing files (process_manager.py, path_finder.py, co
 
 3. Refactoring Structure
 
-- [x] Create the following new Python files within the mcp-freecad/freecad_mcp_indicator/mcp_indicator/ directory:
+- [x] Create the following new Python files within the mcp-freecad/freecad_addon/mcp_indicator/ directory:
   - [x] ui_manager.py
   - [x] dependency_manager.py
   - [x] status_checker.py

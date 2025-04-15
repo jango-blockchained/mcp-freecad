@@ -1,4 +1,4 @@
-# freecad_mcp_indicator/mcp_indicator/config_manager.py
+# freecad_addon/mcp_indicator/config_manager.py
 import FreeCAD
 import os
 
