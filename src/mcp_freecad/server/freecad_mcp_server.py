@@ -1226,24 +1226,95 @@ result_json = json.dumps({{"success": success, "error": error_msg}})
 # --- Resource Definitions ---
 
 @mcp.resource("freecad://info")
-async def get_freecad_info() -> str:
+async def get_freecad_info() -> Dict[str, Any]:
     """Get information about the connected FreeCAD instance."""
     logger.info("Executing get_freecad_info resource")
     if not FC_CONNECTION or not FC_CONNECTION.is_connected():
-        return "Error: Not currently connected to FreeCAD."
-        # Alternatively, raise:
-        # raise FastMCPError("Not connected to FreeCAD")
+        return {
+            "status": "error",
+            "message": "Not currently connected to FreeCAD."
+        }
 
     try:
         version_info = FC_CONNECTION.get_version()
         version_str = ".".join(str(v) for v in version_info.get("version", ["Unknown"]))
         connection_type = FC_CONNECTION.get_connection_type()
-        return f"FreeCAD Version: {version_str}\\nConnection Type: {connection_type}"
+        return {
+            "status": "success",
+            "freecad_version": version_str,
+            "connection_type": connection_type
+        }
     except Exception as e:
         logger.error(f"Error getting FreeCAD info: {e}")
-        return f"Error retrieving FreeCAD info: {str(e)}"
-        # Alternatively, raise:
-        # raise FastMCPError(f"Error getting FreeCAD info: {str(e)}")
+        return {
+            "status": "error",
+            "message": f"Error retrieving FreeCAD info: {str(e)}"
+        }
+
+@mcp.resource("server://info")
+async def get_server_info() -> Dict[str, Any]:
+    """
+    Get comprehensive information about the MCP server.
+
+    Returns information about the server version, capabilities,
+    FreeCAD connection status, and available tools/resources.
+
+    This resource is useful for clients to understand what functionality
+    is available and the current state of the server.
+    """
+    logger.info("Executing get_server_info resource")
+
+    # Get server version and name
+    server_info = {
+        "name": server_name,
+        "version": VERSION,
+        "freecad_connection": {
+            "connected": FC_CONNECTION is not None and FC_CONNECTION.is_connected(),
+            "connection_type": FC_CONNECTION.get_connection_type() if FC_CONNECTION and FC_CONNECTION.is_connected() else "none"
+        },
+        "capabilities": {
+            "tools": {
+                "document_management": True,
+                "primitives": CONFIG.get("tools", {}).get("enable_primitives", True),
+                "sketcher": CONFIG.get("tools", {}).get("enable_sketcher", True),
+                "constraints": CONFIG.get("tools", {}).get("enable_constraints", True),
+                "measurements": CONFIG.get("tools", {}).get("enable_measurements", True),
+                "boolean_operations": True,
+                "transformations": True,
+                "export": True
+            },
+            "resources": {
+                "freecad_info": True,
+                "server_info": True
+            }
+        },
+        "runtime": {
+            "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+            "platform": sys.platform
+        }
+    }
+
+    # Add FreeCAD version info if connected
+    if FC_CONNECTION and FC_CONNECTION.is_connected():
+        try:
+            version_info = FC_CONNECTION.get_version()
+            version_str = ".".join(str(v) for v in version_info.get("version", ["Unknown"]))
+            server_info["freecad_connection"]["version"] = version_str
+        except Exception as e:
+            logger.warning(f"Could not retrieve FreeCAD version for server info: {e}")
+            server_info["freecad_connection"]["version"] = "unknown"
+
+    # Get available tools by inspecting global namespace for mcp.tool decorators
+    # This is a simplification - in a real implementation you might want to
+    # dynamically discover all tool functions
+    tools = []
+    for name, value in globals().items():
+        if name.startswith("freecad_") and callable(value):
+            tools.append(name)
+
+    server_info["available_tools"] = tools
+
+    return server_info
 
 # --- Main Execution ---
 async def main():

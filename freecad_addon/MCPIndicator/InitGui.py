@@ -1,58 +1,56 @@
-import inspect
+"""
+MCP Connection Indicator Workbench - GUI initialization
+This file is executed when FreeCAD starts in GUI mode
+"""
+
 import os
-import platform
+import sys
 import FreeCAD
 import FreeCADGui
-from PySide2 import QtCore, QtGui, QtWidgets
+import MCPIndicator # Import the main module of your Addon
 
-# Import the refactored modules
-from mcp_indicator.config_manager import ConfigManager
-from mcp_indicator.path_finder import PathFinder
-from mcp_indicator.process_manager import ProcessManager
-from mcp_indicator.status_checker import StatusChecker
-from mcp_indicator.ui_manager import UIManager
-from mcp_indicator.dependency_manager import DependencyManager
-
-# Import the flow visualization once to ensure it's available
+# Try to get the path using __file__ (might work in some contexts)
+# If it fails, use FreeCAD's knowledge of the Mod path
 try:
-    from mcp_indicator import flow_visualization
-except ImportError:
-    FreeCAD.Console.PrintWarning("Failed to import flow_visualization module. Flow visualization may not work properly.\n")
+    # This assumes InitGui.py is directly in the MCPIndicator directory
+    __dir__ = os.path.dirname(os.path.abspath(__file__))
+except NameError:
+    # Fallback: Get the path from FreeCAD's Mod folder knowledge
+    # Assumes the workbench name matches the directory name ('MCPIndicator')
+    # And the Mod directory follows the structure '.../Mod/freecad_addon/MCPIndicator'
+    # We get the 'freecad_addon' path and append 'MCPIndicator'
+    mod_path = FreeCAD.getHomePath() + "Mod/freecad_addon" # Path to the addon root
+    __dir__ = os.path.join(mod_path, "MCPIndicator") # Path to the MCPIndicator subdirectory
 
-# Check if running on Wayland to handle specific issues
-RUNNING_ON_WAYLAND = os.environ.get('XDG_SESSION_TYPE', '').lower() == 'wayland'
-if RUNNING_ON_WAYLAND:
-    FreeCAD.Console.PrintWarning("Running on Wayland: Some UI features may be limited\n")
+# Add the directory containing InitGui.py to Python path
+# This allows importing sibling modules like config_manager.py
+if os.path.isdir(__dir__) and __dir__ not in sys.path:
+    sys.path.append(__dir__)
+elif not os.path.isdir(__dir__):
+     FreeCAD.Console.PrintError(f"MCP Indicator: Calculated module directory '{__dir__}' does not exist.\\n")
+
+# Import local modules
+try:
+    from config_manager import ConfigManager
+    from path_finder import PathFinder
+    from process_manager import ProcessManager
+    from status_checker import StatusChecker
+    from ui_manager import UIManager
+    from dependency_manager import DependencyManager
+    import flow_visualization
+    FreeCAD.Console.PrintMessage("MCP Indicator: All modules loaded successfully\n")
+except ImportError as e:
+    FreeCAD.Console.PrintError(f"MCP Indicator: Failed to import module: {e}\n")
+
+# Print initialization message
+FreeCAD.Console.PrintMessage("Initializing MCP Connection Indicator GUI...\n")
 
 class MCPIndicatorWorkbench(FreeCADGui.Workbench):
     """MCP Connection Indicator Workbench"""
 
     MenuText = "MCP Indicator"
     ToolTip = "Shows MCP connection status and controls server"
-    Icon = """
-/* XPM */
-static char * mcp_icon_xpm[] = {
-"16 16 3 1",
-" 	c None",
-".	c #000000",
-"+	c #FFFFFF",
-"                ",
-"     ......     ",
-"   ..++++++..   ",
-"  .+++++++++++. ",
-" .+++++..+++++. ",
-".++++.  ..++++. ",
-".+++.    .++++. ",
-".+++.    .++++. ",
-".+++.    .++++. ",
-".++++.  ..++++. ",
-" .+++++..+++++. ",
-"  .+++++++++++. ",
-"   ..++++++..   ",
-"     ......     ",
-"                ",
-"                "};
-"""
+    Icon = os.path.join(__dir__, "resources", "icons", "mcp_icon.svg")
 
     def __init__(self):
         """Initialize the workbench with modular components."""
@@ -67,6 +65,8 @@ static char * mcp_icon_xpm[] = {
         # Timer for status checking
         self._timer = None
 
+        FreeCAD.Console.PrintMessage("MCP Indicator Workbench initialized\n")
+
     def Initialize(self):
         """Initialize the workbench when it is activated."""
         # Set up UI elements
@@ -79,12 +79,15 @@ static char * mcp_icon_xpm[] = {
                     action.triggered.connect(self.dependency_manager.install_dependencies)
 
         # Setup status check timer
+        from PySide2 import QtCore
         self._timer = QtCore.QTimer()
         self._timer.timeout.connect(self._check_status)
         self._timer.start(2000)  # 2-second interval for status check
 
         # Perform initial status check
         self._check_status()
+
+        FreeCAD.Console.PrintMessage("MCP Indicator Workbench activated\n")
 
     def _check_status(self):
         """Check connection/server status and update UI."""
@@ -127,3 +130,4 @@ static char * mcp_icon_xpm[] = {
 
 # Register the workbench with FreeCAD
 FreeCADGui.addWorkbench(MCPIndicatorWorkbench())
+FreeCAD.Console.PrintMessage("MCP Indicator Workbench registration complete\n")

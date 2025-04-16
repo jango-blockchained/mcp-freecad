@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # FreeCAD MCP Indicator Installation Script
-# Copies the MCP Indicator Workbench to the FreeCAD Mod directory
+# Copies the 'freecad_addon' directory to the FreeCAD Mod directory
 
 set -e
 
@@ -22,14 +22,22 @@ print_error() {
     echo -e "\e[1;31m[ERROR] $1\e[0m"
 }
 
-# Determine the script directory
+# Determine the script directory and the source directory (parent of scripts)
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PARENT_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
-SRC_DIR="$PARENT_DIR"
-TARGET_NAME="freecad_addon"
+# SRC_DIR is the parent directory containing MCPIndicator, package.xml, etc.
+SRC_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
+# TARGET_NAME should be the name of the directory to create in FreeCAD's Mod folder
+TARGET_NAME="freecad_addon" # Changed from MCPIndicator
 
-print_info "FreeCAD MCP Indicator Installation"
-print_info "=================================="
+# Verify that the source directory looks reasonable (e.g., contains package.xml or MCPIndicator dir)
+if [ ! -d "$SRC_DIR/MCPIndicator" ] || [ ! -f "$SRC_DIR/package.xml" ]; then
+    print_error "Source directory structure seems incorrect at: $SRC_DIR"
+    print_error "Expected to find 'MCPIndicator' subdirectory and 'package.xml'."
+    exit 1
+fi
+
+print_info "FreeCAD Addon Installation ($TARGET_NAME)"
+print_info "=========================================="
 print_info "Source directory: $SRC_DIR"
 
 # Determine the FreeCAD Mod directory
@@ -56,14 +64,18 @@ done
 
 # If no directory found, create the default one
 if [ -z "$FREECAD_MOD_DIR" ]; then
-    FREECAD_MOD_DIR="$HOME/.FreeCAD/Mod"
+    # Use the .local path as a more modern default on Linux
+    FREECAD_MOD_DIR="$HOME/.local/share/FreeCAD/Mod"
     print_warning "No existing FreeCAD Mod directory found."
     print_info "Creating default directory: $FREECAD_MOD_DIR"
     mkdir -p "$FREECAD_MOD_DIR"
 fi
 
+
+# Define the full target path
+TARGET_DIR="$FREECAD_MOD_DIR/$TARGET_NAME" # e.g., ~/.local/share/FreeCAD/Mod/freecad_addon
+
 # Check if the target directory already exists
-TARGET_DIR="$FREECAD_MOD_DIR/$TARGET_NAME"
 if [ -d "$TARGET_DIR" ]; then
     print_warning "Target directory already exists: $TARGET_DIR"
     print_warning "This will overwrite the existing installation."
@@ -81,23 +93,31 @@ if [ -d "$TARGET_DIR" ]; then
     rm -rf "$TARGET_DIR"
 fi
 
-# Create the target directory
-mkdir -p "$TARGET_DIR"
+# Create the target base directory (parent of the actual addon dir)
+# This ensures the Mod directory exists
+mkdir -p "$FREECAD_MOD_DIR"
 
-# Copy all files from the source to the target directory
-print_info "Copying files to $TARGET_DIR..."
-cp -r "$SRC_DIR"/* "$TARGET_DIR"/
+# Copy the entire source directory (excluding scripts) to the target location
+print_info "Copying addon files from $SRC_DIR to $TARGET_DIR..."
+# Use rsync for potentially better control and exclusion
+rsync -a --exclude='scripts/' --exclude='.git/' --exclude='.github/' "$SRC_DIR/" "$TARGET_DIR/"
+# Alternative using cp:
+# mkdir -p "$TARGET_DIR"
+# cp -a "$SRC_DIR"/* "$TARGET_DIR/" # Copy contents
+# cp -a "$SRC_DIR"/.??* "$TARGET_DIR/" # Copy hidden files/dirs if any (be careful)
+# rm -rf "$TARGET_DIR/scripts" # Remove scripts dir after copy if needed
 
-# Make the script executable
-if [ -f "$TARGET_DIR/scripts/install.sh" ]; then
-    chmod +x "$TARGET_DIR/scripts/install.sh"
-fi
+# No need to copy package.xml separately, it's part of the main copy
 
-# Check if the installation was successful
-if [ -d "$TARGET_DIR/mcp_indicator" ] && [ -f "$TARGET_DIR/package.xml" ]; then
+
+# Check if the installation was successful (check for key files)
+if [ -f "$TARGET_DIR/package.xml" ] && [ -d "$TARGET_DIR/MCPIndicator" ] && [ -f "$TARGET_DIR/MCPIndicator/InitGui.py" ]; then
     print_success "Installation completed successfully!"
+    print_success "Addon installed at: $TARGET_DIR"
     print_info "Please restart FreeCAD to use the MCP Indicator Workbench."
 else
-    print_error "Installation failed. Please check the error messages."
+    print_error "Installation failed. Check if files were copied correctly to $TARGET_DIR."
     exit 1
 fi
+
+exit 0

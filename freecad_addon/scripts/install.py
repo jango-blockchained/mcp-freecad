@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 FreeCAD MCP Indicator Installation Script
-Copies the MCP Indicator Workbench to the FreeCAD Mod directory
+Copies the 'freecad_addon' directory to the FreeCAD Mod directory
 """
 
 import os
@@ -48,6 +48,8 @@ def get_freecad_mod_dir():
         ]
     else:  # Linux and others
         possible_dirs = [
+            # Modern Linux convention first
+            os.path.join(home_dir, ".local", "share", "FreeCAD", "Mod"),
             os.path.join(home_dir, ".FreeCAD", "Mod"),
             os.path.join(home_dir, ".freecad", "Mod"),
             "/usr/share/freecad/Mod",
@@ -60,12 +62,13 @@ def get_freecad_mod_dir():
             print_info(f"Found existing FreeCAD Mod directory: {mod_dir}")
             return mod_dir
 
-    # If no directory found, create the default one
-    default_dir = os.path.join(home_dir, ".FreeCAD", "Mod")
+    # If no directory found, determine and create the default one
     if system == "Windows":
         default_dir = os.path.join(os.getenv('APPDATA', ''), "FreeCAD", "Mod")
     elif system == "Darwin":
         default_dir = os.path.join(home_dir, "Library", "Preferences", "FreeCAD", "Mod")
+    else: # Linux default
+        default_dir = os.path.join(home_dir, ".local", "share", "FreeCAD", "Mod")
 
     print_warning("No existing FreeCAD Mod directory found.")
     print_info(f"Creating default directory: {default_dir}")
@@ -84,18 +87,29 @@ def confirm(prompt):
         print("Please respond with 'y' or 'n'")
 
 def main():
-    print_info("FreeCAD MCP Indicator Installation")
-    print_info("==================================")
+    # Use the actual addon directory name
+    target_name = "freecad_addon" # Changed from MCPIndicator
+
+    print_info(f"FreeCAD Addon Installation ({target_name})")
+    print_info("==========================================")
 
     # Determine the script directory and source directory
     script_dir = os.path.dirname(os.path.abspath(__file__))
+    # Source directory is the parent directory of 'scripts'
     src_dir = os.path.dirname(script_dir)
-    target_name = "freecad_addon"
+
+    # Verify that the source directory looks reasonable
+    if not os.path.isdir(os.path.join(src_dir, "MCPIndicator")) or \
+       not os.path.isfile(os.path.join(src_dir, "package.xml")):
+        print_error(f"Source directory structure seems incorrect at: {src_dir}")
+        print_error("Expected to find 'MCPIndicator' subdirectory and 'package.xml'.")
+        return 1
 
     print_info(f"Source directory: {src_dir}")
 
     # Get the FreeCAD Mod directory
     mod_dir = get_freecad_mod_dir()
+    # Target directory is Mod directory + target name
     target_dir = os.path.join(mod_dir, target_name)
 
     # Check if target directory already exists
@@ -103,43 +117,33 @@ def main():
         print_warning(f"Target directory already exists: {target_dir}")
         print_warning("This will overwrite the existing installation.")
 
-        # Ask for confirmation
         if not confirm("Continue with installation?"):
             print_info("Installation cancelled.")
             return
 
-        # Remove existing directory
         print_info("Removing existing installation...")
         shutil.rmtree(target_dir)
 
-    # Create the target directory
-    os.makedirs(target_dir, exist_ok=True)
-
-    # Copy all files from the source to the target directory
-    print_info(f"Copying files to {target_dir}...")
-    for item in os.listdir(src_dir):
-        src_item = os.path.join(src_dir, item)
-        dst_item = os.path.join(target_dir, item)
-
-        if os.path.isdir(src_item):
-            shutil.copytree(src_item, dst_item, dirs_exist_ok=True)
-        else:
-            shutil.copy2(src_item, dst_item)
-
-    # Make the script executable (for Unix-based systems)
-    install_script = os.path.join(target_dir, "scripts", "install.sh")
-    if os.path.isfile(install_script) and platform.system() != "Windows":
-        try:
-            os.chmod(install_script, 0o755)  # rwxr-xr-x
-        except Exception as e:
-            print_warning(f"Could not make install.sh executable: {e}")
+    # Copy the entire source directory (excluding scripts and .git)
+    print_info(f"Copying addon files from {src_dir} to {target_dir}...")
+    shutil.copytree(
+        src_dir,
+        target_dir,
+        ignore=shutil.ignore_patterns('scripts', '.git*', '.github', '__pycache__', '*.pyc'),
+        dirs_exist_ok=True # Overwrite behavior handled above by removing target_dir
+    )
 
     # Check if the installation was successful
-    if os.path.isdir(os.path.join(target_dir, "mcp_indicator")) and os.path.isfile(os.path.join(target_dir, "package.xml")):
+    pkg_xml_path = os.path.join(target_dir, "package.xml")
+    init_gui_path = os.path.join(target_dir, "MCPIndicator", "InitGui.py")
+    if os.path.isfile(pkg_xml_path) and os.path.isfile(init_gui_path):
         print_success("Installation completed successfully!")
+        print_success(f"Addon installed at: {target_dir}")
         print_info("Please restart FreeCAD to use the MCP Indicator Workbench.")
     else:
-        print_error("Installation failed. Some files may not have been copied correctly.")
+        print_error("Installation failed. Check if files were copied correctly.")
+        print_error(f"Expected package.xml at: {pkg_xml_path}")
+        print_error(f"Expected InitGui.py at: {init_gui_path}")
         return 1
 
     return 0

@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <package format="1">
-    <n>MCP Connection Indicator</n>
+    <n>MCPIndicator</n>
     <description>A comprehensive workbench that shows MCP connection status and provides integrated server management with detailed connection information</description>
     <version>0.2.0</version>
     <maintainer email="example@example.com">MCP-FreeCAD Team</maintainer>
     <license>MIT</license>
-    <url type="repository">https://github.com/yourusername/freecad_addon</url>
-    <url type="bugtracker">https://github.com/yourusername/freecad_addon/issues</url>
+    <url type="repository">https://github.com/yourusername/MCPIndicator</url>
+    <url type="bugtracker">https://github.com/yourusername/MCPIndicator/issues</url>
 
     <content>
         <workbench>
             <classname>MCPIndicatorWorkbench</classname>
-            <subdirectory>./mcp_indicator</subdirectory>
+            <subdirectory>MCPIndicator</subdirectory>
             <icon>resources/icons/mcp_icon.svg</icon>
             <depend>mcp-freecad</depend>
             <freecadmin>0.19.0</freecadmin>

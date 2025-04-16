@@ -14,6 +14,6 @@ def add(a: int, b: int) -> int:
 
 # Add a dynamic greeting resource
 @mcp.resource("greeting://{name}")
-def get_greeting(name: str) -> str:
+def get_greeting(name: str) -> dict:
     """Get a personalized greeting"""
-    return f"Hello, {name}!"
+    return {"greeting": f"Hello, {name}!", "status": "success"}
