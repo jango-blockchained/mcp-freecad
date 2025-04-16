@@ -51,7 +51,7 @@ class DependencyManager:
         install_btn.clicked.connect(
             lambda: self._run_pip_install(
                 ["fastapi", "uvicorn", "loguru", "beautifulsoup4", "openai",
-                "pydantic", "python-multipart"],
+                 "pydantic", "python-multipart", "psutil"],
                 log_text,
                 mcp_status,
                 install_btn,
@@ -76,7 +76,7 @@ class DependencyManager:
                 install_btn.clicked.connect(
                     lambda: self._run_pip_install(
                         ["fastapi", "uvicorn", "loguru", "beautifulsoup4", "openai",
-                        "pydantic", "python-multipart"],
+                         "pydantic", "python-multipart", "psutil"],
                         log_text,
                         mcp_status,
                         install_btn,
@@ -162,15 +162,17 @@ class DependencyManager:
         log_text.clear()
         log_text.append("# Manual Installation Instructions:\n\n")
         log_text.append("1. Open a terminal (command prompt on Windows)\n")
-        log_text.append("2. Run the following command:\n\n")
+        log_text.append("2. Ensure you are using the Python environment associated with FreeCAD, or install globally.\n")
+        log_text.append("3. Run the following command:\n\n")
 
-        cmd = f"{sys.executable} -m pip install fastapi uvicorn loguru beautifulsoup4 openai pydantic python-multipart"
+        # Include psutil in manual command
+        cmd = f"{sys.executable} -m pip install fastapi uvicorn loguru beautifulsoup4 openai pydantic python-multipart psutil"
         log_text.append(f"{cmd}\n\n")
 
-        log_text.append("3. If you're using pip 21 or later and need to install to system Python, try:\n\n")
+        log_text.append("4. If you're using pip 21 or later and need to install to system Python, try:\n\n")
         log_text.append(f"{cmd} --break-system-packages\n\n")
 
-        log_text.append("4. If using a virtual environment, activate it first:\n")
+        log_text.append("5. If using a virtual environment, activate it first:\n")
         if platform.system() == "Windows":
             log_text.append("   .venv\\Scripts\\activate  # Windows\n")
         else:

@@ -3,7 +3,7 @@
 > **⚠️ UNDER HEAVY DEVELOPMENT! ⚠️**  
 > This project is being actively developed with daily updates. Features and interfaces may change frequently. Check back regularly for improvements!
 
-[![CI](https://github.com/yourusername/freecad_addon/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/freecad_addon/actions/workflows/ci.yml)
+[![CI](https://github.com/yourusername/MCPIndicator/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/MCPIndicator/actions/workflows/ci.yml)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -52,13 +52,13 @@ This module includes installation scripts for easy setup:
 
 #### Using Python (Cross-platform):
 ```bash
-cd /path/to/freecad_addon
+cd /path/to/MCPIndicator
 python3 scripts/install.py
 ```
 
 #### Using Bash (Linux/macOS):
 ```bash
-cd /path/to/freecad_addon
+cd /path/to/MCPIndicator
 ./scripts/install.sh
 ```
 
@@ -74,11 +74,11 @@ These scripts will automatically find your FreeCAD Mod directory and install the
 2. Copy or clone this repository into your Mod directory:
    ```bash
    # Linux/macOS
-   cp -r /path/to/freecad_addon ~/.FreeCAD/Mod/
+   cp -r /path/to/MCPIndicator ~/.FreeCAD/Mod/
    
    # Or clone directly
    cd ~/.FreeCAD/Mod
-   git clone https://github.com/yourusername/freecad_addon.git
+   git clone https://github.com/yourusername/MCPIndicator.git
    ```
 
 3. Make sure you have the MCP FreeCAD library installed:
