@@ -148,7 +148,7 @@ For more detailed flowcharts, see [FLOWCHART.md](docs/FLOWCHART.md).
     python src/mcp_freecad/server/freecad_mcp_server.py --config my_config.json
     ```
 
-### 2. FreeCAD Connection (`freecad_connection_manager.py`)
+### 2. FreeCAD Connection (`src/mcp_freecad/freecad_connection_manager.py`)
 - **Description**: A unified Python interface encapsulating the logic for connecting to FreeCAD. Used internally by the MCP server and available for direct scripting.
 - **Features**:
     - Intelligently selects the best connection method based on configuration and availability.
@@ -232,6 +232,7 @@ mcp-freecad/
 ├── assets/                  # 3D model assets (STL, STEP files)
 ├── backups/                 # Backup files
 ├── config.json              # Main configuration file
+├── config.template.json     # Template for configuration
 ├── docs/                    # Documentation files
 │   ├── FLOWCHART.md         # Detailed flow diagrams
 │   ├── FREECAD_INTEGRATION.md # FreeCAD integration guide
@@ -247,16 +248,28 @@ mcp-freecad/
 ├── freecad_socket_server.py        # Socket-based server for FreeCAD
 ├── scripts/                 # Shell scripts for installation and execution
 │   ├── README.md            # Scripts documentation
-│   ├── bin/                 # Executable scripts
-│   │   ├── install-global.sh    # Global installation script
-│   │   ├── mcp-freecad-installer.sh # Installer script
-│   │   ├── mcp-freecad.sh       # Simple wrapper script
-│   │   └── run-freecad-server.sh # Server runner script
-│   ├── start_freecad_with_server.sh # FreeCAD starter with server
-│   └── start_server.py       # Python script for server startup
-├── src/                     # Source code
+│   └── bin/                 # Executable scripts
+│       ├── install-global.sh    # Global installation script
+│       ├── mcp-freecad-installer.sh # Installer/Runner script
+│       ├── mcp-freecad          # Link target for global install
+│       └── setup_freecad_env.sh # Environment setup script (AppImage download/extract)
+├── src/                     # Source code (contains mcp_freecad package)
+│   └── mcp_freecad/
+│       ├── __init__.py
+│       ├── server/
+│       │   ├── __init__.py
+│       │   └── freecad_mcp_server.py # The main MCP server implementation
+│       ├── freecad_connection_manager.py # Unified connection interface
+│       └── ...                # Other source files
 ├── tests/                   # Test files
-└── tmp/                     # Temporary files
+│   └── e2e/                 # End-to-end tests
+├── .gitignore               # Git ignore patterns
+├── pyproject.toml           # Project metadata and dependencies (PEP 621)
+├── LICENSE                  # Project License
+├── README.md                # This file
+├── Dockerfile               # Docker build definition
+├── docker-compose.yml       # Docker Compose configuration
+└── ...                      # Other config files (.dockerignore, .editorconfig, etc.)
 ```
 
 For more details on scripts, see [scripts/README.md](scripts/README.md).
@@ -367,7 +380,7 @@ The `config.json` file controls various aspects of the server. Here is an exampl
     "debug": true,
     "workers": 1,
     "name": "mcp-freecad",
-    "version": "0.3.1", // Example version
+    "version": "0.7.11",
     "mcp": {
       "transport": "stdio", // Use stdio for Cursor/local clients
       "protocol_version": "0.1.0"
@@ -414,53 +427,23 @@ See [FREECAD_INTEGRATION.md](docs/FREECAD_INTEGRATION.md) for more details on in
 
 ## 🛠️ Available MCP Tools
 
-The MCP server exposes various tool groups. Here are all available tools:
+The MCP server currently exposes the following core tools. Additional toolsets are planned.
 
-### 📐 Basic FreeCAD Tools (`freecad.*`)
-- `freecad.create_document`: Create a new document
-- `freecad.export_stl`: Export the model or specific objects to STL
-- `freecad.import_stl`: Import STL files into the current document
-- `freecad.save_document`: Save the current document
-- `freecad.load_document`: Load an existing document
+*   `freecad.create_document`: Create a new document.
+*   `freecad.list_documents`: List all open documents.
+*   `freecad.list_objects`: List objects in a specific document (or active one).
+*   `freecad.create_box`: Create a box primitive.
+*   `freecad.create_cylinder`: Create a cylinder primitive.
+*   `freecad.create_sphere`: Create a sphere primitive.
+*   `freecad.create_cone`: Create a cone primitive.
+*   `freecad.boolean_union`: Perform a boolean union (fuse) between two objects.
+*   `freecad.boolean_cut`: Perform a boolean cut (difference) between two objects.
+*   `freecad.boolean_intersection`: Perform a boolean intersection (common) between two objects.
+*   `freecad.move_object`: Move an object to a new absolute position.
+*   `freecad.rotate_object`: Rotate an object by specified angles.
+*   `freecad.export_stl`: Export specified objects (or all) to an STL file.
 
-### 🔧 Model Manipulation Tools (`model_manipulation.*`)
-- `model_manipulation.rotate`: Rotate objects around specified axes
-- `model_manipulation.translate`: Move objects in 3D space
-- `model_manipulation.scale`: Scale objects uniformly or non-uniformly
-- `model_manipulation.mirror`: Mirror objects across specified planes
-- `model_manipulation.union`: Combine multiple objects using boolean union
-- `model_manipulation.cut`: Cut objects using boolean difference
-- `model_manipulation.intersect`: Create intersection of multiple objects
-
-### 📏 Measurement Tools (`measurement.*`)
-- `measurement.distance`: Measure distance between two points
-- `measurement.angle`: Measure angle between three points
-- `measurement.area`: Calculate surface area of objects
-- `measurement.volume`: Calculate volume of solid objects
-- `measurement.mass`: Calculate mass of objects (requires material properties)
-
-### 📦 Primitives Tools (`primitives.*`)
-- `primitives.create_box`: Create a rectangular box
-- `primitives.create_cylinder`: Create a cylinder
-- `primitives.create_sphere`: Create a sphere
-- `primitives.create_cone`: Create a cone
-- `primitives.create_torus`: Create a torus
-- `primitives.create_polygon`: Create a regular polygon
-- `primitives.create_ellipse`: Create an ellipse
-
-### 🔄 Export/Import Tools (`export_import.*`)
-- `export_import.export_step`: Export to STEP format
-- `export_import.import_step`: Import from STEP format
-- `export_import.export_iges`: Export to IGES format
-- `export_import.import_iges`: Import from IGES format
-- `export_import.export_dxf`: Export to DXF format
-- `export_import.import_dxf`: Import from DXF format
-
-### 💻 Code Generation Tools (`code_generator.*`)
-- `code_generator.generate_python`: Generate Python code for the current model
-- `code_generator.generate_openscad`: Generate OpenSCAD code for the current model
-- `code_generator.generate_gcode`: Generate G-code for CNC machining
-- `code_generator.generate_3d_print`: Generate optimized 3D printing settings
+(Note: The tool names used in MCP requests might differ slightly, e.g., using underscores instead of dots, depending on the client and server implementation details. Refer to the server's `mcp/listTools` output for exact names.)
 
 ## 📝 Example MCP Interactions
 
@@ -517,7 +500,7 @@ The MCP server is designed for integration with tools like Cursor IDE.
           "mcp-freecad": {
             "command": "python3", // Command to run python
             "args": [
-              "src/mcp_freecad/server/freecad_mcp_server.py" // Script to run
+              "src/mcp_freecad/server/freecad_mcp_server.py" // Corrected script path
             ],
             "env": { // Environment variables needed for headless AppRun
                "QT_QPA_PLATFORM": "offscreen",
@@ -735,56 +718,50 @@ for file in files:
 ## Prerequisites
 
 - Python 3.8 or newer
-- MCP SDK (`pip install modelcontextprotocol`)
-- **Recommended**: A FreeCAD AppImage (downloaded and extracted using `extract_appimage.py`) for the reliable `launcher` connection method.
+- **Recommended**: A FreeCAD AppImage (downloaded and extracted using `scripts/bin/setup_freecad_env.sh`) for the reliable `launcher` connection method.
 - **Alternatively**: A system installation of FreeCAD 0.20+ (for `bridge` or `server` methods, potentially less reliable).
+- Git (for cloning the repository).
+
+Dependencies are managed via `pyproject.toml` and installed into the virtual environment during setup.
 
 ## Available Tools
 
-### Document Management
+*(This section duplicates the list above - consolidating for clarity)*
 
-1. **freecad.create_document** - Create a new FreeCAD document
-2. **freecad.list_documents** - List all open documents
-3. **freecad.list_objects** - List all objects in a document
+The currently implemented tools available via MCP are:
+
+### Document Management
+*   `freecad.create_document`
+*   `freecad.list_documents`
+*   `freecad.list_objects`
 
 ### 3D Primitives
-
-1. **freecad.create_box** - Create a box primitive
-2. **freecad.create_cylinder** - Create a cylinder primitive
-3. **freecad.create_sphere** - Create a sphere primitive
-4. **freecad.create_cone** - Create a cone primitive
+*   `freecad.create_box`
+*   `freecad.create_cylinder`
+*   `freecad.create_sphere`
+*   `freecad.create_cone`
 
 ### Boolean Operations
-
-1. **freecad.boolean_union** - Create a union of two objects (add)
-2. **freecad.boolean_cut** - Cut the second object from the first (subtract)
-3. **freecad.boolean_intersection** - Create the intersection of two objects (common volume)
+*   `freecad.boolean_union`
+*   `freecad.boolean_cut`
+*   `freecad.boolean_intersection`
 
 ### Transformations
-
-1. **freecad.move_object** - Move an object to a new position
-2. **freecad.rotate_object** - Rotate an object
+*   `freecad.move_object`
+*   `freecad.rotate_object`
 
 ### Export
+*   `freecad.export_stl`
 
-1. **freecad.export_stl** - Export the model to an STL file
+Additional tools covering measurements, other import/export formats, and code generation are planned for future releases.
 
 ## Testing
 
-The project includes both unit tests and end-to-end (E2E) tests to ensure quality and reliability.
-
-### Unit Tests
-
-To run the basic unit tests:
-
-```bash
-python test_mcp_tools.py
-python test_mcp_client.py
-```
+The project includes end-to-end (E2E) tests to verify system functionality.
 
 ### End-to-End Tests
 
-End-to-end tests verify that the entire system works correctly from the client's perspective. They test real-world scenarios and interactions between different components.
+These tests verify interactions from the client's perspective using the MCP protocol.
 
 To run all E2E tests:
 
@@ -795,16 +772,14 @@ To run all E2E tests:
 # Run with verbose output
 ./tests/e2e/run_tests.py --verbose
 
-# Run with real FreeCAD connection (requires FreeCAD to be installed)
+# Run with real FreeCAD connection (requires FreeCAD to be installed and configured)
 ./tests/e2e/run_tests.py --real
 
-# Run a specific test file
+# Run a specific test file (e.g., test_primitives.py)
 ./tests/e2e/run_tests.py --single test_primitives.py
 ```
 
-The E2E tests are organized by functionality:
-- `test_primitives.py` - Tests for basic shape creation and manipulation
-- `test_smithery.py` - Tests for blacksmithing tool operations
+The E2E tests are located in the `tests/e2e/` directory and are organized by functionality.
 
 #### Writing New E2E Tests
 

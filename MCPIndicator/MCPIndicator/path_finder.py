@@ -48,11 +48,10 @@ class PathFinder:
 
                 if not mcp_path:
                     possible_mcp_paths = [
-                        os.path.join(project_root, "src", "mcp_freecad", "server", "freecad_mcp_server.py"),
-                        os.path.join(project_root, "freecad_mcp_server.py"), # Legacy
-                        os.path.join(os.path.expanduser("~"), "Git", "mcp-freecad", "src", "mcp_freecad", "server", "freecad_mcp_server.py"),
-                        os.path.join(os.path.expanduser("~"), "Git", "mcp-freecad", "freecad_mcp_server.py"), # Legacy
-                        "/usr/local/bin/freecad_mcp_server.py", # Legacy
+                        # Prioritize the bridge script
+                        os.path.join(project_root, "cursor_mcp_bridge.py"),
+                        # Add other potential locations for the bridge if needed
+                        os.path.join(os.path.expanduser("~"), "Git", "mcp-freecad", "cursor_mcp_bridge.py"),
                     ]
                     for path in possible_mcp_paths:
                         if os.path.exists(path):
@@ -102,39 +101,23 @@ class PathFinder:
             pass
 
         # --- MCP Server Path ---
-        mcp_shell_path = os.path.join(repo_path, "scripts", "start_mcp_server.sh")
-        mcp_py_path = os.path.join(repo_path, "src", "mcp_freecad", "server", "freecad_mcp_server.py")
-        mcp_py_legacy_path = os.path.join(repo_path, "freecad_mcp_server.py")
+        # Look for the bridge script first
+        mcp_bridge_path = os.path.join(repo_path, "cursor_mcp_bridge.py")
 
         preferred_mcp_path = None
-        python_script_to_use = None
-
-        # Determine the Python script to potentially use for the shell script
-        if os.path.exists(mcp_py_path):
-            python_script_to_use = mcp_py_path
-        elif os.path.exists(mcp_py_legacy_path):
-             FreeCAD.Console.PrintWarning("Using legacy MCP server script path. Please ensure your setup is correct.\n")
-             python_script_to_use = mcp_py_legacy_path
-
-        # Create/update shell script if necessary
-        if python_script_to_use:
-            scripts_dir = os.path.dirname(mcp_shell_path)
-            if not os.path.exists(scripts_dir):
-                try:
-                    os.makedirs(scripts_dir)
-                except OSError as e:
-                    FreeCAD.Console.PrintError(f"Failed to create scripts directory {scripts_dir}: {e}\n")
-
-            # Attempt to create/update the shell script
-            shell_script_created = self._create_or_update_mcp_shell_script(mcp_shell_path, python_script_to_use, repo_path)
-            if shell_script_created:
-                 preferred_mcp_path = mcp_shell_path
-            else:
-                 # Fallback to the python script if shell script creation failed
-                 preferred_mcp_path = python_script_to_use
-        elif os.path.exists(mcp_shell_path):
-            # Use existing shell script if Python script isn't found but shell is
-            preferred_mcp_path = mcp_shell_path
+        if os.path.exists(mcp_bridge_path):
+            preferred_mcp_path = mcp_bridge_path
+        else:
+            # Fallback or warning if bridge not found?
+            FreeCAD.Console.PrintWarning(f"cursor_mcp_bridge.py not found in repository root ({repo_path}). MCP server control might not work.\n")
+            # Optionally, uncomment below to fall back to the direct server script:
+            # mcp_py_path = os.path.join(repo_path, "src", "mcp_freecad", "server", "freecad_mcp_server.py")
+            # if os.path.exists(mcp_py_path):
+            #     preferred_mcp_path = mcp_py_path
+            # else:
+            #     self.config.set_mcp_server_script_path("") # Clear path if nothing found
+            self.config.set_mcp_server_script_path("") # Clear path if bridge not found
+            preferred_mcp_path = "" # Ensure it's cleared locally too
 
         if preferred_mcp_path:
             self.config.set_mcp_server_script_path(preferred_mcp_path)
@@ -149,53 +132,6 @@ class PathFinder:
             self.config.save_settings()
             return True
         else:
-            return False
-
-    def _create_or_update_mcp_shell_script(self, shell_script_path, python_script_to_use, repo_path):
-        """Creates or updates the start_mcp_server.sh script."""
-        try:
-            # Check for virtual environments
-            venv_path_venv = os.path.join(repo_path, ".venv")
-            venv_path_mcp = os.path.join(repo_path, "mcp_venv")
-
-            # Check for squashfs AppRun/Python
-            squashfs_apprun = os.path.join(repo_path, "squashfs-root", "AppRun")
-            squashfs_python = os.path.join(repo_path, "squashfs-root", "usr", "bin", "python")
-
-            script_content = ""
-            script_type = ""
-
-            script_dir_var = 'SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"'
-            relative_python_path = os.path.relpath(python_script_to_use, os.path.dirname(shell_script_path))
-
-            if os.path.isdir(venv_path_venv):
-                script_content = f'''#!/bin/bash\n\n{script_dir_var}\n\nsource "$SCRIPT_DIR/../.venv/bin/activate"\n\npython "$SCRIPT_DIR/{relative_python_path}" --debug "$@"\n'''
-                script_type = ".venv"
-            elif os.path.isdir(venv_path_mcp):
-                script_content = f'''#!/bin/bash\n\n{script_dir_var}\n\nsource "$SCRIPT_DIR/../mcp_venv/bin/activate"\n\npython "$SCRIPT_DIR/{relative_python_path}" --debug "$@"\n'''
-                script_type = "mcp_venv"
-            elif os.path.exists(squashfs_apprun):
-                 script_content = f'''#!/bin/bash\n\n{script_dir_var}\n\n# Use FreeCAD AppRun\nexport QT_QPA_PLATFORM=xcb # Avoid Wayland issues\n"$SCRIPT_DIR/../squashfs-root/AppRun" "$SCRIPT_DIR/{relative_python_path}" -- "$@"\n'''
-                 script_type = "AppRun"
-            elif os.path.exists(squashfs_python):
-                script_content = f'''#!/bin/bash\n\n{script_dir_var}\n\n# Use extracted Python\n"$SCRIPT_DIR/../squashfs-root/usr/bin/python" "$SCRIPT_DIR/{relative_python_path}" --debug "$@"\n'''
-                script_type = "squashfs Python"
-            else:
-                # No special environment found, don't create a script
-                # Let the caller fall back to using the python script directly
-                return False
-
-            # Write the script content
-            with open(shell_script_path, 'w') as f:
-                f.write(script_content)
-
-            # Make executable
-            os.chmod(shell_script_path, 0o755)
-            FreeCAD.Console.PrintMessage(f"Created/Updated start_mcp_server.sh to use {script_type}\n")
-            return True
-
-        except Exception as e:
-            FreeCAD.Console.PrintError(f"Error creating/updating start_mcp_server.sh: {str(e)}\n")
             return False
 
     def get_python_executable(self):

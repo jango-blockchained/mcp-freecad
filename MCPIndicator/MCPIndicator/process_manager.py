@@ -7,7 +7,15 @@ import platform
 import shlex
 import threading
 import FreeCAD
-import psutil
+
+# Attempt to import psutil, but don't fail if it's missing
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    psutil = None # Define psutil as None so checks like 'if psutil:' work
+    PSUTIL_AVAILABLE = False
+    FreeCAD.Console.PrintWarning("psutil module not found. Server status checks may be less reliable.\n")
 
 class ProcessManager:
     """Manages server processes for the MCP Indicator Workbench."""
@@ -67,7 +75,7 @@ class ProcessManager:
             return False
 
     def is_mcp_server_running(self):
-        """Check if the MCP server process is running."""
+        """Check if the MCP server process *started by this addon* is running."""
         if self.mcp_server_process:
             # First, check our spawned process
             try:
@@ -82,38 +90,8 @@ class ProcessManager:
                 # Process is not running
                 self.mcp_server_process = None
 
-        # Next, try to detect server by port
-        port = self.config.get_mcp_server_port()
-
-        if platform.system() == "Windows":
-            try:
-                # Use netstat on Windows
-                cmd = ["netstat", "-ano"]
-                result = subprocess.run(cmd, capture_output=True, text=True)
-                for line in result.stdout.splitlines():
-                    if f"0.0.0.0:{port}" in line or f"127.0.0.1:{port}" in line:
-                        return True
-            except Exception as e:
-                FreeCAD.Console.PrintWarning(f"Error checking netstat for MCP server: {str(e)}\n")
-        else:
-            try:
-                # Use lsof on Unix-like systems
-                cmd = ["lsof", "-i", f":{port}"]
-                result = subprocess.run(cmd, capture_output=True)
-                return result.returncode == 0
-            except Exception as e:
-                FreeCAD.Console.PrintWarning(f"Error checking lsof for MCP server: {str(e)}\n")
-
-        # As a fallback, try a quick socket connection
-        import socket
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(0.5)
-            s.connect((self.config.get_mcp_server_host(), port))
-            s.close()
-            return True
-        except:
-            return False
+        # If we don't have a process handle, assume it's not running (from our perspective)
+        return False
 
     def start_freecad_server(self, connect_mode=False):
         """Start the FreeCAD server (legacy socket server)."""
@@ -126,22 +104,113 @@ class ProcessManager:
             FreeCAD.Console.PrintError("FreeCAD server script path not set or invalid.\n")
             return False
 
-        # Determine Python executable
-        python_exe = self.path_finder.get_python_executable()
-        if not python_exe:
-            FreeCAD.Console.PrintError("Could not find Python executable.\n")
-            return False
+        freecad_exe_path = sys.executable
+        freecad_bin_dir = os.path.dirname(freecad_exe_path)
+        cmd = None
+        start_method = "Unknown"
+        script_exec_str = f"exec(open({repr(server_script_path)}).read())"
 
-        # Prepare command arguments
-        cmd = [python_exe, server_script_path]
+        # --- Refined Server Launch Logic (v2) ---
 
-        # Add --connect flag if needed
-        if connect_mode:
-            cmd.append("--connect")
+        # 1. Check for Installed FreeCADCmd
+        potential_cmd_path = os.path.join(freecad_bin_dir, "FreeCADCmd")
+        if platform.system() == "Windows":
+            potential_cmd_path += ".exe"
+
+        if os.path.exists(potential_cmd_path):
+            start_method = "FreeCADCmd (Installed)"
+            cmd = [potential_cmd_path, "-c", script_exec_str]
+            FreeCAD.Console.PrintMessage(f"Found installed FreeCADCmd: {potential_cmd_path}\n")
+
+        # 2. Check for Mounted AppImage freecadcmd -> Now uses main exe + --console
+        # Detect if running from the standard AppImage temporary mount point
+        elif platform.system() != "Windows" and freecad_exe_path.startswith("/tmp/.mount_") and "/usr/bin/freecad" in freecad_exe_path:
+            # --- New AppImage Logic: Create embedded server approach ---
+            start_method = "AppImage Executable with embedded server"
+            # Check if the main executable actually exists (should always be true here)
+            if os.path.exists(freecad_exe_path):
+                # Create a Python script that embeds a server directly within FreeCAD
+                # Following the pattern from the FreeCADMCP addon
+                embedded_server_code = f"""
+import os
+import sys
+import socket
+import threading
+import FreeCAD
+import time
+
+# Set up the socket server path
+server_script_path = "{server_script_path}"
+server_dir = os.path.dirname(server_script_path)
+
+# Print startup information
+FreeCAD.Console.PrintMessage("Starting embedded FreeCAD socket server\\n")
+FreeCAD.Console.PrintMessage(f"Server script path: {{server_script_path}}\\n")
+
+# This is the key - we're not trying to run it as a subprocess
+# Instead we directly execute it here in the same process
+try:
+    # First make sure the directory is in path
+    if server_dir not in sys.path:
+        sys.path.append(server_dir)
+
+    # Now execute the script content
+    with open(server_script_path, 'r') as f:
+        exec(f.read())
+
+    # If we get here, script executed without error
+    FreeCAD.Console.PrintMessage("Server script executed successfully.\\n")
+except Exception as e:
+    FreeCAD.Console.PrintError(f"Error executing server script: {{str(e)}}\\n")
+"""
+
+                # Create a temporary script file with our embedded server code
+                import tempfile
+                server_script = tempfile.NamedTemporaryFile(suffix='.py', mode='w', delete=False)
+                server_script.write(embedded_server_code)
+                server_script.close()
+
+                # Launch freecad with our embedded server script
+                cmd = [freecad_exe_path, "-c", server_script.name]
+                FreeCAD.Console.PrintMessage(f"Using AppImage with embedded server approach: {freecad_exe_path}\n")
+                FreeCAD.Console.PrintMessage(f"Temp script created at: {server_script.name}\n")
+            else:
+                # This case should be extremely rare here
+                FreeCAD.Console.PrintError(f"Detected AppImage structure, but main executable path not found: {freecad_exe_path}. Trying fallback.\n")
+                cmd = None # Ensure fallback is triggered if somehow the exe path is invalid
+            # --- End New AppImage Logic ---
+
+        # 3. Fallback: Use main executable with --console and script path (if not AppImage or previous steps failed)
+        if cmd is None:
+            # Check if we already tried the AppImage method and it failed
+            # If so, don't try the exact same thing again in the fallback.
+            if start_method == "AppImage Executable with embedded server":
+                 FreeCAD.Console.PrintError("AppImage exec() method failed, no further fallback possible for this executable.\n")
+                 return False
+
+            start_method = "Executable --console + script (Fallback)"
+            # Check if the main executable exists before attempting to use it
+            if os.path.exists(freecad_exe_path):
+                cmd = [freecad_exe_path, "--console", server_script_path]
+                FreeCAD.Console.PrintMessage(f"Using fallback method: {freecad_exe_path} --console + script path\n")
+            else:
+                # This case should be rare if the initial check passed, but handle defensively
+                 FreeCAD.Console.PrintError(f"Fallback failed: Main executable path not found: {freecad_exe_path}\n")
+                 return False # Cannot proceed if executable doesn't exist
+
+        # Check if we determined a command (redundant after adding check in fallback, but safe)
+        if cmd is None:
+             FreeCAD.Console.PrintError(f"Could not determine any method to launch the server script using executable: {freecad_exe_path}\n")
+             return False
+
+        # --- End Refined Logic ---
+
+        # Note: We no longer need to pass --connect via cmd args,
+        # as FreeCADCmd/console handles the environment. We also don't set PYTHONPATH.
 
         # Run server in background
         try:
-            FreeCAD.Console.PrintMessage(f"Starting FreeCAD server: {' '.join(cmd)}\n")
+            FreeCAD.Console.PrintMessage(f"Starting FreeCAD server via {start_method}: {' '.join(cmd)}\n")
 
             # Set up process with appropriate flags for the platform
             if platform.system() == "Windows":
@@ -199,9 +268,9 @@ class ProcessManager:
 
         try:
             # First try gentle shutdown through our stored process
-            if self.freecad_server_process:
+            if self.freecad_server_process and self.freecad_server_process.pid:
                 FreeCAD.Console.PrintMessage("Stopping FreeCAD server process...\n")
-                self._stop_process(self.freecad_server_process)
+                self._stop_process(self.freecad_server_process.pid)
                 self.freecad_server_process = None
 
             # Check if server is still running and try more forceful methods if needed
@@ -244,6 +313,7 @@ class ProcessManager:
 
         # Prepare command based on script type
         is_shell_script = mcp_script_path.endswith(".sh") or mcp_script_path.endswith(".bash")
+        is_bridge_script = os.path.basename(mcp_script_path) == "cursor_mcp_bridge.py"
 
         if is_shell_script:
             if platform.system() == "Windows":
@@ -266,7 +336,7 @@ class ProcessManager:
                 cmd.append(str(port))
 
         else:
-            # It's a Python script, use Python to execute it
+            # It's a Python script (either direct server or the bridge)
             python_exe = self.path_finder.get_python_executable()
             if not python_exe:
                 FreeCAD.Console.PrintError("Could not find Python executable.\n")
@@ -274,20 +344,21 @@ class ProcessManager:
 
             cmd = [python_exe, mcp_script_path]
 
-            # Add always-useful debug
-            cmd.append("--debug")
+            # Only add arguments if it's NOT the bridge script
+            if not is_bridge_script:
+                # Add arguments for the direct server script
+                cmd.append("--debug") # Always add debug?
 
-            # Add config file if specified
-            config_path = self.config.get_mcp_server_config()
-            if config_path and os.path.exists(config_path):
-                cmd.append("--config")
-                cmd.append(config_path)
+                config_path = self.config.get_mcp_server_config()
+                if config_path and os.path.exists(config_path):
+                    cmd.append("--config")
+                    cmd.append(config_path)
 
-            # Add port if not default
-            port = self.config.get_mcp_server_port()
-            if port != 8000:
-                cmd.append("--port")
-                cmd.append(str(port))
+                port = self.config.get_mcp_server_port()
+                if port != 8000: # Assuming 8000 is the default for direct script
+                    cmd.append("--port")
+                    cmd.append(str(port))
+            # else: If it IS the bridge script, we don't add extra args
 
         # Start the server process
         try:
@@ -347,9 +418,9 @@ class ProcessManager:
 
         try:
             # First try gentle shutdown through our stored process
-            if self.mcp_server_process:
+            if self.mcp_server_process and self.mcp_server_process.pid:
                 FreeCAD.Console.PrintMessage("Stopping MCP server process...\n")
-                self._stop_process(self.mcp_server_process)
+                self._stop_process(self.mcp_server_process.pid)
                 self.mcp_server_process = None
 
             # Check if server is still running and try more forceful methods if needed
@@ -385,7 +456,7 @@ class ProcessManager:
 
         try:
             # First try to get a psutil Process object
-            if psutil:
+            if PSUTIL_AVAILABLE and psutil:
                 try:
                     p = psutil.Process(pid)
                     # Try to terminate the process and its children
@@ -411,7 +482,10 @@ class ProcessManager:
                     # Process already gone
                     return
                 except Exception as e:
-                    FreeCAD.Console.PrintWarning(f"psutil approach failed: {str(e)}\n")
+                    if PSUTIL_AVAILABLE:
+                        FreeCAD.Console.PrintWarning(f"psutil approach failed: {str(e)}\n")
+                    else:
+                        FreeCAD.Console.PrintMessage("psutil not available, using platform commands to stop process.\n")
                     # Fall through to OS-specific method
 
             # OS-specific approaches
@@ -469,7 +543,10 @@ class ProcessManager:
                             pass
 
         except Exception as e:
-            FreeCAD.Console.PrintError(f"Error stopping process {pid}: {str(e)}\n")
+            if PSUTIL_AVAILABLE:
+                FreeCAD.Console.PrintError(f"Error stopping process {pid}: {str(e)}\n")
+            else:
+                FreeCAD.Console.PrintMessage("psutil not available, using platform commands to stop process.\n")
 
     def _stop_server_by_port(self, port, server_name):
         """Stop a server process identified by its port."""
@@ -501,24 +578,29 @@ class ProcessManager:
 
         try:
             # Try using psutil if available (cross-platform)
-            import psutil
-            for conn in psutil.net_connections(kind='inet'):
-                if conn.laddr.port == port:
-                    try:
-                        proc = psutil.Process(conn.pid)
-                        processes.append({
-                            'pid': conn.pid,
-                            'name': proc.name(),
-                            'cmd': ' '.join(proc.cmdline())
-                        })
-                    except (psutil.NoSuchProcess, psutil.AccessDenied):
-                        # Process might have terminated
-                        processes.append({'pid': conn.pid, 'name': 'Unknown', 'cmd': 'Unknown'})
-            return processes
+            if PSUTIL_AVAILABLE and psutil:
+                for conn in psutil.net_connections(kind='inet'):
+                    if conn.laddr.port == port:
+                        try:
+                            proc = psutil.Process(conn.pid)
+                            processes.append({
+                                'pid': conn.pid,
+                                'name': proc.name(),
+                                'cmd': ' '.join(proc.cmdline())
+                            })
+                        except (psutil.NoSuchProcess, psutil.AccessDenied):
+                            # Process might have terminated
+                            processes.append({'pid': conn.pid, 'name': 'Unknown', 'cmd': 'Unknown'})
+                if processes:
+                    FreeCAD.Console.PrintMessage(f"Found PIDs using port {port} via psutil: {[p['pid'] for p in processes]}\n")
+                    return processes
+            else:
+                FreeCAD.Console.PrintMessage(f"psutil not available, using platform commands to find PID for port {port}.\n")
 
-        except (ImportError, AttributeError):
-            # psutil not available or doesn't have this feature, use platform-specific approaches
-            pass
+        except Exception as e:
+            if PSUTIL_AVAILABLE:
+                FreeCAD.Console.PrintWarning(f"Could not use psutil to find process by port: {str(e)}. Falling back...\n")
+            # If psutil wasn't available, the fallback below is expected
 
         # Platform-specific fallbacks
         if platform.system() == "Windows":

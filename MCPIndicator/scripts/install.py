@@ -88,7 +88,7 @@ def confirm(prompt):
 
 def main():
     # Use the actual addon directory name
-    target_name = "freecad_addon" # Changed from MCPIndicator
+    target_name = "MCPIndicator" # Changed from MCPIndicator
 
     print_info(f"FreeCAD Addon Installation ({target_name})")
     print_info("==========================================")
@@ -112,33 +112,104 @@ def main():
     # Target directory is Mod directory + target name
     target_dir = os.path.join(mod_dir, target_name)
 
-    # Check if target directory already exists
-    if os.path.isdir(target_dir):
-        print_warning(f"Target directory already exists: {target_dir}")
-        print_warning("This will overwrite the existing installation.")
+    # --- Check and Remove Existing Target --- BEFORE asking mode
+    if os.path.lexists(target_dir):
+        print_warning(f"Target path exists: {target_dir}")
+        if os.path.islink(target_dir):
+            print_warning("It is a symbolic link and will be removed.")
+            try:
+                os.unlink(target_dir)
+                print_info("Existing symbolic link removed.")
+            except OSError as e:
+                print_error(f"Failed to remove existing link: {e}")
+                return 1 # Stop if we can't remove it
+        elif os.path.isdir(target_dir):
+            print_warning("It is a directory and will be removed.")
+            try:
+                shutil.rmtree(target_dir)
+                print_info("Existing directory removed.")
+            except OSError as e:
+                print_error(f"Failed to remove existing directory: {e}")
+                return 1 # Stop if we can't remove it
+        else:
+             print_warning(f"It is not a directory or link and will be removed: {target_dir}")
+             try:
+                 os.remove(target_dir)
+                 print_info("Existing file removed.")
+             except OSError as e:
+                 print_error(f"Failed to remove existing file: {e}")
+                 return 1 # Stop if we can't remove it
+    # -----------------------------------------
 
-        if not confirm("Continue with installation?"):
-            print_info("Installation cancelled.")
-            return
+    # --- Installation Mode Selection --- NOW after potential removal
+    install_mode = ""
+    while install_mode not in ["copy", "symlink"]:
+        print("\nChoose installation mode:")
+        print("  a) Full Copy (Installs a copy of the addon files)")
+        print("  b) Symbolic Link (Links to source directory - for development)")
+        choice = input("Enter choice (a/b): ").lower()
+        if choice in ['a', 'copy']:
+            install_mode = "copy"
+            print_info("Selected: Full Copy")
+        elif choice in ['b', 'symlink']:
+            install_mode = "symlink"
+            print_info("Selected: Symbolic Link (Development Mode)")
+            if platform.system() == "Windows":
+                print_warning("Creating symlinks on Windows may require administrator privileges.")
+        else:
+            print_error("Invalid choice. Please enter 'a' or 'b'.")
+    # ---------------------------------
 
-        print_info("Removing existing installation...")
-        shutil.rmtree(target_dir)
+    # Target directory path is already defined above
+    # mod_dir = get_freecad_mod_dir()
+    # target_dir = os.path.join(mod_dir, target_name)
 
-    # Copy the entire source directory (excluding scripts and .git)
-    print_info(f"Copying addon files from {src_dir} to {target_dir}...")
-    shutil.copytree(
-        src_dir,
-        target_dir,
-        ignore=shutil.ignore_patterns('scripts', '.git*', '.github', '__pycache__', '*.pyc'),
-        dirs_exist_ok=True # Overwrite behavior handled above by removing target_dir
-    )
+    # Check if target path already exists (as file, dir, or link)
+    # REMOVED Check block from here, moved above mode selection
+    # if os.path.lexists(target_dir):
+        # ... (removal logic moved)
+
+    # Ensure parent Mod directory exists (might be needed if we just removed target)
+    os.makedirs(mod_dir, exist_ok=True)
+
+    # --- Perform Installation Based on Mode ---
+    try:
+        if install_mode == "copy":
+            print_info(f"Performing full copy from {src_dir} to {target_dir}...")
+            shutil.copytree(
+                src_dir,
+                target_dir,
+                ignore=shutil.ignore_patterns('scripts', '.git*', '.github', '__pycache__', '*.pyc'),
+                # dirs_exist_ok=True # Not needed as we remove the target first
+            )
+        elif install_mode == "symlink":
+            print_info(f"Creating symbolic link from {target_dir} pointing to {src_dir}...")
+            os.symlink(src_dir, target_dir, target_is_directory=True) # target_is_directory=True is safer
+
+    except OSError as e:
+        print_error(f"Failed to perform installation: {e}")
+        if install_mode == "symlink" and platform.system() == "Windows":
+            print_error("On Windows, this might be due to insufficient privileges to create symlinks.")
+            print_error("Try running this script as an Administrator.")
+        return 1
+    except Exception as e:
+        print_error(f"An unexpected error occurred during installation: {e}")
+        return 1
+    # -----------------------------------------
 
     # Check if the installation was successful
     pkg_xml_path = os.path.join(target_dir, "package.xml")
     init_gui_path = os.path.join(target_dir, "MCPIndicator", "InitGui.py")
     if os.path.isfile(pkg_xml_path) and os.path.isfile(init_gui_path):
         print_success("Installation completed successfully!")
-        print_success(f"Addon installed at: {target_dir}")
+        if install_mode == "symlink":
+            try:
+                link_target = os.path.realpath(target_dir)
+                print_success(f"Addon linked at: {target_dir} -> {link_target}")
+            except Exception:
+                 print_success(f"Addon linked at: {target_dir}") # Fallback if realpath fails
+        else:
+            print_success(f"Addon copied to: {target_dir}")
         print_info("Please restart FreeCAD to use the MCP Indicator Workbench.")
     else:
         print_error("Installation failed. Check if files were copied correctly.")

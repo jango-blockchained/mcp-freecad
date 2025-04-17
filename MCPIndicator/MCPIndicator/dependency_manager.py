@@ -51,7 +51,7 @@ class DependencyManager:
         install_btn.clicked.connect(
             lambda: self._run_pip_install(
                 ["fastapi", "uvicorn", "loguru", "beautifulsoup4", "openai",
-                 "pydantic", "python-multipart", "psutil"],
+                 "pydantic", "python-multipart"],
                 log_text,
                 mcp_status,
                 install_btn,
@@ -76,7 +76,7 @@ class DependencyManager:
                 install_btn.clicked.connect(
                     lambda: self._run_pip_install(
                         ["fastapi", "uvicorn", "loguru", "beautifulsoup4", "openai",
-                         "pydantic", "python-multipart", "psutil"],
+                         "pydantic", "python-multipart"],
                         log_text,
                         mcp_status,
                         install_btn,
@@ -165,7 +165,7 @@ class DependencyManager:
         log_text.append("2. Ensure you are using the Python environment associated with FreeCAD, or install globally.\n")
         log_text.append("3. Run the following command:\n\n")
 
-        # Include psutil in manual command
+        # Include psutil in manual command as it's highly recommended for status checks
         cmd = f"{sys.executable} -m pip install fastapi uvicorn loguru beautifulsoup4 openai pydantic python-multipart psutil"
         log_text.append(f"{cmd}\n\n")
 

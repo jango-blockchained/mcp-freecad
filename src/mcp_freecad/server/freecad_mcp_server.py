@@ -15,6 +15,11 @@ import json
 import logging
 import os
 import sys
+import socketserver
+import threading
+import pickle
+import struct
+import logging.handlers
 from typing import Any, Dict, List, Optional
 
 
@@ -72,6 +77,7 @@ FC_CONNECTION: Optional[FreeCADConnection] = None
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 LOG_FILE_PATH = os.path.join(LOG_DIR, "freecad_mcp_server.log")
+LOGGING_PORT = 9020 # Define port for logging receiver
 
 # Set up logging
 logging.basicConfig(
@@ -83,6 +89,56 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger("advanced_freecad_mcp")
+
+# --- Logging Socket Receiver ---
+
+class LogRequestHandler(socketserver.StreamRequestHandler):
+    """Handler for incoming log records."""
+    def handle(self):
+        """
+        Handle multiple requests - each expected to be a 4-byte length,
+        followed by the pickled log record. Logs the record.
+        """
+        while True:
+            chunk = self.connection.recv(4)
+            if len(chunk) < 4:
+                break
+            slen = struct.unpack('>L', chunk)[0]
+            chunk = self.connection.recv(slen)
+            while len(chunk) < slen:
+                chunk = chunk + self.connection.recv(slen - len(chunk))
+
+            try:
+                obj = pickle.loads(chunk)
+                record = logging.makeLogRecord(obj)
+                # Process the record using the server's logger
+                logger.handle(record)
+            except Exception as e:
+                logger.error(f"Error processing log record: {e}")
+                # Log the raw chunk data if unpickling fails
+                logger.debug(f"Raw log data received: {chunk!r}")
+                break # Stop processing if there's an error with this connection
+
+class LogRecordSocketReceiver(socketserver.ThreadingTCPServer):
+    """Simple TCP socket server to receive log records."""
+    allow_reuse_address = True
+
+    def __init__(self, host='localhost', port=LOGGING_PORT, handler=LogRequestHandler):
+        socketserver.ThreadingTCPServer.__init__(self, (host, port), handler)
+        self.abort = 0
+        self.timeout = 1
+        self.logname = None
+
+    def serve_until_stopped(self):
+        import select
+        abort = 0
+        while not abort:
+            rd, wr, ex = select.select([self.socket.fileno()],
+                                       [], [],
+                                       self.timeout)
+            if rd:
+                self.handle_request()
+            abort = self.abort
 
 # --- Configuration Loading ---
 def load_config(config_path: str) -> Dict[str, Any]:
@@ -1318,13 +1374,14 @@ async def get_server_info() -> Dict[str, Any]:
 
 # --- Main Execution ---
 async def main():
-    global CONFIG, FC_CONNECTION # Ensure global access
+    """Main entry point for the server."""
+    global CONFIG, FC_CONNECTION
 
     # --- Argument Parsing ---
     parser = argparse.ArgumentParser(description="Advanced FreeCAD MCP Server")
-    parser.add_argument("--config", default=CONFIG_PATH, help=f"Path to config file (default: {CONFIG_PATH})")
-    parser.add_argument("--host", help="Override FreeCAD connection hostname")
-    parser.add_argument("--port", type=int, help="Override FreeCAD connection port")
+    parser.add_argument("--config", default=CONFIG_PATH, help="Path to configuration file")
+    parser.add_argument("--log-host", default="localhost", help="Host for the logging socket receiver")
+    parser.add_argument("--log-port", type=int, default=LOGGING_PORT, help="Port for the logging socket receiver")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     parser.add_argument("--version", action="store_true", help="Show server version and exit")
     args = parser.parse_args()
@@ -1356,65 +1413,97 @@ async def main():
     # --- Initialize FreeCAD Connection (Initial Attempt) ---
     initialize_freecad_connection(CONFIG)
 
-    # --- Configure Progress Reporting ---
-    tool_context = ToolContext.get()
+    # --- Logging Receiver Setup ---
+    log_receiver = None
     try:
-        # Try to import and use FastMCP progress reporting if available
-        from fastmcp.server.context import get_current_context
+        log_receiver = LogRecordSocketReceiver(host=args.log_host, port=args.log_port)
+        receiver_thread = threading.Thread(target=log_receiver.serve_until_stopped, daemon=True)
+        receiver_thread.start()
+        logger.info(f"Logging receiver started on {args.log_host}:{args.log_port}")
 
-        async def progress_callback(progress_value, message=None):
-            try:
-                context = get_current_context()
-                if hasattr(context, 'send_progress'):
-                    await context.send_progress(progress_value, message)
-                else:
-                    logger.debug(f"Progress: {progress_value:.0%} - {message or ''}")
-            except Exception as e:
-                logger.debug(f"Error sending progress: {e}")
+        # Optional: Add a SocketHandler to the server's own logger
+        # to route its logs through the receiver as well. This ensures
+        # all logs (local and remote) are handled identically.
+        # root_logger = logging.getLogger()
+        # socket_handler = logging.handlers.SocketHandler(args.log_host, args.log_port)
+        # root_logger.addHandler(socket_handler)
+        # logger.info("Server's own logs also routed to socket receiver.")
 
-        tool_context.set_progress_callback(progress_callback)
-        logger.info("Progress reporting configured with FastMCP")
-    except ImportError:
-        logger.info("FastMCP progress context not available, using local progress logging")
-        async def local_progress_callback(progress_value, message=None):
-            logger.debug(f"Progress (local): {progress_value:.2%} - {message or 'Processing...'}")
-        tool_context.set_progress_callback(local_progress_callback)
-
-    # --- Start Server and Connection Check Loop ---
-    logger.info(f"Starting {server_name} v{VERSION}...")
-    server_task = None
-    connection_check_task = None
-    try:
-        # Create tasks for the server and the connection checker
-        server_task = asyncio.create_task(mcp.run_stdio_async()) # Use async version
-        connection_check_task = asyncio.create_task(connection_check_loop(CONFIG))
-
-        # Run them concurrently
-        await asyncio.gather(server_task, connection_check_task)
-
-    except asyncio.CancelledError:
-         logger.info("Main tasks cancelled.")
-    except KeyboardInterrupt:
-        logger.info("Server stopped by user")
     except Exception as e:
-        logger.error(f"Error running server tasks: {e}", exc_info=True)
-        sys.exit(1)
-    finally:
-        # Gracefully cancel tasks on exit
-        if connection_check_task and not connection_check_task.done():
-            connection_check_task.cancel()
-        if server_task and not server_task.done():
-            server_task.cancel()
-        # Wait for tasks to finish cancelling
-        if server_task or connection_check_task:
-             await asyncio.gather(server_task, connection_check_task, return_exceptions=True)
+        logger.error(f"Failed to start logging receiver: {e}")
+        # Decide if this is fatal or not
+        # return 1 # Example: Exit if logging receiver fails
 
-        # Cleanup FreeCAD connection if it was established
-        if FC_CONNECTION and hasattr(FC_CONNECTION, 'close'):
+    # --- Background Connection Check ---
+    # Only start if FreeCAD features are desired/possible
+    connection_check_task = None
+    if FREECAD_CONNECTION_AVAILABLE:
+        connection_check_task = asyncio.create_task(connection_check_loop(CONFIG))
+    else:
+        logger.info("Skipping background connection check as FreeCAD connection is unavailable.")
+
+    # --- Register Progress Callback ---
+    # Example: Registering a simple progress callback for stdout
+    async def local_progress_callback(progress_value, message=None):
+        if message:
+            logger.info(f"Progress: {progress_value*100:.1f}% - {message}")
+        else:
+            logger.info(f"Progress: {progress_value*100:.1f}%")
+
+    tool_context = ToolContext.get()
+    # Prefer FastMCP's built-in progress if available and setup
+    # This assumes FastMCP provides a mechanism to register a progress handler,
+    # which might need adjustment based on the actual FastMCP version/API.
+    # If FastMCP uses ToolContext directly, this might be redundant.
+    # For now, setting it on our ToolContext instance.
+    tool_context.set_progress_callback(local_progress_callback) # Use local console logger for progress
+
+
+    # --- Start Server ---
+    logger.info(f"Starting MCP server '{server_name}' v{VERSION}...")
+    # Pass unknown arguments if necessary, depending on FastMCP's run method
+    try:
+        # Note: Check FastMCP documentation for how to pass extra args if needed
+        await mcp.run_stdio() # Or run_tcp, run_ws depending on desired transport
+    except KeyboardInterrupt:
+        logger.info("Server shutting down (KeyboardInterrupt)...")
+    except Exception as e:
+        logger.error(f"Server exited with error: {e}", exc_info=True) # Log stack trace
+    finally:
+        logger.info("Performing cleanup...")
+        # --- Cleanup ---
+        if connection_check_task:
+            connection_check_task.cancel()
+            try:
+                await connection_check_task
+            except asyncio.CancelledError:
+                logger.info("Background connection check task cancelled.")
+
+        if FC_CONNECTION and FC_CONNECTION.is_connected():
             logger.info("Closing FreeCAD connection...")
             FC_CONNECTION.close()
+
+        if log_receiver:
+            logger.info("Shutting down logging receiver...")
+            log_receiver.abort = 1
+            # receiver_thread.join() # Wait for thread to finish
+
         logger.info("Server shutdown complete.")
 
 
 if __name__ == "__main__":
-    asyncio.run(main()) # Run the async main function
+    # Check if FastMCP was imported successfully
+    if mcp_import_error:
+        sys.stderr.write(f"Fatal Error: Failed to import FastMCP - {mcp_import_error}\n")
+        sys.stderr.write("Please ensure FastMCP is installed correctly ('pip install fastmcp').\n")
+        sys.exit(1)
+
+    # Run the main async function
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        # Already handled in main's finally block, but catch here too for clean exit
+        logger.info("Server shutdown initiated by KeyboardInterrupt.")
+    except Exception as e:
+        logger.critical(f"Unhandled exception in main execution: {e}", exc_info=True)
+        sys.exit(1)

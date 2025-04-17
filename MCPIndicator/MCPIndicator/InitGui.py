@@ -5,28 +5,28 @@ This file is executed when FreeCAD starts in GUI mode
 
 import os
 import sys
-import platform # Added for platform detection
+import platform
 import FreeCAD
 import FreeCADGui
-# Remove MCPIndicator import, it's not reliable here
-# import MCPIndicator
+from PySide2 import QtCore, QtWidgets
 
 # --- Robust Path Finding ---
-__dir__ = None
+MODULE_DIR = None
 try:
     # Try the standard __file__ attribute first
-    __dir__ = os.path.dirname(os.path.abspath(__file__))
-    if not os.path.isdir(__dir__):
-        __dir__ = None # Reset if path is invalid
+    MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
+    if not os.path.isdir(MODULE_DIR):
+        MODULE_DIR = None # Reset if path is invalid
 except NameError:
     # __file__ is not defined, try searching common Mod directories
     pass # Handled below
 
-if __dir__ is None:
-    # Fallback: Search known Mod locations for 'freecad_addon/MCPIndicator'
+if MODULE_DIR is None:
+    # Fallback: Search known Mod locations for 'MCPIndicator'
     home_dir = os.path.expanduser("~")
     system = platform.system()
     possible_mod_parents = []
+    FreeCAD.Console.PrintMessage(f"MCP Indicator: Fallback path search initiated. Home dir: {home_dir}, System: {system}\n")
 
     if system == "Windows":
         possible_mod_parents.extend([
@@ -48,49 +48,21 @@ if __dir__ is None:
         ])
 
     for parent_path in possible_mod_parents:
-        potential_dir = os.path.join(parent_path, "Mod", "freecad_addon", "MCPIndicator")
+        potential_dir = os.path.join(parent_path, "Mod", "MCPIndicator", "MCPIndicator")
+        FreeCAD.Console.PrintMessage(f"MCP Indicator: Checking fallback path: {potential_dir}\n")
         if os.path.isdir(potential_dir) and os.path.isfile(os.path.join(potential_dir, "InitGui.py")):
-            __dir__ = potential_dir
-            FreeCAD.Console.PrintMessage(f"MCP Indicator: Found module path via search: {__dir__}\n")
-            break # Found it
+            MODULE_DIR = potential_dir
+            FreeCAD.Console.PrintMessage(f"MCP Indicator: Found module path via search: {MODULE_DIR}\n")
+            break
 
-if __dir__ is None:
+if MODULE_DIR is None:
     FreeCAD.Console.PrintError("MCP Indicator: ERROR - Could not determine the addon directory path.\n")
-    # Attempt to continue might fail, but prevents immediate crash before class definition
-    __dir__ = "" # Assign a dummy value to prevent NameError on Icon path
+    MODULE_DIR = ""
 
-# Add the found directory (or dummy) to Python path
-if __dir__ and __dir__ not in sys.path:
-    sys.path.append(__dir__)
+# Add the found directory to Python path
+if MODULE_DIR and MODULE_DIR not in sys.path:
+    sys.path.append(MODULE_DIR)
 # --- End Path Finding ---
-
-# Declare flag at module level
-CORE_MODULES_IMPORTED = False
-
-# Import local modules FIRST to ensure names are defined
-# Errors due to their *internal* dependencies (like psutil) will be caught later
-try:
-    from config_manager import ConfigManager
-    from path_finder import PathFinder
-    from process_manager import ProcessManager
-    from status_checker import StatusChecker
-    from ui_manager import UIManager
-    from dependency_manager import DependencyManager
-    # flow_visualization might be less critical, keep separate?
-    # import flow_visualization
-    CORE_MODULES_IMPORTED = True # Set flag to True on success
-    FreeCAD.Console.PrintMessage("MCP Indicator: Core local modules imported.\n")
-except ImportError as e:
-    FreeCAD.Console.PrintError(f"MCP Indicator: FAILED to import CORE local module: {e}\n")
-    FreeCAD.Console.PrintError("MCP Indicator: Workbench may not function correctly.\n")
-    # CORE_MODULES_IMPORTED remains False (default)
-
-# Optional: Try importing modules that might have external deps separately
-try:
-    import flow_visualization # Example if this uses external libs
-    FreeCAD.Console.PrintMessage("MCP Indicator: Optional modules potentially loaded.\n")
-except ImportError as e:
-    FreeCAD.Console.PrintMessage(f"MCP Indicator: Optional module import failed: {e}\n")
 
 # Print initialization message
 FreeCAD.Console.PrintMessage("Initializing MCP Connection Indicator GUI...\n")
@@ -100,131 +72,83 @@ class MCPIndicatorWorkbench(FreeCADGui.Workbench):
 
     MenuText = "MCP Indicator"
     ToolTip = "Shows MCP connection status and controls server"
-    # Icon = os.path.join(__dir__, "resources", "icons", "mcp_icon.svg") # Removed from class level
 
     def __init__(self):
         """Initialize the workbench with modular components."""
-        global __dir__ # Ensure we're using the module-level variable
-        global CORE_MODULES_IMPORTED # Access the module-level flag
+        # Access the global MODULE_DIR directly
+        global MODULE_DIR
 
-        # Set Icon path here using the script-level __dir__ variable
-        # Check if __dir__ is valid before using it
-        if __dir__ and os.path.isdir(__dir__):
-            self.Icon = os.path.join(__dir__, "resources", "icons", "mcp_icon.svg")
+        # Set Icon path
+        if MODULE_DIR and os.path.isdir(MODULE_DIR):
+            self.Icon = os.path.join(MODULE_DIR, "resources", "icons", "mcp_icon.svg")
         else:
-            self.Icon = "" # Default or empty icon path if __dir__ is invalid
-            FreeCAD.Console.PrintError("MCP Indicator: Cannot set workbench icon, __dir__ is invalid.\n")
+            self.Icon = ""
+            FreeCAD.Console.PrintError("MCP Indicator: Cannot set workbench icon, MODULE_DIR is invalid.\n")
 
-        # Initialize manager components only if core imports succeeded
-        if CORE_MODULES_IMPORTED:
-            self.config_manager = ConfigManager()
-            self.path_finder = PathFinder(self.config_manager)
-            self.process_manager = ProcessManager(self.config_manager, self.path_finder)
-            self.status_checker = StatusChecker(self.config_manager, self.process_manager)
-            self.ui_manager = UIManager(self.config_manager, self.process_manager, self.status_checker, self.path_finder)
-            self.dependency_manager = DependencyManager()
-        else:
-            # Handle case where core modules failed to import
-            FreeCAD.Console.PrintError("MCP Indicator: Cannot initialize managers - core modules failed to import.\n")
-            # Set managers to None or dummy objects if needed, or expect errors
-            self.config_manager = None
-            self.path_finder = None
-            self.process_manager = None
-            self.status_checker = None
-            self.ui_manager = None
-            self.dependency_manager = None # Crucially, this might break dep install UI
-
-        # Timer for status checking - Initialize self._timer regardless
+        # Initialize timer attribute
         self._timer = None
-
         FreeCAD.Console.PrintMessage("MCP Indicator Workbench __init__ called\n")
 
     def Initialize(self):
         """Initialize the workbench when it is activated."""
-        # Check if managers were initialized before using them
-        if not self.dependency_manager:
-             FreeCAD.Console.PrintError("MCP Indicator: Dependency Manager not available.\n")
-             # Maybe show a message to the user?
-             return # Stop initialization
+        # Import managers only when needed
+        from config_manager import ConfigManager
+        from path_finder import PathFinder
+        from process_manager import ProcessManager
+        from status_checker import StatusChecker
+        from ui_manager import UIManager
+        from dependency_manager import DependencyManager
+
+        # Create instances of the managers
+        self.config_manager = ConfigManager()
+        self.path_finder = PathFinder(self.config_manager)
+        self.process_manager = ProcessManager(self.config_manager, self.path_finder)
+        self.status_checker = StatusChecker(self.config_manager, self.process_manager)
+        self.ui_manager = UIManager(self.config_manager, self.process_manager, self.status_checker, self.path_finder)
+        self.dependency_manager = DependencyManager()
 
         # Set up UI elements
-        if self.ui_manager: # Check if ui_manager exists
-            self.ui_manager.setup_ui(self)
-        else:
-            FreeCAD.Console.PrintError("MCP Indicator: UI Manager not available.\n")
-            # Add a basic placeholder UI?
+        self.ui_manager.setup_ui(self)
 
         # Connect dependency manager to UI
-        # Ensure ui_manager and its action_list exist
-        if hasattr(self.ui_manager, 'action_list'):
-            for action in self.ui_manager.action_list:
-                if isinstance(action, FreeCADGui.Action) and action.text() == "Install MCP Dependencies":
-                    # Ensure dependency_manager exists before connecting
-                    if self.dependency_manager:
-                        action.triggered.connect(self.dependency_manager.install_dependencies)
-                    else:
-                        action.setEnabled(False) # Disable button if manager is missing
-                        action.setToolTip("Dependency manager failed to load.")
+        if hasattr(self.ui_manager, 'main_menu_actions') and "install_deps" in self.ui_manager.main_menu_actions:
+            deps_action = self.ui_manager.main_menu_actions["install_deps"]
+            deps_action.triggered.connect(self.dependency_manager.install_dependencies)
 
         # Setup status check timer
-        # Add check for status_checker
-        if self.status_checker:
-            try:
-                from PySide2 import QtCore
-                self._timer = QtCore.QTimer()
-                self._timer.timeout.connect(self._check_status)
-                self._timer.start(2000)  # 2-second interval for status check
-                # Perform initial status check
-                self._check_status()
-            except ImportError as e:
-                 FreeCAD.Console.PrintError(f"MCP Indicator: Failed to import PySide2.QtCore: {e}\n")
-            except Exception as e:
-                 FreeCAD.Console.PrintError(f"MCP Indicator: Error setting up timer: {e}\n")
-        else:
-            FreeCAD.Console.PrintError("MCP Indicator: Status Checker not available, timer not started.\n")
+        self._timer = QtCore.QTimer()
+        self._timer.timeout.connect(self._check_status)
+        self._timer.start(2000)  # 2-second interval for status check
+
+        # Perform initial status check
+        self._check_status()
 
         FreeCAD.Console.PrintMessage("MCP Indicator Workbench activated\n")
 
     def _check_status(self):
         """Check connection/server status and update UI."""
-        # Check if managers exist before using
-        if self.status_checker and self.ui_manager:
-            try:
-                # Use status checker to check status
-                connection_changed = self.status_checker.check_status()
-                # Update UI
-                self.ui_manager.update_ui()
-            except Exception as e:
-                # Catch errors during status check (e.g., if psutil is missing and check_status uses it)
-                FreeCAD.Console.PrintError(f"MCP Indicator: Error during status check: {e}\n")
-                # Optionally disable timer here to prevent repeated errors
-                # if self._timer and self._timer.isActive():
-                #     self._timer.stop()
-                #     FreeCAD.Console.PrintMessage("MCP Indicator: Status check timer stopped due to errors.\n")
-        else:
-            # Don't try to check status if core components are missing
-            pass
+        try:
+            # Use status checker to check status
+            connection_changed = self.status_checker.check_status()
+            # Update UI
+            self.ui_manager.update_ui()
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"MCP Indicator: Error during status check: {e}\n")
 
     def Activated(self):
         """Called when the workbench is activated."""
         # Restart the timer if it was stopped
         if self._timer and not self._timer.isActive():
             self._timer.start()
-
         # Force update
         self._check_status()
 
     def Deactivated(self):
         """Called when the workbench is deactivated."""
-        # Optionally stop the timer when workbench is inactive
-        # Commenting out to keep monitoring even when workbench is inactive
-        # if self._timer and self._timer.isActive():
-        #     self._timer.stop()
         pass
 
     def ContextMenu(self, recipient):
         """Context menu entries when workbench is active."""
-        # For future use, if specific context menu entries are needed
         pass
 
     def GetClassName(self):
@@ -233,7 +157,7 @@ class MCPIndicatorWorkbench(FreeCADGui.Workbench):
 
     def __del__(self):
         """Clean up when the workbench is deleted."""
-        if self._timer:
+        if hasattr(self, '_timer') and self._timer:
             self._timer.stop()
 
 # Register the workbench with FreeCAD
