@@ -1,24 +1,160 @@
+# Build and distribution directories
 squashfs-root/
-assets/
-backups/
-tmp/
+build/
+dist/
+*.egg-info/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments and package managers
 .venv/
+venv/
+env/
+.env/
+node_modules/
+uv.lock
+
+# IDE and editor files
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing and coverage
 .pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Temporary and backup files
+tmp/
+temp/
+backups/
+*.tmp
+*.bak
+*.backup
+*~
+
+# FreeCAD specific files
 *.stl
 *.step
+*.stp
+*.iges
+*.igs
 *.FCStd
 *.FCStd1
-*.FCBak
+*.FCBak*.fcstd
+*.fcstd1
+*.fcbak
+
+# CAD and 3D model files
+*.obj
+*.ply
+*.dae
+*.3mf
+*.amf
+*.x3d
+*.wrl
+
+# Log files
+*.log
 freecad_server_stderr.log
 freecad_server_stdout.log
 mcp-freecad-debug.log
 mcp-freecad-traceback.log
-uv.lock
+logs/
+
+# AppImage files and checksums
 *.AppImage
-*.AppImage.sha256sum
-*.AppImage.sha512sum
-*.AppImage.sha384sum
-*.AppImage.sha224sum
-*.AppImage.sha1sum
-*.AppImage.md5sum
+*.AppImage.*sum
+
+# OS specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Documentation build outputs
+docs/_build/
+docs/build/
+site/
+
+# Assets and media (if large)
+assets/
+media/
+static/large/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Archives and compressed files
+*.zip
+*.tar.gz
+*.tgz
+*.tar.bz2
+*.rar
+*.7z
+
+# Large data files
+*.dat
+*.bin
+*.raw*.fcstd
+*.fcstd1
+*.fcbak
+
+# CAD and 3D model files
+*.obj
+*.ply
+*.dae
+*.3mf
+*.amf
+*.x3d
+*.wrl
+
+# Log files
+*.log
+freecad_server_stderr.log
+freecad_server_stdout.log
+mcp-freecad-debug.log
+mcp-freecad-traceback.log
+logs/
+
+# AppImage files and checksums
+*.AppImage
+*.AppImage.*sum
+
+# OS specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Documentation build outputs
+docs/_build/
+docs/build/
+site/
+
+# Assets and media (if large)
+assets/
+media/
+static/large/# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Archives and compressed files
+*.zip
+*.tar.gz
+*.tgz
+*.tar.bz2
+*.rar
+*.7z
+
+# Large data files
+*.dat
+*.bin
+*.raw
