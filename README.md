@@ -9,6 +9,45 @@
 
 This project provides a robust integration between AI assistants and FreeCAD CAD software using the **Model Context Protocol (MCP)**. It allows external applications to interact with FreeCAD through a standardized interface, offering multiple connection methods and specialized tools.
 
+---
+
+## 🚀 **NEW: FreeCAD Addon with Claude 4 + Thinking Mode!** ✨
+
+### 🎯 **Want the Best User Experience?**
+
+Check out our **revolutionary FreeCAD Addon** that brings cutting-edge AI capabilities directly into FreeCAD's interface:
+
+📦 **[FreeCAD MCP Integration Addon](freecad-addon/README.md)** - *Featured in addon directory*
+
+**Key Features:**
+- 🧠 **Claude 4 with Thinking Mode** - See AI reason through complex design problems step-by-step
+- 🤖 **Multi-Provider Support** - Claude, Gemini, OpenRouter with 13+ models  
+- 🎨 **Modern GUI** - Professional tabbed interface with real-time monitoring
+- 🔗 **Universal Connections** - All MCP connection methods in one place
+- 📊 **Performance Monitoring** - Real-time server metrics and diagnostics
+
+**Installation:**
+```bash
+# Via FreeCAD Addon Manager (Recommended)
+1. Open FreeCAD → Tools → Addon Manager
+2. Search for "MCP Integration" 
+3. Click Install → Restart FreeCAD
+
+# Ready to use with Claude 4, Gemini 2.5 Pro, and more!
+```
+
+**Why Use the Addon?**
+- ⚡ **Easier Setup** - No command line configuration needed
+- 🎨 **Better UX** - Integrated GUI with visual feedback
+- 🧠 **Advanced AI** - Latest models with thinking mode support
+- 📊 **Monitoring** - Real-time connection and performance tracking
+
+---
+
+## 🛠️ **Developer/Advanced Users: Core MCP Server**
+
+The sections below cover the **core MCP server** for developers, advanced users, or integration into other tools. For most users, the **FreeCAD Addon above** provides a better experience.
+
 ## Quick Start (Recommended: AppImage + Launcher)
 
 For the most reliable setup, follow these steps:

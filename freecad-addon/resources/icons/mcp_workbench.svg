@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="#2196F3" stroke="#1976D2" stroke-width="2"/>
+  
+  <!-- MCP letters -->
+  <text x="32" y="20" font-family="Arial, sans-serif" font-size="10" font-weight="bold" 
+        text-anchor="middle" fill="white">MCP</text>
+  
+  <!-- Connection symbol -->
+  <g stroke="white" stroke-width="2" fill="none">
+    <!-- Left node -->
+    <circle cx="16" cy="40" r="4" fill="white"/>
+    <!-- Right node -->
+    <circle cx="48" cy="40" r="4" fill="white"/>
+    <!-- Connection line -->
+    <line x1="20" y1="40" x2="44" y2="40"/>
+    <!-- Data flow indicators -->
+    <polygon points="26,38 30,40 26,42" fill="white"/>
+    <polygon points="38,38 34,40 38,42" fill="white"/>
+  </g>
+  
+  <!-- AI symbol (brain-like pattern) -->
+  <g stroke="white" stroke-width="1" fill="none" opacity="0.7">
+    <path d="M24,50 Q28,46 32,50 Q36,46 40,50"/>
+    <path d="M26,52 Q30,48 34,52 Q38,48 42,52"/>
+  </g>
+</svg>

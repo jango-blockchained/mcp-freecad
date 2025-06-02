@@ -1,0 +1,23 @@
+[general]
+name = MCP Integration
+description = Model Context Protocol Integration for AI-powered CAD operations in FreeCAD
+author = MCP-FreeCAD Development Team
+version = 1.0.0
+date = 2024-12-19
+classname = MCPWorkbench
+
+[dependencies]
+freecad_min = 0.20.0
+python_min = 3.8
+
+[urls]
+wiki = https://github.com/jango-blockchained/mcp-freecad/wiki
+repository = https://github.com/jango-blockchained/mcp-freecad
+issues = https://github.com/jango-blockchained/mcp-freecad/issues
+
+[files]
+icon = resources/icons/mcp_workbench.svg
+readme = README.md
+
+[tags]
+AI, Automation, External, MCP, Protocol, Integration

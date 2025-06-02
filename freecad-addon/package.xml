@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<package format="1" xmlns="https://wiki.freecad.org/Package_Metadata">
+  <name>MCP Integration</name>
+  <description>Model Context Protocol Integration for AI-powered CAD operations in FreeCAD</description>
+  <version>1.0.0</version>
+  <date>2024-12-19</date>
+  
+  <maintainer email="info@cryptolinx.de">MCP-FreeCAD Development Team</maintainer>
+  <license>MIT</license>
+  
+  <url type="website">https://github.com/jango-blockchained/mcp-freecad</url>
+  <url type="repository">https://github.com/jango-blockchained/mcp-freecad</url>
+  <url type="bugtracker">https://github.com/jango-blockchained/mcp-freecad/issues</url>
+  <url type="readme">https://github.com/jango-blockchained/mcp-freecad/blob/main/README.md</url>
+  
+  <author email="info@cryptolinx.de">jango-blockchained</author>
+  
+  <freecad_min>0.20.0</freecad_min>
+  <python_min>3.8</python_min>
+  
+  <content>
+    <workbench>
+      <classname>MCPWorkbench</classname>
+      <subdirectory>./</subdirectory>
+    </workbench>
+  </content>
+  
+  <depend version_gte="2.0" on="python3-requests"/>
+  <depend version_gte="5.0" on="python3-PySide2"/>
+  <depend version_gte="0.1.0" on="python3-modelcontextprotocol"/>
+  
+  <icon>resources/icons/mcp_workbench.svg</icon>
+  
+  <tag>AI</tag>
+  <tag>Automation</tag>
+  <tag>External</tag>
+  <tag>MCP</tag>
+  <tag>Protocol</tag>
+</package>
