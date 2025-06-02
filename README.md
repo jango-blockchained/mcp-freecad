@@ -15,7 +15,7 @@ This project provides a robust integration between AI assistants and FreeCAD CAD
 
 ### 🎯 **Want the Best User Experience?**
 
-Check out our **FreeCAD Addon** that brings advanced AI capabilities directly into FreeCAD's interface:
+Check out my **FreeCAD Addon** that brings advanced AI capabilities directly into FreeCAD's interface:
 
 📦 **[FreeCAD MCP Integration Addon](freecad-addon/README.md)** - *Featured in addon directory*
 
@@ -852,3 +852,12 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 - FreeCAD development team for the excellent CAD software
 - Anthropic and Claude for the Model Context Protocol (MCP) SDK
+
+---
+
+<div align="center">
+<sub>
+🛠️ <strong>MCP-FreeCAD Integration</strong> - Bridging AI and CAD through advanced connectivity<br>
+Crafted with ❤️ by jango-blockchained • June 2025
+</sub>
+</div>

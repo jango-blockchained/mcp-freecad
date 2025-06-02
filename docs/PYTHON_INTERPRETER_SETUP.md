@@ -21,11 +21,11 @@ The most reliable way to interact with FreeCAD is by using its own environment. 
     *   Updates your `config.json` to use the `launcher` connection method via `AppRun` from the extracted directory.
     *   Ensures all FreeCAD dependencies and Python modules are contained within `squashfs-root`.
 
-3.  **How it Works**: When you run the MCP server (`python src/mcp_freecad/server/freecad_mcp_server.py`), the `FreeCADConnection` uses the `FreeCADLauncher`. The launcher executes the `AppRun` script within the `squashfs-root` directory. `AppRun` correctly sets up the FreeCAD environment (paths, libraries) and then runs our `freecad_launcher_script.py` using FreeCAD's *internal* Python interpreter. All communication happens via standard input/output.
+3.  **How it Works**: When you run the MCP server (`python src/mcp_freecad/server/freecad_mcp_server.py`), the `FreeCADConnection` uses the `FreeCADLauncher`. The launcher executes the `AppRun` script within the `squashfs-root` directory. `AppRun` correctly sets up the FreeCAD environment (paths, libraries) and then runs my `freecad_launcher_script.py` using FreeCAD's *internal* Python interpreter. All communication happens via standard input/output.
 
 **Why this is Recommended:**
 
-*   **No Import Errors**: We don't attempt to import FreeCAD modules into our main Python environment.
+*   **No Import Errors**: I don't attempt to import FreeCAD modules into my main Python environment.
 *   **Correct Environment**: FreeCAD runs in the exact environment it was packaged with.
 *   **Dependency Isolation**: All dependencies are bundled within the extracted AppImage.
 *   **Simplicity**: The `extract_appimage.py` script automates the setup.

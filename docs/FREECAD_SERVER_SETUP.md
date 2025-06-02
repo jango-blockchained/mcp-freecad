@@ -1,6 +1,6 @@
 # FreeCAD Server Setup Guide
 
-**Note:** This document describes the setup for the **Socket Server** connection method, which is **not the recommended approach** for most users. For the **most reliable connection**, we strongly recommend using the **Launcher method with an extracted FreeCAD AppImage**. Please see `docs/FREECAD_INTEGRATION.md` and `docs/PYTHON_INTERPRETER_SETUP.md` for details on the recommended setup.
+**Note:** This document describes the setup for the **Socket Server** connection method, which is **not the recommended approach** for most users. For the **most reliable connection**, I strongly recommend using the **Launcher method with an extracted FreeCAD AppImage**. Please see `docs/FREECAD_INTEGRATION.md` and `docs/PYTHON_INTERPRETER_SETUP.md` for details on the recommended setup.
 
 This guide explains how to set up and manually run the `freecad_socket_server.py` script *inside* FreeCAD, which allows the `FreeCADConnection` class (when configured to use the `server` method) to communicate with it via sockets.
 

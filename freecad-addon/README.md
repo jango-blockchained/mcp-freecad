@@ -307,9 +307,9 @@ def custom_analysis_tool(geometry, material):
 ## 🤝 **Contributing**
 
 ### 🎯 **Ways to Contribute**
-- 🐛 **Bug Reports**: Found an issue? Let us know!
+- 🐛 **Bug Reports**: Found an issue? Let me know!
 - 💡 **Feature Requests**: Ideas for new capabilities
-- 📝 **Documentation**: Help improve our guides
+- 📝 **Documentation**: Help improve my guides
 - 🧑‍💻 **Code**: Submit pull requests for new features
 - 🧪 **Testing**: Help test new releases
 
@@ -444,6 +444,6 @@ copies of the Software.
 <div align="center">
 <sub>
 🚀 <strong>MCP Integration FreeCAD Addon</strong> - Bringing AI to CAD, one design at a time<br>
-Made with ❤️ by the open source community • June 2025
+Made with ❤️ by jango-blockchained • June 2025
 </sub>
 </div>

@@ -1,10 +1,10 @@
 # Contributing to MCP-FreeCAD
 
-Thank you for your interest in contributing to the MCP-FreeCAD project! This document provides guidelines and instructions for contributing to our project.
+Thank you for your interest in contributing to the MCP-FreeCAD project! This document provides guidelines and instructions for contributing to my project.
 
 ## Code of Conduct
 
-Please read and follow our Code of Conduct. We expect all contributors to abide by these guidelines to ensure a positive and respectful community.
+Please read and follow my Code of Conduct. I expect all contributors to abide by these guidelines to ensure a positive and respectful community.
 
 ## Development Environment Setup
 
@@ -103,4 +103,13 @@ By contributing to MCP-FreeCAD, you agree that your contributions will be licens
 
 If you have any questions or need help, feel free to open an issue or contact the maintainers directly.
 
-Thank you for contributing to MCP-FreeCAD! 
+Thank you for contributing to MCP-FreeCAD!
+
+---
+
+<div align="center">
+<sub>
+With love from jango-blockchained ❤️<br>
+Building the future of AI-powered CAD
+</sub>
+</div> 

@@ -6,7 +6,7 @@ This document provides detailed information about the different connection metho
 
 MCP-FreeCAD supports multiple methods to connect to FreeCAD:
 
-1. **Launcher Mode** (Recommended) - Uses AppRun from an extracted AppImage to execute FreeCAD with our script
+1. **Launcher Mode** (Recommended) - Uses AppRun from an extracted AppImage to execute FreeCAD with my script
 2. **Wrapper Mode** - Runs FreeCAD in a subprocess with direct module imports
 3. **Server Mode** - Connects to a running FreeCAD instance via sockets
 4. **RPC Mode** - Connects to a running FreeCAD instance via XML-RPC

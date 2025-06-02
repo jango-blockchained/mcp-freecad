@@ -5,7 +5,7 @@
 
 ## 🚀 Overview
 
-Our FreeCAD MCP Integration Addon supports the latest and most capable AI models from leading providers, including **Claude 4** series with advanced thinking mode capabilities for complex CAD operations.
+My FreeCAD MCP Integration Addon supports the latest and most capable AI models from leading providers, including **Claude 4** series with advanced thinking mode capabilities for complex CAD operations.
 
 ## 🤖 Supported AI Providers & Models
 
@@ -137,13 +137,13 @@ Thinking Mode is an advanced feature available in Claude 4 and 3.7 models that p
 
 1. **Choose Provider:** Select Claude for best coding, Gemini for multimodal
 2. **Get API Key:** Register with chosen provider
-3. **Add to FreeCAD:** Use our addon's provider management
+3. **Add to FreeCAD:** Use my addon's provider management
 4. **Enable Thinking:** For Claude 4/3.7 models, enable thinking mode
 5. **Configure Budget:** Set appropriate thinking budget for your use case
 
 ## 🔄 Future Updates
 
-We continuously monitor for new model releases and will add support for:
+I continuously monitor for new model releases and will add support for:
 - New Claude models as they're released
 - Emerging OpenAI models (o3 full, GPT-5)
 - Enhanced Gemini capabilities
