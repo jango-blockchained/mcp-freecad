@@ -80,3 +80,19 @@ scripts/bin/mcp-freecad
 *.AppImage.sha224sum
 *.AppImage.sha1sum
 *.AppImage.md5sum
+
+# Temporary files
+*.tmp
+*.bak
+*.orig
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
