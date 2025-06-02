@@ -4,7 +4,20 @@ import os
 import sys
 import FreeCAD
 import FreeCADGui
-from PySide2 import QtWidgets, QtCore, QtGui
+
+# Try to import PySide2, fall back gracefully if not available
+try:
+    from PySide2 import QtWidgets, QtCore, QtGui
+    HAS_PYSIDE2 = True
+except ImportError:
+    try:
+        from PySide import QtGui as QtWidgets
+        from PySide import QtCore, QtGui
+        HAS_PYSIDE2 = False
+        FreeCAD.Console.PrintWarning("MCP Integration: Using PySide instead of PySide2\n")
+    except ImportError:
+        FreeCAD.Console.PrintError("MCP Integration: No Qt bindings available\n")
+        HAS_PYSIDE2 = False
 
 
 class MCPWorkbench(FreeCADGui.Workbench):
@@ -56,9 +69,14 @@ class MCPWorkbench(FreeCADGui.Workbench):
         """Return the workbench class name."""
         return "MCPWorkbench"
 
-    def _create_main_interface(self):
+        def _create_main_interface(self):
         """Create the main tabbed interface."""
         try:
+            # Check if Qt bindings are available
+            if not HAS_PYSIDE2:
+                FreeCAD.Console.PrintError("MCP Integration: Cannot create GUI without Qt bindings\n")
+                return
+
             # Import GUI modules
             gui_dir = os.path.join(self.addon_dir, "gui")
             if gui_dir not in sys.path:
@@ -147,17 +165,25 @@ class MCPWorkbench(FreeCADGui.Workbench):
             FreeCAD.Console.PrintError(f"Failed to open settings: {e}\n")
 
 
-class MCPMainWidget(QtWidgets.QWidget):
+class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
     """Main widget containing the tabbed interface."""
 
     def __init__(self, parent=None):
-        super().__init__(parent)
-        self.init_ui()
+        if HAS_PYSIDE2:
+            super().__init__(parent)
+            self.init_ui()
+        else:
+            # No GUI available, create minimal interface
+            FreeCAD.Console.PrintMessage("MCP Integration: GUI not available, minimal mode\n")
 
     def init_ui(self):
         """Initialize the user interface."""
-        self.setWindowTitle("MCP Integration")
-        self.setMinimumSize(800, 600)
+        try:
+            if not HAS_PYSIDE2:
+                return
+
+            self.setWindowTitle("MCP Integration")
+            self.setMinimumSize(800, 600)
 
         # Create main layout
         layout = QtWidgets.QVBoxLayout(self)
@@ -173,10 +199,13 @@ class MCPMainWidget(QtWidgets.QWidget):
         self._create_tools_tab()
         self._create_logs_tab()
 
-        # Status bar
-        self.status_bar = QtWidgets.QStatusBar()
-        layout.addWidget(self.status_bar)
-        self.status_bar.showMessage("MCP Integration Ready")
+            # Status bar
+            self.status_bar = QtWidgets.QStatusBar()
+            layout.addWidget(self.status_bar)
+            self.status_bar.showMessage("MCP Integration Ready")
+
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"MCP Integration: Failed to create GUI: {e}\n")
 
     def _create_ai_models_tab(self):
         """Create the AI Models tab."""
