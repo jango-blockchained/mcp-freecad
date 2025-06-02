@@ -35,7 +35,7 @@ Our FreeCAD MCP Integration Addon supports the latest and most capable AI models
 | `gemini-2.5-pro-latest` | Latest flagship model | 2M tokens | Multimodal excellence |
 | `gemini-1.5-pro-latest` | Previous generation pro | 2M tokens | Reliable performance |
 | `gemini-1.5-flash-latest` | Fast inference model | 1M tokens | Speed optimized |
-| `gemini-exp-1114` | Experimental features | Variable | Cutting-edge features |
+| `gemini-exp-1114` | Experimental features | Variable | Latest experimental features |
 
 ### 3. **OpenRouter** - Multi-Provider Access 🌐
 **Best for:** Access to multiple models through single API

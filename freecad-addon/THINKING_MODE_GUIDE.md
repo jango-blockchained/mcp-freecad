@@ -5,7 +5,7 @@
 
 ## 🧠 What is Thinking Mode?
 
-Thinking Mode is a groundbreaking feature available in the latest Claude 4 and Claude 3.7 models that allows the AI to engage in extended reasoning before providing answers. Think of it as giving the AI time to "think through" complex problems step by step, similar to how an experienced CAD engineer would approach a challenging design problem.
+Thinking Mode is an advanced feature available in the latest Claude 4 and Claude 3.7 models that allows the AI to engage in extended reasoning before providing answers. Think of it as giving the AI time to "think through" complex problems step by step, similar to how an experienced CAD engineer would approach a challenging design problem.
 
 ## ✨ Key Features
 

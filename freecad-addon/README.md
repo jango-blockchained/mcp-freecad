@@ -1,6 +1,6 @@
 # 🚀 MCP Integration FreeCAD Addon
 
-**Transform your FreeCAD experience with cutting-edge AI integration!**
+**AI-powered CAD assistance integrated directly into FreeCAD**
 
 [![FreeCAD](https://img.shields.io/badge/FreeCAD-0.20+-blue.svg)](https://www.freecadweb.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -8,13 +8,13 @@
 [![Claude 4](https://img.shields.io/badge/Claude%204-Thinking%20Mode-purple.svg)](https://www.anthropic.com)
 [![Gemini](https://img.shields.io/badge/Gemini-2.5%20Pro-orange.svg)](https://ai.google.dev)
 
-## 🌟 **Revolutionary AI-Powered CAD Assistant**
+## 🌟 **AI-Powered CAD Assistant**
 
-The MCP Integration addon brings **state-of-the-art AI capabilities** directly into FreeCAD, featuring the latest **Claude 4 models with Thinking Mode** for unprecedented CAD design assistance. Experience intelligent design guidance, automated scripting, and expert-level problem-solving within your favorite CAD environment.
+The MCP Integration addon brings advanced AI capabilities directly into FreeCAD, featuring the latest **Claude 4 models with Thinking Mode** for enhanced CAD design assistance. Provides intelligent design guidance, automated scripting, and comprehensive problem-solving within the FreeCAD environment.
 
 ---
 
-## 🎯 **What Makes This Special?**
+## 🎯 **Key Features**
 
 ### 🧠 **Claude 4 with Thinking Mode** ✨ *NEW!*
 - **🔬 Extended Reasoning**: See AI think through complex design problems step-by-step
@@ -40,7 +40,7 @@ The MCP Integration addon brings **state-of-the-art AI capabilities** directly i
 
 ## 🎨 **Feature Showcase**
 
-### 🏠 **Intelligent Dashboard**
+### 🏠 **Dashboard Interface**
 ```
 ┌─────────────────────────────────────┐
 │ 📊 Real-time Monitoring Dashboard  │
@@ -412,7 +412,7 @@ copies of the Software.
 ## 🙏 **Acknowledgments**
 
 ### 💝 **Special Thanks**
-- 🏠 **FreeCAD Team** - For the amazing CAD platform
+- 🏠 **FreeCAD Team** - For the excellent CAD platform
 - 🤖 **Anthropic** - For Claude's exceptional capabilities  
 - 🔬 **Google AI** - For Gemini's multimodal intelligence
 - 🌐 **OpenRouter** - For universal model access
@@ -429,7 +429,7 @@ copies of the Software.
 
 <div align="center">
 
-### 🌟 **Ready to revolutionize your CAD workflow?**
+### 🌟 **Ready to enhance your CAD workflow?**
 
 [![Download Now](https://img.shields.io/badge/Download%20Now-FreeCAD%20Addon%20Manager-blue.svg?style=for-the-badge)](https://www.freecadweb.org/)
 [![View Docs](https://img.shields.io/badge/View%20Docs-Documentation-green.svg?style=for-the-badge)](docs/)
