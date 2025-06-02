@@ -1,9 +1,12 @@
 # freecad_addon/mcp_indicator/config_manager.py
 import FreeCAD
 import os
+print("DEBUG: config_manager.py - Top level")
 
+print("DEBUG: config_manager.py - Defining class ConfigManager")
 class ConfigManager:
     """Manages loading, saving, and accessing configuration parameters."""
+    print("DEBUG: config_manager.py - Inside class definition")
 
     def __init__(self):
         """Initialize the ConfigManager and load initial settings."""
@@ -76,3 +79,7 @@ class ConfigManager:
 # repo_path = config.get_repo_path()
 # config.set_mcp_server_port(8001)
 # config.save_settings()
+
+print("DEBUG: config_manager.py - Finished defining class ConfigManager")
+
+print("DEBUG: MCPIndicator.config_manager module executed successfully.")

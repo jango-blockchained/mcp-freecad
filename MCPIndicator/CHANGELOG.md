@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.4.0 - XML-RPC Server Integration
+
+### Added
+- XML-RPC server implementation for remote FreeCAD control
+- Comprehensive API for document and object management
+- Object serialization to JSON-compatible formats
+- Screenshot capture functionality
+- Command buttons for starting/stopping the XML-RPC server
+- Example client script demonstrating XML-RPC usage
+- Detailed documentation in README about the XML-RPC integration
+
+### Changed
+- Updated toolbar and menu with XML-RPC server controls
+- Improved modular code structure with new rpc_server module
+- Enhanced InitGui.py to support the new XML-RPC server commands
+
 ## v0.3.0 - Enhanced Server Differentiation & Flow Visualization
 
 ### Added

@@ -8,6 +8,8 @@ from PySide2.QtCore import QFileSystemWatcher, QTimer, QStandardPaths, Qt
 import logging
 import logging.handlers
 import socket # Needed for external server check (will be used by status_checker later, but import here is fine)
+# Corrected import: Use absolute import based on package name
+from MCPIndicator.connection_status_dialog import ConnectionStatusDialog
 
 # Icon paths (relative to resources folder) - Define constants
 # Using Qt Resource System paths (if setup) or direct paths
@@ -93,54 +95,58 @@ class UIManager:
         }
 
 
-        # Configure logging to send to server
+        # Configure logging to write to a file
         self._configure_socket_logging()
 
     def _configure_socket_logging(self, host="localhost", port=9020):
-        """Configure the root logger to send logs via socket."""
-        # Use config manager to get logging host/port if available, otherwise use defaults
-        # Note: config_manager might not have these specific settings yet.
-        log_host = getattr(self.config_manager, 'get_log_host', lambda: host)()
-        log_port = getattr(self.config_manager, 'get_log_port', lambda: port)() # Use int()
-
+        """Configure the root logger to write logs to a file."""
         try:
-            log_port = int(log_port)
-        except (ValueError, TypeError):
-             FreeCAD.Console.PrintWarning(f"Invalid logging port '{log_port}', using default {port}.\n")
-             log_port = port
+            # Get the addon directory path
+            addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            if not os.path.isdir(addon_dir):
+                addon_dir = os.path.dirname(os.path.abspath(__file__))
 
-        try:
-            # Ensure logging is configured (might be done elsewhere too)
+            # Create logs directory if it doesn't exist
+            log_dir = os.path.join(addon_dir, "logs")
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir)
+
+            # Set up log file path
+            log_file = os.path.join(log_dir, "mcpindicator.log")
+
+            # Ensure logging is configured
             if not logging.getLogger().hasHandlers():
-                 logging.basicConfig(level=logging.INFO) # Basic config if none exists
+                logging.basicConfig(level=logging.INFO)
 
             root_logger = logging.getLogger()
+
             # Prevent adding handler multiple times
-            if any(isinstance(h, logging.handlers.SocketHandler) and h.host == log_host and h.port == log_port for h in root_logger.handlers):
-                FreeCAD.Console.PrintMessage(f"Socket logging handler for {log_host}:{log_port} already configured.\n")
+            if any(isinstance(h, logging.FileHandler) and h.baseFilename == log_file for h in root_logger.handlers):
+                FreeCAD.Console.PrintMessage(f"File logging handler for {log_file} already configured.\n")
                 return
 
-            socket_handler = logging.handlers.SocketHandler(log_host, log_port)
-            # Optional: Set a formatter if needed
-            # formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-            # socket_handler.setFormatter(formatter)
+            # Create a file handler
+            file_handler = logging.FileHandler(log_file)
 
-            root_logger.addHandler(socket_handler)
-            # Set level for the root logger, affecting all handlers unless they override
-            # Consider setting level on the handler instead if other handlers need different levels
-            # socket_handler.setLevel(logging.INFO)
+            # Set up formatter
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+            file_handler.setFormatter(formatter)
+
+            # Add the handler to the root logger
+            root_logger.addHandler(file_handler)
+
+            # Set level for the root logger
             if root_logger.level > logging.INFO or root_logger.level == logging.NOTSET:
-                 root_logger.setLevel(logging.INFO) # Ensure INFO messages are processed
+                root_logger.setLevel(logging.INFO)
 
-            # Log a message to confirm setup (this will be sent via socket)
+            # Log a message to confirm setup
             test_logger = logging.getLogger("MCPIndicator.SocketLogTest")
-            # Ensure logger propagates to root
             test_logger.propagate = True
-            test_logger.info(f"Socket logging configured for MCPIndicator, sending to {log_host}:{log_port}")
-            FreeCAD.Console.PrintMessage(f"MCPIndicator socket logging configured to send to {log_host}:{log_port}\n")
+            test_logger.info(f"File logging configured for MCPIndicator, writing to {log_file}")
+            FreeCAD.Console.PrintMessage(f"MCPIndicator logging configured to write to file: {log_file}\n")
 
         except Exception as e:
-            FreeCAD.Console.PrintError(f"Failed to configure socket logging handler: {e}\n")
+            FreeCAD.Console.PrintError(f"Failed to configure file logging handler: {e}\n")
 
     def setup_ui(self, workbench):
         """Set up all UI elements for the workbench."""
@@ -428,26 +434,28 @@ class UIManager:
 
 
     def _update_freecad_server_icon_and_tooltip(self):
-        """Update the FreeCAD socket server indicator icon and tooltip."""
+        """Update the FC server status button icon and tooltip."""
+        # Guard against uninitialized UI
         if not self.freecad_server_status_button or not self.status_checker:
             return
 
-        # Skip update if busy state is active
-        if self._fc_server_busy:
-             return
+        # Get current server status
+        server_status = self.status_checker.get_fc_server_status()
+        running = server_status.get("running", False)
+        server_type = server_status.get("type", "rpc")
 
-        status = self.status_checker.get_fc_server_status() # e.g., {"running": True, "pid": 123}
-        pid_info = f" (PID: {status.get('pid')})" if status.get('pid') else ""
+        # Get PID info for tooltip if available
+        pid_info = ""
+        if running and server_status.get("pid"):
+            pid_info = f" (PID: {server_status['pid']})"
 
-        if status.get("running"):
+        # Update icon and tooltip
+        if running:
             self.freecad_server_status_button.setIcon(self.icons["fc_running"])
-            self.freecad_server_status_button.setToolTip(f"Socket Server: Running{pid_info}")
+            self.freecad_server_status_button.setToolTip(f"RPC XML Server: Running{pid_info}")
         else:
             self.freecad_server_status_button.setIcon(self.icons["fc_stopped"])
-            self.freecad_server_status_button.setToolTip("Socket Server: Stopped")
-
-        # Reset busy state once status is confirmed
-        # self._set_fc_busy(False) # Handled by update_ui now
+            self.freecad_server_status_button.setToolTip("RPC XML Server: Stopped")
 
     def _update_mcp_server_icon_and_tooltip(self):
         """Update the MCP server indicator icon and tooltip."""
@@ -558,10 +566,15 @@ class UIManager:
         self._show_info_dialog("MCP Client Connection Info", html_content)
 
     def _show_freecad_server_info(self):
-        """Show dialog with FreeCAD Socket server details."""
+        """Show detailed information about the FreeCAD server."""
+        # Get detailed information about the connection
         details = self.status_checker.get_detailed_connection_info()
+
+        # Generate HTML content for the dialog
         html_content = self._get_freecad_server_info_html(details)
-        self._show_info_dialog("Socket Server Info", html_content)
+
+        # Create and show the dialog
+        self._show_info_dialog("FreeCAD RPC Server Information", html_content)
 
     def _show_mcp_server_info(self):
         """Show dialog with MCP server details."""
@@ -663,42 +676,42 @@ class UIManager:
 
 
     def _get_freecad_server_info_html(self, details):
-        """Generate HTML for the FreeCAD socket server info dialog."""
-        # Use details passed from status_checker.get_detailed_connection_info()
-        running = details.get("freecad_server_running", False)
-        pid = details.get("freecad_server_pid")
-        script_path = details.get("freecad_server_script", "N/A")
-        # Get host/port from config manager directly, as they might not be in status_checker details
-        # host = self.config_manager.get_fc_server_host() # Needs getter in config_manager
-        # port = self.config_manager.get_fc_server_port() # Needs getter in config_manager
-        # For now, assume default or not shown if getters don't exist
-        host = getattr(self.config_manager, 'get_fc_server_host', lambda: 'localhost')()
-        port = getattr(self.config_manager, 'get_fc_server_port', lambda: 12345)()
+        """Generate HTML for the FreeCAD server info dialog."""
+        html = "<html><head><style>body{font-family:sans-serif;margin:8px}h1{font-size:18px;color:#0066cc}h2{font-size:16px;color:#333}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8px}tr:nth-child(even){background-color:#f2f2f2}tr:hover{background-color:#ddd}th{padding-top:12px;padding-bottom:12px;text-align:left;background-color:#4CAF50;color:white}.status-running{color:green;font-weight:bold}.status-stopped{color:red}.notes{font-size:12px;font-style:italic;color:#666}</style></head><body>"
 
+        running = details.get("rpc_server_running", False)
+        pid = details.get("rpc_server_pid")
+        port = details.get("rpc_server_port", 9875)
 
-        status_color = "blue" if running else "orange"
+        status_class = "status-running" if running else "status-stopped"
         status_text = "Running" if running else "Stopped"
 
-        html = f"<h2>Socket Server Status</h2>"
-        html += f"<p><b>Status: <span style='color:{status_color};'>{status_text}</span></b></p>"
+        html += f"<h1>FreeCAD RPC XML Server Status</h1>"
+        html += f"<p>The RPC XML server allows external applications to control FreeCAD remotely.</p>"
+
+        html += f"<table>"
+        html += f"<tr><th>Setting</th><th>Value</th></tr>"
+        html += f"<tr><td>Status</td><td class='{status_class}'>{status_text}</td></tr>"
+
         if running and pid:
-            html += f"<p><b>Process ID (PID):</b> {pid}</p>"
-        # Add uptime if available from status_checker
-        # uptime = status.get("uptime")
-        # if uptime:
-        #    html += f"<p><b>Uptime:</b> {uptime}</p>"
+            html += f"<tr><td>Process ID</td><td>{pid}</td></tr>"
 
-        html += "<h3>Configuration</h3>"
-        html += f"<p><b>Script Path:</b> {script_path}</p>"
-        html += f"<p><b>Listening On:</b> {host}:{port}</p>"
+        html += f"<tr><td>Server Type</td><td>XML-RPC</td></tr>"
+        html += f"<tr><td>Server Address</td><td>http://localhost:{port}</td></tr>"
+        html += f"</table>"
 
-        # Add Log Info (if applicable, logs now go elsewhere)
-        # log_path = self.config_manager.get_setting("freecad_server_log_path", "N/A")
-        # html += f"<h3>Logging</h3>"
-        # html += f"<p><b>Log File:</b> {log_path}</p>"
-        html += f"<p><i>Note: Server logs are typically viewed in the console where it was started.</i></p>"
+        html += f"<h2>Usage</h2>"
+        html += f"<p>The XML-RPC server provides the following functionality:</p>"
+        html += f"<ul>"
+        html += f"<li>Document creation and management</li>"
+        html += f"<li>Object creation, editing, and deletion</li>"
+        html += f"<li>Property manipulation</li>"
+        html += f"<li>Screenshot capture</li>"
+        html += f"<li>Remote code execution</li>"
+        html += f"</ul>"
 
-
+        html += f"<p class='notes'>See the README for more information about the RPC server functionality.</p>"
+        html += "</body></html>"
         return html
 
 

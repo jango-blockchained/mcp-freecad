@@ -86,18 +86,28 @@ class StatusChecker:
         return self._cached_client_connected
 
     def get_fc_server_status(self) -> dict:
-        """Get status of the managed FreeCAD Socket server (cached)."""
+        """Get status of the FreeCAD RPC server (cached)."""
         if self._cached_fc_status is None:
-            is_running = self.process_manager.is_freecad_server_running()
-            pid = None
-            if is_running and self.process_manager.freecad_server_process:
-                pid = self.process_manager.freecad_server_process.pid
+            try:
+                # Import only when needed to avoid circular imports
+                from rpc_server import rpc_server_thread, rpc_server_instance
 
-            self._cached_fc_status = {
-                "running": is_running,
-                "pid": pid
-            }
-            logger.debug(f"Checked FC server status: {self._cached_fc_status}")
+                is_running = rpc_server_thread is not None and rpc_server_instance is not None
+
+                self._cached_fc_status = {
+                    "running": is_running,
+                    "pid": None,  # RPC server runs in a thread, not a separate process
+                    "type": "rpc"
+                }
+            except ImportError:
+                # If the module is not available, assume not running
+                self._cached_fc_status = {
+                    "running": False,
+                    "pid": None,
+                    "type": "rpc"
+                }
+
+            logger.debug(f"Checked FC RPC server status: {self._cached_fc_status}")
         return self._cached_fc_status
 
     def get_mcp_server_status(self) -> dict:
@@ -258,53 +268,48 @@ class StatusChecker:
     # if the UI manager now uses the specific getters.
     # Keep it for now if dialogs still use it.
     def get_detailed_connection_info(self):
-        """Get detailed connection information as a dictionary (legacy?)."""
-        logger.warning("get_detailed_connection_info is potentially deprecated, use specific getters.")
-        # Get current status using the new methods
-        client_conn = self.is_client_connected()
+        """Get comprehensive information about connection status and servers."""
+        # Get current data
+        client_conn = self.get_client_details()
         fc_status = self.get_fc_server_status()
         mcp_status = self.get_mcp_server_status()
 
-        info = {
-            "connected": client_conn, # Client connected status
-            "connection_time": self.connection_timestamp,
-            "connection_error": self.connection_error,
-
-            "mcp_server_host": self.config_manager.get_mcp_server_host(),
-            "mcp_server_port": self.config_manager.get_mcp_server_port(),
-
-            "freecad_server_running": fc_status.get("running"),
-            "freecad_server_pid": fc_status.get("pid"),
-            # Add config needed for dialog
-            "freecad_server_script": self.config_manager.get_server_script_path(),
-            #"freecad_server_host": self.config_manager.get_fc_server_host(), # Need this getter in ConfigManager
-            #"freecad_server_port": self.config_manager.get_fc_server_port(), # Need this getter in ConfigManager
-
-            "mcp_server_status": mcp_status.get("status"), # stopped, running_managed, running_external
-            "mcp_server_pid": mcp_status.get("pid"), # Only if managed
-            "mcp_server_running": mcp_status.get("status") != "stopped", # Convenience boolean
-            # Add config needed for dialog
-            "mcp_server_script": self.config_manager.get_mcp_server_script_path(),
-            "mcp_server_config": self.config_manager.get_mcp_server_config(),
-
-            "details": self.get_client_details(), # Cached details from server
-            # "mcp_version": self.connection_details.get("mcp_version", "Unknown") # Get from details
-        }
-
-        # Add connection duration
-        if client_conn and self.connection_timestamp:
-            duration = time.time() - self.connection_timestamp
-            hours, remainder = divmod(duration, 3600)
+        # Calculate connection duration if connected
+        connection_duration = None
+        if self.connection_timestamp:
+            duration_seconds = int(time.time() - self.connection_timestamp)
+            hours, remainder = divmod(duration_seconds, 3600)
             minutes, seconds = divmod(remainder, 60)
 
             if hours > 0:
-                info["connection_duration"] = f"{int(hours)}h {int(minutes)}m {int(seconds)}s"
+                connection_duration = f"{hours}h {minutes}m {seconds}s"
             elif minutes > 0:
-                info["connection_duration"] = f"{int(minutes)}m {int(seconds)}s"
+                connection_duration = f"{minutes}m {seconds}s"
             else:
-                info["connection_duration"] = f"{int(seconds)}s"
-        else:
-            info["connection_duration"] = "N/A"
+                connection_duration = f"{seconds}s"
 
+        # Create the detailed info dict
+        detail_dict = {
+            # Client connection information
+            "client_connected": self.client_connected,
+            "connection_error": self.connection_error,
+            "connection_timestamp": self.connection_timestamp,
+            "connection_duration": connection_duration,
+            "connection_details": self.connection_details,
 
-        return info
+            # FreeCAD RPC Server information
+            "rpc_server_running": fc_status.get("running"),
+            "rpc_server_pid": fc_status.get("pid"),
+            "rpc_server_type": fc_status.get("type", "rpc"),
+            "rpc_server_port": 9875,  # Default RPC XML port
+
+            # MCP Server information
+            "mcp_server_running": mcp_status.get("status") in ["running_managed", "running_external"],
+            "mcp_server_managed": mcp_status.get("status") == "running_managed",
+            "mcp_server_pid": mcp_status.get("pid"),
+            "mcp_server_script": self.config_manager.get_mcp_server_script_path(),
+            "mcp_server_host": self.config_manager.get_mcp_server_host(),
+            "mcp_server_port": self.config_manager.get_mcp_server_port(),
+        }
+
+        return detail_dict

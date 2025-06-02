@@ -99,7 +99,7 @@ def main():
     src_dir = os.path.dirname(script_dir)
 
     # Verify that the source directory looks reasonable
-    if not os.path.isdir(os.path.join(src_dir, "MCPIndicator")) or \
+    if not os.path.isdir(src_dir) or \
        not os.path.isfile(os.path.join(src_dir, "package.xml")):
         print_error(f"Source directory structure seems incorrect at: {src_dir}")
         print_error("Expected to find 'MCPIndicator' subdirectory and 'package.xml'.")

@@ -147,6 +147,74 @@ This is a low-level socket server that runs inside FreeCAD and allows external s
 ### MCP Server (src/mcp_freecad/server/freecad_mcp_server.py)
 This server implements the Model Context Protocol (MCP) and allows AI assistants to interact with FreeCAD through a standardized interface. It communicates with the FreeCAD Socket Server to execute commands.
 
+## XML-RPC Server Integration
+
+The MCPIndicator workbench includes an XML-RPC server that allows external applications to control FreeCAD remotely using a standardized API. This implementation is based on the Python `xmlrpc.server` module and provides a simple, language-agnostic way to interact with FreeCAD.
+
+### Key Features
+
+- Remote document creation and management
+- Object creation, editing, and deletion
+- Property manipulation
+- Screenshot capture
+- Python code execution within FreeCAD's context
+- Serialization of FreeCAD objects to JSON-compatible formats
+
+### Using the XML-RPC Server
+
+1. **Start the server**: In FreeCAD, go to the MCP Indicator workbench and select "Start RPC XML Server" from the toolbar or menu.
+2. **Connect from a client**: Use any XML-RPC client library to connect to the server at `http://localhost:9875` (default).
+3. **Execute commands**: Call methods on the server to interact with FreeCAD.
+
+### Available Methods
+
+- `ping()` - Test server connection
+- `create_document(name)` - Create a new FreeCAD document
+- `create_object(doc_name, obj_data)` - Create a new object in a document
+- `edit_object(doc_name, obj_name, properties)` - Edit an existing object
+- `delete_object(doc_name, obj_name)` - Delete an object
+- `execute_code(code)` - Execute Python code in FreeCAD's context
+- `get_objects(doc_name)` - Get all objects in a document
+- `get_object(doc_name, obj_name)` - Get a specific object
+- `list_documents()` - List all open documents
+- `get_active_screenshot(view_name)` - Get a screenshot of the active view
+- `recompute_document(doc_name)` - Recompute a document
+
+### Example Client
+
+An example Python client is included in the `examples/rpc_client_example.py` file. This demonstrates how to connect to the server and use its methods:
+
+```python
+import xmlrpc.client
+
+# Connect to the server
+server = xmlrpc.client.ServerProxy("http://localhost:9875", allow_none=True)
+
+# Create a document
+result = server.create_document("MyDocument")
+
+# Create a box
+box_data = {
+    "Name": "Box001",
+    "Type": "Part::Box",
+    "Properties": {
+        "Length": 20.0,
+        "Width": 20.0,
+        "Height": 20.0
+    }
+}
+server.create_object("MyDocument", box_data)
+```
+
+Run the example with:
+```bash
+python examples/rpc_client_example.py
+```
+
+### Security Considerations
+
+The XML-RPC server is intended for local use only. By default, it binds to localhost and is not accessible from other machines. If you need remote access, be aware of security implications and consider using SSH tunneling or other secure methods to expose the server.
+
 ## Troubleshooting
 
 ### Common Issues
