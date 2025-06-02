@@ -1,7 +1,7 @@
 [general]
 name = MCP Integration
 description = Model Context Protocol Integration for AI-powered CAD operations in FreeCAD
-author = MCP-FreeCAD Development Team
+author = jango-blockchained
 version = 1.0.0
 date = 2024-12-19
 classname = MCPWorkbench

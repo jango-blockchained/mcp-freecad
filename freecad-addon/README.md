@@ -337,38 +337,6 @@ freecad --addon-dev freecad-addon/
 
 ---
 
-## 🆘 **Support & Community**
-
-### 💬 **Get Help**
-- 📚 [**Documentation**](https://github.com/jango-blockchained/mcp-freecad/docs)
-- 🐛 [**Issue Tracker**](https://github.com/jango-blockchained/mcp-freecad/issues)
-- 💬 [**Discussions**](https://github.com/jango-blockchained/mcp-freecad/discussions)
-- 📧 [**Email Support**](mailto:support@mcp-freecad.com)
-
-### 🌟 **Community**
-- 🏠 [**Main Repository**](https://github.com/jango-blockchained/mcp-freecad)
-- 📱 [**Discord Server**](https://discord.gg/mcp-freecad)
-- 🐦 [**Twitter Updates**](https://twitter.com/mcp_freecad)
-- 📺 [**YouTube Tutorials**](https://youtube.com/@mcp-freecad)
-
----
-
-## 🏆 **Achievements & Recognition**
-
-### 📊 **Performance Metrics**
-- ⚡ **95% accuracy** on complex CAD tasks with Claude 4 + Thinking Mode
-- 🚀 **80% faster** design iteration cycles
-- 🎯 **72.5% SWE-bench score** for coding tasks
-- 👥 **10,000+ active users** worldwide
-
-### 🏅 **Awards & Features**
-- 🥇 **Best FreeCAD Addon 2025** - FreeCAD Community Awards
-- ⭐ **Featured Addon** - FreeCAD Official Blog
-- 🔥 **Trending Repository** - GitHub CAD section
-- 📰 **Tech Press Coverage** - CAD Industry News
-
----
-
 ## 🗺️ **Roadmap**
 
 ### 🎯 **Current Version (v2.0)**

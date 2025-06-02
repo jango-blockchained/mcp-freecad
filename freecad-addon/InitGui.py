@@ -18,12 +18,12 @@ if addon_dir not in sys.path:
 # Import the main workbench class
 try:
     from freecad_mcp_workbench import MCPWorkbench
-    
+
     # Register the workbench with FreeCAD
     FreeCADGui.addWorkbench(MCPWorkbench())
-    
+
     FreeCAD.Console.PrintMessage("MCP Integration Addon: Workbench registered successfully\n")
-    
+
 except ImportError as e:
     FreeCAD.Console.PrintError(f"MCP Integration Addon: Failed to import workbench: {e}\n")
 except Exception as e:
@@ -32,5 +32,5 @@ except Exception as e:
 # Addon metadata for FreeCAD
 __version__ = "1.0.0"
 __title__ = "MCP Integration"
-__author__ = "MCP-FreeCAD Development Team"
+__author__ = "jango-blockchained"
 __url__ = "https://github.com/jango-blockchained/mcp-freecad"
