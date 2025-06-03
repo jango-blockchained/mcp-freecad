@@ -33,9 +33,16 @@ try:
 
     # Register the workbench with FreeCAD
     workbench = MCPWorkbench()
-    FreeCADGui.addWorkbench(workbench)
 
-    FreeCAD.Console.PrintMessage("MCP Integration Addon: Workbench registered successfully\n")
+    # Check if workbench already exists and handle gracefully
+    try:
+        FreeCADGui.addWorkbench(workbench)
+        FreeCAD.Console.PrintMessage("MCP Integration Addon: Workbench registered successfully\n")
+    except KeyError as ke:
+        if "already exists" in str(ke):
+            FreeCAD.Console.PrintWarning(f"MCP Integration Addon: Workbench already registered, skipping: {ke}\n")
+        else:
+            raise ke
 
 except ImportError as e:
     FreeCAD.Console.PrintError(f"MCP Integration Addon: Failed to import workbench: {e}\n")

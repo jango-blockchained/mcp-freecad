@@ -2,8 +2,8 @@
 <package format="1" xmlns="https://wiki.freecad.org/Package_Metadata">
   <name>MCP Integration</name>
   <description>Model Context Protocol Integration for AI-powered CAD operations in FreeCAD</description>
-  <version>0.7.11</version>
-  <date>2024-12-19</date>
+  <version>1.0.0</version>
+  <date>2025-01-27</date>
 
   <maintainer email="info@cryptolinx.de">jango-blockchained</maintainer>
   <license>MIT</license>
