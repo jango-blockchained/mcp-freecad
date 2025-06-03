@@ -31,13 +31,8 @@ class SettingsWidget(QtWidgets.QWidget):
     def _setup_config_manager(self):
         """Setup configuration manager."""
         try:
-            # Try absolute import first
-            try:
-                from config.config_manager import ConfigManager
-            except ImportError:
-                # Try relative import
-                from ..config.config_manager import ConfigManager
-
+            # Import ConfigManager using absolute path after sys.path setup
+            from config.config_manager import ConfigManager
             self.config_manager = ConfigManager()
         except ImportError as e:
             self.logger.error(f"Failed to import ConfigManager: {e}")
@@ -54,178 +49,13 @@ class SettingsWidget(QtWidgets.QWidget):
         layout.addWidget(self.tab_widget)
 
         # Create tabs
-        self._create_api_keys_tab()
-        self._create_providers_tab()
         self._create_general_tab()
         self._create_tools_tab()
 
         # Control buttons
         self._create_control_buttons(layout)
 
-    def _create_api_keys_tab(self):
-        """Create API keys management tab."""
-        tab = QtWidgets.QWidget()
-        layout = QtWidgets.QVBoxLayout(tab)
 
-        # API Keys section
-        api_group = QtWidgets.QGroupBox("API Keys")
-        api_layout = QtWidgets.QFormLayout(api_group)
-
-        # OpenAI API Key
-        self.openai_key_input = QtWidgets.QLineEdit()
-        self.openai_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
-        self.openai_key_input.setPlaceholderText("sk-...")
-        openai_layout = QtWidgets.QHBoxLayout()
-        openai_layout.addWidget(self.openai_key_input)
-
-        self.openai_test_btn = QtWidgets.QPushButton("Test")
-        self.openai_test_btn.setMaximumWidth(60)
-        self.openai_test_btn.clicked.connect(lambda: self._test_api_key("openai"))
-        openai_layout.addWidget(self.openai_test_btn)
-
-        self.openai_show_btn = QtWidgets.QPushButton("👁")
-        self.openai_show_btn.setMaximumWidth(30)
-        self.openai_show_btn.setCheckable(True)
-        self.openai_show_btn.clicked.connect(lambda: self._toggle_password_visibility(self.openai_key_input, self.openai_show_btn))
-        openai_layout.addWidget(self.openai_show_btn)
-
-        api_layout.addRow("OpenAI API Key:", openai_layout)
-
-        # Anthropic API Key
-        self.anthropic_key_input = QtWidgets.QLineEdit()
-        self.anthropic_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
-        self.anthropic_key_input.setPlaceholderText("sk-ant-...")
-        anthropic_layout = QtWidgets.QHBoxLayout()
-        anthropic_layout.addWidget(self.anthropic_key_input)
-
-        self.anthropic_test_btn = QtWidgets.QPushButton("Test")
-        self.anthropic_test_btn.setMaximumWidth(60)
-        self.anthropic_test_btn.clicked.connect(lambda: self._test_api_key("anthropic"))
-        anthropic_layout.addWidget(self.anthropic_test_btn)
-
-        self.anthropic_show_btn = QtWidgets.QPushButton("👁")
-        self.anthropic_show_btn.setMaximumWidth(30)
-        self.anthropic_show_btn.setCheckable(True)
-        self.anthropic_show_btn.clicked.connect(lambda: self._toggle_password_visibility(self.anthropic_key_input, self.anthropic_show_btn))
-        anthropic_layout.addWidget(self.anthropic_show_btn)
-
-        api_layout.addRow("Anthropic API Key:", anthropic_layout)
-
-        # Google API Key
-        self.google_key_input = QtWidgets.QLineEdit()
-        self.google_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
-        self.google_key_input.setPlaceholderText("Google API Key...")
-        google_layout = QtWidgets.QHBoxLayout()
-        google_layout.addWidget(self.google_key_input)
-
-        self.google_test_btn = QtWidgets.QPushButton("Test")
-        self.google_test_btn.setMaximumWidth(60)
-        self.google_test_btn.clicked.connect(lambda: self._test_api_key("google"))
-        google_layout.addWidget(self.google_test_btn)
-
-        self.google_show_btn = QtWidgets.QPushButton("👁")
-        self.google_show_btn.setMaximumWidth(30)
-        self.google_show_btn.setCheckable(True)
-        self.google_show_btn.clicked.connect(lambda: self._toggle_password_visibility(self.google_key_input, self.google_show_btn))
-        google_layout.addWidget(self.google_show_btn)
-
-        api_layout.addRow("Google API Key:", google_layout)
-
-        layout.addWidget(api_group)
-
-        # Status section
-        status_group = QtWidgets.QGroupBox("API Key Status")
-        status_layout = QtWidgets.QVBoxLayout(status_group)
-
-        self.api_status_label = QtWidgets.QLabel("No API keys configured")
-        self.api_status_label.setWordWrap(True)
-        status_layout.addWidget(self.api_status_label)
-
-        layout.addWidget(status_group)
-
-        # Connect signals for auto-save
-        self.openai_key_input.textChanged.connect(lambda: self._save_api_key("openai", self.openai_key_input.text()))
-        self.anthropic_key_input.textChanged.connect(lambda: self._save_api_key("anthropic", self.anthropic_key_input.text()))
-        self.google_key_input.textChanged.connect(lambda: self._save_api_key("google", self.google_key_input.text()))
-
-        layout.addStretch()
-        self.tab_widget.addTab(tab, "API Keys")
-
-    def _create_providers_tab(self):
-        """Create providers configuration tab."""
-        tab = QtWidgets.QWidget()
-        layout = QtWidgets.QVBoxLayout(tab)
-
-        # Default provider
-        default_group = QtWidgets.QGroupBox("Default Provider")
-        default_layout = QtWidgets.QFormLayout(default_group)
-
-        self.default_provider_combo = QtWidgets.QComboBox()
-        self.default_provider_combo.addItems(["openai", "anthropic", "google"])
-        self.default_provider_combo.currentTextChanged.connect(self._on_default_provider_changed)
-        default_layout.addRow("Default Provider:", self.default_provider_combo)
-
-        layout.addWidget(default_group)
-
-        # Provider configurations
-        self.provider_configs = {}
-        for provider in ["openai", "anthropic", "google"]:
-            group = QtWidgets.QGroupBox(f"{provider.title()} Configuration")
-            group_layout = QtWidgets.QFormLayout(group)
-
-            # Enabled checkbox
-            enabled_cb = QtWidgets.QCheckBox("Enabled")
-            enabled_cb.stateChanged.connect(lambda state, p=provider: self._on_provider_enabled_changed(p, state))
-            group_layout.addRow("", enabled_cb)
-
-            # Model selection
-            model_combo = QtWidgets.QComboBox()
-            model_combo.setEditable(True)
-            if provider == "openai":
-                model_combo.addItems(["gpt-4", "gpt-4-turbo", "gpt-3.5-turbo"])
-            elif provider == "anthropic":
-                model_combo.addItems(["claude-3-sonnet-20240229", "claude-3-haiku-20240307", "claude-3-opus-20240229"])
-            elif provider == "google":
-                model_combo.addItems(["gemini-pro", "gemini-pro-vision"])
-            model_combo.currentTextChanged.connect(lambda text, p=provider: self._on_provider_config_changed(p, "model", text))
-            group_layout.addRow("Model:", model_combo)
-
-            # Temperature
-            temp_spin = QtWidgets.QDoubleSpinBox()
-            temp_spin.setRange(0.0, 2.0)
-            temp_spin.setSingleStep(0.1)
-            temp_spin.setDecimals(1)
-            temp_spin.setValue(0.7)
-            temp_spin.valueChanged.connect(lambda value, p=provider: self._on_provider_config_changed(p, "temperature", value))
-            group_layout.addRow("Temperature:", temp_spin)
-
-            # Timeout
-            timeout_spin = QtWidgets.QSpinBox()
-            timeout_spin.setRange(5, 300)
-            timeout_spin.setValue(30)
-            timeout_spin.setSuffix(" seconds")
-            timeout_spin.valueChanged.connect(lambda value, p=provider: self._on_provider_config_changed(p, "timeout", value))
-            group_layout.addRow("Timeout:", timeout_spin)
-
-            # Max tokens
-            tokens_spin = QtWidgets.QSpinBox()
-            tokens_spin.setRange(100, 8000)
-            tokens_spin.setValue(4000)
-            tokens_spin.valueChanged.connect(lambda value, p=provider: self._on_provider_config_changed(p, "max_tokens", value))
-            group_layout.addRow("Max Tokens:", tokens_spin)
-
-            self.provider_configs[provider] = {
-                "enabled": enabled_cb,
-                "model": model_combo,
-                "temperature": temp_spin,
-                "timeout": timeout_spin,
-                "max_tokens": tokens_spin
-            }
-
-            layout.addWidget(group)
-
-        layout.addStretch()
-        self.tab_widget.addTab(tab, "Providers")
 
     def _create_general_tab(self):
         """Create general settings tab."""
@@ -352,87 +182,7 @@ class SettingsWidget(QtWidgets.QWidget):
 
         layout.addLayout(button_layout)
 
-    def _toggle_password_visibility(self, line_edit, button):
-        """Toggle password visibility for API key inputs."""
-        if button.isChecked():
-            line_edit.setEchoMode(QtWidgets.QLineEdit.Normal)
-            button.setText("🙈")
-        else:
-            line_edit.setEchoMode(QtWidgets.QLineEdit.Password)
-            button.setText("👁")
 
-    def _test_api_key(self, provider):
-        """Test API key for provider."""
-        if not self.config_manager:
-            QtWidgets.QMessageBox.warning(self, "Error", "Configuration manager not available")
-            return
-
-        # Get the key from input
-        if provider == "openai":
-            key = self.openai_key_input.text()
-        elif provider == "anthropic":
-            key = self.anthropic_key_input.text()
-        elif provider == "google":
-            key = self.google_key_input.text()
-        else:
-            return
-
-        if not key:
-            QtWidgets.QMessageBox.warning(self, "Error", f"Please enter {provider} API key first")
-            return
-
-        # Validate key format
-        is_valid = self.config_manager.validate_api_key(provider, key)
-
-        if is_valid:
-            QtWidgets.QMessageBox.information(self, "Success", f"{provider} API key format is valid")
-            self.api_key_validated.emit(provider, True, "Key format valid")
-        else:
-            QtWidgets.QMessageBox.warning(self, "Error", f"{provider} API key format is invalid")
-            self.api_key_validated.emit(provider, False, "Invalid key format")
-
-    def _save_api_key(self, provider, key):
-        """Save API key for provider."""
-        if not self.config_manager or not key:
-            return
-
-        success = self.config_manager.set_api_key(provider, key)
-        if success:
-            self._update_api_status()
-            # Emit signal for provider integration service
-            self.api_key_changed.emit(provider)
-
-    def _update_api_status(self):
-        """Update API key status display."""
-        if not self.config_manager:
-            return
-
-        configured_keys = self.config_manager.list_api_keys()
-        if configured_keys:
-            status = f"Configured providers: {', '.join(configured_keys)}"
-        else:
-            status = "No API keys configured"
-
-        self.api_status_label.setText(status)
-
-    def _on_default_provider_changed(self, provider):
-        """Handle default provider change."""
-        if self.config_manager:
-            self.config_manager.set_default_provider(provider)
-
-    def _on_provider_enabled_changed(self, provider, state):
-        """Handle provider enabled state change."""
-        enabled = state == QtCore.Qt.Checked
-        self._on_provider_config_changed(provider, "enabled", enabled)
-
-    def _on_provider_config_changed(self, provider, key, value):
-        """Handle provider configuration change."""
-        if not self.config_manager:
-            return
-
-        config = self.config_manager.get_provider_config(provider)
-        config[key] = value
-        self.config_manager.set_provider_config(provider, config)
 
     def _on_ui_setting_changed(self, key, value):
         """Handle UI setting change."""
@@ -448,32 +198,6 @@ class SettingsWidget(QtWidgets.QWidget):
         """Load settings from configuration."""
         if not self.config_manager:
             return
-
-        # Load API keys
-        for provider in ["openai", "anthropic", "google"]:
-            key = self.config_manager.get_api_key(provider)
-            if key:
-                if provider == "openai":
-                    self.openai_key_input.setText(key)
-                elif provider == "anthropic":
-                    self.anthropic_key_input.setText(key)
-                elif provider == "google":
-                    self.google_key_input.setText(key)
-
-        # Load provider configurations
-        for provider in ["openai", "anthropic", "google"]:
-            config = self.config_manager.get_provider_config(provider)
-            if config and provider in self.provider_configs:
-                controls = self.provider_configs[provider]
-                controls["enabled"].setChecked(config.get("enabled", False))
-                controls["model"].setCurrentText(config.get("model", ""))
-                controls["temperature"].setValue(config.get("temperature", 0.7))
-                controls["timeout"].setValue(config.get("timeout", 30))
-                controls["max_tokens"].setValue(config.get("max_tokens", 4000))
-
-        # Load default provider
-        default_provider = self.config_manager.get_default_provider()
-        self.default_provider_combo.setCurrentText(default_provider)
 
         # Load UI settings
         ui_settings = self.config_manager.get_config("ui_settings", {})
@@ -493,8 +217,6 @@ class SettingsWidget(QtWidgets.QWidget):
         self.default_fillet_spin.setValue(surface_defaults.get("default_fillet_radius", 1.0))
         self.default_chamfer_spin.setValue(surface_defaults.get("default_chamfer_distance", 1.0))
         self.default_draft_spin.setValue(surface_defaults.get("default_draft_angle", 5.0))
-
-        self._update_api_status()
 
     def _save_settings(self):
         """Save all settings."""

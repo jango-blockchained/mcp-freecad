@@ -66,13 +66,8 @@ class ProviderIntegrationService(QtCore.QObject):
     def _setup_config_manager(self):
         """Setup configuration manager integration."""
         try:
-            # Try absolute import first
-            try:
-                from config.config_manager import ConfigManager
-            except ImportError:
-                # Try relative import
-                from ..config.config_manager import ConfigManager
-
+            # Import ConfigManager using absolute path after sys.path setup
+            from config.config_manager import ConfigManager
             self.config_manager = ConfigManager()
             self.logger.info("ConfigManager integration established")
         except ImportError as e:

@@ -34,7 +34,6 @@ class ConnectionWidget(QtWidgets.QWidget):
         layout.setSpacing(10); layout.setContentsMargins(10, 10, 10, 10)
         self._create_status_section(layout)
         self._create_method_section(layout)
-        self._create_ai_provider_section(layout)
         self._create_controls_section(layout)
 
     def _create_status_section(self, layout):
@@ -71,35 +70,7 @@ class ConnectionWidget(QtWidgets.QWidget):
         # Connect combo box
         self.method_combo.currentTextChanged.connect(self._on_method_changed)
 
-    def _create_ai_provider_section(self, layout):
-        """Create AI provider status section."""
-        ai_group = QtWidgets.QGroupBox("AI Provider Status")
-        ai_layout = QtWidgets.QVBoxLayout(ai_group)
 
-        # Provider status table
-        self.provider_status_table = QtWidgets.QTableWidget(0, 3)
-        self.provider_status_table.setHorizontalHeaderLabels(["Provider", "Status", "Last Update"])
-        self.provider_status_table.horizontalHeader().setStretchLastSection(True)
-        self.provider_status_table.setMaximumHeight(100)
-        self.provider_status_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        ai_layout.addWidget(self.provider_status_table)
-
-        # Provider controls
-        provider_controls_layout = QtWidgets.QHBoxLayout()
-
-        self.test_provider_btn = QtWidgets.QPushButton("Test Selected")
-        self.test_provider_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; padding: 6px; }")
-        self.test_provider_btn.clicked.connect(self._on_test_selected_provider)
-        provider_controls_layout.addWidget(self.test_provider_btn)
-
-        self.refresh_providers_btn = QtWidgets.QPushButton("Refresh")
-        self.refresh_providers_btn.clicked.connect(self._refresh_provider_status)
-        provider_controls_layout.addWidget(self.refresh_providers_btn)
-
-        provider_controls_layout.addStretch()
-        ai_layout.addLayout(provider_controls_layout)
-
-        layout.addWidget(ai_group)
 
     def _create_controls_section(self, layout):
         """Create connection control buttons."""
@@ -245,78 +216,5 @@ class ConnectionWidget(QtWidgets.QWidget):
     def set_provider_service(self, provider_service):
         """Set the provider integration service."""
         self.provider_service = provider_service
-
-        # Connect to provider service signals
-        if provider_service:
-            provider_service.provider_status_changed.connect(self._on_provider_status_changed)
-            provider_service.providers_updated.connect(self._refresh_provider_status)
-
-            # Initial refresh
-            self._refresh_provider_status()
-
-    def _on_provider_status_changed(self, provider_name: str, status: str, message: str):
-        """Handle provider status change."""
-        # Update the provider status table
-        for row in range(self.provider_status_table.rowCount()):
-            name_item = self.provider_status_table.item(row, 0)
-            if name_item and name_item.text() == provider_name:
-                # Update status
-                status_item = self.provider_status_table.item(row, 1)
-                if status_item:
-                    status_item.setText(status)
-                    # Color code the status
-                    if status == "connected":
-                        status_item.setForeground(QtGui.QColor("#4CAF50"))
-                    elif status == "error":
-                        status_item.setForeground(QtGui.QColor("#f44336"))
-                    else:
-                        status_item.setForeground(QtGui.QColor("#FF9800"))
-
-                # Update last update time
-                time_item = self.provider_status_table.item(row, 2)
-                if time_item:
-                    time_item.setText(QtCore.QDateTime.currentDateTime().toString("hh:mm:ss"))
-                break
-
-    def _refresh_provider_status(self):
-        """Refresh provider status table."""
-        if not self.provider_service:
-            return
-
-        # Clear table
-        self.provider_status_table.setRowCount(0)
-
-        # Add providers
-        providers = self.provider_service.get_all_providers()
-        for provider_name, provider_info in providers.items():
-            row = self.provider_status_table.rowCount()
-            self.provider_status_table.insertRow(row)
-
-            # Provider name
-            name_item = QtWidgets.QTableWidgetItem(provider_name)
-            self.provider_status_table.setItem(row, 0, name_item)
-
-            # Status
-            status = provider_info.get("status", "unknown")
-            status_item = QtWidgets.QTableWidgetItem(status)
-            if status == "connected":
-                status_item.setForeground(QtGui.QColor("#4CAF50"))
-            elif status == "error":
-                status_item.setForeground(QtGui.QColor("#f44336"))
-            else:
-                status_item.setForeground(QtGui.QColor("#FF9800"))
-            self.provider_status_table.setItem(row, 1, status_item)
-
-            # Last update
-            last_test = provider_info.get("last_test", "Never")
-            time_item = QtWidgets.QTableWidgetItem(last_test)
-            self.provider_status_table.setItem(row, 2, time_item)
-
-    def _on_test_selected_provider(self):
-        """Test the selected provider."""
-        current_row = self.provider_status_table.currentRow()
-        if current_row >= 0 and self.provider_service:
-            name_item = self.provider_status_table.item(current_row, 0)
-            if name_item:
-                provider_name = name_item.text()
-                self.provider_service.test_provider_connection(provider_name)
+        # Note: Connection widget no longer handles AI provider status
+        # This is now managed by the providers widget

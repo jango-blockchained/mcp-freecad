@@ -91,14 +91,16 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         try:
             from .connection_widget import ConnectionWidget
             from .server_widget import ServerWidget
-            from .ai_widget import AIWidget
+            from .providers_widget import ProvidersWidget
+            from .conversation_widget import ConversationWidget
             from .tools_widget import ToolsWidget
             from .settings_widget import SettingsWidget
             from .logs_widget import LogsWidget
 
             # Create widgets with provider service integration
             self.connection_widget = ConnectionWidget()
-            self.ai_widget = AIWidget()
+            self.providers_widget = ProvidersWidget()
+            self.conversation_widget = ConversationWidget()
             self.settings_widget = SettingsWidget()
             self.tools_widget = ToolsWidget()
 
@@ -106,15 +108,16 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             if self.provider_service:
                 self._connect_widgets_to_service()
 
+            self.tab_widget.addTab(self.providers_widget, "Providers")
+            self.tab_widget.addTab(self.conversation_widget, "Conversation")
             self.tab_widget.addTab(self.connection_widget, "Connections")
             self.tab_widget.addTab(ServerWidget(), "Servers")
-            self.tab_widget.addTab(self.ai_widget, "AI Models")
             self.tab_widget.addTab(self.tools_widget, "Tools")
             self.tab_widget.addTab(self.settings_widget, "Settings")
             self.tab_widget.addTab(LogsWidget(), "Logs")
 
         except ImportError:
-            for name in ["Connections", "Servers", "AI Models", "Tools", "Settings", "Logs"]:
+            for name in ["Providers", "Conversation", "Connections", "Servers", "Tools", "Settings", "Logs"]:
                 tab = QtWidgets.QWidget()
                 QtWidgets.QVBoxLayout(tab).addWidget(QtWidgets.QLabel(f"{name} - Loading..."))
                 self.tab_widget.addTab(tab, name)
@@ -122,15 +125,19 @@ class MCPMainWidget(QtWidgets.QDockWidget):
     def _connect_widgets_to_service(self):
         """Connect GUI widgets to the provider service."""
         try:
-            # Connect settings widget to notify service of changes
-            if hasattr(self.settings_widget, 'api_key_changed'):
-                self.settings_widget.api_key_changed.connect(self._on_settings_api_key_changed)
+            # Connect providers widget to manage providers and API keys
+            if hasattr(self.providers_widget, 'set_provider_service'):
+                self.providers_widget.set_provider_service(self.provider_service)
 
-            # Connect AI widget to get provider updates
-            if hasattr(self.ai_widget, 'set_provider_service'):
-                self.ai_widget.set_provider_service(self.provider_service)
+            # Connect providers widget API key changes to service
+            if hasattr(self.providers_widget, 'api_key_changed'):
+                self.providers_widget.api_key_changed.connect(self._on_settings_api_key_changed)
 
-            # Connect connection widget to show AI provider status
+            # Connect conversation widget to get provider updates
+            if hasattr(self.conversation_widget, 'set_provider_service'):
+                self.conversation_widget.set_provider_service(self.provider_service)
+
+            # Connect connection widget to show MCP connection status (no AI provider status)
             if hasattr(self.connection_widget, 'set_provider_service'):
                 self.connection_widget.set_provider_service(self.provider_service)
 

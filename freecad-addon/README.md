@@ -415,3 +415,56 @@ copies of the Software.
 Made with ❤️ by jango-blockchained • June 2025
 </sub>
 </div>
+
+# FreeCAD MCP Integration Addon
+
+This addon provides Model Context Protocol (MCP) integration for FreeCAD, enabling AI-powered CAD assistance and automation.
+
+## Features
+
+- AI-powered FreeCAD tools and operations
+- Secure API key management
+- Multiple AI provider support (OpenAI, Anthropic, Google)
+- Comprehensive tool widgets
+- Advanced primitives and operations
+
+## Installation
+
+1. Copy this addon directory to your FreeCAD Mods directory
+2. Install optional dependencies for enhanced functionality:
+
+```bash
+# For secure API key storage (recommended)
+pip install cryptography
+
+# For AI providers (choose as needed)
+pip install openai anthropic google-generativeai
+```
+
+## Security Note
+
+**API Key Storage:**
+- If `cryptography` is installed: API keys are encrypted and stored securely
+- If `cryptography` is not available: API keys are stored in plain text with a warning
+
+For production use, we strongly recommend installing the cryptography package:
+```bash
+pip install cryptography
+```
+
+## Configuration
+
+The addon creates configuration files in:
+- FreeCAD: `{UserAppData}/Mod/MCP_Integration/`
+- Fallback: `~/.freecad/MCP_Integration/`
+
+## Usage
+
+1. Open FreeCAD
+2. Access the MCP Integration addon from the workbench
+3. Configure your AI provider API keys in the settings
+4. Use the tools widgets for AI-powered CAD operations
+
+## Dependencies
+
+See `requirements.txt` for the full list of dependencies. Core functionality works with minimal dependencies, with optional packages for enhanced features.

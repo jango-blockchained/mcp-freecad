@@ -191,9 +191,13 @@ class ToolsWidget(QtWidgets.QWidget):
             ("Plane", "Create a plane", "PLN", "create_plane")
         ]
 
+        def create_handler(method_name):
+            """Create a proper closure for the button handler."""
+            return lambda checked: self._execute_tool("primitives", method_name)
+
         for i, (name, tooltip, icon, method) in enumerate(tools):
             btn = CompactToolButton(name, tooltip, icon)
-            btn.clicked.connect(lambda checked, m=method: self._execute_tool("primitives", m))
+            btn.clicked.connect(create_handler(method))
             grid.addWidget(btn, i // 4, i % 4)
 
         category.setLayout(grid)
@@ -216,9 +220,13 @@ class ToolsWidget(QtWidgets.QWidget):
             ("Array", "Create array of objects", "ARR", "create_array")
         ]
 
+        def create_handler(method_name):
+            """Create a proper closure for the button handler."""
+            return lambda checked: self._execute_tool("operations", method_name)
+
         for i, (name, tooltip, icon, method) in enumerate(tools):
             btn = CompactToolButton(name, tooltip, icon)
-            btn.clicked.connect(lambda checked, m=method: self._execute_tool("operations", m))
+            btn.clicked.connect(create_handler(method))
             grid.addWidget(btn, i // 4, i % 4)
 
         category.setLayout(grid)
@@ -241,9 +249,13 @@ class ToolsWidget(QtWidgets.QWidget):
             ("CoG", "Center of gravity", "COG", "measure_center_of_gravity")
         ]
 
+        def create_handler(method_name):
+            """Create a proper closure for the button handler."""
+            return lambda checked: self._execute_tool("measurements", method_name)
+
         for i, (name, tooltip, icon, method) in enumerate(tools):
             btn = CompactToolButton(name, tooltip, icon)
-            btn.clicked.connect(lambda checked, m=method: self._execute_tool("measurements", m))
+            btn.clicked.connect(create_handler(method))
             grid.addWidget(btn, i // 4, i % 4)
 
         category.setLayout(grid)
@@ -266,9 +278,13 @@ class ToolsWidget(QtWidgets.QWidget):
             ("Export OBJ", "Export to OBJ", "E-OBJ", "export_obj")
         ]
 
+        def create_handler(method_name):
+            """Create a proper closure for the button handler."""
+            return lambda checked: self._execute_tool("export_import", method_name)
+
         for i, (name, tooltip, icon, method) in enumerate(tools):
             btn = CompactToolButton(name, tooltip, icon)
-            btn.clicked.connect(lambda checked, m=method: self._execute_tool("export_import", m))
+            btn.clicked.connect(create_handler(method))
             grid.addWidget(btn, i // 4, i % 4)
 
         category.setLayout(grid)
@@ -291,9 +307,13 @@ class ToolsWidget(QtWidgets.QWidget):
             ("Text", "Create 3D text", "TXT", "create_text")
         ]
 
+        def create_handler(method_name):
+            """Create a proper closure for the button handler."""
+            return lambda checked: self._execute_tool("advanced_primitives", method_name)
+
         for i, (name, tooltip, icon, method) in enumerate(tools):
             btn = CompactToolButton(name, tooltip, icon)
-            btn.clicked.connect(lambda checked, m=method: self._execute_tool("advanced_primitives", m))
+            btn.clicked.connect(create_handler(method))
             grid.addWidget(btn, i // 4, i % 4)
 
         category.setLayout(grid)
@@ -316,9 +336,13 @@ class ToolsWidget(QtWidgets.QWidget):
             ("Wrap", "Wrap onto surface", "WRP", "wrap_to_surface")
         ]
 
+        def create_handler(method_name):
+            """Create a proper closure for the button handler."""
+            return lambda checked: self._execute_tool("advanced_operations", method_name)
+
         for i, (name, tooltip, icon, method) in enumerate(tools):
             btn = CompactToolButton(name, tooltip, icon)
-            btn.clicked.connect(lambda checked, m=method: self._execute_tool("advanced_operations", m))
+            btn.clicked.connect(create_handler(method))
             grid.addWidget(btn, i // 4, i % 4)
 
         category.setLayout(grid)
@@ -341,9 +365,13 @@ class ToolsWidget(QtWidgets.QWidget):
             ("Simplify", "Simplify shape", "SMP", "simplify_shape")
         ]
 
+        def create_handler(method_name):
+            """Create a proper closure for the button handler."""
+            return lambda checked: self._execute_tool("surface_modification", method_name)
+
         for i, (name, tooltip, icon, method) in enumerate(tools):
             btn = CompactToolButton(name, tooltip, icon)
-            btn.clicked.connect(lambda checked, m=method: self._execute_tool("surface_modification", m))
+            btn.clicked.connect(create_handler(method))
             grid.addWidget(btn, i // 4, i % 4)
 
         category.setLayout(grid)

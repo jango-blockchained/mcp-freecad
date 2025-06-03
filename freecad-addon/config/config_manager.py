@@ -10,9 +10,18 @@ import logging
 import base64
 from typing import Dict, Any, Optional, List
 from pathlib import Path
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
+# Try to import cryptography for secure storage
+try:
+    from cryptography.fernet import Fernet
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+    CRYPTOGRAPHY_AVAILABLE = True
+except ImportError:
+    CRYPTOGRAPHY_AVAILABLE = False
+    Fernet = None
+    hashes = None
+    PBKDF2HMAC = None
 
 
 class ConfigManager:
@@ -40,17 +49,31 @@ class ConfigManager:
 
         # Configuration file paths
         self.config_file = self.config_dir / "addon_config.json"
-        self.keys_file = self.config_dir / "api_keys.enc"
-        self.salt_file = self.config_dir / ".salt"
 
-        # Initialize encryption
-        self._init_encryption()
+        # Choose file extension based on encryption availability
+        if CRYPTOGRAPHY_AVAILABLE:
+            self.keys_file = self.config_dir / "api_keys.enc"
+            self.salt_file = self.config_dir / ".salt"
+        else:
+            self.keys_file = self.config_dir / "api_keys.json"
+            self.salt_file = None
+            self.logger.warning("Cryptography not available - API keys will be stored in plain text")
+
+        # Initialize encryption if available
+        self.cipher = None
+        if CRYPTOGRAPHY_AVAILABLE:
+            self._init_encryption()
 
         # Load configuration
         self.config = self.load_config()
 
     def _init_encryption(self):
         """Initialize encryption for secure storage."""
+        if not CRYPTOGRAPHY_AVAILABLE:
+            self.logger.warning("Cryptography not available - encryption disabled")
+            self.cipher = None
+            return
+
         try:
             # Generate or load salt
             if self.salt_file.exists():
@@ -217,18 +240,21 @@ class ConfigManager:
             return False
 
     def set_api_key(self, provider: str, key: str) -> bool:
-        """Securely store API key for provider."""
-        if not self.cipher:
-            self.logger.error("Encryption not available")
-            return False
-
+        """Store API key for provider (encrypted if possible)."""
         try:
             # Load existing keys
             api_keys = self._load_api_keys()
 
-            # Encrypt and store the key
-            encrypted_key = self.cipher.encrypt(key.encode())
-            api_keys[provider] = base64.urlsafe_b64encode(encrypted_key).decode()
+            if self.cipher and CRYPTOGRAPHY_AVAILABLE:
+                # Encrypt and store the key
+                encrypted_key = self.cipher.encrypt(key.encode())
+                api_keys[provider] = base64.urlsafe_b64encode(encrypted_key).decode()
+            else:
+                # Store in plain text with warning
+                if not hasattr(self, '_warned_plain_text'):
+                    self.logger.warning("Storing API key in plain text - install 'cryptography' package for secure storage")
+                    self._warned_plain_text = True
+                api_keys[provider] = key
 
             # Save keys
             return self._save_api_keys(api_keys)
@@ -239,19 +265,26 @@ class ConfigManager:
 
     def get_api_key(self, provider: str) -> Optional[str]:
         """Retrieve API key for provider."""
-        if not self.cipher:
-            self.logger.error("Encryption not available")
-            return None
-
         try:
             api_keys = self._load_api_keys()
             if provider not in api_keys:
                 return None
 
-            # Decrypt the key
-            encrypted_key = base64.urlsafe_b64decode(api_keys[provider].encode())
-            decrypted_key = self.cipher.decrypt(encrypted_key)
-            return decrypted_key.decode()
+            stored_key = api_keys[provider]
+
+            if self.cipher and CRYPTOGRAPHY_AVAILABLE:
+                try:
+                    # Try to decrypt the key (for encrypted storage)
+                    encrypted_key = base64.urlsafe_b64decode(stored_key.encode())
+                    decrypted_key = self.cipher.decrypt(encrypted_key)
+                    return decrypted_key.decode()
+                except Exception:
+                    # If decryption fails, it might be a plain text key from before encryption was available
+                    self.logger.warning(f"Failed to decrypt API key for {provider}, treating as plain text")
+                    return stored_key
+            else:
+                # Plain text storage
+                return stored_key
 
         except Exception as e:
             self.logger.error(f"Error retrieving API key for {provider}: {e}")

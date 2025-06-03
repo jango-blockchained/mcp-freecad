@@ -1,8 +1,13 @@
 version: '3.8'
 
 services:
-  mcp-freecad:
-    build: .
+  # Default: Download AppImage in container
+  mcp-freecad-download:
+    profiles: ["download", "default"]
+    build:
+      context: .
+      args:
+        FREECAD_INSTALL_METHOD: download
     ports:
       - "8080:8080"
       - "12345:12345"
@@ -13,8 +18,55 @@ services:
       - QT_QPA_PLATFORM=offscreen
       - FREECAD_CONSOLE=1
       - DISPLAY=:99
+      - FREECAD_INSTALL_METHOD=download
+      - FREECAD_APPIMAGE_PATH=/app
+      - APPIMAGE_EXTRACT_AND_RUN=1
     restart: unless-stopped
-    command: >
-      bash -c "python download_appimage.py &&
-      python extract_appimage.py $(find . -maxdepth 1 -name '*conda-Linux-x86_64-py311.AppImage' | sort -r | head -n 1) &&
-      python manage_servers.py start all"
+    privileged: true
+    command: ["python", "manage_servers.py", "start", "all"]
+
+  # Use external AppImage (mounted from host)
+  mcp-freecad-external:
+    profiles: ["external"]
+    build:
+      context: .
+      args:
+        FREECAD_INSTALL_METHOD: external
+    ports:
+      - "8080:8080"
+      - "12345:12345"
+    volumes:
+      - ./:/app
+      - ./FreeCAD*.AppImage:/app/freecad.AppImage:ro  # Mount your AppImage here
+    environment:
+      - PYTHONPATH=/app
+      - QT_QPA_PLATFORM=offscreen
+      - FREECAD_CONSOLE=1
+      - DISPLAY=:99
+      - FREECAD_INSTALL_METHOD=external
+      - FREECAD_APPIMAGE_PATH=/app/freecad.AppImage
+      - APPIMAGE_EXTRACT_AND_RUN=1
+    restart: unless-stopped
+    privileged: true
+    command: ["python", "manage_servers.py", "start", "all"]
+
+  # Use FreeCad installed via apt
+  mcp-freecad-apt:
+    profiles: ["apt"]
+    build:
+      context: .
+      args:
+        FREECAD_INSTALL_METHOD: apt
+    ports:
+      - "8080:8080"
+      - "12345:12345"
+    volumes:
+      - ./:/app
+    environment:
+      - PYTHONPATH=/app
+      - QT_QPA_PLATFORM=offscreen
+      - FREECAD_CONSOLE=1
+      - DISPLAY=:99
+      - FREECAD_INSTALL_METHOD=apt
+    restart: unless-stopped
+    command: ["python", "manage_servers.py", "start", "all"]
