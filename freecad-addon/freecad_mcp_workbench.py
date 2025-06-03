@@ -9,6 +9,11 @@ import asyncio
 import threading
 from datetime import datetime
 
+# Ensure the addon directory is in the Python path
+addon_dir = os.path.dirname(os.path.abspath(__file__))
+if addon_dir not in sys.path:
+    sys.path.insert(0, addon_dir)
+
 # Try to import PySide2, fall back gracefully if not available
 try:
     from PySide2 import QtWidgets, QtCore, QtGui
@@ -24,26 +29,49 @@ except ImportError:
         HAS_PYSIDE2 = False
 
 # Import tools and AI providers with better error handling
+TOOLS_AVAILABLE = False
 try:
+    # Try absolute imports first
     from tools.primitives import PrimitivesTool
     from tools.operations import OperationsTool
     from tools.measurements import MeasurementsTool
     from tools.export_import import ExportImportTool
     TOOLS_AVAILABLE = True
 except ImportError as e:
-    FreeCAD.Console.PrintError(f"MCP Integration: Failed to import tools: {e}\n")
-    TOOLS_AVAILABLE = False
+    FreeCAD.Console.PrintWarning(f"MCP Integration: Failed to import tools with absolute imports: {e}\n")
+    try:
+        # Try importing from the current directory structure
+        import tools
+        from tools import PrimitivesTool, OperationsTool, MeasurementsTool, ExportImportTool
+        TOOLS_AVAILABLE = True
+        FreeCAD.Console.PrintMessage("MCP Integration: Successfully imported tools using alternative method\n")
+    except ImportError as e2:
+        FreeCAD.Console.PrintError(f"MCP Integration: Failed to import tools: {e2}\n")
+        TOOLS_AVAILABLE = False
 
 # Import AI providers with lazy loading
+AI_PROVIDERS_AVAILABLE = False
 try:
+    # Try absolute imports first
     from ai.providers import (
         get_claude_provider, get_gemini_provider, get_openrouter_provider,
         get_available_providers, get_provider_errors, check_dependencies
     )
     AI_PROVIDERS_AVAILABLE = True
 except ImportError as e:
-    FreeCAD.Console.PrintError(f"MCP Integration: Failed to import AI providers: {e}\n")
-    AI_PROVIDERS_AVAILABLE = False
+    FreeCAD.Console.PrintWarning(f"MCP Integration: Failed to import AI providers with absolute imports: {e}\n")
+    try:
+        # Try importing from the current directory structure
+        import ai.providers
+        from ai.providers import (
+            get_claude_provider, get_gemini_provider, get_openrouter_provider,
+            get_available_providers, get_provider_errors, check_dependencies
+        )
+        AI_PROVIDERS_AVAILABLE = True
+        FreeCAD.Console.PrintMessage("MCP Integration: Successfully imported AI providers using alternative method\n")
+    except ImportError as e2:
+        FreeCAD.Console.PrintError(f"MCP Integration: Failed to import AI providers: {e2}\n")
+        AI_PROVIDERS_AVAILABLE = False
 
 
 class MCPShowInterfaceCommand:
@@ -185,7 +213,12 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
         """Try to integrate with the new advanced GUI components."""
         try:
             # Try to import and initialize the provider integration service
-            from ai.provider_integration_service import ProviderIntegrationService
+            try:
+                from ai.provider_integration_service import ProviderIntegrationService
+            except ImportError:
+                import ai.provider_integration_service
+                from ai.provider_integration_service import ProviderIntegrationService
+
             provider_service = ProviderIntegrationService()
 
             # Try to update tabs with advanced GUI if available
@@ -683,7 +716,11 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
         """Update the installation information display."""
         try:
             if AI_PROVIDERS_AVAILABLE:
-                from utils.dependency_manager import DependencyManager
+                try:
+                    from utils.dependency_manager import DependencyManager
+                except ImportError:
+                    import utils.dependency_manager
+                    from utils.dependency_manager import DependencyManager
                 manager = DependencyManager()
                 info = manager.get_installation_info()
 
@@ -707,7 +744,11 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
         """Update the installation script display."""
         try:
             if AI_PROVIDERS_AVAILABLE:
-                from utils.dependency_manager import get_aiohttp_install_script
+                try:
+                    from utils.dependency_manager import get_aiohttp_install_script
+                except ImportError:
+                    import utils.dependency_manager
+                    from utils.dependency_manager import get_aiohttp_install_script
                 script = get_aiohttp_install_script()
                 self.installation_script.setPlainText(script)
             else:
@@ -722,7 +763,11 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
                 QtWidgets.QMessageBox.warning(self, "Error", "Dependency manager not available")
                 return
 
-            from utils.dependency_manager import DependencyManager
+            try:
+                from utils.dependency_manager import DependencyManager
+            except ImportError:
+                import utils.dependency_manager
+                from utils.dependency_manager import DependencyManager
 
             # Create progress dialog
             progress = QtWidgets.QProgressDialog(f"Installing {dependency_name}...", "Cancel", 0, 0, self)
@@ -762,7 +807,11 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
                 QtWidgets.QMessageBox.warning(self, "Error", "Dependency manager not available")
                 return
 
-            from utils.dependency_manager import DependencyManager
+            try:
+                from utils.dependency_manager import DependencyManager
+            except ImportError:
+                import utils.dependency_manager
+                from utils.dependency_manager import DependencyManager
 
             manager = DependencyManager()
             missing = manager.get_missing_dependencies()

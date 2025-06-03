@@ -2,7 +2,14 @@
 
 import os
 import sys
-import psutil
+
+# Try to import psutil, but handle gracefully if not available
+try:
+    import psutil
+    HAS_PSUTIL = True
+except ImportError:
+    HAS_PSUTIL = False
+
 from PySide2 import QtCore, QtGui, QtWidgets
 
 
@@ -286,12 +293,17 @@ class ServerWidget(QtWidgets.QWidget):
     def _update_performance_metrics(self):
         """Update performance metrics display."""
         try:
-            # Get system metrics (simplified)
-            cpu_percent = psutil.cpu_percent()
-            memory_info = psutil.virtual_memory()
+            if HAS_PSUTIL:
+                # Get system metrics (simplified)
+                cpu_percent = psutil.cpu_percent()
+                memory_info = psutil.virtual_memory()
 
-            self.cpu_label.setText(f"{cpu_percent:.1f}%")
-            self.memory_label.setText(f"{memory_info.used / 1024 / 1024:.0f} MB")
+                self.cpu_label.setText(f"{cpu_percent:.1f}%")
+                self.memory_label.setText(f"{memory_info.used / 1024 / 1024:.0f} MB")
+            else:
+                # Show placeholder values when psutil is not available
+                self.cpu_label.setText("N/A")
+                self.memory_label.setText("N/A")
 
             # Simulate server-specific metrics
             if self.stop_btn.isEnabled():  # Server is running
