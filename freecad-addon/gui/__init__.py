@@ -19,15 +19,29 @@ try:
     from .settings_widget import SettingsWidget
     from .logs_widget import LogsWidget
 
-    __all__ = [
-        'MCPMainWidget',
-        'ConnectionWidget',
-        'ServerWidget',
-        'AIWidget',
-        'ToolsWidget',
-        'SettingsWidget',
-        'LogsWidget'
-    ]
+    # Try to import compact tools widget
+    try:
+        from .tools_widget_compact import ToolsWidget as CompactToolsWidget
+        __all__ = [
+            'MCPMainWidget',
+            'ConnectionWidget',
+            'ServerWidget',
+            'AIWidget',
+            'ToolsWidget',
+            'CompactToolsWidget',
+            'SettingsWidget',
+            'LogsWidget'
+        ]
+    except ImportError:
+        __all__ = [
+            'MCPMainWidget',
+            'ConnectionWidget',
+            'ServerWidget',
+            'AIWidget',
+            'ToolsWidget',
+            'SettingsWidget',
+            'LogsWidget'
+        ]
 
 except ImportError as e:
     # Handle missing dependencies gracefully

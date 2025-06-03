@@ -912,82 +912,89 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
     def _create_tools_tab(self):
         """Create the Tools tab using the new comprehensive tools widget."""
         try:
-            # Try to import the new comprehensive tools widget
-            from gui.tools_widget import ToolsWidget
+            # Try to import the new compact tools widget first
+            from gui.tools_widget_compact import ToolsWidget
             tools_widget = ToolsWidget()
             self.tab_widget.addTab(tools_widget, "Tools")
-            FreeCAD.Console.PrintMessage("MCP Integration: Using new comprehensive tools widget\n")
-        except ImportError as e:
-            FreeCAD.Console.PrintWarning(f"MCP Integration: Could not import new tools widget: {e}\n")
-            FreeCAD.Console.PrintMessage("MCP Integration: Falling back to basic tools interface\n")
+            FreeCAD.Console.PrintMessage("MCP Integration: Using new compact tools widget\n")
+        except ImportError:
+            try:
+                # Fallback to original tools widget
+                from gui.tools_widget import ToolsWidget
+                tools_widget = ToolsWidget()
+                self.tab_widget.addTab(tools_widget, "Tools")
+                FreeCAD.Console.PrintMessage("MCP Integration: Using comprehensive tools widget\n")
+            except ImportError as e:
+                FreeCAD.Console.PrintWarning(f"MCP Integration: Could not import tools widget: {e}\n")
+                FreeCAD.Console.PrintMessage("MCP Integration: Falling back to basic tools interface\n")
 
-            # Fallback to basic tools interface
-            widget = QtWidgets.QWidget()
-            layout = QtWidgets.QVBoxLayout(widget)
+                # Fallback to basic tools interface
+                widget = QtWidgets.QWidget()
+                layout = QtWidgets.QVBoxLayout(widget)
 
-            # Header
-            header = QtWidgets.QLabel("🛠️ MCP Tools")
-            header.setStyleSheet("font-size: 16px; font-weight: bold; margin: 10px;")
-            layout.addWidget(header)
+                # Header
+                header = QtWidgets.QLabel("🛠️ MCP Tools")
+                header.setStyleSheet("font-size: 16px; font-weight: bold; margin: 10px;")
+                layout.addWidget(header)
 
-            # Tool categories
-            tools_group = QtWidgets.QGroupBox("Available Tools")
-            tools_layout = QtWidgets.QVBoxLayout(tools_group)
+                # Tool categories
+                tools_group = QtWidgets.QGroupBox("Available Tools")
+                tools_layout = QtWidgets.QVBoxLayout(tools_group)
 
-            # Create tool category groups
-            categories = [
-                ("Basic Primitives", [
-                    ("Create Box", "primitives.create_box"),
-                    ("Create Cylinder", "primitives.create_cylinder"),
-                    ("Create Sphere", "primitives.create_sphere"),
-                    ("Create Cone", "primitives.create_cone"),
-                    ("Create Torus", "primitives.create_torus")
-                ]),
-                ("Basic Operations", [
-                    ("Boolean Union", "operations.boolean_union"),
-                    ("Boolean Cut", "operations.boolean_cut"),
-                    ("Boolean Intersection", "operations.boolean_intersection"),
-                    ("Move Object", "operations.move_object"),
-                    ("Rotate Object", "operations.rotate_object"),
-                    ("Scale Object", "operations.scale_object")
-                ]),
-                ("Measurements", [
-                    ("Measure Distance", "measurements.measure_distance"),
-                    ("Measure Angle", "measurements.measure_angle"),
-                    ("Measure Volume", "measurements.measure_volume"),
-                    ("Measure Area", "measurements.measure_area"),
-                    ("Measure Bounding Box", "measurements.measure_bounding_box")
-                ]),
-                ("Export/Import", [
-                    ("Export STL", "export_import.export_stl"),
-                    ("Export STEP", "export_import.export_step"),
-                    ("Import STL", "export_import.import_stl"),
-                    ("Import STEP", "export_import.import_step")
-                ])
-            ]
+                # Create tool category groups
+                categories = [
+                    ("Basic Primitives", [
+                        ("Create Box", "primitives.create_box"),
+                        ("Create Cylinder", "primitives.create_cylinder"),
+                        ("Create Sphere", "primitives.create_sphere"),
+                        ("Create Cone", "primitives.create_cone"),
+                        ("Create Torus", "primitives.create_torus")
+                    ]),
+                    ("Basic Operations", [
+                        ("Boolean Union", "operations.boolean_union"),
+                        ("Boolean Cut", "operations.boolean_cut"),
+                        ("Boolean Intersection", "operations.boolean_intersection"),
+                        ("Move Object", "operations.move_object"),
+                        ("Rotate Object", "operations.rotate_object"),
+                        ("Scale Object", "operations.scale_object")
+                    ]),
+                    ("Measurements", [
+                        ("Measure Distance", "measurements.measure_distance"),
+                        ("Measure Angle", "measurements.measure_angle"),
+                        ("Measure Volume", "measurements.measure_volume"),
+                        ("Measure Area", "measurements.measure_area"),
+                        ("Measure Bounding Box", "measurements.measure_bounding_box")
+                    ]),
+                    ("Export/Import", [
+                        ("Export STL", "export_import.export_stl"),
+                        ("Export STEP", "export_import.export_step"),
+                        ("Import STL", "export_import.import_stl"),
+                        ("Import STEP", "export_import.import_step")
+                    ])
+                ]
 
-            for category_name, tools in categories:
-                category_group = QtWidgets.QGroupBox(category_name)
-                category_layout = QtWidgets.QGridLayout(category_group)
+                for category_name, tools in categories:
+                    category_group = QtWidgets.QGroupBox(category_name)
+                    category_layout = QtWidgets.QGridLayout(category_group)
 
-                row = 0
-                col = 0
-                for tool_name, tool_id in tools:
-                    button = QtWidgets.QPushButton(tool_name)
-                    button.clicked.connect(lambda checked, tid=tool_id: self._execute_tool(tid))
-                    category_layout.addWidget(button, row, col)
+                    row = 0
+                    col = 0
+                    for tool_name, tool_id in tools:
+                        button = QtWidgets.QPushButton(tool_name)
+                        button.clicked.connect(lambda checked, tid=tool_id: self._execute_tool(tid))
+                        category_layout.addWidget(button, row, col)
 
-                    col += 1
-                    if col > 2:  # 3 columns
-                        col = 0
-                        row += 1
+                        col += 1
+                        if col > 2:  # 3 columns
+                            col = 0
+                            row += 1
 
-                tools_layout.addWidget(category_group)
+                    tools_layout.addWidget(category_group)
 
-            layout.addWidget(tools_group)
-            layout.addStretch()
+                layout.addWidget(tools_group)
+                layout.addStretch()
 
-            self.tab_widget.addTab(widget, "Tools")
+                self.tab_widget.addTab(widget, "Tools")
 
     def _create_logs_tab(self):
         """Create the Logs tab."""

@@ -6,6 +6,14 @@ AI provider instances, and GUI components to provide seamless AI provider
 connection functionality.
 """
 
+import os
+import sys
+
+# Ensure the addon directory is in the Python path
+addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if addon_dir not in sys.path:
+    sys.path.insert(0, addon_dir)
+
 import asyncio
 import logging
 from typing import Dict, Any, Optional, List, Callable

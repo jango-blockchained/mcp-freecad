@@ -1,4 +1,4 @@
-"""Tools Widget - Comprehensive and compact GUI for all FreeCAD tools"""
+"""Compact Tools Widget - Clean and organized GUI for all FreeCAD tools"""
 
 import os
 import sys
@@ -487,7 +487,47 @@ class ToolParameterDialog(QtWidgets.QDialog):
             ("object_name", "string", "", "Name (optional)", "")
         ],
 
-        # Advanced tools would follow similar patterns...
+        # Advanced Primitives
+        "advanced_primitives.create_tube": [
+            ("outer_radius", "float", 10.0, "Outer Radius", "mm"),
+            ("inner_radius", "float", 5.0, "Inner Radius", "mm"),
+            ("height", "float", 10.0, "Height", "mm"),
+            ("name", "string", "", "Name (optional)", "")
+        ],
+        "advanced_primitives.create_prism": [
+            ("sides", "int", 6, "Number of Sides", ""),
+            ("radius", "float", 5.0, "Radius", "mm"),
+            ("height", "float", 10.0, "Height", "mm"),
+            ("name", "string", "", "Name (optional)", "")
+        ],
+
+        # Advanced Operations
+        "advanced_operations.extrude_profile": [
+            ("profile_name", "object", "", "Profile Object", ""),
+            ("distance", "float", 10.0, "Distance", "mm"),
+            ("direction", "vector", "[0,0,1]", "Direction", ""),
+            ("name", "string", "", "Name (optional)", "")
+        ],
+        "advanced_operations.revolve_profile": [
+            ("profile_name", "object", "", "Profile Object", ""),
+            ("angle", "float", 360.0, "Angle", "°"),
+            ("axis", "vector", "[0,0,1]", "Axis", ""),
+            ("name", "string", "", "Name (optional)", "")
+        ],
+
+        # Surface Modification
+        "surface_modification.fillet_edges": [
+            ("obj_name", "object", "", "Object", ""),
+            ("edge_indices", "indices", "", "Edge Indices", ""),
+            ("radius", "float", 1.0, "Radius", "mm"),
+            ("name", "string", "", "Name (optional)", "")
+        ],
+        "surface_modification.chamfer_edges": [
+            ("obj_name", "object", "", "Object", ""),
+            ("edge_indices", "indices", "", "Edge Indices", ""),
+            ("distance", "float", 1.0, "Distance", "mm"),
+            ("name", "string", "", "Name (optional)", "")
+        ],
     }
 
     def __init__(self, category, method, parent=None):
@@ -584,6 +624,17 @@ class ToolParameterDialog(QtWidgets.QDialog):
             widget.setPlaceholderText("[x,y,z] or ObjectName")
             return widget
 
+        elif param_type == "vector":
+            widget = QtWidgets.QLineEdit()
+            widget.setText(str(default))
+            widget.setPlaceholderText("[x,y,z]")
+            return widget
+
+        elif param_type == "indices":
+            widget = QtWidgets.QLineEdit()
+            widget.setPlaceholderText("0,1,2,... or empty for all")
+            return widget
+
         elif param_type == "choice":
             widget = QtWidgets.QComboBox()
             if isinstance(unit, list):  # Choices passed in unit field
@@ -620,7 +671,9 @@ class ToolParameterDialog(QtWidgets.QDialog):
                     # Handle special cases
                     if name == "object_names" and text:
                         params[name] = [s.strip() for s in text.split(',') if s.strip()]
-                    elif name.startswith("point") and text.startswith('['):
+                    elif name == "edge_indices" and text:
+                        params[name] = [int(s.strip()) for s in text.split(',') if s.strip()]
+                    elif (name.startswith("point") or name == "direction" or name == "axis") and text.startswith('['):
                         try:
                             params[name] = eval(text)
                         except:

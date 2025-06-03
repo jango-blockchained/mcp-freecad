@@ -1,5 +1,13 @@
 """Settings Widget - GUI for addon settings"""
 
+import os
+import sys
+
+# Ensure the addon directory is in the Python path
+addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if addon_dir not in sys.path:
+    sys.path.insert(0, addon_dir)
+
 from PySide2 import QtCore, QtGui, QtWidgets
 import logging
 from typing import Dict, Any, Optional
