@@ -32,6 +32,7 @@ import subprocess
 import sys
 import tempfile
 from typing import Any, Dict, Optional, Tuple
+from FreeCad.Gui.ImportGui import *
 
 
 class FreeCADBridge:
@@ -247,13 +248,13 @@ import Mesh
 try:
     # Get document
     {doc_ref}
-    
+
     # Get object
     obj = doc.getObject("{object_name}")
-    
+
     # Export to STL
     Mesh.export([obj], "{output_path}")
-    
+
     print(json.dumps({{"success": True, "path": "{output_path}"}}))
 except Exception as e:
     print(json.dumps({{"success": False, "error": str(e)}}))

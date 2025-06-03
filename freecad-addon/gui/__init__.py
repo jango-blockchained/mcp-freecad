@@ -14,7 +14,8 @@ try:
     from .main_widget import MCPMainWidget
     from .connection_widget import ConnectionWidget
     from .server_widget import ServerWidget
-    from .ai_widget import AIWidget
+    from .providers_widget import ProvidersWidget
+    from .conversation_widget import ConversationWidget
     from .tools_widget import ToolsWidget
     from .settings_widget import SettingsWidget
     from .logs_widget import LogsWidget
@@ -26,7 +27,8 @@ try:
             'MCPMainWidget',
             'ConnectionWidget',
             'ServerWidget',
-            'AIWidget',
+            'ProvidersWidget',
+            'ConversationWidget',
             'ToolsWidget',
             'CompactToolsWidget',
             'SettingsWidget',
@@ -37,7 +39,8 @@ try:
             'MCPMainWidget',
             'ConnectionWidget',
             'ServerWidget',
-            'AIWidget',
+            'ProvidersWidget',
+            'ConversationWidget',
             'ToolsWidget',
             'SettingsWidget',
             'LogsWidget'

@@ -212,74 +212,33 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
     def _integrate_advanced_gui(self):
         """Try to integrate with the new advanced GUI components."""
         try:
-            # Try to import and initialize the provider integration service
-            try:
-                from ai.provider_integration_service import ProviderIntegrationService
-            except ImportError:
-                import ai.provider_integration_service
-                from ai.provider_integration_service import ProviderIntegrationService
-
-            provider_service = ProviderIntegrationService()
-
-            # Try to update tabs with advanced GUI if available
-            self._try_replace_with_advanced_tabs()
-
-            FreeCAD.Console.PrintMessage("MCP Integration: Advanced GUI integration successful\n")
-        except ImportError as e:
-            FreeCAD.Console.PrintMessage(f"MCP Integration: Advanced GUI not available: {e}\n")
-        except Exception as e:
-            FreeCAD.Console.PrintWarning(f"MCP Integration: Advanced GUI integration failed: {e}\n")
-
-    def _try_replace_with_advanced_tabs(self):
-        """Try to replace basic tabs with advanced versions."""
-        try:
-            # Import advanced GUI widgets
+            # Try to import the comprehensive main widget
             from gui.main_widget import MCPMainWidget as AdvancedMainWidget
-            from gui.settings_widget import SettingsWidget
-            from gui.ai_widget import AIWidget
-            from gui.connection_widget import ConnectionWidget
 
-            # Store original tab count
-            original_tab_count = self.tab_widget.count()
+            # Create the advanced main widget
+            advanced_widget = AdvancedMainWidget()
 
-            # Try to create advanced widgets and replace tabs
-            try:
-                settings_widget = SettingsWidget()
-                # Find and replace Models tab
-                for i in range(self.tab_widget.count()):
-                    if self.tab_widget.tabText(i) == "Models":
-                        self.tab_widget.removeTab(i)
-                        self.tab_widget.insertTab(i, settings_widget, "Settings")
-                        break
-            except Exception as e:
-                FreeCAD.Console.PrintWarning(f"Failed to replace Models tab: {e}\n")
-
-            try:
-                ai_widget = AIWidget()
-                # Find and replace Assistant tab
-                for i in range(self.tab_widget.count()):
-                    if self.tab_widget.tabText(i) == "Assistant":
-                        self.tab_widget.removeTab(i)
-                        self.tab_widget.insertTab(i, ai_widget, "AI Assistant")
-                        break
-            except Exception as e:
-                FreeCAD.Console.PrintWarning(f"Failed to replace Assistant tab: {e}\n")
-
-            try:
-                connection_widget = ConnectionWidget()
-                # Find and replace Connections tab
-                for i in range(self.tab_widget.count()):
-                    if self.tab_widget.tabText(i) == "Connections":
-                        self.tab_widget.removeTab(i)
-                        self.tab_widget.insertTab(i, connection_widget, "Connections")
-                        break
-            except Exception as e:
-                FreeCAD.Console.PrintWarning(f"Failed to replace Connections tab: {e}\n")
-
-            FreeCAD.Console.PrintMessage("MCP Integration: Advanced tabs integrated successfully\n")
+            # Replace the entire tab widget with the advanced one
+            if hasattr(advanced_widget, 'tab_widget'):
+                # Get the current layout
+                layout = self.layout()
+                
+                # Remove the old tab widget
+                layout.removeWidget(self.tab_widget)
+                self.tab_widget.deleteLater()
+                
+                # Add the advanced tab widget
+                self.tab_widget = advanced_widget.tab_widget
+                layout.insertWidget(0, self.tab_widget)
+                
+                FreeCAD.Console.PrintMessage("MCP Integration: Successfully integrated advanced GUI with new widget structure\n")
+            else:
+                FreeCAD.Console.PrintWarning("MCP Integration: Advanced widget doesn't have expected tab_widget structure\n")
 
         except ImportError as e:
-            FreeCAD.Console.PrintMessage(f"MCP Integration: Advanced GUI widgets not available: {e}\n")
+            FreeCAD.Console.PrintMessage(f"MCP Integration: Advanced GUI not available, using basic interface: {e}\n")
+        except Exception as e:
+            FreeCAD.Console.PrintWarning(f"MCP Integration: Advanced GUI integration failed, using basic interface: {e}\n")
 
     def _create_assistant_tab(self):
         """Create the Assistant tab for AI chat."""
