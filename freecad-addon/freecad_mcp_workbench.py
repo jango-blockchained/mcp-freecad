@@ -170,6 +170,9 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
             self._create_tools_tab()
             self._create_logs_tab()
 
+            # Try to integrate with new GUI components
+            self._integrate_advanced_gui()
+
             # Status bar
             self.status_bar = QtWidgets.QStatusBar()
             layout.addWidget(self.status_bar)
@@ -177,6 +180,73 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
 
         except Exception as e:
             FreeCAD.Console.PrintError(f"MCP Integration: Failed to create GUI: {e}\n")
+
+    def _integrate_advanced_gui(self):
+        """Try to integrate with the new advanced GUI components."""
+        try:
+            # Try to import and initialize the provider integration service
+            from ai.provider_integration_service import ProviderIntegrationService
+            provider_service = ProviderIntegrationService()
+
+            # Try to update tabs with advanced GUI if available
+            self._try_replace_with_advanced_tabs()
+
+            FreeCAD.Console.PrintMessage("MCP Integration: Advanced GUI integration successful\n")
+        except ImportError as e:
+            FreeCAD.Console.PrintMessage(f"MCP Integration: Advanced GUI not available: {e}\n")
+        except Exception as e:
+            FreeCAD.Console.PrintWarning(f"MCP Integration: Advanced GUI integration failed: {e}\n")
+
+    def _try_replace_with_advanced_tabs(self):
+        """Try to replace basic tabs with advanced versions."""
+        try:
+            # Import advanced GUI widgets
+            from gui.main_widget import MCPMainWidget as AdvancedMainWidget
+            from gui.settings_widget import SettingsWidget
+            from gui.ai_widget import AIWidget
+            from gui.connection_widget import ConnectionWidget
+
+            # Store original tab count
+            original_tab_count = self.tab_widget.count()
+
+            # Try to create advanced widgets and replace tabs
+            try:
+                settings_widget = SettingsWidget()
+                # Find and replace Models tab
+                for i in range(self.tab_widget.count()):
+                    if self.tab_widget.tabText(i) == "Models":
+                        self.tab_widget.removeTab(i)
+                        self.tab_widget.insertTab(i, settings_widget, "Settings")
+                        break
+            except Exception as e:
+                FreeCAD.Console.PrintWarning(f"Failed to replace Models tab: {e}\n")
+
+            try:
+                ai_widget = AIWidget()
+                # Find and replace Assistant tab
+                for i in range(self.tab_widget.count()):
+                    if self.tab_widget.tabText(i) == "Assistant":
+                        self.tab_widget.removeTab(i)
+                        self.tab_widget.insertTab(i, ai_widget, "AI Assistant")
+                        break
+            except Exception as e:
+                FreeCAD.Console.PrintWarning(f"Failed to replace Assistant tab: {e}\n")
+
+            try:
+                connection_widget = ConnectionWidget()
+                # Find and replace Connections tab
+                for i in range(self.tab_widget.count()):
+                    if self.tab_widget.tabText(i) == "Connections":
+                        self.tab_widget.removeTab(i)
+                        self.tab_widget.insertTab(i, connection_widget, "Connections")
+                        break
+            except Exception as e:
+                FreeCAD.Console.PrintWarning(f"Failed to replace Connections tab: {e}\n")
+
+            FreeCAD.Console.PrintMessage("MCP Integration: Advanced tabs integrated successfully\n")
+
+        except ImportError as e:
+            FreeCAD.Console.PrintMessage(f"MCP Integration: Advanced GUI widgets not available: {e}\n")
 
     def _create_assistant_tab(self):
         """Create the Assistant tab for AI chat."""
@@ -791,73 +861,84 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
         self.tab_widget.addTab(widget, "Servers")
 
     def _create_tools_tab(self):
-        """Create the Tools tab."""
-        widget = QtWidgets.QWidget()
-        layout = QtWidgets.QVBoxLayout(widget)
+        """Create the Tools tab using the new comprehensive tools widget."""
+        try:
+            # Try to import the new comprehensive tools widget
+            from gui.tools_widget import ToolsWidget
+            tools_widget = ToolsWidget()
+            self.tab_widget.addTab(tools_widget, "Tools")
+            FreeCAD.Console.PrintMessage("MCP Integration: Using new comprehensive tools widget\n")
+        except ImportError as e:
+            FreeCAD.Console.PrintWarning(f"MCP Integration: Could not import new tools widget: {e}\n")
+            FreeCAD.Console.PrintMessage("MCP Integration: Falling back to basic tools interface\n")
 
-        # Header
-        header = QtWidgets.QLabel("🛠️ MCP Tools")
-        header.setStyleSheet("font-size: 16px; font-weight: bold; margin: 10px;")
-        layout.addWidget(header)
+            # Fallback to basic tools interface
+            widget = QtWidgets.QWidget()
+            layout = QtWidgets.QVBoxLayout(widget)
 
-        # Tool categories
-        tools_group = QtWidgets.QGroupBox("Available Tools")
-        tools_layout = QtWidgets.QVBoxLayout(tools_group)
+            # Header
+            header = QtWidgets.QLabel("🛠️ MCP Tools")
+            header.setStyleSheet("font-size: 16px; font-weight: bold; margin: 10px;")
+            layout.addWidget(header)
 
-        # Create tool category groups
-        categories = [
-            ("Primitives", [
-                ("Create Box", "primitives.create_box"),
-                ("Create Cylinder", "primitives.create_cylinder"),
-                ("Create Sphere", "primitives.create_sphere"),
-                ("Create Cone", "primitives.create_cone"),
-                ("Create Torus", "primitives.create_torus")
-            ]),
-            ("Operations", [
-                ("Boolean Union", "operations.boolean_union"),
-                ("Boolean Cut", "operations.boolean_cut"),
-                ("Boolean Intersection", "operations.boolean_intersection"),
-                ("Move Object", "operations.move_object"),
-                ("Rotate Object", "operations.rotate_object"),
-                ("Scale Object", "operations.scale_object")
-            ]),
-            ("Measurements", [
-                ("Measure Distance", "measurements.measure_distance"),
-                ("Measure Angle", "measurements.measure_angle"),
-                ("Measure Volume", "measurements.measure_volume"),
-                ("Measure Area", "measurements.measure_area"),
-                ("Measure Bounding Box", "measurements.measure_bounding_box")
-            ]),
-            ("Export/Import", [
-                ("Export STL", "export_import.export_stl"),
-                ("Export STEP", "export_import.export_step"),
-                ("Import STL", "export_import.import_stl"),
-                ("Import STEP", "export_import.import_step")
-            ])
-        ]
+            # Tool categories
+            tools_group = QtWidgets.QGroupBox("Available Tools")
+            tools_layout = QtWidgets.QVBoxLayout(tools_group)
 
-        for category_name, tools in categories:
-            category_group = QtWidgets.QGroupBox(category_name)
-            category_layout = QtWidgets.QGridLayout(category_group)
+            # Create tool category groups
+            categories = [
+                ("Basic Primitives", [
+                    ("Create Box", "primitives.create_box"),
+                    ("Create Cylinder", "primitives.create_cylinder"),
+                    ("Create Sphere", "primitives.create_sphere"),
+                    ("Create Cone", "primitives.create_cone"),
+                    ("Create Torus", "primitives.create_torus")
+                ]),
+                ("Basic Operations", [
+                    ("Boolean Union", "operations.boolean_union"),
+                    ("Boolean Cut", "operations.boolean_cut"),
+                    ("Boolean Intersection", "operations.boolean_intersection"),
+                    ("Move Object", "operations.move_object"),
+                    ("Rotate Object", "operations.rotate_object"),
+                    ("Scale Object", "operations.scale_object")
+                ]),
+                ("Measurements", [
+                    ("Measure Distance", "measurements.measure_distance"),
+                    ("Measure Angle", "measurements.measure_angle"),
+                    ("Measure Volume", "measurements.measure_volume"),
+                    ("Measure Area", "measurements.measure_area"),
+                    ("Measure Bounding Box", "measurements.measure_bounding_box")
+                ]),
+                ("Export/Import", [
+                    ("Export STL", "export_import.export_stl"),
+                    ("Export STEP", "export_import.export_step"),
+                    ("Import STL", "export_import.import_stl"),
+                    ("Import STEP", "export_import.import_step")
+                ])
+            ]
 
-            row = 0
-            col = 0
-            for tool_name, tool_id in tools:
-                button = QtWidgets.QPushButton(tool_name)
-                button.clicked.connect(lambda checked, tid=tool_id: self._execute_tool(tid))
-                category_layout.addWidget(button, row, col)
+            for category_name, tools in categories:
+                category_group = QtWidgets.QGroupBox(category_name)
+                category_layout = QtWidgets.QGridLayout(category_group)
 
-                col += 1
-                if col > 2:  # 3 columns
-                    col = 0
-                    row += 1
+                row = 0
+                col = 0
+                for tool_name, tool_id in tools:
+                    button = QtWidgets.QPushButton(tool_name)
+                    button.clicked.connect(lambda checked, tid=tool_id: self._execute_tool(tid))
+                    category_layout.addWidget(button, row, col)
 
-            tools_layout.addWidget(category_group)
+                    col += 1
+                    if col > 2:  # 3 columns
+                        col = 0
+                        row += 1
 
-        layout.addWidget(tools_group)
-        layout.addStretch()
+                tools_layout.addWidget(category_group)
 
-        self.tab_widget.addTab(widget, "Tools")
+            layout.addWidget(tools_group)
+            layout.addStretch()
+
+            self.tab_widget.addTab(widget, "Tools")
 
     def _create_logs_tab(self):
         """Create the Logs tab."""

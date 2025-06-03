@@ -18,9 +18,9 @@ class MCPMainWidget(QtWidgets.QDockWidget):
 
         # Initialize provider service
         self.provider_service = None
-        self._setup_provider_service()
 
         self._setup_ui()
+        self._setup_provider_service()
         self.resize(400, 600)
 
     def _setup_ui(self):
@@ -55,7 +55,9 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             QtCore.QTimer.singleShot(1000, self.provider_service.initialize_providers_from_config)
 
         except ImportError as e:
-            self.status_label.setText(f"Warning: Provider service unavailable - {e}")
+            if hasattr(self, 'status_label'):
+                self.status_label.setText(f"Warning: Provider service unavailable - {e}")
+            print(f"MCP Integration: Provider service unavailable - {e}")
 
     def _on_provider_status_changed(self, provider_name: str, status: str, message: str):
         """Handle provider status changes."""
@@ -84,7 +86,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         """Get the provider service instance."""
         return self.provider_service
 
-        def _create_tabs(self):
+    def _create_tabs(self):
         """Create the tab interface."""
         try:
             from .connection_widget import ConnectionWidget
