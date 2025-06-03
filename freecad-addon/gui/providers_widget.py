@@ -22,6 +22,7 @@ class ProvidersWidget(QtWidgets.QWidget):
 
         self._setup_services()
         self._setup_ui()
+        self._create_default_providers()
         self._load_configuration()
 
     def _setup_services(self):
@@ -118,12 +119,34 @@ class ProvidersWidget(QtWidgets.QWidget):
 
         api_layout.addRow("Google:", google_layout)
 
+        # OpenRouter API Key
+        openrouter_layout = QtWidgets.QHBoxLayout()
+        self.openrouter_key_input = QtWidgets.QLineEdit()
+        self.openrouter_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
+        self.openrouter_key_input.setPlaceholderText("OpenRouter API Key...")
+        openrouter_layout.addWidget(self.openrouter_key_input)
+
+        self.openrouter_show_btn = QtWidgets.QPushButton("👁")
+        self.openrouter_show_btn.setMaximumWidth(30)
+        self.openrouter_show_btn.setCheckable(True)
+        self.openrouter_show_btn.clicked.connect(lambda: self._toggle_password_visibility(self.openrouter_key_input, self.openrouter_show_btn))
+        openrouter_layout.addWidget(self.openrouter_show_btn)
+
+        self.openrouter_test_btn = QtWidgets.QPushButton("Test")
+        self.openrouter_test_btn.setMaximumWidth(60)
+        self.openrouter_test_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; padding: 4px; }")
+        self.openrouter_test_btn.clicked.connect(lambda: self._test_api_key("openrouter"))
+        openrouter_layout.addWidget(self.openrouter_test_btn)
+
+        api_layout.addRow("OpenRouter:", openrouter_layout)
+
         layout.addWidget(api_group)
 
         # Connect auto-save signals
         self.openai_key_input.textChanged.connect(lambda: self._save_api_key("openai", self.openai_key_input.text()))
         self.anthropic_key_input.textChanged.connect(lambda: self._save_api_key("anthropic", self.anthropic_key_input.text()))
         self.google_key_input.textChanged.connect(lambda: self._save_api_key("google", self.google_key_input.text()))
+        self.openrouter_key_input.textChanged.connect(lambda: self._save_api_key("openrouter", self.openrouter_key_input.text()))
 
     def _create_providers_section(self, layout):
         """Create providers list and management section."""
@@ -261,6 +284,8 @@ class ProvidersWidget(QtWidgets.QWidget):
             key = self.anthropic_key_input.text()
         elif provider == "google":
             key = self.google_key_input.text()
+        elif provider == "openrouter":
+            key = self.openrouter_key_input.text()
         else:
             return
 
@@ -290,6 +315,8 @@ class ProvidersWidget(QtWidgets.QWidget):
             return key.startswith("sk-ant-") and len(key) > 20
         elif provider == "google":
             return len(key) > 20
+        elif provider == "openrouter":
+            return key.startswith("sk-or-") and len(key) > 20
         return False
 
     def _save_api_key(self, provider, key):
@@ -300,6 +327,63 @@ class ProvidersWidget(QtWidgets.QWidget):
         success = self.config_manager.set_api_key(provider, key)
         if success:
             self.api_key_changed.emit(provider)
+            # Refresh providers to update status
+            self._refresh_providers()
+
+    def _get_default_provider_by_name(self, provider_name):
+        """Get default provider info by name."""
+        # Check default providers first
+        if hasattr(self, 'default_providers'):
+            for provider in self.default_providers:
+                if provider['name'] == provider_name:
+                    return provider
+
+        # Check custom providers
+        if hasattr(self, 'custom_providers'):
+            for provider in self.custom_providers:
+                if provider['name'] == provider_name:
+                    return provider
+
+        return None
+
+    def _create_default_providers(self):
+        """Create default providers for common AI services."""
+        default_providers = [
+            {
+                'name': 'OpenAI',
+                'type': 'openai',
+                'models': ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
+                'default_model': 'gpt-4o-mini',
+                'status': 'Not configured'
+            },
+            {
+                'name': 'Anthropic',
+                'type': 'anthropic',
+                'models': ['claude-4-20241120', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
+                'default_model': 'claude-3-5-sonnet-20241022',
+                'status': 'Not configured'
+            },
+            {
+                'name': 'Google',
+                'type': 'google',
+                'models': ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro'],
+                'default_model': 'gemini-1.5-flash',
+                'status': 'Not configured'
+            },
+            {
+                'name': 'OpenRouter',
+                'type': 'openrouter',
+                'models': ['anthropic/claude-3.5-sonnet', 'openai/gpt-4o', 'google/gemini-pro', 'meta-llama/llama-3.1-405b'],
+                'default_model': 'anthropic/claude-3.5-sonnet',
+                'status': 'Not configured'
+            }
+        ]
+
+        # Store default providers in a class attribute
+        self.default_providers = default_providers
+
+        # Initial refresh to show default providers
+        self._refresh_providers()
 
     def _add_provider(self):
         """Add new provider."""
@@ -307,19 +391,53 @@ class ProvidersWidget(QtWidgets.QWidget):
         if dialog.exec_() == QtWidgets.QDialog.Accepted:
             provider_data = dialog.get_provider_data()
 
-            if self.ai_manager:
-                success = self.ai_manager.add_provider(
-                    provider_data['name'],
-                    provider_data['type'],
-                    provider_data.get('api_key', ''),
-                    provider_data.get('config', {})
-                )
+            # Validate provider name
+            if not provider_data['name'].strip():
+                QtWidgets.QMessageBox.warning(self, "Error", "Please enter a provider name")
+                return
 
-                if success:
-                    self._refresh_providers()
-                    self.provider_added.emit(provider_data['name'])
-                else:
-                    QtWidgets.QMessageBox.warning(self, "Error", "Failed to add provider")
+            # Check if provider name already exists
+            if self._provider_in_table(provider_data['name']):
+                QtWidgets.QMessageBox.warning(self, "Error", "Provider name already exists")
+                return
+
+            # Create provider info
+            new_provider = {
+                'name': provider_data['name'],
+                'type': provider_data['type'],
+                'models': self._get_default_models_for_type(provider_data['type']),
+                'default_model': provider_data.get('config', {}).get('model', ''),
+                'status': 'Custom provider'
+            }
+
+            # If no specific model provided, use first default model
+            if not new_provider['default_model'] and new_provider['models']:
+                new_provider['default_model'] = new_provider['models'][0]
+
+            # Add to custom providers list
+            if not hasattr(self, 'custom_providers'):
+                self.custom_providers = []
+            self.custom_providers.append(new_provider)
+
+            # Save API key if provided
+            if provider_data.get('api_key') and self.config_manager:
+                self.config_manager.set_api_key(provider_data['type'], provider_data['api_key'])
+
+            # Refresh display
+            self._refresh_providers()
+            self.provider_added.emit(provider_data['name'])
+
+            QtWidgets.QMessageBox.information(self, "Success", f"Provider '{provider_data['name']}' added successfully")
+
+    def _get_default_models_for_type(self, provider_type):
+        """Get default models for a provider type."""
+        model_map = {
+            'openai': ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
+            'anthropic': ['claude-4-20241120', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'],
+            'google': ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro'],
+            'openrouter': ['anthropic/claude-3.5-sonnet', 'openai/gpt-4o', 'google/gemini-pro']
+        }
+        return model_map.get(provider_type, ['default-model'])
 
     def _remove_provider(self):
         """Remove selected provider."""
@@ -351,30 +469,57 @@ class ProvidersWidget(QtWidgets.QWidget):
 
     def _load_provider_config(self, provider_name):
         """Load configuration for selected provider."""
-        if not self.ai_manager:
-            return
-
-        provider = self.ai_manager.providers.get(provider_name)
-        if provider:
-            # Update model list
-            models = provider.get_available_models()
+        # First check if it's a default provider
+        default_provider = self._get_default_provider_by_name(provider_name)
+        if default_provider:
+            # Update model list with default provider models
+            models = default_provider['models']
             self.model_combo.clear()
             self.model_combo.addItems(models)
 
-            # Set current model
-            current_model = provider.get_current_model()
-            if current_model:
-                index = self.model_combo.findText(current_model)
-                if index >= 0:
-                    self.model_combo.setCurrentIndex(index)
+            # Set default model
+            default_model = default_provider['default_model']
+            index = self.model_combo.findText(default_model)
+            if index >= 0:
+                self.model_combo.setCurrentIndex(index)
 
-            # Load other configuration if available
-            if hasattr(provider, 'config'):
-                config = provider.config
-                self.temperature_spin.setValue(config.get('temperature', 0.7))
-                self.max_tokens_spin.setValue(config.get('max_tokens', 4096))
-                self.timeout_spin.setValue(config.get('timeout', 30))
-                self.thinking_mode_check.setChecked(config.get('thinking_mode', False))
+            # Load default configuration
+            self.temperature_spin.setValue(0.7)
+            self.max_tokens_spin.setValue(4096)
+            self.timeout_spin.setValue(30)
+            self.thinking_mode_check.setChecked(False)
+
+            # Enable thinking mode for Claude providers
+            if default_provider['type'] == 'anthropic':
+                self.thinking_mode_check.setEnabled(True)
+            else:
+                self.thinking_mode_check.setEnabled(False)
+
+            return
+
+        # If not a default provider, check AI manager
+        if self.ai_manager:
+            provider = self.ai_manager.providers.get(provider_name)
+            if provider:
+                # Update model list
+                models = provider.get_available_models()
+                self.model_combo.clear()
+                self.model_combo.addItems(models)
+
+                # Set current model
+                current_model = provider.get_current_model()
+                if current_model:
+                    index = self.model_combo.findText(current_model)
+                    if index >= 0:
+                        self.model_combo.setCurrentIndex(index)
+
+                # Load other configuration if available
+                if hasattr(provider, 'config'):
+                    config = provider.config
+                    self.temperature_spin.setValue(config.get('temperature', 0.7))
+                    self.max_tokens_spin.setValue(config.get('max_tokens', 4096))
+                    self.timeout_spin.setValue(config.get('timeout', 30))
+                    self.thinking_mode_check.setChecked(config.get('thinking_mode', False))
 
     def _on_model_changed(self, model_name):
         """Handle model selection change."""
@@ -430,9 +575,22 @@ class ProvidersWidget(QtWidgets.QWidget):
         """Refresh providers table."""
         self.providers_table.setRowCount(0)
 
+        # Add default providers first
+        if hasattr(self, 'default_providers'):
+            for provider_info in self.default_providers:
+                self._add_default_provider_to_table(provider_info)
+
+        # Add custom providers
+        if hasattr(self, 'custom_providers'):
+            for provider_info in self.custom_providers:
+                if not self._provider_in_table(provider_info['name']):
+                    self._add_default_provider_to_table(provider_info)
+
+        # Add providers from AI manager if available
         if self.ai_manager:
             for provider_name, provider in self.ai_manager.providers.items():
-                self._add_provider_to_table(provider_name, provider)
+                if not self._provider_in_table(provider_name):
+                    self._add_provider_to_table(provider_name, provider)
 
         # Also update from provider service if available
         if self.provider_service:
@@ -440,6 +598,41 @@ class ProvidersWidget(QtWidgets.QWidget):
             for provider_name, provider_info in providers.items():
                 if not self._provider_in_table(provider_name):
                     self._add_provider_info_to_table(provider_name, provider_info)
+
+    def _add_default_provider_to_table(self, provider_info):
+        """Add default provider to table."""
+        row = self.providers_table.rowCount()
+        self.providers_table.insertRow(row)
+
+        provider_name = provider_info['name']
+        provider_type = provider_info['type']
+        default_model = provider_info['default_model']
+
+        # Check if API key is configured
+        has_api_key = False
+        if self.config_manager:
+            api_key = self.config_manager.get_api_key(provider_type)
+            has_api_key = bool(api_key and len(api_key.strip()) > 10)
+
+        status = "Configured" if has_api_key else "Not configured"
+
+        self.providers_table.setItem(row, 0, QtWidgets.QTableWidgetItem(provider_name))
+        self.providers_table.setItem(row, 1, QtWidgets.QTableWidgetItem(provider_type.title()))
+        self.providers_table.setItem(row, 2, QtWidgets.QTableWidgetItem(default_model))
+
+        # Color code the status
+        status_item = QtWidgets.QTableWidgetItem(status)
+        if has_api_key:
+            status_item.setForeground(QtGui.QColor("#4CAF50"))
+        else:
+            status_item.setForeground(QtGui.QColor("#FF9800"))
+        self.providers_table.setItem(row, 3, status_item)
+
+        # Check if default provider
+        default_provider = self.config_manager.get_default_provider() if self.config_manager else ""
+        is_default = provider_name == default_provider
+        default_item = QtWidgets.QTableWidgetItem("✓" if is_default else "")
+        self.providers_table.setItem(row, 4, default_item)
 
     def _add_provider_to_table(self, provider_name, provider):
         """Add provider to table."""
@@ -501,7 +694,7 @@ class ProvidersWidget(QtWidgets.QWidget):
             return
 
         # Load API keys
-        for provider in ["openai", "anthropic", "google"]:
+        for provider in ["openai", "anthropic", "google", "openrouter"]:
             key = self.config_manager.get_api_key(provider)
             if key:
                 if provider == "openai":
@@ -510,6 +703,8 @@ class ProvidersWidget(QtWidgets.QWidget):
                     self.anthropic_key_input.setText(key)
                 elif provider == "google":
                     self.google_key_input.setText(key)
+                elif provider == "openrouter":
+                    self.openrouter_key_input.setText(key)
 
         # Refresh providers
         self._refresh_providers()
@@ -582,7 +777,7 @@ class ProviderDialog(QtWidgets.QDialog):
         form_layout.addRow("Provider Name:", self.name_input)
 
         self.type_combo = QtWidgets.QComboBox()
-        self.type_combo.addItems(["claude", "openai", "gemini", "openrouter"])
+        self.type_combo.addItems(["anthropic", "openai", "google", "openrouter"])
         form_layout.addRow("Provider Type:", self.type_combo)
 
         self.api_key_input = QtWidgets.QLineEdit()

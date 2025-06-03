@@ -455,8 +455,8 @@ pip install cryptography
 ## Configuration
 
 The addon creates configuration files in:
-- FreeCAD: `{UserAppData}/Mod/MCP_Integration/`
-- Fallback: `~/.freecad/MCP_Integration/`
+- FreeCAD: `{UserAppData}/Mod/freecad-addon/`
+- Fallback: `~/.freecad/freecad-addon/`
 
 ## Usage
 

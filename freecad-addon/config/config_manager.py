@@ -39,10 +39,10 @@ class ConfigManager:
             try:
                 import FreeCAD
                 user_dir = FreeCAD.getUserAppDataDir()
-                self.config_dir = Path(user_dir) / "Mod" / "MCP_Integration"
+                self.config_dir = Path(user_dir) / "Mod" / "freecad-addon"
             except ImportError:
                 # Fallback to user home directory
-                self.config_dir = Path.home() / ".freecad" / "MCP_Integration"
+                self.config_dir = Path.home() / ".freecad" / "freecad-addon"
 
         # Ensure config directory exists
         self.config_dir.mkdir(parents=True, exist_ok=True)
