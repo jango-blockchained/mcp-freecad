@@ -65,9 +65,13 @@ class ServerWidget(QtWidgets.QWidget):
         # Server logs
         self._create_logs_section(layout)
 
+        # Add stretch at the bottom to prevent content from stretching
+        layout.addStretch()
+
     def _create_status_overview(self, layout):
         """Create server status overview section."""
         status_group = QtWidgets.QGroupBox("Server Status")
+        status_group.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         status_layout = QtWidgets.QVBoxLayout(status_group)
 
         # Main server status
@@ -95,6 +99,7 @@ class ServerWidget(QtWidgets.QWidget):
     def _create_server_controls(self, layout):
         """Create server control buttons."""
         controls_group = QtWidgets.QGroupBox("Server Controls")
+        controls_group.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         controls_layout = QtWidgets.QVBoxLayout(controls_group)
 
         # Main controls
@@ -148,6 +153,7 @@ class ServerWidget(QtWidgets.QWidget):
     def _create_performance_section(self, layout):
         """Create performance monitoring section."""
         perf_group = QtWidgets.QGroupBox("Performance Metrics")
+        perf_group.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         perf_layout = QtWidgets.QGridLayout(perf_group)
 
         # CPU usage
@@ -179,6 +185,7 @@ class ServerWidget(QtWidgets.QWidget):
     def _create_logs_section(self, layout):
         """Create logs display section."""
         logs_group = QtWidgets.QGroupBox("Recent Logs")
+        logs_group.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         logs_layout = QtWidgets.QVBoxLayout(logs_group)
 
         self.logs_text = QtWidgets.QTextEdit()

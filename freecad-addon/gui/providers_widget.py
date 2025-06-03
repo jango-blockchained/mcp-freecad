@@ -1,6 +1,108 @@
 """Providers Widget - Consolidated AI Provider and API Key Management"""
 
 from PySide2 import QtCore, QtGui, QtWidgets
+import json
+import os
+from pathlib import Path
+
+
+class FallbackConfigManager:
+    """Simple fallback config manager for basic functionality."""
+
+    def __init__(self):
+        """Initialize fallback config manager."""
+        self.config_dir = Path.home() / ".freecad" / "freecad-addon"
+        self.config_dir.mkdir(parents=True, exist_ok=True)
+        self.config_file = self.config_dir / "addon_config.json"
+        self.keys_file = self.config_dir / "api_keys.json"
+        self.config = self.load_config()
+
+    def load_config(self):
+        """Load configuration from file."""
+        if self.config_file.exists():
+            try:
+                with open(self.config_file, 'r') as f:
+                    return json.load(f)
+            except:
+                pass
+        return {"providers": {}, "connection": {"default_provider": "Anthropic"}}
+
+    def save_config(self):
+        """Save configuration to file."""
+        try:
+            with open(self.config_file, 'w') as f:
+                json.dump(self.config, f, indent=2)
+            return True
+        except:
+            return False
+
+    def set_provider_config(self, provider, config):
+        """Set provider configuration."""
+        if "providers" not in self.config:
+            self.config["providers"] = {}
+        self.config["providers"][provider] = config
+        return self.save_config()
+
+    def get_provider_config(self, provider):
+        """Get provider configuration."""
+        return self.config.get("providers", {}).get(provider, {})
+
+    def set_api_key(self, provider, key):
+        """Store API key for provider."""
+        try:
+            api_keys = {}
+            if self.keys_file.exists():
+                with open(self.keys_file, 'r') as f:
+                    api_keys = json.load(f)
+            api_keys[provider] = key
+            with open(self.keys_file, 'w') as f:
+                json.dump(api_keys, f, indent=2)
+            return True
+        except:
+            return False
+
+    def get_api_key(self, provider):
+        """Retrieve API key for provider."""
+        try:
+            if self.keys_file.exists():
+                with open(self.keys_file, 'r') as f:
+                    api_keys = json.load(f)
+                return api_keys.get(provider)
+        except:
+            pass
+        return None
+
+    def validate_api_key(self, provider, key):
+        """Basic API key validation."""
+        if provider == "openai":
+            return key.startswith("sk-") and len(key) > 20
+        elif provider == "anthropic":
+            return key.startswith("sk-ant-") and len(key) > 20
+        elif provider == "google":
+            return len(key) > 20
+        return len(key) > 10
+
+    def list_api_keys(self):
+        """List configured API key providers."""
+        try:
+            if self.keys_file.exists():
+                with open(self.keys_file, 'r') as f:
+                    api_keys = json.load(f)
+                return list(api_keys.keys())
+        except:
+            pass
+        return []
+
+    def set_default_provider(self, provider):
+        """Set default provider."""
+        if "connection" not in self.config:
+            self.config["connection"] = {}
+        self.config["connection"]["default_provider"] = provider
+        return self.save_config()
+
+    def get_default_provider(self):
+        """Get default provider."""
+        return self.config.get("connection", {}).get("default_provider", "Anthropic")
 
 
 class ProvidersWidget(QtWidgets.QWidget):
@@ -33,11 +135,87 @@ class ProvidersWidget(QtWidgets.QWidget):
         except ImportError:
             self.ai_manager = None
 
+        # Try multiple import strategies for config manager
+        self.config_manager = None
+
+        # Strategy 1: Relative import
         try:
             from ..config.config_manager import ConfigManager
             self.config_manager = ConfigManager()
         except ImportError:
-            self.config_manager = None
+            pass
+
+        # Strategy 2: Absolute import assuming we're in the addon
+        if self.config_manager is None:
+            try:
+                from config.config_manager import ConfigManager
+                self.config_manager = ConfigManager()
+            except ImportError:
+                pass
+
+        # Strategy 3: Direct path import
+        if self.config_manager is None:
+            try:
+                import sys
+                import os
+                # Get the addon directory
+                addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                config_dir = os.path.join(addon_dir, 'config')
+                if config_dir not in sys.path:
+                    sys.path.insert(0, config_dir)
+                from config_manager import ConfigManager
+                self.config_manager = ConfigManager()
+            except ImportError:
+                pass
+
+        # Strategy 4: Try importing from the current package
+        if self.config_manager is None:
+            try:
+                import importlib.util
+                import os
+
+                # Get the path to config_manager.py
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                addon_dir = os.path.dirname(current_dir)
+                config_file = os.path.join(addon_dir, 'config', 'config_manager.py')
+
+                if os.path.exists(config_file):
+                    spec = importlib.util.spec_from_file_location("config_manager", config_file)
+                    config_module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(config_module)
+                    ConfigManager = config_module.ConfigManager
+                    self.config_manager = ConfigManager()
+            except Exception:
+                pass
+
+        if self.config_manager is None:
+            print("Warning: Could not import ConfigManager - configuration features will be disabled")
+            print("Tried the following import strategies:")
+            print("1. from ..config.config_manager import ConfigManager")
+            print("2. from config.config_manager import ConfigManager")
+            print("3. Direct path import with sys.path modification")
+            print("4. importlib.util dynamic import")
+
+            # Show current working directory and paths for debugging
+            import os
+            print(f"Current working directory: {os.getcwd()}")
+            print(f"Current file location: {os.path.abspath(__file__)}")
+            addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            config_file = os.path.join(addon_dir, 'config', 'config_manager.py')
+            print(f"Expected config file location: {config_file}")
+            print(f"Config file exists: {os.path.exists(config_file)}")
+
+            import sys
+            print(f"Python path: {sys.path[:3]}...")  # Show first 3 entries
+
+            # Use fallback config manager
+            print("Using fallback config manager for basic functionality")
+            try:
+                self.config_manager = FallbackConfigManager()
+                print("✅ Fallback config manager loaded successfully")
+            except Exception as e:
+                print(f"❌ Even fallback config manager failed: {e}")
+                self.config_manager = None
 
     def _setup_ui(self):
         """Setup the user interface."""
@@ -50,9 +228,13 @@ class ProvidersWidget(QtWidgets.QWidget):
         self._create_provider_config_section(layout)
         self._create_control_buttons(layout)
 
+        # Add stretch at the bottom to prevent content from stretching
+        layout.addStretch()
+
     def _create_providers_section(self, layout):
         """Create providers list and management section."""
         providers_group = QtWidgets.QGroupBox("AI Providers")
+        providers_group.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         providers_layout = QtWidgets.QVBoxLayout(providers_group)
 
         # Provider controls
@@ -95,6 +277,7 @@ class ProvidersWidget(QtWidgets.QWidget):
     def _create_provider_config_section(self, layout):
         """Create integrated provider configuration and API key section."""
         config_group = QtWidgets.QGroupBox("Provider Configuration")
+        config_group.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         config_layout = QtWidgets.QVBoxLayout(config_group)
 
         # Provider selection
@@ -219,6 +402,14 @@ class ProvidersWidget(QtWidgets.QWidget):
         self.config_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
         config_layout.addWidget(self.config_status_label)
 
+        # Config manager status
+        self.config_manager_status = QtWidgets.QLabel("")
+        self.config_manager_status.setStyleSheet("color: #666; font-size: 9px; padding: 2px;")
+        config_layout.addWidget(self.config_manager_status)
+
+        # Update config manager status
+        self._update_config_manager_status()
+
         layout.addWidget(config_group)
 
     def _create_control_buttons(self, layout):
@@ -235,6 +426,18 @@ class ProvidersWidget(QtWidgets.QWidget):
         self.save_config_btn.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 8px; }")
         self.save_config_btn.clicked.connect(self._save_configuration)
         button_layout.addWidget(self.save_config_btn)
+
+        # Add debug button for troubleshooting
+        self.debug_config_btn = QtWidgets.QPushButton("Debug Config")
+        self.debug_config_btn.setStyleSheet("QPushButton { background-color: #FF9800; color: white; padding: 6px; }")
+        self.debug_config_btn.clicked.connect(self._debug_configuration)
+        button_layout.addWidget(self.debug_config_btn)
+
+        # Add retry config manager button
+        self.retry_config_btn = QtWidgets.QPushButton("Retry Config")
+        self.retry_config_btn.setStyleSheet("QPushButton { background-color: #9C27B0; color: white; padding: 6px; }")
+        self.retry_config_btn.clicked.connect(self._retry_config_manager)
+        button_layout.addWidget(self.retry_config_btn)
 
         layout.addLayout(button_layout)
 
@@ -634,65 +837,94 @@ class ProvidersWidget(QtWidgets.QWidget):
     def _on_model_changed(self, model_name):
         """Handle model selection change."""
         provider_name = self.selected_provider_label.text()
-        if provider_name != "None selected" and self.ai_manager and model_name:
+        if provider_name == "None selected" or not model_name:
+            return
+
+        # Update AI manager provider if it exists
+        if self.ai_manager:
             provider = self.ai_manager.providers.get(provider_name)
             if provider:
                 provider.set_model(model_name)
 
-                # Save model change to config manager for persistence
-                if self.config_manager:
-                    existing_config = self.config_manager.get_provider_config(provider_name)
-                    existing_config['model'] = model_name
+        # Save model change to config manager for persistence (this is the important part)
+        if self.config_manager:
+            try:
+                existing_config = self.config_manager.get_provider_config(provider_name)
+                if not existing_config:
+                    existing_config = {}
+                existing_config['model'] = model_name
 
-                    success = self.config_manager.set_provider_config(provider_name, existing_config)
-                    if not success:
-                        QtWidgets.QMessageBox.warning(self, "Warning",
-                                                    f"Failed to save model configuration for {provider_name}")
-                        self.config_status_label.setText("❌ Failed to save model configuration")
-                        self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
-                    else:
-                        self.config_status_label.setText("✅ Model configuration saved automatically")
-                        self.config_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
-                        # Clear status after 3 seconds
-                        QtCore.QTimer.singleShot(3000, lambda: self.config_status_label.setText(""))
+                success = self.config_manager.set_provider_config(provider_name, existing_config)
+                if not success:
+                    self.config_status_label.setText("❌ Failed to save model configuration")
+                    self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+                else:
+                    self.config_status_label.setText("✅ Model configuration saved automatically")
+                    self.config_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+                    # Clear status after 3 seconds
+                    QtCore.QTimer.singleShot(3000, lambda: self.config_status_label.setText(""))
+            except Exception as e:
+                self.config_status_label.setText(f"❌ Error: {str(e)[:30]}...")
+                self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+        else:
+            self.config_status_label.setText("❌ Config manager not available")
+            self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
 
-                self._refresh_providers()
+        self._refresh_providers()
 
     def _on_config_changed(self):
         """Handle configuration parameter changes."""
         provider_name = self.selected_provider_label.text()
-        if provider_name != "None selected" and self.ai_manager:
+        if provider_name == "None selected":
+            return
+
+        # Create new configuration from UI values
+        new_config = {
+            'temperature': self.temperature_spin.value(),
+            'max_tokens': self.max_tokens_spin.value(),
+            'timeout': self.timeout_spin.value(),
+            'thinking_mode': self.thinking_mode_check.isChecked(),
+            'enabled': True
+        }
+
+        # Add current model if available
+        current_model = self.model_combo.currentText()
+        if current_model:
+            new_config['model'] = current_model
+
+        # Update AI manager provider if it exists
+        if self.ai_manager:
             provider = self.ai_manager.providers.get(provider_name)
             if provider and hasattr(provider, 'config'):
-                # Update provider object config
-                new_config = {
-                    'temperature': self.temperature_spin.value(),
-                    'max_tokens': self.max_tokens_spin.value(),
-                    'timeout': self.timeout_spin.value(),
-                    'thinking_mode': self.thinking_mode_check.isChecked()
-                }
                 provider.config.update(new_config)
 
-                # Save to config manager for persistence
-                if self.config_manager:
-                    # Get existing provider config and update it
-                    existing_config = self.config_manager.get_provider_config(provider_name)
-                    existing_config.update(new_config)
+        # Save to config manager for persistence (this is the important part)
+        if self.config_manager:
+            try:
+                # Get existing provider config and update it
+                existing_config = self.config_manager.get_provider_config(provider_name)
+                if not existing_config:
+                    existing_config = {}
+                existing_config.update(new_config)
 
-                    # Save the updated configuration
-                    success = self.config_manager.set_provider_config(provider_name, existing_config)
-                    if not success:
-                        QtWidgets.QMessageBox.warning(self, "Warning",
-                                                    f"Failed to save configuration for {provider_name}")
-                        self.config_status_label.setText("❌ Failed to save configuration")
-                        self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
-                    else:
-                        self.config_status_label.setText("✅ Configuration saved automatically")
-                        self.config_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
-                        # Clear status after 3 seconds
-                        QtCore.QTimer.singleShot(3000, lambda: self.config_status_label.setText(""))
+                # Save the updated configuration
+                success = self.config_manager.set_provider_config(provider_name, existing_config)
+                if not success:
+                    self.config_status_label.setText("❌ Failed to save configuration")
+                    self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+                else:
+                    self.config_status_label.setText("✅ Configuration saved automatically")
+                    self.config_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+                    # Clear status after 3 seconds
+                    QtCore.QTimer.singleShot(3000, lambda: self.config_status_label.setText(""))
+            except Exception as e:
+                self.config_status_label.setText(f"❌ Error: {str(e)[:30]}...")
+                self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+        else:
+            self.config_status_label.setText("❌ Config manager not available")
+            self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
 
-                self.provider_configured.emit(provider_name)
+        self.provider_configured.emit(provider_name)
 
     def _on_default_changed(self, checked):
         """Handle default provider change."""
@@ -832,11 +1064,24 @@ class ProvidersWidget(QtWidgets.QWidget):
     def _save_configuration(self):
         """Save all configuration."""
         if self.config_manager:
-            success = self.config_manager.save_config()
-            if success:
-                QtWidgets.QMessageBox.information(self, "Success", "Configuration saved successfully")
-            else:
-                QtWidgets.QMessageBox.warning(self, "Error", "Failed to save configuration")
+            try:
+                success = self.config_manager.save_config()
+                if success:
+                    QtWidgets.QMessageBox.information(self, "Success", "Configuration saved successfully")
+                    self.config_status_label.setText("✅ All configuration saved")
+                    self.config_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+                    # Clear status after 3 seconds
+                    QtCore.QTimer.singleShot(3000, lambda: self.config_status_label.setText(""))
+                else:
+                    QtWidgets.QMessageBox.warning(self, "Error", "Failed to save configuration")
+                    self.config_status_label.setText("❌ Failed to save all configuration")
+                    self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(self, "Error", f"Error saving configuration: {str(e)}")
+                self.config_status_label.setText(f"❌ Error: {str(e)}")
+                self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+        else:
+            QtWidgets.QMessageBox.warning(self, "Error", "Configuration manager not available")
 
     def _load_configuration(self):
         """Load configuration from config manager."""
@@ -890,6 +1135,84 @@ class ProvidersWidget(QtWidgets.QWidget):
         if self.config_manager:
             return self.config_manager.get_default_provider()
         return None
+
+    def _debug_configuration(self):
+        """Debug method to show the current configuration."""
+        if not self.config_manager:
+            QtWidgets.QMessageBox.warning(self, "Debug", "Configuration manager not available")
+            return
+
+        try:
+            # Get current configuration
+            config = self.config_manager.config
+            providers_config = config.get('providers', {})
+
+            # Get selected provider info
+            provider_name = self.selected_provider_label.text()
+
+            debug_info = []
+            debug_info.append(f"Selected Provider: {provider_name}")
+            debug_info.append(f"Config Manager Available: {self.config_manager is not None}")
+            debug_info.append(f"Config File: {self.config_manager.config_file}")
+            debug_info.append(f"Keys File: {self.config_manager.keys_file}")
+            debug_info.append("")
+            debug_info.append("All Providers Configuration:")
+
+            for prov_name, prov_config in providers_config.items():
+                debug_info.append(f"  {prov_name}: {prov_config}")
+
+            debug_info.append("")
+            debug_info.append("API Keys:")
+            api_keys = self.config_manager.list_api_keys()
+            for key_provider in api_keys:
+                debug_info.append(f"  {key_provider}: configured")
+
+            debug_info.append("")
+            debug_info.append(f"Default Provider: {self.config_manager.get_default_provider()}")
+
+            # Show debug dialog
+            dialog = QtWidgets.QDialog(self)
+            dialog.setWindowTitle("Configuration Debug")
+            dialog.resize(600, 400)
+
+            layout = QtWidgets.QVBoxLayout(dialog)
+
+            text_edit = QtWidgets.QTextEdit()
+            text_edit.setPlainText("\n".join(debug_info))
+            text_edit.setReadOnly(True)
+            layout.addWidget(text_edit)
+
+            close_btn = QtWidgets.QPushButton("Close")
+            close_btn.clicked.connect(dialog.accept)
+            layout.addWidget(close_btn)
+
+            dialog.exec_()
+
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Debug Error", f"Error getting debug info: {str(e)}")
+
+    def _update_config_manager_status(self):
+        """Update the config manager status."""
+        if self.config_manager:
+            self.config_manager_status.setText("✅ Config manager is available and working")
+            self.config_manager_status.setStyleSheet("color: #4CAF50; font-size: 9px; padding: 2px;")
+        else:
+            self.config_manager_status.setText("❌ Config manager is not available")
+            self.config_manager_status.setStyleSheet("color: #f44336; font-size: 9px; padding: 2px;")
+
+    def _retry_config_manager(self):
+        """Retry to load the config manager."""
+        # Try to reload the config manager
+        self._setup_services()
+        self._update_config_manager_status()
+
+        if self.config_manager:
+            self._refresh_providers()
+            self.config_status_label.setText("✅ Config manager loaded successfully")
+            self.config_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+            QtWidgets.QMessageBox.information(self, "Success", "Config manager loaded successfully!")
+        else:
+            QtWidgets.QMessageBox.warning(self, "Error", "Failed to load config manager. Check console for details.")
 
 
 class ProviderDialog(QtWidgets.QDialog):

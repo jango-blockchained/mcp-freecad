@@ -36,9 +36,13 @@ class ConnectionWidget(QtWidgets.QWidget):
         self._create_method_section(layout)
         self._create_controls_section(layout)
 
+        # Add stretch at the bottom to prevent content from stretching
+        layout.addStretch()
+
     def _create_status_section(self, layout):
         """Create connection status section."""
         status_group = QtWidgets.QGroupBox("Connection Status")
+        status_group.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         status_layout = QtWidgets.QHBoxLayout(status_group)
 
         self.status_label = QtWidgets.QLabel("Disconnected")
@@ -53,6 +57,7 @@ class ConnectionWidget(QtWidgets.QWidget):
     def _create_method_section(self, layout):
         """Create connection method selection section."""
         method_group = QtWidgets.QGroupBox("Connection Method")
+        method_group.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         method_layout = QtWidgets.QVBoxLayout(method_group)
 
         self.method_combo = QtWidgets.QComboBox()
@@ -69,8 +74,6 @@ class ConnectionWidget(QtWidgets.QWidget):
 
         # Connect combo box
         self.method_combo.currentTextChanged.connect(self._on_method_changed)
-
-
 
     def _create_controls_section(self, layout):
         """Create connection control buttons."""

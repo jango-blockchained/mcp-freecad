@@ -353,17 +353,16 @@ class ConfigManager:
 
     def get_available_providers(self) -> List[str]:
         """List supported providers."""
-        return ["openai", "anthropic", "google"]
+        return ["openai", "anthropic", "google", "openrouter"]
 
     def set_default_provider(self, provider: str) -> bool:
         """Set default provider."""
-        if provider in self.get_available_providers():
-            return self.set_config("connection.default_provider", provider)
-        return False
+        # Allow any provider name, not just the hardcoded ones
+        return self.set_config("connection.default_provider", provider)
 
     def get_default_provider(self) -> str:
         """Get default provider."""
-        return self.get_config("connection.default_provider", "openai")
+        return self.get_config("connection.default_provider", "Anthropic")
 
     def export_config(self, file_path: str, include_keys: bool = False) -> bool:
         """Export configuration to file."""
