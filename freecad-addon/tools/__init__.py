@@ -11,12 +11,16 @@ from .primitives import PrimitivesTool
 from .operations import OperationsTool
 from .measurements import MeasurementsTool
 from .export_import import ExportImportTool
+from .advanced_primitives import AdvancedPrimitivesTool
+from .advanced_operations import AdvancedOperationsTool
 
 __all__ = [
     "PrimitivesTool",
     "OperationsTool",
     "MeasurementsTool",
-    "ExportImportTool"
+    "ExportImportTool",
+    "AdvancedPrimitivesTool",
+    "AdvancedOperationsTool"
 ]
 
 # Tool registry for easy access
@@ -24,7 +28,9 @@ TOOL_REGISTRY = {
     "primitives": PrimitivesTool,
     "operations": OperationsTool,
     "measurements": MeasurementsTool,
-    "export_import": ExportImportTool
+    "export_import": ExportImportTool,
+    "advanced_primitives": AdvancedPrimitivesTool,
+    "advanced_operations": AdvancedOperationsTool
 }
 
 def get_tool(tool_name):
