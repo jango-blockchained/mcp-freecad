@@ -1,0 +1,58 @@
+{
+  "version": "1.0.0",
+  "providers": {
+    "openai": {
+      "enabled": true,
+      "model": "gpt-4",
+      "temperature": 0.7,
+      "timeout": 30,
+      "max_tokens": 4000
+    },
+    "anthropic": {
+      "enabled": false,
+      "model": "claude-3-sonnet-20240229",
+      "temperature": 0.7,
+      "timeout": 30,
+      "max_tokens": 4000
+    },
+    "google": {
+      "enabled": false,
+      "model": "gemini-pro",
+      "temperature": 0.7,
+      "timeout": 30,
+      "max_tokens": 4000
+    }
+  },
+  "ui_settings": {
+    "theme": "default",
+    "auto_save": true,
+    "log_level": "DEBUG",
+    "show_tooltips": true,
+    "confirm_operations": true
+  },
+  "tool_defaults": {
+    "advanced_primitives": {
+      "default_radius": 5.0,
+      "default_height": 10.0,
+      "default_position": [
+        0,
+        0,
+        0
+      ]
+    },
+    "advanced_operations": {
+      "default_distance": 10.0,
+      "default_angle": 360.0
+    },
+    "surface_modification": {
+      "default_fillet_radius": 1.0,
+      "default_chamfer_distance": 1.0,
+      "default_draft_angle": 5.0
+    }
+  },
+  "connection": {
+    "default_method": "auto",
+    "retry_attempts": 3,
+    "retry_delay": 1.0
+  }
+}

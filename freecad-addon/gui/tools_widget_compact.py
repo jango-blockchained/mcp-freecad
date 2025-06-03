@@ -21,21 +21,22 @@ class CompactToolButton(QtWidgets.QPushButton):
         super().__init__(parent)
         self.setText(icon_text or text[:3].upper())
         self.setToolTip(f"<b>{text}</b><br>{tooltip}")
-        self.setFixedSize(60, 40)
+        self.setFixedSize(50, 35)  # Smaller size
         self.setStyleSheet("""
             QPushButton {
-                font-size: 11px;
+                font-size: 10px;
                 font-weight: bold;
                 border: 1px solid #ccc;
-                border-radius: 4px;
-                background-color: #f5f5f5;
+                border-radius: 3px;
+                background-color: #f8f8f8;
+                margin: 1px;
             }
             QPushButton:hover {
-                background-color: #e0e0e0;
+                background-color: #e8e8e8;
                 border: 1px solid #999;
             }
             QPushButton:pressed {
-                background-color: #d0d0d0;
+                background-color: #d8d8d8;
             }
         """)
 
@@ -50,17 +51,29 @@ class ToolCategoryWidget(QtWidgets.QGroupBox):
         self.setStyleSheet("""
             QGroupBox {
                 font-weight: bold;
-                border: 2px solid #cccccc;
-                border-radius: 5px;
-                margin-top: 10px;
-                padding-top: 10px;
+                font-size: 11px;
+                border: 1px solid #cccccc;
+                border-radius: 4px;
+                margin-top: 8px;
+                padding-top: 8px;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px 0 5px;
+                left: 8px;
+                padding: 0 4px 0 4px;
             }
         """)
+
+    def setContentVisible(self, visible):
+        """Show/hide content based on checked state."""
+        for child in self.findChildren(QtWidgets.QWidget):
+            if child != self:
+                child.setVisible(visible)
+
+    def mousePressEvent(self, event):
+        """Handle mouse press to toggle visibility."""
+        super().mousePressEvent(event)
+        self.setContentVisible(self.isChecked())
 
 
 class ToolsWidget(QtWidgets.QWidget):
@@ -137,22 +150,24 @@ class ToolsWidget(QtWidgets.QWidget):
     def _setup_ui(self):
         """Setup the user interface."""
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setSpacing(5)
-        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setSpacing(3)  # Reduced spacing
+        layout.setContentsMargins(3, 3, 3, 3)  # Reduced margins
 
         # Header
         header = QtWidgets.QLabel("🛠️ FreeCAD Tools")
-        header.setStyleSheet("font-size: 16px; font-weight: bold; margin: 5px;")
+        header.setStyleSheet("font-size: 14px; font-weight: bold; margin: 3px;")
         layout.addWidget(header)
 
         # Create scroll area
         scroll = QtWidgets.QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
 
         scroll_widget = QtWidgets.QWidget()
         scroll_layout = QtWidgets.QVBoxLayout(scroll_widget)
-        scroll_layout.setSpacing(10)
+        scroll_layout.setSpacing(5)  # Reduced spacing
+        scroll_layout.setContentsMargins(2, 2, 2, 2)  # Reduced margins
 
         # Tool categories with all tools
         self._create_basic_primitives(scroll_layout)
@@ -171,16 +186,17 @@ class ToolsWidget(QtWidgets.QWidget):
         scroll.setWidget(scroll_widget)
         layout.addWidget(scroll)
 
-        # Status bar
+        # Compact status bar
         self.status_label = QtWidgets.QLabel("Ready")
-        self.status_label.setStyleSheet("padding: 5px; background-color: #f0f0f0; border-radius: 3px;")
+        self.status_label.setStyleSheet("padding: 3px; background-color: #f0f0f0; border-radius: 2px; font-size: 10px;")
         layout.addWidget(self.status_label)
 
     def _create_basic_primitives(self, layout):
         """Create basic primitives section."""
         category = ToolCategoryWidget("Basic Primitives")
         grid = QtWidgets.QGridLayout()
-        grid.setSpacing(5)
+        grid.setSpacing(3)  # Reduced spacing
+        grid.setContentsMargins(5, 5, 5, 5)
 
         tools = [
             ("Box", "Create a box/cube", "BOX", "create_box"),
@@ -195,6 +211,7 @@ class ToolsWidget(QtWidgets.QWidget):
             """Create a proper closure for the button handler."""
             return lambda checked: self._execute_tool("primitives", method_name)
 
+        # Use 4 columns for more compact layout
         for i, (name, tooltip, icon, method) in enumerate(tools):
             btn = CompactToolButton(name, tooltip, icon)
             btn.clicked.connect(create_handler(method))

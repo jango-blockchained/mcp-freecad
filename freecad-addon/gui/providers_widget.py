@@ -45,108 +45,10 @@ class ProvidersWidget(QtWidgets.QWidget):
         layout.setSpacing(10)
         layout.setContentsMargins(10, 10, 10, 10)
 
-        # Create sections
-        self._create_api_keys_section(layout)
+        # Create sections with flexible layout
         self._create_providers_section(layout)
         self._create_provider_config_section(layout)
         self._create_control_buttons(layout)
-
-    def _create_api_keys_section(self, layout):
-        """Create API keys management section."""
-        api_group = QtWidgets.QGroupBox("API Keys")
-        api_layout = QtWidgets.QFormLayout(api_group)
-
-        # OpenAI API Key
-        openai_layout = QtWidgets.QHBoxLayout()
-        self.openai_key_input = QtWidgets.QLineEdit()
-        self.openai_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
-        self.openai_key_input.setPlaceholderText("sk-...")
-        openai_layout.addWidget(self.openai_key_input)
-
-        self.openai_show_btn = QtWidgets.QPushButton("👁")
-        self.openai_show_btn.setMaximumWidth(30)
-        self.openai_show_btn.setCheckable(True)
-        self.openai_show_btn.clicked.connect(lambda: self._toggle_password_visibility(self.openai_key_input, self.openai_show_btn))
-        openai_layout.addWidget(self.openai_show_btn)
-
-        self.openai_test_btn = QtWidgets.QPushButton("Test")
-        self.openai_test_btn.setMaximumWidth(60)
-        self.openai_test_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; padding: 4px; }")
-        self.openai_test_btn.clicked.connect(lambda: self._test_api_key("openai"))
-        openai_layout.addWidget(self.openai_test_btn)
-
-        api_layout.addRow("OpenAI:", openai_layout)
-
-        # Anthropic API Key
-        anthropic_layout = QtWidgets.QHBoxLayout()
-        self.anthropic_key_input = QtWidgets.QLineEdit()
-        self.anthropic_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
-        self.anthropic_key_input.setPlaceholderText("sk-ant-...")
-        anthropic_layout.addWidget(self.anthropic_key_input)
-
-        self.anthropic_show_btn = QtWidgets.QPushButton("👁")
-        self.anthropic_show_btn.setMaximumWidth(30)
-        self.anthropic_show_btn.setCheckable(True)
-        self.anthropic_show_btn.clicked.connect(lambda: self._toggle_password_visibility(self.anthropic_key_input, self.anthropic_show_btn))
-        anthropic_layout.addWidget(self.anthropic_show_btn)
-
-        self.anthropic_test_btn = QtWidgets.QPushButton("Test")
-        self.anthropic_test_btn.setMaximumWidth(60)
-        self.anthropic_test_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; padding: 4px; }")
-        self.anthropic_test_btn.clicked.connect(lambda: self._test_api_key("anthropic"))
-        anthropic_layout.addWidget(self.anthropic_test_btn)
-
-        api_layout.addRow("Anthropic:", anthropic_layout)
-
-        # Google API Key
-        google_layout = QtWidgets.QHBoxLayout()
-        self.google_key_input = QtWidgets.QLineEdit()
-        self.google_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
-        self.google_key_input.setPlaceholderText("Google API Key...")
-        google_layout.addWidget(self.google_key_input)
-
-        self.google_show_btn = QtWidgets.QPushButton("👁")
-        self.google_show_btn.setMaximumWidth(30)
-        self.google_show_btn.setCheckable(True)
-        self.google_show_btn.clicked.connect(lambda: self._toggle_password_visibility(self.google_key_input, self.google_show_btn))
-        google_layout.addWidget(self.google_show_btn)
-
-        self.google_test_btn = QtWidgets.QPushButton("Test")
-        self.google_test_btn.setMaximumWidth(60)
-        self.google_test_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; padding: 4px; }")
-        self.google_test_btn.clicked.connect(lambda: self._test_api_key("google"))
-        google_layout.addWidget(self.google_test_btn)
-
-        api_layout.addRow("Google:", google_layout)
-
-        # OpenRouter API Key
-        openrouter_layout = QtWidgets.QHBoxLayout()
-        self.openrouter_key_input = QtWidgets.QLineEdit()
-        self.openrouter_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
-        self.openrouter_key_input.setPlaceholderText("OpenRouter API Key...")
-        openrouter_layout.addWidget(self.openrouter_key_input)
-
-        self.openrouter_show_btn = QtWidgets.QPushButton("👁")
-        self.openrouter_show_btn.setMaximumWidth(30)
-        self.openrouter_show_btn.setCheckable(True)
-        self.openrouter_show_btn.clicked.connect(lambda: self._toggle_password_visibility(self.openrouter_key_input, self.openrouter_show_btn))
-        openrouter_layout.addWidget(self.openrouter_show_btn)
-
-        self.openrouter_test_btn = QtWidgets.QPushButton("Test")
-        self.openrouter_test_btn.setMaximumWidth(60)
-        self.openrouter_test_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; padding: 4px; }")
-        self.openrouter_test_btn.clicked.connect(lambda: self._test_api_key("openrouter"))
-        openrouter_layout.addWidget(self.openrouter_test_btn)
-
-        api_layout.addRow("OpenRouter:", openrouter_layout)
-
-        layout.addWidget(api_group)
-
-        # Connect auto-save signals
-        self.openai_key_input.textChanged.connect(lambda: self._save_api_key("openai", self.openai_key_input.text()))
-        self.anthropic_key_input.textChanged.connect(lambda: self._save_api_key("anthropic", self.anthropic_key_input.text()))
-        self.google_key_input.textChanged.connect(lambda: self._save_api_key("google", self.google_key_input.text()))
-        self.openrouter_key_input.textChanged.connect(lambda: self._save_api_key("openrouter", self.openrouter_key_input.text()))
 
     def _create_providers_section(self, layout):
         """Create providers list and management section."""
@@ -171,10 +73,18 @@ class ProvidersWidget(QtWidgets.QWidget):
         controls_layout.addStretch()
         providers_layout.addLayout(controls_layout)
 
-        # Provider table
+        # Provider table with flexible sizing
         self.providers_table = QtWidgets.QTableWidget(0, 5)
         self.providers_table.setHorizontalHeaderLabels(["Name", "Type", "Model", "Status", "Default"])
-        self.providers_table.horizontalHeader().setStretchLastSection(True)
+
+        # Make table flexible
+        header = self.providers_table.horizontalHeader()
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)  # Name column stretches
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)  # Type column fits content
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)  # Model column stretches
+        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)  # Status column fits content
+        header.setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeToContents)  # Default column fits content
+
         self.providers_table.setMaximumHeight(150)
         self.providers_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.providers_table.cellClicked.connect(self._on_provider_selected)
@@ -183,23 +93,36 @@ class ProvidersWidget(QtWidgets.QWidget):
         layout.addWidget(providers_group)
 
     def _create_provider_config_section(self, layout):
-        """Create provider configuration section."""
+        """Create integrated provider configuration and API key section."""
         config_group = QtWidgets.QGroupBox("Provider Configuration")
-        config_layout = QtWidgets.QFormLayout(config_group)
+        config_layout = QtWidgets.QVBoxLayout(config_group)
 
         # Provider selection
+        selection_layout = QtWidgets.QHBoxLayout()
+        selection_layout.addWidget(QtWidgets.QLabel("Selected Provider:"))
         self.selected_provider_label = QtWidgets.QLabel("None selected")
         self.selected_provider_label.setStyleSheet("font-weight: bold; color: #2196F3;")
-        config_layout.addRow("Selected Provider:", self.selected_provider_label)
+        selection_layout.addWidget(self.selected_provider_label)
+        selection_layout.addStretch()
+        config_layout.addLayout(selection_layout)
+
+        # Create tabbed interface for better organization
+        self.config_tabs = QtWidgets.QTabWidget()
+
+        # Basic Configuration Tab
+        basic_tab = QtWidgets.QWidget()
+        basic_layout = QtWidgets.QFormLayout(basic_tab)
 
         # Model selection
         self.model_combo = QtWidgets.QComboBox()
         self.model_combo.setMinimumWidth(200)
         self.model_combo.currentTextChanged.connect(self._on_model_changed)
-        config_layout.addRow("Model:", self.model_combo)
+        basic_layout.addRow("Model:", self.model_combo)
 
-        # Configuration parameters
-        params_layout = QtWidgets.QGridLayout()
+        # Configuration parameters in a grid for better space usage
+        params_widget = QtWidgets.QWidget()
+        params_layout = QtWidgets.QGridLayout(params_widget)
+        params_layout.setSpacing(10)
 
         # Temperature
         params_layout.addWidget(QtWidgets.QLabel("Temperature:"), 0, 0)
@@ -239,13 +162,62 @@ class ProvidersWidget(QtWidgets.QWidget):
         self.default_provider_check.toggled.connect(self._on_default_changed)
         params_layout.addWidget(self.default_provider_check, 1, 3)
 
-        config_layout.addRow(params_layout)
+        basic_layout.addRow("Parameters:", params_widget)
+        self.config_tabs.addTab(basic_tab, "Configuration")
 
-        # Test connection
+        # API Key Tab
+        api_tab = QtWidgets.QWidget()
+        api_layout = QtWidgets.QFormLayout(api_tab)
+
+        # API Key input with show/hide and test functionality
+        api_key_widget = QtWidgets.QWidget()
+        api_key_layout = QtWidgets.QHBoxLayout(api_key_widget)
+        api_key_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.api_key_input = QtWidgets.QLineEdit()
+        self.api_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
+        self.api_key_input.setPlaceholderText("Enter API key for selected provider...")
+        self.api_key_input.textChanged.connect(self._on_api_key_changed)
+        api_key_layout.addWidget(self.api_key_input)
+
+        self.api_key_show_btn = QtWidgets.QPushButton("👁")
+        self.api_key_show_btn.setMaximumWidth(30)
+        self.api_key_show_btn.setCheckable(True)
+        self.api_key_show_btn.clicked.connect(lambda: self._toggle_password_visibility(self.api_key_input, self.api_key_show_btn))
+        api_key_layout.addWidget(self.api_key_show_btn)
+
+        self.api_key_test_btn = QtWidgets.QPushButton("Test")
+        self.api_key_test_btn.setMaximumWidth(60)
+        self.api_key_test_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; padding: 4px; }")
+        self.api_key_test_btn.clicked.connect(self._test_current_api_key)
+        api_key_layout.addWidget(self.api_key_test_btn)
+
+        api_layout.addRow("API Key:", api_key_widget)
+
+        # API Key status
+        self.api_key_status_label = QtWidgets.QLabel("")
+        self.api_key_status_label.setStyleSheet("color: #666; font-size: 10px; padding: 2px;")
+        api_layout.addRow("Status:", self.api_key_status_label)
+
+        self.config_tabs.addTab(api_tab, "API Key")
+
+        config_layout.addWidget(self.config_tabs)
+
+        # Test connection and status
+        actions_layout = QtWidgets.QHBoxLayout()
+
         self.test_connection_btn = QtWidgets.QPushButton("Test Connection")
         self.test_connection_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; padding: 8px; }")
         self.test_connection_btn.clicked.connect(self._test_connection)
-        config_layout.addRow(self.test_connection_btn)
+        actions_layout.addWidget(self.test_connection_btn)
+
+        actions_layout.addStretch()
+        config_layout.addLayout(actions_layout)
+
+        # Status label for configuration changes
+        self.config_status_label = QtWidgets.QLabel("")
+        self.config_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+        config_layout.addWidget(self.config_status_label)
 
         layout.addWidget(config_group)
 
@@ -307,6 +279,80 @@ class ProvidersWidget(QtWidgets.QWidget):
             else:
                 QtWidgets.QMessageBox.warning(self, "Error", f"{provider} API key format is invalid")
 
+    def _test_current_api_key(self):
+        """Test API key for currently selected provider."""
+        provider_name = self.selected_provider_label.text()
+        if provider_name == "None selected":
+            QtWidgets.QMessageBox.warning(self, "Error", "Please select a provider first")
+            return
+
+        key = self.api_key_input.text()
+        if not key:
+            QtWidgets.QMessageBox.warning(self, "Error", "Please enter an API key first")
+            return
+
+        # Get provider type
+        provider_info = self._get_default_provider_by_name(provider_name)
+        if provider_info:
+            provider_type = provider_info['type']
+        else:
+            # Try to determine from provider name
+            provider_type = provider_name.lower()
+
+        # Validate with config manager if available
+        if self.config_manager:
+            is_valid = self.config_manager.validate_api_key(provider_type, key)
+            if is_valid:
+                QtWidgets.QMessageBox.information(self, "Success", f"API key format is valid")
+                self.api_key_status_label.setText("✅ Valid format")
+                self.api_key_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+            else:
+                QtWidgets.QMessageBox.warning(self, "Error", f"API key format is invalid")
+                self.api_key_status_label.setText("❌ Invalid format")
+                self.api_key_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+        else:
+            # Basic format validation
+            if self._basic_key_validation(provider_type, key):
+                QtWidgets.QMessageBox.information(self, "Success", f"API key format appears valid")
+                self.api_key_status_label.setText("✅ Valid format")
+                self.api_key_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+            else:
+                QtWidgets.QMessageBox.warning(self, "Error", f"API key format is invalid")
+                self.api_key_status_label.setText("❌ Invalid format")
+                self.api_key_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+
+    def _on_api_key_changed(self):
+        """Handle API key changes for the selected provider."""
+        provider_name = self.selected_provider_label.text()
+        if provider_name == "None selected":
+            return
+
+        key = self.api_key_input.text()
+
+        # Get provider type
+        provider_info = self._get_default_provider_by_name(provider_name)
+        if provider_info:
+            provider_type = provider_info['type']
+        else:
+            provider_type = provider_name.lower()
+
+        # Save API key
+        if key and self.config_manager:
+            success = self.config_manager.set_api_key(provider_type, key)
+            if success:
+                self.api_key_changed.emit(provider_type)
+                self.api_key_status_label.setText("✅ Saved")
+                self.api_key_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+                # Refresh providers to update status
+                self._refresh_providers()
+                # Clear status after 2 seconds
+                QtCore.QTimer.singleShot(2000, lambda: self.api_key_status_label.setText(""))
+            else:
+                self.api_key_status_label.setText("❌ Save failed")
+                self.api_key_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+        elif not key:
+            self.api_key_status_label.setText("")
+
     def _basic_key_validation(self, provider, key):
         """Basic API key format validation."""
         if provider == "openai":
@@ -350,17 +396,17 @@ class ProvidersWidget(QtWidgets.QWidget):
         """Create default providers for common AI services."""
         default_providers = [
             {
+                'name': 'Anthropic',
+                'type': 'anthropic',
+                'models': ['claude-4-20241120', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
+                'default_model': 'claude-4-20241120',
+                'status': 'Not configured'
+            },
+            {
                 'name': 'OpenAI',
                 'type': 'openai',
                 'models': ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
                 'default_model': 'gpt-4o-mini',
-                'status': 'Not configured'
-            },
-            {
-                'name': 'Anthropic',
-                'type': 'anthropic',
-                'models': ['claude-4-20241120', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
-                'default_model': 'claude-3-5-sonnet-20241022',
                 'status': 'Not configured'
             },
             {
@@ -381,6 +427,12 @@ class ProvidersWidget(QtWidgets.QWidget):
 
         # Store default providers in a class attribute
         self.default_providers = default_providers
+
+        # Set Anthropic as the default provider if no default is set
+        if self.config_manager:
+            current_default = self.config_manager.get_default_provider()
+            if not current_default:
+                self.config_manager.set_default_provider('Anthropic')
 
         # Initial refresh to show default providers
         self._refresh_providers()
@@ -422,6 +474,24 @@ class ProvidersWidget(QtWidgets.QWidget):
             # Save API key if provided
             if provider_data.get('api_key') and self.config_manager:
                 self.config_manager.set_api_key(provider_data['type'], provider_data['api_key'])
+
+            # Save provider configuration to config manager
+            if self.config_manager:
+                provider_config = {
+                    'enabled': True,
+                    'model': new_provider['default_model'],
+                    'temperature': 0.7,
+                    'timeout': 30,
+                    'max_tokens': 4000
+                }
+                # Add thinking mode for Anthropic providers
+                if provider_data['type'] == 'anthropic':
+                    provider_config['thinking_mode'] = False
+
+                success = self.config_manager.set_provider_config(provider_data['name'], provider_config)
+                if not success:
+                    QtWidgets.QMessageBox.warning(self, "Warning",
+                                                f"Provider added but failed to save configuration for {provider_data['name']}")
 
             # Refresh display
             self._refresh_providers()
@@ -469,16 +539,30 @@ class ProvidersWidget(QtWidgets.QWidget):
 
     def _load_provider_config(self, provider_name):
         """Load configuration for selected provider."""
-        # First check if it's a default provider
-        default_provider = self._get_default_provider_by_name(provider_name)
-        if default_provider:
+        # Load API key for the selected provider
+        provider_info = self._get_default_provider_by_name(provider_name)
+        if provider_info:
+            provider_type = provider_info['type']
+
+            # Load API key
+            if self.config_manager:
+                api_key = self.config_manager.get_api_key(provider_type)
+                if api_key:
+                    self.api_key_input.setText(api_key)
+                    self.api_key_status_label.setText("✅ Configured")
+                    self.api_key_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+                else:
+                    self.api_key_input.setText("")
+                    self.api_key_status_label.setText("⚠️ Not configured")
+                    self.api_key_status_label.setStyleSheet("color: #FF9800; font-size: 10px; padding: 2px;")
+
             # Update model list with default provider models
-            models = default_provider['models']
+            models = provider_info['models']
             self.model_combo.clear()
             self.model_combo.addItems(models)
 
             # Set default model
-            default_model = default_provider['default_model']
+            default_model = provider_info['default_model']
             index = self.model_combo.findText(default_model)
             if index >= 0:
                 self.model_combo.setCurrentIndex(index)
@@ -489,11 +573,32 @@ class ProvidersWidget(QtWidgets.QWidget):
             self.timeout_spin.setValue(30)
             self.thinking_mode_check.setChecked(False)
 
+            # Load saved configuration from config manager if available
+            if self.config_manager:
+                saved_config = self.config_manager.get_provider_config(provider_name)
+                if saved_config:
+                    self.temperature_spin.setValue(saved_config.get('temperature', 0.7))
+                    self.max_tokens_spin.setValue(saved_config.get('max_tokens', 4096))
+                    self.timeout_spin.setValue(saved_config.get('timeout', 30))
+                    self.thinking_mode_check.setChecked(saved_config.get('thinking_mode', False))
+
+                    # Update model if saved
+                    saved_model = saved_config.get('model')
+                    if saved_model:
+                        index = self.model_combo.findText(saved_model)
+                        if index >= 0:
+                            self.model_combo.setCurrentIndex(index)
+
             # Enable thinking mode for Claude providers
-            if default_provider['type'] == 'anthropic':
+            if provider_info['type'] == 'anthropic':
                 self.thinking_mode_check.setEnabled(True)
             else:
                 self.thinking_mode_check.setEnabled(False)
+
+            # Check if this is the default provider
+            if self.config_manager:
+                default_provider = self.config_manager.get_default_provider()
+                self.default_provider_check.setChecked(provider_name == default_provider)
 
             return
 
@@ -501,6 +606,11 @@ class ProvidersWidget(QtWidgets.QWidget):
         if self.ai_manager:
             provider = self.ai_manager.providers.get(provider_name)
             if provider:
+                # Clear API key input for AI manager providers
+                self.api_key_input.setText("")
+                self.api_key_status_label.setText("Managed by AI Manager")
+                self.api_key_status_label.setStyleSheet("color: #666; font-size: 10px; padding: 2px;")
+
                 # Update model list
                 models = provider.get_available_models()
                 self.model_combo.clear()
@@ -528,6 +638,24 @@ class ProvidersWidget(QtWidgets.QWidget):
             provider = self.ai_manager.providers.get(provider_name)
             if provider:
                 provider.set_model(model_name)
+
+                # Save model change to config manager for persistence
+                if self.config_manager:
+                    existing_config = self.config_manager.get_provider_config(provider_name)
+                    existing_config['model'] = model_name
+
+                    success = self.config_manager.set_provider_config(provider_name, existing_config)
+                    if not success:
+                        QtWidgets.QMessageBox.warning(self, "Warning",
+                                                    f"Failed to save model configuration for {provider_name}")
+                        self.config_status_label.setText("❌ Failed to save model configuration")
+                        self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+                    else:
+                        self.config_status_label.setText("✅ Model configuration saved automatically")
+                        self.config_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+                        # Clear status after 3 seconds
+                        QtCore.QTimer.singleShot(3000, lambda: self.config_status_label.setText(""))
+
                 self._refresh_providers()
 
     def _on_config_changed(self):
@@ -536,12 +664,34 @@ class ProvidersWidget(QtWidgets.QWidget):
         if provider_name != "None selected" and self.ai_manager:
             provider = self.ai_manager.providers.get(provider_name)
             if provider and hasattr(provider, 'config'):
-                provider.config.update({
+                # Update provider object config
+                new_config = {
                     'temperature': self.temperature_spin.value(),
                     'max_tokens': self.max_tokens_spin.value(),
                     'timeout': self.timeout_spin.value(),
                     'thinking_mode': self.thinking_mode_check.isChecked()
-                })
+                }
+                provider.config.update(new_config)
+
+                # Save to config manager for persistence
+                if self.config_manager:
+                    # Get existing provider config and update it
+                    existing_config = self.config_manager.get_provider_config(provider_name)
+                    existing_config.update(new_config)
+
+                    # Save the updated configuration
+                    success = self.config_manager.set_provider_config(provider_name, existing_config)
+                    if not success:
+                        QtWidgets.QMessageBox.warning(self, "Warning",
+                                                    f"Failed to save configuration for {provider_name}")
+                        self.config_status_label.setText("❌ Failed to save configuration")
+                        self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+                    else:
+                        self.config_status_label.setText("✅ Configuration saved automatically")
+                        self.config_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+                        # Clear status after 3 seconds
+                        QtCore.QTimer.singleShot(3000, lambda: self.config_status_label.setText(""))
+
                 self.provider_configured.emit(provider_name)
 
     def _on_default_changed(self, checked):
@@ -693,20 +843,7 @@ class ProvidersWidget(QtWidgets.QWidget):
         if not self.config_manager:
             return
 
-        # Load API keys
-        for provider in ["openai", "anthropic", "google", "openrouter"]:
-            key = self.config_manager.get_api_key(provider)
-            if key:
-                if provider == "openai":
-                    self.openai_key_input.setText(key)
-                elif provider == "anthropic":
-                    self.anthropic_key_input.setText(key)
-                elif provider == "google":
-                    self.google_key_input.setText(key)
-                elif provider == "openrouter":
-                    self.openrouter_key_input.setText(key)
-
-        # Refresh providers
+        # Refresh providers to show current state
         self._refresh_providers()
 
     def set_provider_service(self, provider_service):

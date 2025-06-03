@@ -21,7 +21,10 @@ class MCPMainWidget(QtWidgets.QDockWidget):
 
         self._setup_ui()
         self._setup_provider_service()
-        self.resize(400, 600)
+
+        # Set flexible sizing
+        self.setMinimumWidth(350)
+        self.resize(450, 700)
 
     def _setup_ui(self):
         """Setup the user interface."""
@@ -34,11 +37,15 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         layout.addWidget(header_label)
 
         self.tab_widget = QtWidgets.QTabWidget()
+        # Make tabs flexible
+        self.tab_widget.setUsesScrollButtons(True)
+        self.tab_widget.setElideMode(QtCore.Qt.ElideRight)
         layout.addWidget(self.tab_widget)
         self._create_tabs()
 
         self.status_label = QtWidgets.QLabel("Ready")
         self.status_label.setStyleSheet("padding: 5px; background-color: #f0f0f0;")
+        self.status_label.setWordWrap(True)  # Allow text wrapping for narrow widths
         layout.addWidget(self.status_label)
 
     def _setup_provider_service(self):
@@ -93,7 +100,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             from .server_widget import ServerWidget
             from .providers_widget import ProvidersWidget
             from .conversation_widget import ConversationWidget
-            from .tools_widget import ToolsWidget
+            from .tools_widget_compact import ToolsWidget  # Use compact version
             from .settings_widget import SettingsWidget
             from .logs_widget import LogsWidget
 
@@ -102,24 +109,26 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             self.providers_widget = ProvidersWidget()
             self.conversation_widget = ConversationWidget()
             self.settings_widget = SettingsWidget()
-            self.tools_widget = ToolsWidget()
+            self.tools_widget = ToolsWidget()  # Use compact tools widget
 
             # Connect widgets to provider service if available
             if self.provider_service:
                 self._connect_widgets_to_service()
 
+            # Add tabs in logical order
             self.tab_widget.addTab(self.providers_widget, "Providers")
-            self.tab_widget.addTab(self.conversation_widget, "Conversation")
+            self.tab_widget.addTab(self.conversation_widget, "Chat")
+            self.tab_widget.addTab(self.tools_widget, "Tools")
             self.tab_widget.addTab(self.connection_widget, "Connections")
             self.tab_widget.addTab(ServerWidget(), "Servers")
-            self.tab_widget.addTab(self.tools_widget, "Tools")
             self.tab_widget.addTab(self.settings_widget, "Settings")
             self.tab_widget.addTab(LogsWidget(), "Logs")
 
         except ImportError:
-            for name in ["Providers", "Conversation", "Connections", "Servers", "Tools", "Settings", "Logs"]:
+            for name in ["Providers", "Chat", "Tools", "Connections", "Servers", "Settings", "Logs"]:
                 tab = QtWidgets.QWidget()
-                QtWidgets.QVBoxLayout(tab).addWidget(QtWidgets.QLabel(f"{name} - Loading..."))
+                tab_layout = QtWidgets.QVBoxLayout(tab)
+                tab_layout.addWidget(QtWidgets.QLabel(f"{name} - Loading..."))
                 self.tab_widget.addTab(tab, name)
 
     def _connect_widgets_to_service(self):
