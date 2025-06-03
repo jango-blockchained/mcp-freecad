@@ -46,7 +46,7 @@ except Exception as e:
     FreeCAD.Console.PrintError(f"MCP Integration Addon: Traceback: {traceback.format_exc()}\n")
 
 # Addon metadata for FreeCAD
-__version__ = "1.0.0"
+__version__ = "0.7.11"
 __title__ = "MCP Integration"
 __author__ = "jango-blockchained"
 __url__ = "https://github.com/jango-blockchained/mcp-freecad"

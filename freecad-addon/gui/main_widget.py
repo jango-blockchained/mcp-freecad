@@ -46,7 +46,8 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             from .settings_widget import SettingsWidget
             from .logs_widget import LogsWidget
             
-            self.tab_widget.addTab(ConnectionWidget(), "Connections")            self.tab_widget.addTab(ServerWidget(), "Servers")
+            self.tab_widget.addTab(ConnectionWidget(), "Connections")
+            self.tab_widget.addTab(ServerWidget(), "Servers")
             self.tab_widget.addTab(AIWidget(), "AI Models")
             self.tab_widget.addTab(ToolsWidget(), "Tools")
             self.tab_widget.addTab(SettingsWidget(), "Settings")
