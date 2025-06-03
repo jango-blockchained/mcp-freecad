@@ -22,6 +22,7 @@ class AIWidget(QtWidgets.QWidget):
         self.ai_manager = None
         self.current_provider = None
         self.conversation_history = []
+        self.provider_service = None
 
         # Setup AI manager
         self._setup_ai_manager()
@@ -509,8 +510,86 @@ class AIWidget(QtWidgets.QWidget):
 
     def _load_saved_providers(self):
         """Load saved providers from configuration."""
-        # TODO: Implement loading from persistent storage
-        pass
+        # This will be handled by the provider service integration
+        if self.provider_service:
+            self._update_from_provider_service()
+
+    def set_provider_service(self, provider_service):
+        """Set the provider integration service."""
+        self.provider_service = provider_service
+
+        # Connect to provider service signals
+        if provider_service:
+            provider_service.provider_added.connect(self._on_service_provider_added)
+            provider_service.provider_removed.connect(self._on_service_provider_removed)
+            provider_service.provider_status_changed.connect(self._on_service_provider_status_changed)
+            provider_service.providers_updated.connect(self._update_from_provider_service)
+
+            # Initial update
+            self._update_from_provider_service()
+
+    def _on_service_provider_added(self, provider_name: str, provider_type: str):
+        """Handle provider added from service."""
+        self._add_conversation_message("System", f"Added {provider_type} provider: {provider_name}")
+        self._update_from_provider_service()
+
+    def _on_service_provider_removed(self, provider_name: str):
+        """Handle provider removed from service."""
+        self._add_conversation_message("System", f"Removed provider: {provider_name}")
+        self._update_from_provider_service()
+
+    def _on_service_provider_status_changed(self, provider_name: str, status: str, message: str):
+        """Handle provider status change from service."""
+        # Update status in conversation if significant
+        if status in ["connected", "error"]:
+            self._add_conversation_message("System", f"Provider {provider_name}: {message}")
+
+        # Update provider table if provider is currently displayed
+        self._update_provider_table_status(provider_name, status)
+
+    def _update_from_provider_service(self):
+        """Update widget from provider service state."""
+        if not self.provider_service:
+            return
+
+        # Clear current providers
+        self.provider_combo.clear()
+        self.provider_table.setRowCount(0)
+
+        # Add providers from service
+        providers = self.provider_service.get_all_providers()
+        for provider_name, provider_info in providers.items():
+            self.provider_combo.addItem(provider_name)
+
+            # Add to table
+            row = self.provider_table.rowCount()
+            self.provider_table.insertRow(row)
+            self.provider_table.setItem(row, 0, QtWidgets.QTableWidgetItem(provider_name))
+            self.provider_table.setItem(row, 1, QtWidgets.QTableWidgetItem(provider_info.get("type", "Unknown")))
+            self.provider_table.setItem(row, 2, QtWidgets.QTableWidgetItem(provider_info.get("config", {}).get("model", "Default")))
+            self.provider_table.setItem(row, 3, QtWidgets.QTableWidgetItem(provider_info.get("status", "Unknown")))
+
+        # Set first provider as active if none selected
+        if not self.current_provider and providers:
+            first_provider = list(providers.keys())[0]
+            self.provider_combo.setCurrentText(first_provider)
+
+    def _update_provider_table_status(self, provider_name: str, status: str):
+        """Update provider status in the table."""
+        for row in range(self.provider_table.rowCount()):
+            item = self.provider_table.item(row, 0)
+            if item and item.text() == provider_name:
+                status_item = self.provider_table.item(row, 3)
+                if status_item:
+                    status_item.setText(status)
+                    # Color code the status
+                    if status == "connected":
+                        status_item.setForeground(QtGui.QColor("#4CAF50"))
+                    elif status == "error":
+                        status_item.setForeground(QtGui.QColor("#f44336"))
+                    else:
+                        status_item.setForeground(QtGui.QColor("#FF9800"))
+                break
 
 
 class ProviderDialog(QtWidgets.QDialog):

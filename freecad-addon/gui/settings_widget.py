@@ -10,6 +10,7 @@ class SettingsWidget(QtWidgets.QWidget):
 
     settings_changed = QtCore.Signal()
     api_key_validated = QtCore.Signal(str, bool, str)
+    api_key_changed = QtCore.Signal(str)  # provider_name
 
     def __init__(self, parent=None):
         super(SettingsWidget, self).__init__(parent)
@@ -384,6 +385,8 @@ class SettingsWidget(QtWidgets.QWidget):
         success = self.config_manager.set_api_key(provider, key)
         if success:
             self._update_api_status()
+            # Emit signal for provider integration service
+            self.api_key_changed.emit(provider)
 
     def _update_api_status(self):
         """Update API key status display."""
