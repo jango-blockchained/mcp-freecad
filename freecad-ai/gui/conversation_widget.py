@@ -528,41 +528,32 @@ class ConversationWidget(QtWidgets.QWidget):
             if self.provider_service:
                 try:
                     # Use provider service to send message
-                    QtCore.QTimer.singleShot(
-                        100, lambda: self._send_via_provider_service(message)
-                    )
+                    provider = self.provider_service.get_provider(self.current_provider)
+                    if provider:
+                        # Send to provider
+                        self.provider_service.send_message_async(provider, message, self._on_provider_response)
                 except Exception as e:
+                    # Handle error
+                    self._remove_thinking_indicator()
                     self._add_system_message(f"Error using provider service: {e}")
                     QtCore.QTimer.singleShot(
-                    1500, lambda: self._simulate_ai_response(message)
-                )
-        else:
-            # Fallback to simulation
-            QtCore.QTimer.singleShot(1500, lambda: self._simulate_ai_response(message))
+                        1500, lambda: self._simulate_ai_response(message)
+                    )
+            else:
+                # Fallback to simulation
+                QtCore.QTimer.singleShot(1500, lambda: self._simulate_ai_response(message))
 
         # Update usage statistics
         current_count = len(self.conversation_history)
         self.usage_label.setText(f"Messages: {current_count}")
 
-    def _send_via_provider_service(self, message):
-        """Send message via provider service."""
-        try:
-            response = self.provider_service.send_message_to_provider(
-                self.current_provider, message
-            )
+    def _on_provider_response(self, response):
+        """Handle response from provider service."""
+        # Remove thinking indicator
+        self._remove_thinking_indicator()
 
-            # Remove thinking indicator
-            self._remove_thinking_indicator()
-
-            # Add AI response
-            self._add_conversation_message("AI", response)
-
-        except Exception as e:
-            # Remove thinking indicator
-            self._remove_thinking_indicator()
-
-            # Add error message
-            self._add_conversation_message("AI", f"Error: {str(e)}")
+        # Add AI response
+        self._add_conversation_message("AI", response)
 
     def _remove_thinking_indicator(self):
         """Remove the thinking indicator from conversation."""
@@ -1062,8 +1053,7 @@ I'm here to guide you step by step!"""
         for entry in self.conversation_history:
             self._add_conversation_message(entry["sender"], entry["message"])
 
-
-        def set_agent_mode(self, mode):
+    def set_agent_mode(self, mode):
         """Set the agent mode."""
         self.current_mode = mode
 
@@ -1275,7 +1265,7 @@ I'm here to guide you step by step!"""
 
         return context
 
-        def _on_execution_start(self, step_num, total_steps, step):
+    def _on_execution_start(self, step_num, total_steps, step):
         """Handle execution start callback."""
         self._add_system_message(f"▶️ Executing step {step_num}/{total_steps}: {step['description']}")
 

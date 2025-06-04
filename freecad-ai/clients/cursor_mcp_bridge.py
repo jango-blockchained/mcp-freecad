@@ -60,10 +60,14 @@ def start_mcp_server():
     """Start the MCP server in stdio mode, properly connecting stdin/stdout"""
     logger.info("Starting MCP server in stdio mode...")
 
+    # Ensure logs directory exists
+    logs_dir = os.path.join(SCRIPT_DIR, "logs")
+    os.makedirs(logs_dir, exist_ok=True)
+
     # CORRECTION: We must connect our stdin/stdout to the MCP server process
     # for proper communication, but send stderr to a log file
     with open(
-        os.path.join(SCRIPT_DIR, "logs", "mcp_server_stderr.log"), "w"
+        os.path.join(logs_dir, "mcp_server_stderr.log"), "w"
     ) as stderr_log:
         proc = subprocess.Popen(
             [sys.executable, MCP_SERVER_SCRIPT],

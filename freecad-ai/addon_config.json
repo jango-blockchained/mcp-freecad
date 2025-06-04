@@ -25,6 +25,10 @@
     "Anthropic": {
       "model": "claude-3-opus-20240229",
       "enabled": true
+    },
+    "Google": {
+      "model": "gemini-1.5-flash",
+      "enabled": true
     }
   },
   "ui_settings": {

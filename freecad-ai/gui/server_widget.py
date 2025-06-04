@@ -372,8 +372,10 @@ class ServerWidget(QtWidgets.QWidget):
         self._add_log("Starting MCP FreeCAD server...")
 
         try:
-            # Get the workspace root
-            workspace_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            # Get the workspace root - resolve symlinks to find the actual development directory
+            current_file = os.path.realpath(__file__)  # Resolve symlinks
+            # Go up from gui/server_widget.py -> gui -> freecad-ai -> mcp-freecad
+            workspace_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
             start_script = os.path.join(workspace_root, "start_mcp.py")
 
             if os.path.exists(start_script):
