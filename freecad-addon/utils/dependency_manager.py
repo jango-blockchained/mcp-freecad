@@ -1,5 +1,5 @@
 """
-Dependency Manager for FreeCAD MCP Integration
+Dependency Manager for FreeCAD FreeCAD AI
 
 Handles installation and management of Python dependencies within FreeCAD,
 supporting different FreeCAD versions and installation types.
@@ -16,7 +16,7 @@ import FreeCAD
 
 
 class DependencyManager:
-    """Manages Python dependencies for the MCP Integration addon."""
+    """Manages Python dependencies for the FreeCAD AI addon."""
 
     # Required dependencies for the addon
     REQUIRED_DEPENDENCIES = {
@@ -318,7 +318,7 @@ class DependencyManager:
         package_spec = f"{package_name}{package_info['version']}"
 
         script = f'''
-# Install {package_name} for FreeCAD MCP Integration
+# Install {package_name} for FreeCAD FreeCAD AI
 # {package_info['description']}
 
 def install_{package_name.replace('-', '_')}():

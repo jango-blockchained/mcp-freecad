@@ -21,6 +21,10 @@
       "temperature": 0.7,
       "timeout": 30,
       "max_tokens": 4000
+    },
+    "Anthropic": {
+      "model": "claude-4-20241120",
+      "enabled": true
     }
   },
   "ui_settings": {
@@ -53,6 +57,7 @@
   "connection": {
     "default_method": "auto",
     "retry_attempts": 3,
-    "retry_delay": 1.0
+    "retry_delay": 1.0,
+    "default_provider": "Anthropic"
   }
 }

@@ -65,6 +65,14 @@ squashfs-root/
 backups/
 tmp/
 config.json
+
+# API Keys and Secrets
+api_keys.json
+**/api_keys.json
+*.key
+*.secret
+secrets.json
+.env.local
 # Lock files
 uv.lock
 

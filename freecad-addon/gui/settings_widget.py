@@ -12,8 +12,8 @@ from PySide2 import QtCore, QtGui, QtWidgets
 import logging
 import json
 from typing import Dict, Any, Optional
-from freecad_addon.utils.cad_context_extractor import get_cad_context_extractor
-from freecad_addon.config.config_manager import ConfigManager
+from utils.cad_context_extractor import get_cad_context_extractor
+from config.config_manager import ConfigManager
 
 
 class SystemPromptsTableModel(QtCore.QAbstractTableModel):
@@ -231,10 +231,24 @@ class SettingsWidget(QtWidgets.QWidget):
     def _setup_config_manager(self):
         """Setup configuration manager."""
         try:
-            # Import ConfigManager using absolute path after sys.path setup
+            # Debug: Print sys.path and addon directory info
+            addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            self.logger.info(f"Addon directory: {addon_dir}")
+            self.logger.info(f"Current working directory: {os.getcwd()}")
+            self.logger.info(f"Addon dir in sys.path: {addon_dir in sys.path}")
+
+            # Import ConfigManager
             self.config_manager = ConfigManager()
+            self.logger.info("ConfigManager initialized successfully")
         except ImportError as e:
             self.logger.error(f"Failed to import ConfigManager: {e}")
+            self.logger.error(f"Import error type: {type(e)}")
+            self.logger.error(f"Import error args: {e.args}")
+            self.config_manager = None
+        except Exception as e:
+            self.logger.error(f"Failed to initialize ConfigManager: {e}")
+            self.logger.error(f"Error type: {type(e)}")
+            self.logger.error(f"Error args: {e.args}")
             self.config_manager = None
 
     def _setup_ui(self):
@@ -566,11 +580,27 @@ class SettingsWidget(QtWidgets.QWidget):
 
     def _load_settings(self):
         """Load settings from configuration."""
+        self.logger.info("Starting to load settings...")
+
         if not self.config_manager:
+            self.logger.error("Cannot load settings: config_manager is None")
+            # Show error message to user
+            error_label = QtWidgets.QLabel("Error: Configuration manager failed to initialize.\nCheck console for details.")
+            error_label.setStyleSheet("color: red; font-weight: bold; padding: 20px;")
+            error_label.setAlignment(QtCore.Qt.AlignCenter)
+
+            # Add error label to each tab
+            for i in range(self.tab_widget.count()):
+                tab = self.tab_widget.widget(i)
+                if hasattr(tab, 'layout') and tab.layout():
+                    tab.layout().insertWidget(0, QtWidgets.QLabel("Configuration Error - Check console"))
             return
+
+        self.logger.info("ConfigManager available, loading settings...")
 
         # Load UI settings
         ui_settings = self.config_manager.get_config("ui_settings", {})
+        self.logger.info(f"Loaded UI settings: {ui_settings}")
         self.theme_combo.setCurrentText(ui_settings.get("theme", "default"))
         self.auto_save_cb.setChecked(ui_settings.get("auto_save", True))
         self.tooltips_cb.setChecked(ui_settings.get("show_tooltips", True))
@@ -579,6 +609,7 @@ class SettingsWidget(QtWidgets.QWidget):
 
         # Load tool defaults
         tool_defaults = self.config_manager.get_config("tool_defaults", {})
+        self.logger.info(f"Loaded tool defaults: {tool_defaults}")
         primitives_defaults = tool_defaults.get("advanced_primitives", {})
         self.default_radius_spin.setValue(primitives_defaults.get("default_radius", 5.0))
         self.default_height_spin.setValue(primitives_defaults.get("default_height", 10.0))
@@ -590,9 +621,12 @@ class SettingsWidget(QtWidgets.QWidget):
 
         # Load system prompts
         system_prompts = self.config_manager.get_config("system_prompts", {})
+        self.logger.info(f"Loaded system prompts count: {len(system_prompts)}")
         if system_prompts and self.prompts_model:
             self.prompts_model = SystemPromptsTableModel(system_prompts)
             self.prompts_table.setModel(self.prompts_model)
+
+        self.logger.info("Settings loaded successfully")
 
     def _save_settings(self):
         """Save all settings."""

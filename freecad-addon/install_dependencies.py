@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-FreeCAD MCP Integration - Dependency Installer
+FreeCAD FreeCAD AI - Dependency Installer
 
 This script can be run in the FreeCAD Python console to install
-missing dependencies for the MCP Integration addon.
+missing dependencies for the FreeCAD AI addon.
 
 Usage:
 1. Copy this entire script
@@ -14,12 +14,12 @@ Author: jango-blockchained
 """
 
 def install_mcp_dependencies():
-    """Install dependencies for FreeCAD MCP Integration."""
+    """Install dependencies for FreeCAD FreeCAD AI."""
     import subprocess
     import os
     import sys
 
-    print("🚀 FreeCAD MCP Integration - Dependency Installer")
+    print("🚀 FreeCAD FreeCAD AI - Dependency Installer")
     print("=" * 50)
 
     try:

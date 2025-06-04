@@ -32,19 +32,19 @@ def _lazy_import_provider(provider_name: str, module_name: str, class_name: str)
     except ImportError as e:
         error_msg = f"Failed to import {provider_name}: {str(e)}"
         _provider_errors[provider_name] = error_msg
-        FreeCAD.Console.PrintWarning(f"MCP Integration: {error_msg}\n")
+        FreeCAD.Console.PrintWarning(f"FreeCAD AI: {error_msg}\n")
 
         # Check if it's a missing dependency issue
         if 'aiohttp' in str(e):
             FreeCAD.Console.PrintMessage(
-                "MCP Integration: Missing 'aiohttp' dependency. "
-                "Use the Dependencies tab in the MCP Integration interface to install it.\n"
+                "FreeCAD AI: Missing 'aiohttp' dependency. "
+                "Use the Dependencies tab in the FreeCAD AI interface to install it.\n"
             )
         return None
     except Exception as e:
         error_msg = f"Error loading {provider_name}: {str(e)}"
         _provider_errors[provider_name] = error_msg
-        FreeCAD.Console.PrintError(f"MCP Integration: {error_msg}\n")
+        FreeCAD.Console.PrintError(f"FreeCAD AI: {error_msg}\n")
         return None
 
 
@@ -118,6 +118,13 @@ ClaudeProvider = get_claude_provider()
 GeminiProvider = get_gemini_provider()
 OpenRouterProvider = get_openrouter_provider()
 
+# Import MCP integrated provider directly (it has no external dependencies)
+try:
+    from .mcp_integrated_provider import MCPIntegratedProvider
+except ImportError as e:
+    FreeCAD.Console.PrintWarning(f"FreeCAD AI: Failed to import MCPIntegratedProvider: {e}\n")
+    MCPIntegratedProvider = None
+
 # Export list for explicit imports
 __all__ = [
     "BaseAIProvider",
@@ -129,7 +136,8 @@ __all__ = [
     "get_openrouter_provider",
     "get_available_providers",
     "get_provider_errors",
-    "check_dependencies"
+    "check_dependencies",
+    "MCPIntegratedProvider"
 ]
 
 # Add provider classes if they loaded successfully

@@ -56,9 +56,9 @@ def create_symlink():
             print("✅ Symlink verification successful")
 
             # Test Python syntax
-            test_file = install_addon_dir / "freecad_mcp_workbench.py"
+            test_file = install_addon_dir / "freecad_ai_workbench.py"
             if test_file.exists():
-                result = os.system(f"cd {install_addon_dir} && python -m py_compile freecad_mcp_workbench.py")
+                result = os.system(f"cd {install_addon_dir} && python -m py_compile freecad_ai_workbench.py")
                 if result == 0:
                     print("✅ Python syntax validation passed")
                     return True
@@ -88,7 +88,7 @@ def main():
         print("  • Always uses latest development version")
         print("\n📋 Next steps:")
         print("  1. Restart FreeCAD to load any changes")
-        print("  2. Select 'MCP Integration' workbench")
+        print("  2. Select 'FreeCAD AI' workbench")
         print("  3. Develop directly in the Git repository")
     else:
         print("\n💥 Symlink setup failed!")

@@ -1,13 +1,13 @@
-"""Main Widget for MCP Integration FreeCAD Addon"""
+"""Main Widget for FreeCAD AI FreeCAD Addon"""
 
 from PySide2 import QtCore, QtGui, QtWidgets
 
 
 class MCPMainWidget(QtWidgets.QDockWidget):
-    """Main widget for MCP Integration addon."""
+    """Main widget for FreeCAD AI addon."""
 
     def __init__(self, parent=None):
-        super(MCPMainWidget, self).__init__("MCP Integration", parent)
+        super(MCPMainWidget, self).__init__("FreeCAD AI", parent)
 
         self.setAllowedAreas(QtCore.Qt.LeftDockWidgetArea | QtCore.Qt.RightDockWidgetArea)
         self.setFeatures(QtWidgets.QDockWidget.DockWidgetMovable |
@@ -32,7 +32,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         layout.setSpacing(5)
         layout.setContentsMargins(5, 5, 5, 5)
 
-        header_label = QtWidgets.QLabel("MCP Integration")
+        header_label = QtWidgets.QLabel("FreeCAD AI")
         header_label.setStyleSheet("font-weight: bold; font-size: 14px; padding: 10px;")
         layout.addWidget(header_label)
 
@@ -66,7 +66,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         except ImportError as e:
             if hasattr(self, 'status_label'):
                 self.status_label.setText(f"Warning: Provider service unavailable - {e}")
-            print(f"MCP Integration: Provider service unavailable - {e}")
+            print(f"FreeCAD AI: Provider service unavailable - {e}")
 
     def _on_provider_status_changed(self, provider_name: str, status: str, message: str):
         """Handle provider status changes."""

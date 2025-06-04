@@ -1,6 +1,6 @@
-# 🚀 MCP Integration FreeCAD Addon
+# 🚀 FreeCAD AI Addon
 
-**AI-powered CAD assistance integrated directly into FreeCAD**
+**AI-powered CAD assistance integrated directly into FreeCAD with MCP support**
 
 [![FreeCAD](https://img.shields.io/badge/FreeCAD-0.20+-blue.svg)](https://www.freecadweb.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -10,7 +10,12 @@
 
 ## 🌟 **AI-Powered CAD Assistant**
 
-The MCP Integration addon brings advanced AI capabilities directly into FreeCAD, featuring the latest **Claude 4 models with Thinking Mode** for enhanced CAD design assistance. Provides intelligent design guidance, automated scripting, and comprehensive problem-solving within the FreeCAD environment.
+The FreeCAD AI addon brings advanced AI capabilities directly into FreeCAD, featuring the latest **Claude 4 models with Thinking Mode** for enhanced CAD design assistance. The addon provides two modes of operation:
+
+1. **Internal AI Conversation** - Chat with AI directly in FreeCAD with MCP tool integration
+2. **External MCP Server** - Connect from Claude Desktop or other MCP clients
+
+Provides intelligent design guidance, automated scripting, and comprehensive problem-solving within the FreeCAD environment.
 
 ---
 
@@ -28,6 +33,12 @@ The MCP Integration addon brings advanced AI capabilities directly into FreeCAD,
 - **🔬 Google Gemini**: 2M token context, multimodal capabilities  
 - **🌐 OpenRouter**: Access to 13+ models through single interface
 - **⚡ Real-time Switching**: Change models instantly without losing context
+
+### 🔧 **MCP Tool Integration** ✨ *NEW!*
+- **🤖 Direct Execution**: AI can execute FreeCAD operations during conversation
+- **🔨 Tool Access**: Create primitives, boolean ops, measurements directly
+- **📊 Real Results**: See actual objects created in your document
+- **🔄 Seamless Workflow**: Natural language to CAD operations
 
 ### 🔗 **Universal Connection Management**
 - **🚀 Launcher**: AppImage-based connections
@@ -86,7 +97,7 @@ Based on my analysis, here's the optimal design...
 #### Option 1: FreeCAD Addon Manager (Recommended)
 1. 🔧 Open FreeCAD
 2. 🛠️ Go to `Tools` → `Addon Manager`
-3. 🔍 Search for "MCP Integration"
+3. 🔍 Search for "FreeCAD AI"
 4. 📥 Click "Install"
 5. 🔄 Restart FreeCAD
 
@@ -110,10 +121,10 @@ cd mcp-freecad/freecad-addon/
 - **OpenRouter**: [Get API Key](https://openrouter.ai/)
 
 #### 2. 🎯 **Configure Your First Provider**
-1. 🚀 Switch to "MCP Integration" workbench
-2. 🤖 Go to **AI Models** tab
-3. ➕ Click "Add Provider"
-4. 🔑 Enter your API key
+1. 🚀 Switch to "FreeCAD AI" workbench
+2. 🤖 Go to **Models** tab
+3. 🔑 Enter your API key
+4. ⚙️ Enable "MCP Tool Integration" for direct execution
 5. ✅ Test connection
 
 #### 3. 🧠 **Enable Thinking Mode**
@@ -125,6 +136,29 @@ cd mcp-freecad/freecad-addon/
 ---
 
 ## 🎯 **Usage Examples**
+
+### 🔧 **MCP Tool Integration in Action**
+```
+🗣️ "Create a cylinder with radius 10mm and height 25mm"
+
+🤖 AI Response:
+I'll create a cylinder with your specifications.
+
+<tool_use>
+<tool_name>create_cylinder</tool_name>
+<parameters>
+{"radius": 10, "height": 25}
+</parameters>
+</tool_use>
+
+<tool_result>
+<tool_name>create_cylinder</tool_name>
+<status>success</status>
+<result>{"success": true, "message": "Created cylinder: Cylinder"}</result>
+</tool_result>
+
+✅ I've created a cylinder with radius 10mm and height 25mm. The object is now visible in your FreeCAD document as "Cylinder".
+```
 
 ### 🏗️ **Complex Design Problems**
 ```
@@ -364,7 +398,7 @@ freecad --addon-dev freecad-addon/
 ```
 MIT License
 
-Copyright (c) 2025 MCP FreeCAD Integration Project
+Copyright (c) 2025 FreeCAD AI Project
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -411,22 +445,26 @@ copies of the Software.
 
 <div align="center">
 <sub>
-🚀 <strong>MCP Integration FreeCAD Addon</strong> - Bringing AI to CAD, one design at a time<br>
+🚀 <strong>FreeCAD AI Addon</strong> - Bringing AI to CAD, one design at a time<br>
 Made with ❤️ by jango-blockchained • June 2025
 </sub>
 </div>
 
-# FreeCAD MCP Integration Addon
+# FreeCAD AI Addon
 
-This addon provides Model Context Protocol (MCP) integration for FreeCAD, enabling AI-powered CAD assistance and automation.
+This addon provides AI-powered CAD assistance integrated directly into FreeCAD with Model Context Protocol (MCP) support for both internal and external AI interactions.
 
 ## Features
 
-- AI-powered FreeCAD tools and operations
-- Secure API key management
-- Multiple AI provider support (OpenAI, Anthropic, Google)
-- Comprehensive tool widgets
-- Advanced primitives and operations
+- AI-powered FreeCAD tools and operations with direct execution
+- Internal AI conversation with MCP tool integration
+- External MCP server for Claude Desktop and other clients
+- Secure API key management with encryption support
+- Multiple AI provider support (Claude 4, Gemini 2.5, OpenRouter)
+- Thinking mode support for complex reasoning
+- Comprehensive tool widgets for all CAD operations
+- Advanced primitives, boolean operations, and measurements
+- Assembly, CAM, rendering, and smithery tools
 
 ## Installation
 

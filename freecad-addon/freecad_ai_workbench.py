@@ -1,4 +1,4 @@
-"""FreeCAD MCP Workbench - Main workbench implementation"""
+"""FreeCAD AI Workbench - Main workbench implementation"""
 
 import os
 import sys
@@ -23,9 +23,9 @@ except ImportError:
         from PySide import QtGui as QtWidgets
         from PySide import QtCore, QtGui
         HAS_PYSIDE2 = False
-        FreeCAD.Console.PrintWarning("MCP Integration: Using PySide instead of PySide2\n")
+        FreeCAD.Console.PrintWarning("FreeCAD AI: Using PySide instead of PySide2\n")
     except ImportError:
-        FreeCAD.Console.PrintError("MCP Integration: No Qt bindings available\n")
+        FreeCAD.Console.PrintError("FreeCAD AI: No Qt bindings available\n")
         HAS_PYSIDE2 = False
 
 # Import tools and AI providers with better error handling
@@ -38,16 +38,72 @@ try:
     from tools.export_import import ExportImportTool
     TOOLS_AVAILABLE = True
 except ImportError as e:
-    FreeCAD.Console.PrintWarning(f"MCP Integration: Failed to import tools with absolute imports: {e}\n")
+    FreeCAD.Console.PrintWarning(f"FreeCAD AI: Failed to import tools with absolute imports: {e}\n")
     try:
         # Try importing from the current directory structure
         import tools
         from tools import PrimitivesTool, OperationsTool, MeasurementsTool, ExportImportTool
         TOOLS_AVAILABLE = True
-        FreeCAD.Console.PrintMessage("MCP Integration: Successfully imported tools using alternative method\n")
+        FreeCAD.Console.PrintMessage("FreeCAD AI: Successfully imported tools using alternative method\n")
     except ImportError as e2:
-        FreeCAD.Console.PrintError(f"MCP Integration: Failed to import tools: {e2}\n")
+        FreeCAD.Console.PrintError(f"FreeCAD AI: Failed to import tools: {e2}\n")
         TOOLS_AVAILABLE = False
+
+# Import advanced tools
+ADVANCED_TOOLS_AVAILABLE = False
+try:
+    from tools.advanced import (
+        AssemblyToolProvider, CAMToolProvider,
+        RenderingToolProvider, SmitheryToolProvider,
+        ADVANCED_TOOLS_AVAILABLE
+    )
+    FreeCAD.Console.PrintMessage("FreeCAD AI: Advanced tools loaded successfully\n")
+except ImportError as e:
+    FreeCAD.Console.PrintWarning(f"FreeCAD AI: Advanced tools not available: {e}\n")
+    ADVANCED_TOOLS_AVAILABLE = False
+
+# Import resources
+RESOURCES_AVAILABLE = False
+try:
+    from resources import (
+        MaterialResourceProvider, ConstraintResourceProvider,
+        MeasurementResourceProvider, CADModelResourceProvider,
+        RESOURCES_AVAILABLE
+    )
+    FreeCAD.Console.PrintMessage("FreeCAD AI: Resources loaded successfully\n")
+except ImportError as e:
+    FreeCAD.Console.PrintWarning(f"FreeCAD AI: Resources not available: {e}\n")
+    RESOURCES_AVAILABLE = False
+
+# Import events
+EVENTS_AVAILABLE = False
+try:
+    from events import (
+        DocumentEventHandler, CommandEventHandler,
+        ErrorEventHandler, EVENTS_AVAILABLE
+    )
+    FreeCAD.Console.PrintMessage("FreeCAD AI: Event handlers loaded successfully\n")
+except ImportError as e:
+    FreeCAD.Console.PrintWarning(f"FreeCAD AI: Event handlers not available: {e}\n")
+    EVENTS_AVAILABLE = False
+
+# Import API
+API_AVAILABLE = False
+try:
+    from api import ToolsAPI, ResourcesAPI, EventsAPI, API_AVAILABLE
+    FreeCAD.Console.PrintMessage("FreeCAD AI: API loaded successfully\n")
+except ImportError as e:
+    FreeCAD.Console.PrintWarning(f"FreeCAD AI: API not available: {e}\n")
+    API_AVAILABLE = False
+
+# Import clients
+CLIENTS_AVAILABLE = False
+try:
+    from clients import FreeCADClient, CursorMCPBridge, CLIENTS_AVAILABLE
+    FreeCAD.Console.PrintMessage("FreeCAD AI: Clients loaded successfully\n")
+except ImportError as e:
+    FreeCAD.Console.PrintWarning(f"FreeCAD AI: Clients not available: {e}\n")
+    CLIENTS_AVAILABLE = False
 
 # Import AI providers with lazy loading
 AI_PROVIDERS_AVAILABLE = False
@@ -59,7 +115,7 @@ try:
     )
     AI_PROVIDERS_AVAILABLE = True
 except ImportError as e:
-    FreeCAD.Console.PrintWarning(f"MCP Integration: Failed to import AI providers with absolute imports: {e}\n")
+    FreeCAD.Console.PrintWarning(f"FreeCAD AI: Failed to import AI providers with absolute imports: {e}\n")
     try:
         # Try importing from the current directory structure
         import ai.providers
@@ -68,9 +124,9 @@ except ImportError as e:
             get_available_providers, get_provider_errors, check_dependencies
         )
         AI_PROVIDERS_AVAILABLE = True
-        FreeCAD.Console.PrintMessage("MCP Integration: Successfully imported AI providers using alternative method\n")
+        FreeCAD.Console.PrintMessage("FreeCAD AI: Successfully imported AI providers using alternative method\n")
     except ImportError as e2:
-        FreeCAD.Console.PrintError(f"MCP Integration: Failed to import AI providers: {e2}\n")
+        FreeCAD.Console.PrintError(f"FreeCAD AI: Failed to import AI providers: {e2}\n")
         AI_PROVIDERS_AVAILABLE = False
 
 
@@ -81,20 +137,20 @@ class MCPShowInterfaceCommand:
         return {
             'Pixmap': '',  # Icon path
             'MenuText': 'Show MCP Interface',
-            'ToolTip': 'Show the MCP Integration interface'
+            'ToolTip': 'Show the FreeCAD AI interface'
         }
 
     def IsActive(self):
         return True
 
     def Activated(self):
-        FreeCAD.Console.PrintMessage("MCP Integration: Interface command activated\n")
+        FreeCAD.Console.PrintMessage("FreeCAD AI: Interface command activated\n")
         # Show the main interface (this is handled by the dock widget creation)
         if HAS_PYSIDE2:
             main_window = FreeCADGui.getMainWindow()
             # Find the dock widget if it exists
             for widget in main_window.findChildren(QtWidgets.QDockWidget):
-                if widget.windowTitle() == "MCP Integration":
+                if widget.windowTitle() == "FreeCAD AI":
                     widget.show()
                     widget.raise_()
                     return
@@ -102,8 +158,8 @@ class MCPShowInterfaceCommand:
             # If not found, show message
             QtWidgets.QMessageBox.information(
                 main_window,
-                "MCP Integration",
-                "MCP Integration interface is loaded. Look for the dock widget on the right side."
+                "FreeCAD AI",
+                "FreeCAD AI interface is loaded. Look for the dock widget on the right side."
             )
 
 
@@ -111,9 +167,9 @@ class MCPShowInterfaceCommand:
 try:
     if hasattr(FreeCADGui, 'addCommand'):
         FreeCADGui.addCommand('MCP_ShowInterface', MCPShowInterfaceCommand())
-        FreeCAD.Console.PrintMessage("MCP Integration: Command 'MCP_ShowInterface' registered successfully\n")
+        FreeCAD.Console.PrintMessage("FreeCAD AI: Command 'MCP_ShowInterface' registered successfully\n")
 except Exception as e:
-    FreeCAD.Console.PrintError(f"MCP Integration: Failed to register command: {e}\n")
+    FreeCAD.Console.PrintError(f"FreeCAD AI: Failed to register command: {e}\n")
 
 
 class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
@@ -134,6 +190,7 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
         self.thinking_budget_spin = None
         self.claude_desktop_mode = None
         self.claude_desktop_enabled = False
+        self.mcp_integration_checkbox = None
 
         # Initialize tools if available
         if TOOLS_AVAILABLE:
@@ -146,6 +203,48 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
             self.operations_tool = None
             self.measurements_tool = None
             self.export_import_tool = None
+
+        # Initialize advanced tools if available
+        if ADVANCED_TOOLS_AVAILABLE:
+            self.assembly_tool = AssemblyToolProvider()
+            self.cam_tool = CAMToolProvider()
+            self.rendering_tool = RenderingToolProvider()
+            self.smithery_tool = SmitheryToolProvider()
+        else:
+            self.assembly_tool = None
+            self.cam_tool = None
+            self.rendering_tool = None
+            self.smithery_tool = None
+
+        # Initialize resources if available
+        if RESOURCES_AVAILABLE:
+            self.material_resource = MaterialResourceProvider()
+            self.constraint_resource = ConstraintResourceProvider()
+            self.measurement_resource = MeasurementResourceProvider()
+            self.cad_model_resource = CADModelResourceProvider()
+        else:
+            self.material_resource = None
+            self.constraint_resource = None
+            self.measurement_resource = None
+            self.cad_model_resource = None
+
+        # Initialize event handlers if available
+        if EVENTS_AVAILABLE:
+            self.document_events = DocumentEventHandler()
+            self.command_events = CommandEventHandler()
+            self.error_events = ErrorEventHandler()
+        else:
+            self.document_events = None
+            self.command_events = None
+            self.error_events = None
+
+        # Initialize clients if available
+        if CLIENTS_AVAILABLE:
+            self.freecad_client = FreeCADClient()
+            self.cursor_bridge = CursorMCPBridge()
+        else:
+            self.freecad_client = None
+            self.cursor_bridge = None
 
         # AI provider instance
         self.ai_provider = None
@@ -161,7 +260,7 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
             self._start_async_loop()
         else:
             # No GUI available, create minimal interface
-            FreeCAD.Console.PrintMessage("MCP Integration: GUI not available, minimal mode\n")
+            FreeCAD.Console.PrintMessage("FreeCAD AI: GUI not available, minimal mode\n")
 
     def _start_async_loop(self):
         """Start async event loop in separate thread for AI operations."""
@@ -179,7 +278,7 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
             if not HAS_PYSIDE2:
                 return
 
-            self.setWindowTitle("MCP Integration")
+            self.setWindowTitle("FreeCAD AI")
             self.setMinimumSize(800, 600)
 
             # Create main layout
@@ -196,6 +295,13 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
             self._create_dependencies_tab()
             self._create_servers_tab()
             self._create_tools_tab()
+
+            # Add advanced tabs if available
+            if ADVANCED_TOOLS_AVAILABLE:
+                self._create_advanced_tools_tab()
+            if RESOURCES_AVAILABLE:
+                self._create_resources_tab()
+
             self._create_logs_tab()
 
             # Try to integrate with new GUI components
@@ -204,10 +310,10 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
             # Status bar
             self.status_bar = QtWidgets.QStatusBar()
             layout.addWidget(self.status_bar)
-            self.status_bar.showMessage("MCP Integration Ready")
+            self.status_bar.showMessage("FreeCAD AI Ready")
 
         except Exception as e:
-            FreeCAD.Console.PrintError(f"MCP Integration: Failed to create GUI: {e}\n")
+            FreeCAD.Console.PrintError(f"FreeCAD AI: Failed to create GUI: {e}\n")
 
     def _integrate_advanced_gui(self):
         """Try to integrate with the new advanced GUI components."""
@@ -222,23 +328,23 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
             if hasattr(advanced_widget, 'tab_widget'):
                 # Get the current layout
                 layout = self.layout()
-                
+
                 # Remove the old tab widget
                 layout.removeWidget(self.tab_widget)
                 self.tab_widget.deleteLater()
-                
+
                 # Add the advanced tab widget
                 self.tab_widget = advanced_widget.tab_widget
                 layout.insertWidget(0, self.tab_widget)
-                
-                FreeCAD.Console.PrintMessage("MCP Integration: Successfully integrated advanced GUI with new widget structure\n")
+
+                FreeCAD.Console.PrintMessage("FreeCAD AI: Successfully integrated advanced GUI with new widget structure\n")
             else:
-                FreeCAD.Console.PrintWarning("MCP Integration: Advanced widget doesn't have expected tab_widget structure\n")
+                FreeCAD.Console.PrintWarning("FreeCAD AI: Advanced widget doesn't have expected tab_widget structure\n")
 
         except ImportError as e:
-            FreeCAD.Console.PrintMessage(f"MCP Integration: Advanced GUI not available, using basic interface: {e}\n")
+            FreeCAD.Console.PrintMessage(f"FreeCAD AI: Advanced GUI not available, using basic interface: {e}\n")
         except Exception as e:
-            FreeCAD.Console.PrintWarning(f"MCP Integration: Advanced GUI integration failed, using basic interface: {e}\n")
+            FreeCAD.Console.PrintWarning(f"FreeCAD AI: Advanced GUI integration failed, using basic interface: {e}\n")
 
     def _create_assistant_tab(self):
         """Create the Assistant tab for AI chat."""
@@ -404,6 +510,31 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
         temp_layout.addWidget(self.temperature_slider)
         temp_layout.addWidget(self.temperature_value)
         advanced_layout.addLayout(temp_layout)
+        
+        # MCP Integration settings
+        mcp_integration_group = QtWidgets.QGroupBox("MCP Tool Integration")
+        mcp_integration_layout = QtWidgets.QVBoxLayout(mcp_integration_group)
+        
+        self.mcp_integration_checkbox = QtWidgets.QCheckBox("Enable MCP Tool Integration")
+        self.mcp_integration_checkbox.setToolTip(
+            "Allow AI to directly execute FreeCAD operations during conversations.\n"
+            "When enabled, the AI can create objects, perform measurements, and more."
+        )
+        mcp_integration_layout.addWidget(self.mcp_integration_checkbox)
+        
+        mcp_help = QtWidgets.QLabel(
+            "When enabled, the AI assistant can execute FreeCAD operations directly:\n"
+            "• Create primitives (box, cylinder, sphere, etc.)\n"
+            "• Perform boolean operations\n"
+            "• Take measurements\n"
+            "• Export models\n"
+            "• Access materials and resources"
+        )
+        mcp_help.setWordWrap(True)
+        mcp_help.setStyleSheet("color: #666; font-size: 11px; margin-left: 20px;")
+        mcp_integration_layout.addWidget(mcp_help)
+        
+        advanced_layout.addWidget(mcp_integration_group)
 
         provider_layout.addWidget(advanced_group)
 
@@ -612,6 +743,9 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
         self._refresh_dependency_status()
 
         self.tab_widget.addTab(widget, "Dependencies")
+        
+        # Load saved settings at the end of initialization
+        self._load_ai_settings()
 
     def _refresh_dependency_status(self):
         """Refresh the dependency status display."""
@@ -875,17 +1009,17 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
             from gui.tools_widget_compact import ToolsWidget
             tools_widget = ToolsWidget()
             self.tab_widget.addTab(tools_widget, "Tools")
-            FreeCAD.Console.PrintMessage("MCP Integration: Using new compact tools widget\n")
+            FreeCAD.Console.PrintMessage("FreeCAD AI: Using new compact tools widget\n")
         except ImportError:
             try:
                 # Fallback to original tools widget
                 from gui.tools_widget import ToolsWidget
                 tools_widget = ToolsWidget()
                 self.tab_widget.addTab(tools_widget, "Tools")
-                FreeCAD.Console.PrintMessage("MCP Integration: Using comprehensive tools widget\n")
+                FreeCAD.Console.PrintMessage("FreeCAD AI: Using comprehensive tools widget\n")
             except ImportError as e:
-                FreeCAD.Console.PrintWarning(f"MCP Integration: Could not import tools widget: {e}\n")
-                FreeCAD.Console.PrintMessage("MCP Integration: Falling back to basic tools interface\n")
+                FreeCAD.Console.PrintWarning(f"FreeCAD AI: Could not import tools widget: {e}\n")
+                FreeCAD.Console.PrintMessage("FreeCAD AI: Falling back to basic tools interface\n")
 
                 # Fallback to basic tools interface
                 widget = QtWidgets.QWidget()
@@ -987,6 +1121,182 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
 
         self.tab_widget.addTab(widget, "Logs")
 
+    def _create_advanced_tools_tab(self):
+        """Create the Advanced Tools tab."""
+        widget = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(widget)
+
+        # Header
+        header = QtWidgets.QLabel("🔧 Advanced Tools")
+        header.setStyleSheet("font-size: 16px; font-weight: bold; margin: 10px;")
+        layout.addWidget(header)
+
+        # Assembly tools
+        assembly_group = QtWidgets.QGroupBox("Assembly Tools")
+        assembly_layout = QtWidgets.QGridLayout(assembly_group)
+
+        assembly_tools = [
+            ("Create Assembly", "assembly.create_assembly", "🏗️"),
+            ("Add Part", "assembly.add_part", "➕"),
+            ("Create Constraint", "assembly.create_constraint", "🔗"),
+            ("List Parts", "assembly.list_parts", "📋"),
+            ("Move Part", "assembly.move_part", "↔️")
+        ]
+
+        row = 0
+        col = 0
+        for tool_name, tool_id, icon in assembly_tools:
+            btn = QtWidgets.QPushButton(f"{icon} {tool_name}")
+            btn.clicked.connect(lambda checked, tid=tool_id: self._execute_advanced_tool(tid))
+            assembly_layout.addWidget(btn, row, col)
+            col += 1
+            if col > 2:
+                col = 0
+                row += 1
+
+        layout.addWidget(assembly_group)
+
+        # CAM tools
+        cam_group = QtWidgets.QGroupBox("CAM Tools")
+        cam_layout = QtWidgets.QGridLayout(cam_group)
+
+        cam_tools = [
+            ("Create Job", "cam.create_job", "🔨"),
+            ("Add Tool", "cam.add_tool", "🔧"),
+            ("Create Operation", "cam.create_operation", "⚙️"),
+            ("Generate G-code", "cam.generate_gcode", "📄"),
+            ("Simulate", "cam.simulate", "▶️")
+        ]
+
+        row = 0
+        col = 0
+        for tool_name, tool_id, icon in cam_tools:
+            btn = QtWidgets.QPushButton(f"{icon} {tool_name}")
+            btn.clicked.connect(lambda checked, tid=tool_id: self._execute_advanced_tool(tid))
+            cam_layout.addWidget(btn, row, col)
+            col += 1
+            if col > 2:
+                col = 0
+                row += 1
+
+        layout.addWidget(cam_group)
+
+        # Rendering tools
+        rendering_group = QtWidgets.QGroupBox("Rendering Tools")
+        rendering_layout = QtWidgets.QGridLayout(rendering_group)
+
+        rendering_tools = [
+            ("Set Scene", "rendering.set_scene", "🎬"),
+            ("Set Camera", "rendering.set_camera", "📷"),
+            ("Add Light", "rendering.add_light", "💡"),
+            ("Apply Material", "rendering.apply_material", "🎨"),
+            ("Render Image", "rendering.render", "🖼️")
+        ]
+
+        row = 0
+        col = 0
+        for tool_name, tool_id, icon in rendering_tools:
+            btn = QtWidgets.QPushButton(f"{icon} {tool_name}")
+            btn.clicked.connect(lambda checked, tid=tool_id: self._execute_advanced_tool(tid))
+            rendering_layout.addWidget(btn, row, col)
+            col += 1
+            if col > 2:
+                col = 0
+                row += 1
+
+        layout.addWidget(rendering_group)
+
+        # Smithery tools (fun tools)
+        smithery_group = QtWidgets.QGroupBox("Smithery Tools")
+        smithery_layout = QtWidgets.QGridLayout(smithery_group)
+
+        smithery_tools = [
+            ("Create Anvil", "smithery.create_anvil", "🔨"),
+            ("Create Hammer", "smithery.create_hammer", "🔨"),
+            ("Create Tongs", "smithery.create_tongs", "🔧"),
+            ("Forge Blade", "smithery.forge_blade", "⚔️"),
+            ("Create Horseshoe", "smithery.create_horseshoe", "🐴")
+        ]
+
+        row = 0
+        col = 0
+        for tool_name, tool_id, icon in smithery_tools:
+            btn = QtWidgets.QPushButton(f"{icon} {tool_name}")
+            btn.clicked.connect(lambda checked, tid=tool_id: self._execute_advanced_tool(tid))
+            smithery_layout.addWidget(btn, row, col)
+            col += 1
+            if col > 2:
+                col = 0
+                row += 1
+
+        layout.addWidget(smithery_group)
+        layout.addStretch()
+
+        self.tab_widget.addTab(widget, "Advanced")
+
+    def _create_resources_tab(self):
+        """Create the Resources tab."""
+        widget = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(widget)
+
+        # Header
+        header = QtWidgets.QLabel("📚 Resources")
+        header.setStyleSheet("font-size: 16px; font-weight: bold; margin: 10px;")
+        layout.addWidget(header)
+
+        # Material resources
+        material_group = QtWidgets.QGroupBox("Material Resources")
+        material_layout = QtWidgets.QVBoxLayout(material_group)
+
+        material_actions = [
+            ("List Available Materials", self._list_materials),
+            ("View Material Library", self._view_material_library),
+            ("Apply Material to Object", self._apply_material),
+            ("Get Material Info", self._get_material_info)
+        ]
+
+        for action_name, action_func in material_actions:
+            btn = QtWidgets.QPushButton(action_name)
+            btn.clicked.connect(action_func)
+            material_layout.addWidget(btn)
+
+        layout.addWidget(material_group)
+
+        # Constraint resources
+        constraint_group = QtWidgets.QGroupBox("Constraint Resources")
+        constraint_layout = QtWidgets.QVBoxLayout(constraint_group)
+
+        constraint_info = QtWidgets.QLabel(
+            "Constraint management coming soon. This will allow you to:\n"
+            "• View and manage sketch constraints\n"
+            "• Apply assembly constraints\n"
+            "• Analyze constraint systems"
+        )
+        constraint_info.setWordWrap(True)
+        constraint_layout.addWidget(constraint_info)
+
+        layout.addWidget(constraint_group)
+
+        # Measurement resources
+        measurement_group = QtWidgets.QGroupBox("Measurement Resources")
+        measurement_layout = QtWidgets.QVBoxLayout(measurement_group)
+
+        measurement_info = QtWidgets.QLabel(
+            "Advanced measurement tools coming soon. This will provide:\n"
+            "• Distance and angle measurements\n"
+            "• Volume and area calculations\n"
+            "• Center of mass analysis\n"
+            "• Inertia tensor calculations"
+        )
+        measurement_info.setWordWrap(True)
+        measurement_layout.addWidget(measurement_info)
+
+        layout.addWidget(measurement_group)
+
+        layout.addStretch()
+
+        self.tab_widget.addTab(widget, "Resources")
+
     def _on_provider_changed(self, provider_text):
         """Handle provider selection change."""
         self._update_model_list()
@@ -1050,26 +1360,41 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
             if not AI_PROVIDERS_AVAILABLE:
                 raise Exception("AI providers not available")
 
+            # Create the base provider
+            base_provider = None
+            
             if "Claude" in provider_text:
                 ClaudeProvider = get_claude_provider()
                 if ClaudeProvider:
-                    self.ai_provider = ClaudeProvider(api_key, model)
+                    base_provider = ClaudeProvider(api_key, model)
                 else:
                     raise Exception("Claude provider not available")
             elif "Gemini" in provider_text:
                 GeminiProvider = get_gemini_provider()
                 if GeminiProvider:
-                    self.ai_provider = GeminiProvider(api_key, model)
+                    base_provider = GeminiProvider(api_key, model)
                 else:
                     raise Exception("Gemini provider not available")
             elif "OpenRouter" in provider_text:
                 OpenRouterProvider = get_openrouter_provider()
                 if OpenRouterProvider:
-                    self.ai_provider = OpenRouterProvider(api_key, model)
+                    base_provider = OpenRouterProvider(api_key, model)
                 else:
                     raise Exception("OpenRouter provider not available")
             else:
                 raise Exception("Invalid provider selected")
+            
+            # Wrap with MCP integration if enabled
+            if self.mcp_integration_checkbox and self.mcp_integration_checkbox.isChecked():
+                from ai.providers import MCPIntegratedProvider
+                if MCPIntegratedProvider:
+                    self.ai_provider = MCPIntegratedProvider(base_provider)
+                    self._add_log("AI", "✅ MCP Tool Integration enabled")
+                else:
+                    self.ai_provider = base_provider
+                    self._add_log("AI", "⚠️ MCP Integration not available, using base provider")
+            else:
+                self.ai_provider = base_provider
 
             # Enable thinking mode if requested (Claude only)
             if "Claude" in provider_text and self.thinking_mode_checkbox and self.thinking_mode_checkbox.isChecked():
@@ -1167,6 +1492,121 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
 
         # Start checking for response
         QtCore.QTimer.singleShot(100, handle_response)
+    
+    def _execute_advanced_tool(self, tool_id):
+        """Execute an advanced tool."""
+        self._add_log("Advanced Tool", f"Executing: {tool_id}")
+
+        if not ADVANCED_TOOLS_AVAILABLE:
+            QtWidgets.QMessageBox.warning(self, "Advanced Tools Not Available", "Advanced tools are not properly imported.")
+            return
+
+        if not FreeCAD.ActiveDocument:
+            QtWidgets.QMessageBox.warning(self, "No Document", "Please create or open a document first.")
+            return
+
+        try:
+            # Parse tool ID
+            parts = tool_id.split('.')
+            if len(parts) != 2:
+                raise ValueError(f"Invalid tool ID: {tool_id}")
+
+            tool_category, tool_method = parts
+
+            # Get the appropriate tool instance
+            if tool_category == "assembly":
+                tool = self.assembly_tool
+            elif tool_category == "cam":
+                tool = self.cam_tool
+            elif tool_category == "rendering":
+                tool = self.rendering_tool
+            elif tool_category == "smithery":
+                tool = self.smithery_tool
+            else:
+                raise ValueError(f"Unknown advanced tool category: {tool_category}")
+
+            # For now, use simple parameter input
+            # In a real implementation, create proper dialogs for each tool
+            params = {}
+            
+            # Execute the tool asynchronously
+            future = asyncio.run_coroutine_threadsafe(
+                tool.execute_tool(tool_method, params),
+                self.loop
+            )
+            
+            # Get result with timeout
+            result = future.result(timeout=10)
+            
+            if result.get('status') == 'success':
+                self._add_log("Advanced Tool", f"✅ {result.get('message', 'Success')}")
+                QtWidgets.QMessageBox.information(self, "Success", f"Tool executed successfully: {result.get('message', '')}")
+            else:
+                self._add_log("Advanced Tool", f"❌ {result.get('error', 'Failed')}")
+                QtWidgets.QMessageBox.warning(self, "Failed", f"Tool execution failed: {result.get('error', '')}")
+
+        except Exception as e:
+            self._add_log("Advanced Tool", f"Error: {str(e)}")
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to execute advanced tool: {str(e)}")
+    
+    def _list_materials(self):
+        """List available materials."""
+        if not RESOURCES_AVAILABLE or not self.material_resource:
+            QtWidgets.QMessageBox.warning(self, "Resources Not Available", "Material resources are not available.")
+            return
+        
+        try:
+            # Get materials asynchronously
+            future = asyncio.run_coroutine_threadsafe(
+                self.material_resource.get_resource("cad://materials/"),
+                self.loop
+            )
+            
+            result = future.result(timeout=5)
+            
+            if 'materials' in result:
+                # Create a dialog to show materials
+                dialog = QtWidgets.QDialog(self)
+                dialog.setWindowTitle("Available Materials")
+                dialog.setMinimumSize(400, 300)
+                
+                layout = QtWidgets.QVBoxLayout(dialog)
+                
+                # Create list widget
+                list_widget = QtWidgets.QListWidget()
+                
+                for material in result['materials']:
+                    item_text = f"{material['name']} ({material['category']})"
+                    if material.get('description'):
+                        item_text += f" - {material['description']}"
+                    list_widget.addItem(item_text)
+                
+                layout.addWidget(list_widget)
+                
+                # Add close button
+                close_btn = QtWidgets.QPushButton("Close")
+                close_btn.clicked.connect(dialog.accept)
+                layout.addWidget(close_btn)
+                
+                dialog.exec_()
+                
+            else:
+                QtWidgets.QMessageBox.information(self, "No Materials", "No materials found.")
+                
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to list materials: {str(e)}")
+    
+    def _view_material_library(self):
+        """View the material library structure."""
+        QtWidgets.QMessageBox.information(self, "Material Library", "Material library viewer coming soon!")
+    
+    def _apply_material(self):
+        """Apply material to an object."""
+        QtWidgets.QMessageBox.information(self, "Apply Material", "Material application dialog coming soon!")
+    
+    def _get_material_info(self):
+        """Get detailed material information."""
+        QtWidgets.QMessageBox.information(self, "Material Info", "Material information viewer coming soon!")
 
     def _connect_to_freecad(self):
         """Connect to FreeCAD (check current state)."""
@@ -1535,7 +1975,7 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
             self.status_bar.showMessage(f"Last: {message}", 3000)
 
         # Also print to FreeCAD console
-        FreeCAD.Console.PrintMessage(f"MCP Integration: {log_entry}\n")
+        FreeCAD.Console.PrintMessage(f"FreeCAD AI: {log_entry}\n")
 
     def _update_ai_status(self):
         """Update the AI connection status label."""
@@ -1560,13 +2000,70 @@ class MCPMainWidget(QtWidgets.QWidget if HAS_PYSIDE2 else object):
     def _save_ai_settings(self):
         """Save AI provider settings."""
         try:
-            # Here you could save settings to a configuration file
-            # For now, just show a success message
+            # Save settings to FreeCAD parameters
+            paramGroup = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/FreeCAD_AI")
+            
+            # Save provider settings
+            if self.provider_combo:
+                paramGroup.SetString("Provider", self.provider_combo.currentText())
+            if self.model_combo:
+                paramGroup.SetString("Model", self.model_combo.currentText())
+            if self.api_key_input:
+                # Note: In production, consider encrypting the API key
+                paramGroup.SetString("APIKey", self.api_key_input.text())
+            
+            # Save advanced settings
+            if self.thinking_mode_checkbox:
+                paramGroup.SetBool("ThinkingMode", self.thinking_mode_checkbox.isChecked())
+            if self.thinking_budget_spin:
+                paramGroup.SetInt("ThinkingBudget", self.thinking_budget_spin.value())
+            if self.temperature_slider:
+                paramGroup.SetInt("Temperature", self.temperature_slider.value())
+            if self.mcp_integration_checkbox:
+                paramGroup.SetBool("MCPIntegration", self.mcp_integration_checkbox.isChecked())
+            
             self._add_log("Settings", "AI settings saved")
             QtWidgets.QMessageBox.information(self, "Settings Saved", "AI provider settings have been saved.")
         except Exception as e:
             self._add_log("Settings", f"Failed to save settings: {str(e)}")
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to save settings: {str(e)}")
+    
+    def _load_ai_settings(self):
+        """Load AI provider settings from FreeCAD parameters."""
+        try:
+            paramGroup = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/FreeCAD_AI")
+            
+            # Load provider settings
+            provider = paramGroup.GetString("Provider", "")
+            if provider and self.provider_combo:
+                index = self.provider_combo.findText(provider)
+                if index >= 0:
+                    self.provider_combo.setCurrentIndex(index)
+            
+            model = paramGroup.GetString("Model", "")
+            if model and self.model_combo:
+                index = self.model_combo.findText(model)
+                if index >= 0:
+                    self.model_combo.setCurrentIndex(index)
+            
+            api_key = paramGroup.GetString("APIKey", "")
+            if api_key and self.api_key_input:
+                self.api_key_input.setText(api_key)
+            
+            # Load advanced settings
+            if self.thinking_mode_checkbox:
+                self.thinking_mode_checkbox.setChecked(paramGroup.GetBool("ThinkingMode", False))
+            if self.thinking_budget_spin:
+                self.thinking_budget_spin.setValue(paramGroup.GetInt("ThinkingBudget", 2000))
+            if self.temperature_slider:
+                self.temperature_slider.setValue(paramGroup.GetInt("Temperature", 70))
+            if self.mcp_integration_checkbox:
+                self.mcp_integration_checkbox.setChecked(paramGroup.GetBool("MCPIntegration", True))
+            
+            self._add_log("Settings", "AI settings loaded")
+            
+        except Exception as e:
+            self._add_log("Settings", f"Failed to load settings: {str(e)}")
 
     def _update_model_info(self):
         """Update the model information display."""
@@ -1748,10 +2245,10 @@ pip install mcp>=1.0.0"""
 
 
 class MCPWorkbench(FreeCADGui.Workbench):
-    """MCP Integration Workbench for FreeCAD"""
+    """FreeCAD AI Workbench"""
 
-    MenuText = "MCP Integration"
-    ToolTip = "Model Context Protocol Integration for AI-powered CAD operations"
+    MenuText = "FreeCAD AI"
+    ToolTip = "AI-powered CAD assistance integrated directly into FreeCAD"
 
     def __init__(self):
         """Initialize the MCP workbench."""
@@ -1769,7 +2266,7 @@ class MCPWorkbench(FreeCADGui.Workbench):
 
     def Initialize(self):
         """Initialize the workbench GUI components."""
-        FreeCAD.Console.PrintMessage("MCP Integration Workbench: Initializing...\n")
+        FreeCAD.Console.PrintMessage("FreeCAD AI Workbench: Initializing...\n")
 
         try:
             # Create toolbar with available commands
@@ -1778,20 +2275,20 @@ class MCPWorkbench(FreeCADGui.Workbench):
             # Create dock widget for the interface
             self._create_dock_widget()
 
-            FreeCAD.Console.PrintMessage("MCP Integration Workbench: Initialization complete\n")
+            FreeCAD.Console.PrintMessage("FreeCAD AI Workbench: Initialization complete\n")
 
         except Exception as e:
-            FreeCAD.Console.PrintError(f"MCP Integration Workbench: Initialization failed: {e}\n")
+            FreeCAD.Console.PrintError(f"FreeCAD AI Workbench: Initialization failed: {e}\n")
             import traceback
-            FreeCAD.Console.PrintError(f"MCP Integration Workbench: Traceback: {traceback.format_exc()}\n")
+            FreeCAD.Console.PrintError(f"FreeCAD AI Workbench: Traceback: {traceback.format_exc()}\n")
 
     def Activated(self):
         """Called when the workbench is activated."""
-        FreeCAD.Console.PrintMessage("MCP Integration Workbench: Activated\n")
+        FreeCAD.Console.PrintMessage("FreeCAD AI Workbench: Activated\n")
 
     def Deactivated(self):
         """Called when the workbench is deactivated."""
-        FreeCAD.Console.PrintMessage("MCP Integration Workbench: Deactivated\n")
+        FreeCAD.Console.PrintMessage("FreeCAD AI Workbench: Deactivated\n")
 
     def GetClassName(self):
         """Return the workbench class name."""
@@ -1813,13 +2310,13 @@ class MCPWorkbench(FreeCADGui.Workbench):
 
             # Only create toolbar if we have valid commands and appendToolbar method exists
             if toolbar_commands and hasattr(self, 'appendToolbar'):
-                self.appendToolbar("MCP Integration", toolbar_commands)
-                FreeCAD.Console.PrintMessage(f"MCP Integration: Toolbar created with {len(toolbar_commands)} commands\n")
+                self.appendToolbar("FreeCAD AI", toolbar_commands)
+                FreeCAD.Console.PrintMessage(f"FreeCAD AI: Toolbar created with {len(toolbar_commands)} commands\n")
             else:
                 if not hasattr(self, 'appendToolbar'):
-                    FreeCAD.Console.PrintMessage("MCP Integration: appendToolbar method not available\n")
+                    FreeCAD.Console.PrintMessage("FreeCAD AI: appendToolbar method not available\n")
                 else:
-                    FreeCAD.Console.PrintMessage("MCP Integration: Toolbar creation skipped - no valid commands available\n")
+                    FreeCAD.Console.PrintMessage("FreeCAD AI: Toolbar creation skipped - no valid commands available\n")
 
         except Exception as e:
             FreeCAD.Console.PrintError(f"Failed to create toolbar: {e}\n")
@@ -1830,7 +2327,7 @@ class MCPWorkbench(FreeCADGui.Workbench):
         """Create and show the dock widget."""
         try:
             if not HAS_PYSIDE2:
-                FreeCAD.Console.PrintMessage("MCP Integration: Skipping dock widget creation - no Qt bindings\n")
+                FreeCAD.Console.PrintMessage("FreeCAD AI: Skipping dock widget creation - no Qt bindings\n")
                 return
 
             # Create main widget
@@ -1838,11 +2335,11 @@ class MCPWorkbench(FreeCADGui.Workbench):
 
             # Create dock widget to hold the main widget
             if main_widget and hasattr(main_widget, 'status_bar'):
-                dock_widget = QtWidgets.QDockWidget("MCP Integration", FreeCADGui.getMainWindow())
+                dock_widget = QtWidgets.QDockWidget("FreeCAD AI", FreeCADGui.getMainWindow())
                 dock_widget.setObjectName("MCPIntegrationDockWidget")  # Fix QMainWindow::saveState() warning
                 dock_widget.setWidget(main_widget)
                 FreeCADGui.getMainWindow().addDockWidget(QtCore.Qt.RightDockWidgetArea, dock_widget)
-                FreeCAD.Console.PrintMessage("MCP Integration: Dock widget created successfully\n")
+                FreeCAD.Console.PrintMessage("FreeCAD AI: Dock widget created successfully\n")
 
         except Exception as e:
             FreeCAD.Console.PrintError(f"Failed to create dock widget: {e}\n")

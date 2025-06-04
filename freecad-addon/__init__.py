@@ -22,8 +22,8 @@ __author__ = "jango-blockchained"
 __license__ = "MIT"
 
 # FreeCAD addon metadata
-ADDON_NAME = "MCP Integration"
-ADDON_DESCRIPTION = "Model Context Protocol Integration for AI-powered CAD"
+ADDON_NAME = "FreeCAD AI"
+ADDON_DESCRIPTION = "AI-powered CAD assistance integrated directly into FreeCAD with MCP support"
 ADDON_AUTHOR = "jango-blockchained"
 ADDON_VERSION = __version__
 ADDON_LICENSE = __license__
