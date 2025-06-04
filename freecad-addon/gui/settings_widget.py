@@ -13,6 +13,7 @@ import logging
 import json
 from typing import Dict, Any, Optional
 from freecad_addon.utils.cad_context_extractor import get_cad_context_extractor
+from freecad_addon.config.config_manager import ConfigManager
 
 
 class SystemPromptsTableModel(QtCore.QAbstractTableModel):
@@ -231,7 +232,6 @@ class SettingsWidget(QtWidgets.QWidget):
         """Setup configuration manager."""
         try:
             # Import ConfigManager using absolute path after sys.path setup
-            from config.config_manager import ConfigManager
             self.config_manager = ConfigManager()
         except ImportError as e:
             self.logger.error(f"Failed to import ConfigManager: {e}")
