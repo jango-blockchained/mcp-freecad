@@ -12,6 +12,7 @@ from PySide2 import QtCore, QtGui, QtWidgets
 import logging
 import json
 from typing import Dict, Any, Optional
+from freecad_addon.utils.cad_context_extractor import get_cad_context_extractor
 
 
 class SystemPromptsTableModel(QtCore.QAbstractTableModel):
@@ -181,7 +182,6 @@ class CADContextPreviewDialog(QtWidgets.QDialog):
     def _load_context(self):
         """Load and display CAD context."""
         try:
-            from ..utils.cad_context_extractor import get_cad_context_extractor
             extractor = get_cad_context_extractor()
 
             # Load compact view

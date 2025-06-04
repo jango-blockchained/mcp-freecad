@@ -25,7 +25,7 @@ logger = logging.getLogger("connection_test")
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 try:
-    from src.mcp_freecad.client.freecad_connection import FreeCADConnection
+    from src.mcp_freecad.client.freecad_connection_manager import FreeCADConnection
 except ImportError:
     logger.error("Could not import FreeCADConnection. Make sure PYTHONPATH is set or run tests from the project root.")
     sys.exit(1)

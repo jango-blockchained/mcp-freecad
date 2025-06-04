@@ -6,16 +6,29 @@ This module provides integration between FreeCAD and the Model Context Protocol 
 
 __version__ = "0.7.11"
 
-# Import main components for easy access
+# Import core components that don't require heavy dependencies
 from .client.freecad_connection_manager import FreeCADConnection
-from .tools.primitives import PrimitiveToolProvider
-from .tools.model_manipulation import ModelManipulationToolProvider
-from .core.server import MCPServer
 
-# Tool providers registry
+# Conditional imports for components with heavy dependencies
+def get_primitive_tool_provider():
+    """Lazy import for PrimitiveToolProvider."""
+    from .tools.primitives import PrimitiveToolProvider
+    return PrimitiveToolProvider
+
+def get_model_manipulation_tool_provider():
+    """Lazy import for ModelManipulationToolProvider."""
+    from .tools.model_manipulation import ModelManipulationToolProvider
+    return ModelManipulationToolProvider
+
+def get_mcp_server():
+    """Lazy import for MCPServer."""
+    from .core.server import MCPServer
+    return MCPServer
+
+# Tool providers registry (lazy loading)
 TOOL_PROVIDERS = {
-    "primitives": PrimitiveToolProvider,
-    "model_manipulation": ModelManipulationToolProvider,
+    "primitives": get_primitive_tool_provider,
+    "model_manipulation": get_model_manipulation_tool_provider,
 }
 
 # Connection types
@@ -30,9 +43,9 @@ CONNECTION_TYPES = {
 __all__ = [
     "__version__",
     "FreeCADConnection",
-    "PrimitiveToolProvider",
-    "ModelManipulationToolProvider",
-    "MCPServer",
+    "get_primitive_tool_provider",
+    "get_model_manipulation_tool_provider",
+    "get_mcp_server",
     "TOOL_PROVIDERS",
     "CONNECTION_TYPES",
 ]

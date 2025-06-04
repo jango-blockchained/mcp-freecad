@@ -42,30 +42,22 @@ except ImportError as e:
     class ToolContext: pass # Keep dummy for type hint usage in comments
 
 # --- FreeCAD Connection Import ---
-# Adjust path based on actual location relative to this file
+# Import the correct FreeCADConnection class from freecad_connection_manager
 try:
     # Assuming execution from workspace root or correct PYTHONPATH
-    from src.mcp_freecad.client.freecad_connection import FreeCADConnection
+    from src.mcp_freecad.client.freecad_connection_manager import FreeCADConnection
     FREECAD_CONNECTION_AVAILABLE = True
 except ImportError:
     try:
         # Fallback if running from within the server directory structure
-        from ...client.freecad_connection import FreeCADConnection
+        from ...client.freecad_connection_manager import FreeCADConnection
         FREECAD_CONNECTION_AVAILABLE = True
     except ImportError:
         logging.warning(
-            "FreeCAD connection module not found. Trying relative import."
+            "FreeCAD connection manager module could not be imported. Server will run without FreeCAD features."
         )
-        try:
-            # Final fallback - assumes freecad_connection_manager.py is findable
-            from freecad_connection_manager import FreeCADConnection
-            FREECAD_CONNECTION_AVAILABLE = True
-        except ImportError:
-            logging.warning(
-                "FreeCAD connection module could not be imported. Server will run without FreeCAD features."
-            )
-            FREECAD_CONNECTION_AVAILABLE = False
-            FreeCADConnection = None # Define as None if unavailable
+        FREECAD_CONNECTION_AVAILABLE = False
+        FreeCADConnection = None # Define as None if unavailable
 
 # --- Configuration & Globals ---
 VERSION = "1.0.0" # Server version
