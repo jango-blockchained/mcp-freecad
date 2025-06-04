@@ -543,6 +543,20 @@ class ProvidersWidget(QtWidgets.QWidget):
         if key and self.config_manager:
             success = self.config_manager.set_api_key(provider_type, key)
             if success:
+                # Also ensure provider is enabled when API key is set
+                existing_config = self.config_manager.get_provider_config(provider_name)
+                if not existing_config:
+                    existing_config = {
+                        'enabled': True,
+                        'model': self._get_default_model_for_provider(provider_type),
+                        'temperature': 0.7,
+                        'timeout': 30,
+                        'max_tokens': 4000
+                    }
+                else:
+                    existing_config['enabled'] = True
+                self.config_manager.set_provider_config(provider_name, existing_config)
+
                 self.api_key_changed.emit(provider_type)
                 self.api_key_status_label.setText("✅ Saved")
                 self.api_key_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
@@ -594,6 +608,16 @@ class ProvidersWidget(QtWidgets.QWidget):
                     return provider
 
         return None
+
+    def _get_default_model_for_provider(self, provider_type):
+        """Get default model for a provider type."""
+        model_map = {
+            "anthropic": "claude-4-20241120",
+            "openai": "gpt-4o-mini",
+            "google": "gemini-1.5-flash",
+            "openrouter": "anthropic/claude-3.5-sonnet"
+        }
+        return model_map.get(provider_type, "default-model")
 
     def _create_default_providers(self):
         """Create default providers for common AI services."""
@@ -853,6 +877,8 @@ class ProvidersWidget(QtWidgets.QWidget):
                 if not existing_config:
                     existing_config = {}
                 existing_config['model'] = model_name
+                # Ensure provider is marked as enabled when model is changed
+                existing_config['enabled'] = True
 
                 success = self.config_manager.set_provider_config(provider_name, existing_config)
                 if not success:
@@ -906,6 +932,9 @@ class ProvidersWidget(QtWidgets.QWidget):
                 if not existing_config:
                     existing_config = {}
                 existing_config.update(new_config)
+
+                # Ensure provider is marked as enabled when configured
+                existing_config['enabled'] = True
 
                 # Save the updated configuration
                 success = self.config_manager.set_provider_config(provider_name, existing_config)

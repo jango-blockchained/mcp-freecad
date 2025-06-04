@@ -8,7 +8,7 @@ This module provides a unified interface for connecting to FreeCAD using either:
 3. XML-RPC-based communication with an RPC server running inside FreeCAD
 
 Usage:
-    from freecad_connection_manager import FreeCADConnection
+    from src.mcp_freecad.client.freecad_connection_manager import FreeCADConnection
 
     # Create a connection
     fc = FreeCADConnection()
@@ -32,43 +32,33 @@ import xmlrpc.client
 from typing import Any, Dict, List, Optional
 import logging
 
-# -- Add Repo Root to sys.path --
-# Assuming this script is run from src/mcp_freecad/client/
-# or the start script cds to repo root
-# repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
-# if repo_root not in sys.path:
-#     sys.path.insert(0, repo_root)
-# ------------------------------
-
 # Set up logger for this module
 logger = logging.getLogger(__name__)
 
 # --- FreeCADBridge Import Attempt ---
-logger.critical("!!! Attempting to import FreeCADBridge !!!") # VERY LOUD LOG
-_bridge_import_error_msg = "Unknown import failure" # Renamed variable
-BRIDGE_AVAILABLE = False # Default to False
-logger.critical(">>> Right before TRY block <<<")
+BRIDGE_AVAILABLE = False
+_bridge_import_error_msg = ""
+
 try:
-    # Attempt to import FreeCADBridge if FreeCAD is available
-    # from src.mcp_freecad.client.freecad_bridge import FreeCADBridge # NEW absolute import
-    from freecad_connection_bridge import FreeCADBridge # Direct import
-
+    # Try to import from the server directory where bridge implementations are located
+    from ..server.freecad_bridge import FreeCADBridge
     BRIDGE_AVAILABLE = True
-    _bridge_import_error_msg = "" # Reset error message on successful import
-    logger.info("Successfully imported FreeCADBridge!")
-
-except BaseException as e:  # Catch BaseException instead of just Exception
-    # Log the failure but allow the program to continue without bridge functionality
-    _bridge_import_error_msg = f"Failed to import FreeCADBridge: {e}" # Use renamed variable
-    # Keep the print for now to confirm fix
-    # print(f"!!! EXCEPTION CAUGHT: {type(e).__name__} - {e} !!!")
-    logger.warning(_bridge_import_error_msg) # Revert back to logger
-    # BRIDGE_AVAILABLE remains False
-
-logger.critical(">>> Immediately after TRY...EXCEPT block <<<")
-
-if not BRIDGE_AVAILABLE:
-     logger.error(f"!!! FreeCADBridge NOT available. Last error: {_bridge_import_error_msg} !!!") # Use renamed variable
+    logger.info("Successfully imported FreeCADBridge from server module")
+except ImportError:
+    try:
+        # Fallback: try direct import if running from project root
+        from freecad_connection_bridge import FreeCADBridge
+        BRIDGE_AVAILABLE = True
+        logger.info("Successfully imported FreeCADBridge via direct import")
+    except ImportError as e:
+        _bridge_import_error_msg = f"Failed to import FreeCADBridge: {e}"
+        logger.warning(_bridge_import_error_msg)
+        # Create a dummy class to prevent runtime errors
+        class FreeCADBridge:
+            def __init__(self, *args, **kwargs):
+                pass
+            def is_available(self):
+                return False
 
 
 class FreeCADConnection:
@@ -137,23 +127,23 @@ class FreeCADConnection:
 
             if success:
                 self.connection_type = method
+                logger.info(f"Successfully connected to FreeCAD using {method} method")
                 return True
 
-        # If we got here, all methods failed
+        logger.error("Failed to connect to FreeCAD using any available method")
         return False
 
     def _get_connection_methods(self, prefer_method: Optional[str] = None) -> List[str]:
         """
         Get ordered list of connection methods to try.
-        FORCED TO BRIDGE ONLY FOR DEBUGGING.
 
         Args:
-            prefer_method: Preferred method (ignored)
+            prefer_method: Preferred method to try first
 
         Returns:
-            List containing only the bridge method.
+            List of connection methods in order of preference
         """
-        # If a preferred method is specified, we'll try that first
+        # If a preferred method is specified, try that first
         if prefer_method:
             if prefer_method == self.CONNECTION_RPC:
                 return [self.CONNECTION_RPC, self.CONNECTION_BRIDGE, self.CONNECTION_SERVER]
@@ -176,7 +166,8 @@ class FreeCADConnection:
             # Try to ping the server
             response = self._send_server_command({"type": "ping"})
             return response.get("pong", False)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Server connection failed: {e}")
             return False
 
     def _connect_bridge(self) -> bool:
@@ -187,7 +178,7 @@ class FreeCADConnection:
             bool: True if successful
         """
         if not BRIDGE_AVAILABLE:
-            logger.warning("FreeCADBridge dependency not found. Bridge connection unavailable.")
+            logger.debug("FreeCADBridge dependency not found. Bridge connection unavailable.")
             return False
 
         try:
@@ -197,7 +188,7 @@ class FreeCADConnection:
             logger.debug(f"FreeCADBridge.is_available() returned: {is_avail}")
             return is_avail
         except Exception as e:
-            logger.error(f"Failed to initialize or check FreeCADBridge: {type(e).__name__} - {e}", exc_info=True)
+            logger.debug(f"Failed to initialize FreeCADBridge: {e}")
             return False
 
     def _connect_rpc(self) -> bool:
@@ -217,7 +208,7 @@ class FreeCADConnection:
             logger.debug(f"XML-RPC ping response: {ping_response}")
             return ping_response is True
         except Exception as e:
-            logger.error(f"Failed to connect to FreeCAD XML-RPC server: {type(e).__name__} - {e}")
+            logger.debug(f"Failed to connect to FreeCAD XML-RPC server: {e}")
             self._rpc = None
             return False
 
@@ -249,11 +240,10 @@ class FreeCADConnection:
         Returns:
             dict: Response from server
         """
-        sock = None  # Define sock outside try for finally block
+        sock = None
         try:
             # Create a new socket for each command
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            # Set a timeout for connection and operations
             sock.settimeout(10.0)
             sock.connect((self.host, self.port))
 
@@ -266,41 +256,31 @@ class FreeCADConnection:
             while True:
                 chunk = sock.recv(4096)
                 if not chunk:
-                    break  # Connection closed prematurely
+                    break
                 response_data += chunk
                 if response_data.endswith(b"\n"):
-                    break  # End of message found
+                    break
 
             # Remove trailing newline before parsing
             response_str = response_data.strip().decode()
 
             if not response_str:
-                # Handle case where only newline might have been received or connection closed early
                 return {"error": "Received empty or incomplete response from server"}
 
             try:
                 return json.loads(response_str)
             except json.JSONDecodeError:
-                # Log the actual invalid string received
-                print(f"DEBUG: Received invalid JSON data: '{response_str}'")
-                return {
-                    "error": "Invalid JSON response received"
-                }  # Keep message simple for user
+                logger.debug(f"Received invalid JSON data: '{response_str}'")
+                return {"error": "Invalid JSON response received"}
 
         except socket.timeout:
-            return {
-                "error": f"Connection to FreeCAD server timed out ({self.host}:{self.port})"
-            }
+            return {"error": f"Connection to FreeCAD server timed out ({self.host}:{self.port})"}
         except ConnectionRefusedError:
-            return {
-                "error": f"Connection refused by FreeCAD server ({self.host}:{self.port}). Is it running?"
-            }
+            return {"error": f"Connection refused by FreeCAD server ({self.host}:{self.port}). Is it running?"}
         except Exception as e:
-            # Log the specific exception
-            print(f"DEBUG: Error in _send_server_command: {type(e).__name__} - {e}")
+            logger.debug(f"Error in _send_server_command: {type(e).__name__} - {e}")
             return {"error": f"Communication error with FreeCAD server: {e}"}
         finally:
-            # Ensure the socket is always closed
             if sock:
                 try:
                     sock.close()
@@ -396,8 +376,6 @@ class FreeCADConnection:
                     except Exception as e:
                         return {"error": str(e)}
 
-                # Add other object types as needed
-
                 return {"error": f"Unsupported object type: {obj_type}"}
 
             elif command_type == "export_document":
@@ -414,8 +392,6 @@ class FreeCADConnection:
                     return {"success": True, "path": file_path}
                 else:
                     return {"error": "Failed to export document"}
-
-            # Add more command mappings as needed
 
             return {"error": f"Unsupported command: {command_type}"}
 
@@ -443,9 +419,7 @@ class FreeCADConnection:
                 return {"pong": True, "rpc": True}
 
             elif command_type == "get_version":
-                # Assuming the FreeCAD RPC server has a version-related method
-                # This might need adjustment based on the actual RPC API
-                return {"success": True, "version": "RPC version info"}  # Placeholder
+                return {"success": True, "version": "RPC version info"}
 
             elif command_type == "create_document":
                 doc_name = params.get("name", "Unnamed")
@@ -470,7 +444,6 @@ class FreeCADConnection:
                 }
 
                 if obj_type == "box":
-                    # Handle box creation specifically
                     obj_data = {
                         "Name": "Box",
                         "Type": "Part::Box",
@@ -498,11 +471,7 @@ class FreeCADConnection:
                 if not file_path:
                     return {"error": "No file path specified"}
 
-                # Implement export functionality if available in RPC API
-                # This is a placeholder
                 return {"error": "Export functionality not yet implemented for RPC connection"}
-
-            # Add more command mappings as needed
 
             return {"error": f"Unsupported command: {command_type}"}
 
@@ -512,24 +481,11 @@ class FreeCADConnection:
     # Convenience methods for common operations
 
     def get_version(self) -> Dict[str, Any]:
-        """
-        Get FreeCAD version information
-
-        Returns:
-            dict: Version information
-        """
+        """Get FreeCAD version information"""
         return self.execute_command("get_version")
 
     def create_document(self, name: str = "Unnamed") -> Optional[str]:
-        """
-        Create a new FreeCAD document
-
-        Args:
-            name: Document name
-
-        Returns:
-            str: Document name if successful, None if failed
-        """
+        """Create a new FreeCAD document"""
         response = self.execute_command("create_document", {"name": name})
 
         if response.get("success"):
@@ -545,18 +501,7 @@ class FreeCADConnection:
         height: float = 10.0,
         document: Optional[str] = None,
     ) -> Optional[str]:
-        """
-        Create a box in a FreeCAD document
-
-        Args:
-            length: Box length
-            width: Box width
-            height: Box height
-            document: Document name (uses active document if None)
-
-        Returns:
-            str: Box object name if successful, None if failed
-        """
+        """Create a box in a FreeCAD document"""
         params = {
             "type": "box",
             "properties": {"length": length, "width": width, "height": height},
@@ -576,17 +521,7 @@ class FreeCADConnection:
     def create_cylinder(
         self, radius: float = 5.0, height: float = 10.0, document: Optional[str] = None
     ) -> Optional[str]:
-        """
-        Create a cylinder in a FreeCAD document
-
-        Args:
-            radius: Cylinder radius
-            height: Cylinder height
-            document: Document name (uses active document if None)
-
-        Returns:
-            str: Cylinder object name if successful, None if failed
-        """
+        """Create a cylinder in a FreeCAD document"""
         params = {
             "type": "cylinder",
             "properties": {"radius": radius, "height": height},
@@ -606,17 +541,7 @@ class FreeCADConnection:
     def export_stl(
         self, object_name: str, file_path: str, document: Optional[str] = None
     ) -> bool:
-        """
-        Export an object to STL
-
-        Args:
-            object_name: Name of the object to export
-            file_path: Path to save the STL file
-            document: Document name (uses active document if None)
-
-        Returns:
-            bool: True if successful
-        """
+        """Export an object to STL"""
         params = {"object": object_name, "path": file_path}
 
         if document:
@@ -635,47 +560,11 @@ class FreeCADConnection:
                 pass
             self._socket = None
 
-        # Bridge doesn't need closing
         self._bridge = None
+        self._rpc = None
         self.connection_type = None
 
 
 # Example usage
 if __name__ == "__main__":
-    # Create connection
-    # connection = FreeCADConnection()
-
-    # if not connection.is_connected():
-    #     print("Failed to connect to FreeCAD")
-    #     sys.exit(1)
-
-    # print(f"Connected to FreeCAD using {connection.get_connection_type()} method")
-
-    # # Get version
-    # version_info = connection.get_version()
-    # print(f"FreeCAD Version: {version_info}")
-
-    # # Create document
-    # doc_name = connection.create_document("TestDocument")
-    # if doc_name:
-    #     print(f"Created document: {doc_name}")
-
-    #     # Create box
-    #     box_name = connection.create_box(10.0, 20.0, 30.0, doc_name)
-    #     if box_name:
-    #         print(f"Created box: {box_name}")
-
-    #         # Export to STL
-    #         stl_path = os.path.join(os.getcwd(), "test_export.stl")
-    #         if connection.export_stl(box_name, stl_path, doc_name):
-    #             print(f"Exported to: {stl_path}")
-    #         else:
-    #             print("Failed to export STL")
-    #     else:
-    #         print("Failed to create box")
-    # else:
-    #     print("Failed to create document")
-
-    # # Close connection
-    # connection.close()
-    pass # Add pass to avoid empty block error after commenting everything out
+    pass

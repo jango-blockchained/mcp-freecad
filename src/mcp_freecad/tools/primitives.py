@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict, Optional
 
-from ..tools.base import ToolProvider
+from .base import ToolProvider, ToolResult, ToolSchema
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +29,50 @@ class PrimitiveToolProvider(ToolProvider):
                 )
                 self.app = None
 
+    @property
+    def tool_schema(self) -> ToolSchema:
+        """Get the schema for primitive creation tools."""
+        return ToolSchema(
+            name="primitives",
+            description="Create primitive shapes in FreeCAD",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "tool_id": {
+                        "type": "string",
+                        "enum": ["create_box", "create_cylinder", "create_sphere", "create_cone"],
+                        "description": "The primitive tool to execute"
+                    },
+                    "params": {
+                        "type": "object",
+                        "description": "Parameters for the primitive creation"
+                    }
+                },
+                "required": ["tool_id"]
+            },
+            returns={
+                "type": "object",
+                "properties": {
+                    "status": {"type": "string"},
+                    "result": {"type": "object"},
+                    "error": {"type": "string"}
+                }
+            },
+            examples=[
+                {
+                    "tool_id": "create_box",
+                    "params": {"length": 10.0, "width": 5.0, "height": 3.0}
+                },
+                {
+                    "tool_id": "create_cylinder",
+                    "params": {"radius": 5.0, "height": 10.0}
+                }
+            ]
+        )
+
     async def execute_tool(
         self, tool_id: str, params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    ) -> ToolResult:
         """
         Execute a primitive creation tool.
 
@@ -40,21 +81,40 @@ class PrimitiveToolProvider(ToolProvider):
             params: Parameters for the tool
 
         Returns:
-            The result of the tool execution
+            ToolResult containing the execution status and result
         """
         if self.app is None:
-            return {"error": "FreeCAD not available"}
+            return self.format_result(
+                status="error",
+                error="FreeCAD not available"
+            )
 
-        if tool_id == "create_box":
-            return await self._create_box(params)
-        elif tool_id == "create_cylinder":
-            return await self._create_cylinder(params)
-        elif tool_id == "create_sphere":
-            return await self._create_sphere(params)
-        elif tool_id == "create_cone":
-            return await self._create_cone(params)
-        else:
-            raise ValueError(f"Unknown tool: {tool_id}")
+        try:
+            if tool_id == "create_box":
+                result = await self._create_box(params)
+            elif tool_id == "create_cylinder":
+                result = await self._create_cylinder(params)
+            elif tool_id == "create_sphere":
+                result = await self._create_sphere(params)
+            elif tool_id == "create_cone":
+                result = await self._create_cone(params)
+            else:
+                return self.format_result(
+                    status="error",
+                    error=f"Unknown tool: {tool_id}"
+                )
+
+            return self.format_result(
+                status="success",
+                result=result
+            )
+
+        except Exception as e:
+            logger.error(f"Error executing primitive tool {tool_id}: {e}")
+            return self.format_result(
+                status="error",
+                error=str(e)
+            )
 
     async def _create_box(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Create a box primitive."""
@@ -76,7 +136,6 @@ class PrimitiveToolProvider(ToolProvider):
         doc.recompute()
 
         return {
-            "status": "success",
             "object_id": box.Name,
             "object_type": "Part::Box",
             "properties": {"Length": length, "Width": width, "Height": height},
@@ -100,7 +159,6 @@ class PrimitiveToolProvider(ToolProvider):
         doc.recompute()
 
         return {
-            "status": "success",
             "object_id": cylinder.Name,
             "object_type": "Part::Cylinder",
             "properties": {"Radius": radius, "Height": height},
@@ -122,7 +180,6 @@ class PrimitiveToolProvider(ToolProvider):
         doc.recompute()
 
         return {
-            "status": "success",
             "object_id": sphere.Name,
             "object_type": "Part::Sphere",
             "properties": {"Radius": radius},
@@ -148,7 +205,6 @@ class PrimitiveToolProvider(ToolProvider):
         doc.recompute()
 
         return {
-            "status": "success",
             "object_id": cone.Name,
             "object_type": "Part::Cone",
             "properties": {"Radius1": radius1, "Radius2": radius2, "Height": height},

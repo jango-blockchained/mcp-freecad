@@ -32,7 +32,6 @@ import subprocess
 import sys
 import tempfile
 from typing import Any, Dict, Optional, Tuple
-from FreeCad.Gui.ImportGui import *
 
 
 class FreeCADBridge:

@@ -58,8 +58,10 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             self.provider_service.provider_status_changed.connect(self._on_provider_status_changed)
             self.provider_service.providers_updated.connect(self._on_providers_updated)
 
-            # Initialize providers from configuration
+            # Initialize providers from configuration with multiple attempts
             QtCore.QTimer.singleShot(1000, self.provider_service.initialize_providers_from_config)
+            # Retry after 3 seconds if first attempt fails
+            QtCore.QTimer.singleShot(3000, self._retry_provider_initialization)
 
         except ImportError as e:
             if hasattr(self, 'status_label'):
@@ -88,6 +90,14 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 self.status_label.setStyleSheet("padding: 5px; background-color: #c8e6c9; color: #2e7d32;")
             else:
                 self.status_label.setStyleSheet("padding: 5px; background-color: #f0f0f0; color: #666;")
+
+    def _retry_provider_initialization(self):
+        """Retry provider initialization if no providers are active."""
+        if self.provider_service:
+            active_count = len(self.provider_service.get_active_providers())
+            if active_count == 0:
+                print("Retrying provider initialization...")
+                self.provider_service.initialize_providers_from_config()
 
     def get_provider_service(self):
         """Get the provider service instance."""

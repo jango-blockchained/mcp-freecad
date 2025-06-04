@@ -17,3 +17,7 @@ try:
 except ImportError as e:
     print(f"Utility components not fully available: {e}")
     __all__ = []
+
+from .cad_context_extractor import CADContextExtractor, get_cad_context_extractor
+
+__all__ = ['CADContextExtractor', 'get_cad_context_extractor']

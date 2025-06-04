@@ -10,7 +10,205 @@ if addon_dir not in sys.path:
 
 from PySide2 import QtCore, QtGui, QtWidgets
 import logging
+import json
 from typing import Dict, Any, Optional
+
+
+class SystemPromptsTableModel(QtCore.QAbstractTableModel):
+    """Table model for system prompts management."""
+
+    def __init__(self, prompts_data: Dict[str, str] = None):
+        super().__init__()
+        self.prompts_data = prompts_data or self._get_default_prompts()
+        self.headers = ["Provider/Context", "System Prompt"]
+
+    def _get_default_prompts(self) -> Dict[str, str]:
+        """Get default system prompts."""
+        return {
+            "default": "You are an AI assistant specialized in FreeCAD CAD operations. Help users with 3D modeling, parametric design, and CAD workflows. Be precise and practical in your responses.",
+            "anthropic": "You are Claude, an AI assistant specialized in FreeCAD CAD operations. You have expertise in 3D modeling, parametric design, engineering workflows, and manufacturing processes. Provide detailed, accurate guidance for CAD tasks.",
+            "openai": "You are a helpful AI assistant with expertise in FreeCAD and computer-aided design. Help users create, modify, and optimize 3D models with clear, step-by-step instructions.",
+            "google": "You are an AI assistant specialized in FreeCAD CAD software. Assist users with 3D modeling tasks, workbench navigation, and design optimization. Focus on practical, actionable advice.",
+            "cad_context": "When CAD context is provided, analyze the current FreeCAD document state including objects, geometry, and workspace. Use this information to provide contextually relevant suggestions and solutions.",
+            "error_handling": "When users encounter errors or issues, provide systematic troubleshooting steps. Consider common FreeCAD pitfalls and suggest alternative approaches when needed.",
+            "beginner_mode": "Explain concepts clearly for users new to FreeCAD. Include basic terminology explanations and step-by-step guidance. Suggest learning resources when appropriate.",
+            "advanced_mode": "Provide detailed technical information for experienced users. Include advanced techniques, scripting examples, and optimization strategies. Assume familiarity with CAD concepts."
+        }
+
+    def rowCount(self, parent=QtCore.QModelIndex()):
+        return len(self.prompts_data)
+
+    def columnCount(self, parent=QtCore.QModelIndex()):
+        return len(self.headers)
+
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if not index.isValid():
+            return None
+
+        row = index.row()
+        col = index.column()
+
+        if row >= len(self.prompts_data):
+            return None
+
+        keys = list(self.prompts_data.keys())
+        key = keys[row]
+
+        if role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
+            if col == 0:
+                return key
+            elif col == 1:
+                return self.prompts_data[key]
+
+        return None
+
+    def setData(self, index, value, role=QtCore.Qt.EditRole):
+        if not index.isValid() or role != QtCore.Qt.EditRole:
+            return False
+
+        row = index.row()
+        col = index.column()
+
+        if row >= len(self.prompts_data):
+            return False
+
+        keys = list(self.prompts_data.keys())
+        old_key = keys[row]
+
+        if col == 0:  # Provider/Context name
+            if value != old_key and value not in self.prompts_data:
+                # Rename key
+                self.prompts_data[value] = self.prompts_data.pop(old_key)
+                self.dataChanged.emit(index, index)
+                return True
+        elif col == 1:  # System prompt
+            self.prompts_data[old_key] = value
+            self.dataChanged.emit(index, index)
+            return True
+
+        return False
+
+    def flags(self, index):
+        if not index.isValid():
+            return QtCore.Qt.NoItemFlags
+        return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable
+
+    def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
+        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
+            return self.headers[section]
+        return None
+
+    def add_prompt(self, name: str, prompt: str):
+        """Add a new prompt."""
+        if name not in self.prompts_data:
+            self.beginInsertRows(QtCore.QModelIndex(), len(self.prompts_data), len(self.prompts_data))
+            self.prompts_data[name] = prompt
+            self.endInsertRows()
+
+    def remove_prompt(self, name: str):
+        """Remove a prompt."""
+        if name in self.prompts_data:
+            keys = list(self.prompts_data.keys())
+            row = keys.index(name)
+            self.beginRemoveRows(QtCore.QModelIndex(), row, row)
+            del self.prompts_data[name]
+            self.endRemoveRows()
+
+    def get_prompts_data(self) -> Dict[str, str]:
+        """Get the current prompts data."""
+        return self.prompts_data.copy()
+
+
+class CADContextPreviewDialog(QtWidgets.QDialog):
+    """Dialog to preview CAD context information."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("CAD Context Preview")
+        self.setModal(True)
+        self.resize(700, 500)
+        self._setup_ui()
+        self._load_context()
+
+    def _setup_ui(self):
+        """Setup the dialog UI."""
+        layout = QtWidgets.QVBoxLayout(self)
+
+        # Header
+        header_label = QtWidgets.QLabel("Current CAD Context Information")
+        header_label.setStyleSheet("font-weight: bold; font-size: 14px; padding: 10px;")
+        layout.addWidget(header_label)
+
+        # Tab widget for different context views
+        self.tab_widget = QtWidgets.QTabWidget()
+        layout.addWidget(self.tab_widget)
+
+        # Compact view tab
+        self.compact_text = QtWidgets.QTextEdit()
+        self.compact_text.setReadOnly(True)
+        self.compact_text.setStyleSheet("font-family: monospace; font-size: 11px;")
+        self.tab_widget.addTab(self.compact_text, "Compact View")
+
+        # Detailed view tab
+        self.detailed_text = QtWidgets.QTextEdit()
+        self.detailed_text.setReadOnly(True)
+        self.detailed_text.setStyleSheet("font-family: monospace; font-size: 10px;")
+        self.tab_widget.addTab(self.detailed_text, "Detailed View")
+
+        # Control buttons
+        button_layout = QtWidgets.QHBoxLayout()
+
+        self.refresh_btn = QtWidgets.QPushButton("Refresh")
+        self.refresh_btn.clicked.connect(self._load_context)
+        button_layout.addWidget(self.refresh_btn)
+
+        self.copy_compact_btn = QtWidgets.QPushButton("Copy Compact")
+        self.copy_compact_btn.clicked.connect(self._copy_compact)
+        button_layout.addWidget(self.copy_compact_btn)
+
+        self.copy_detailed_btn = QtWidgets.QPushButton("Copy Detailed")
+        self.copy_detailed_btn.clicked.connect(self._copy_detailed)
+        button_layout.addWidget(self.copy_detailed_btn)
+
+        button_layout.addStretch()
+
+        self.close_btn = QtWidgets.QPushButton("Close")
+        self.close_btn.clicked.connect(self.accept)
+        button_layout.addWidget(self.close_btn)
+
+        layout.addLayout(button_layout)
+
+    def _load_context(self):
+        """Load and display CAD context."""
+        try:
+            from ..utils.cad_context_extractor import get_cad_context_extractor
+            extractor = get_cad_context_extractor()
+
+            # Load compact view
+            compact_context = extractor.get_compact_context()
+            self.compact_text.setPlainText(compact_context)
+
+            # Load detailed view
+            full_context = extractor.get_full_context()
+            detailed_text = json.dumps(full_context, indent=2)
+            self.detailed_text.setPlainText(detailed_text)
+
+        except Exception as e:
+            error_msg = f"Error loading CAD context: {str(e)}"
+            self.compact_text.setPlainText(error_msg)
+            self.detailed_text.setPlainText(error_msg)
+
+    def _copy_compact(self):
+        """Copy compact context to clipboard."""
+        clipboard = QtWidgets.QApplication.clipboard()
+        clipboard.setText(self.compact_text.toPlainText())
+        QtWidgets.QMessageBox.information(self, "Copied", "Compact context copied to clipboard")
+
+    def _copy_detailed(self):
+        """Copy detailed context to clipboard."""
+        clipboard = QtWidgets.QApplication.clipboard()
+        clipboard.setText(self.detailed_text.toPlainText())
+        QtWidgets.QMessageBox.information(self, "Copied", "Detailed context copied to clipboard")
 
 
 class SettingsWidget(QtWidgets.QWidget):
@@ -24,6 +222,7 @@ class SettingsWidget(QtWidgets.QWidget):
         super(SettingsWidget, self).__init__(parent)
         self.logger = logging.getLogger(__name__)
         self.config_manager = None
+        self.prompts_model = None
         self._setup_config_manager()
         self._setup_ui()
         self._load_settings()
@@ -50,12 +249,90 @@ class SettingsWidget(QtWidgets.QWidget):
 
         # Create tabs
         self._create_general_tab()
+        self._create_system_prompts_tab()
         self._create_tools_tab()
 
         # Control buttons
         self._create_control_buttons(layout)
 
+    def _create_system_prompts_tab(self):
+        """Create system prompts management tab."""
+        tab = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(tab)
 
+        # Header
+        header_layout = QtWidgets.QHBoxLayout()
+        header_label = QtWidgets.QLabel("System Prompts Configuration")
+        header_label.setStyleSheet("font-weight: bold; font-size: 12px;")
+        header_layout.addWidget(header_label)
+
+        header_layout.addStretch()
+
+        # CAD Context preview button
+        self.cad_context_btn = QtWidgets.QPushButton("Preview CAD Context")
+        self.cad_context_btn.setToolTip("Preview what CAD context information is sent to AI")
+        self.cad_context_btn.clicked.connect(self._preview_cad_context)
+        header_layout.addWidget(self.cad_context_btn)
+
+        layout.addLayout(header_layout)
+
+        # Description
+        desc_label = QtWidgets.QLabel(
+            "Configure system prompts for different AI providers and contexts. "
+            "These prompts define how the AI should behave and respond to user queries."
+        )
+        desc_label.setWordWrap(True)
+        desc_label.setStyleSheet("color: #666; font-size: 10px; padding: 5px;")
+        layout.addWidget(desc_label)
+
+        # Table for prompts
+        self.prompts_model = SystemPromptsTableModel()
+        self.prompts_table = QtWidgets.QTableView()
+        self.prompts_table.setModel(self.prompts_model)
+
+        # Configure table
+        self.prompts_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.prompts_table.setAlternatingRowColors(True)
+        self.prompts_table.setSortingEnabled(True)
+
+        # Set column widths
+        header = self.prompts_table.horizontalHeader()
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+
+        # Set row height
+        self.prompts_table.verticalHeader().setDefaultSectionSize(60)
+
+        layout.addWidget(self.prompts_table)
+
+        # Buttons for prompt management
+        button_layout = QtWidgets.QHBoxLayout()
+
+        self.add_prompt_btn = QtWidgets.QPushButton("Add Prompt")
+        self.add_prompt_btn.clicked.connect(self._add_prompt)
+        button_layout.addWidget(self.add_prompt_btn)
+
+        self.remove_prompt_btn = QtWidgets.QPushButton("Remove Prompt")
+        self.remove_prompt_btn.clicked.connect(self._remove_prompt)
+        button_layout.addWidget(self.remove_prompt_btn)
+
+        self.reset_prompts_btn = QtWidgets.QPushButton("Reset to Defaults")
+        self.reset_prompts_btn.clicked.connect(self._reset_prompts)
+        button_layout.addWidget(self.reset_prompts_btn)
+
+        button_layout.addStretch()
+
+        self.import_prompts_btn = QtWidgets.QPushButton("Import")
+        self.import_prompts_btn.clicked.connect(self._import_prompts)
+        button_layout.addWidget(self.import_prompts_btn)
+
+        self.export_prompts_btn = QtWidgets.QPushButton("Export")
+        self.export_prompts_btn.clicked.connect(self._export_prompts)
+        button_layout.addWidget(self.export_prompts_btn)
+
+        layout.addLayout(button_layout)
+
+        self.tab_widget.addTab(tab, "System Prompts")
 
     def _create_general_tab(self):
         """Create general settings tab."""
@@ -182,7 +459,100 @@ class SettingsWidget(QtWidgets.QWidget):
 
         layout.addLayout(button_layout)
 
+    def _preview_cad_context(self):
+        """Preview CAD context information."""
+        dialog = CADContextPreviewDialog(self)
+        dialog.exec_()
 
+    def _add_prompt(self):
+        """Add a new system prompt."""
+        name, ok = QtWidgets.QInputDialog.getText(
+            self, "Add System Prompt", "Enter prompt name/context:"
+        )
+
+        if ok and name.strip():
+            name = name.strip()
+            if name in self.prompts_model.prompts_data:
+                QtWidgets.QMessageBox.warning(self, "Error", f"Prompt '{name}' already exists")
+                return
+
+            prompt, ok = QtWidgets.QInputDialog.getMultiLineText(
+                self, "Add System Prompt", f"Enter system prompt for '{name}':"
+            )
+
+            if ok:
+                self.prompts_model.add_prompt(name, prompt)
+
+    def _remove_prompt(self):
+        """Remove selected system prompt."""
+        selection = self.prompts_table.selectionModel().selectedRows()
+        if not selection:
+            QtWidgets.QMessageBox.information(self, "Info", "Please select a prompt to remove")
+            return
+
+        row = selection[0].row()
+        keys = list(self.prompts_model.prompts_data.keys())
+        if row < len(keys):
+            name = keys[row]
+
+            reply = QtWidgets.QMessageBox.question(
+                self, "Remove Prompt",
+                f"Are you sure you want to remove the prompt '{name}'?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+            )
+
+            if reply == QtWidgets.QMessageBox.Yes:
+                self.prompts_model.remove_prompt(name)
+
+    def _reset_prompts(self):
+        """Reset prompts to defaults."""
+        reply = QtWidgets.QMessageBox.question(
+            self, "Reset Prompts",
+            "Are you sure you want to reset all system prompts to defaults?\nThis will remove any custom prompts.",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+        )
+
+        if reply == QtWidgets.QMessageBox.Yes:
+            self.prompts_model = SystemPromptsTableModel()
+            self.prompts_table.setModel(self.prompts_model)
+
+    def _import_prompts(self):
+        """Import system prompts from file."""
+        file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, "Import System Prompts", "", "JSON Files (*.json)"
+        )
+
+        if file_path:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    prompts_data = json.load(f)
+
+                if isinstance(prompts_data, dict):
+                    self.prompts_model = SystemPromptsTableModel(prompts_data)
+                    self.prompts_table.setModel(self.prompts_model)
+                    QtWidgets.QMessageBox.information(self, "Success", "System prompts imported successfully")
+                else:
+                    QtWidgets.QMessageBox.warning(self, "Error", "Invalid prompts file format")
+
+            except Exception as e:
+                QtWidgets.QMessageBox.warning(self, "Error", f"Failed to import prompts: {str(e)}")
+
+    def _export_prompts(self):
+        """Export system prompts to file."""
+        file_path, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self, "Export System Prompts", "system_prompts.json", "JSON Files (*.json)"
+        )
+
+        if file_path:
+            try:
+                prompts_data = self.prompts_model.get_prompts_data()
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    json.dump(prompts_data, f, indent=2, ensure_ascii=False)
+
+                QtWidgets.QMessageBox.information(self, "Success", "System prompts exported successfully")
+
+            except Exception as e:
+                QtWidgets.QMessageBox.warning(self, "Error", f"Failed to export prompts: {str(e)}")
 
     def _on_ui_setting_changed(self, key, value):
         """Handle UI setting change."""
@@ -218,11 +588,22 @@ class SettingsWidget(QtWidgets.QWidget):
         self.default_chamfer_spin.setValue(surface_defaults.get("default_chamfer_distance", 1.0))
         self.default_draft_spin.setValue(surface_defaults.get("default_draft_angle", 5.0))
 
+        # Load system prompts
+        system_prompts = self.config_manager.get_config("system_prompts", {})
+        if system_prompts and self.prompts_model:
+            self.prompts_model = SystemPromptsTableModel(system_prompts)
+            self.prompts_table.setModel(self.prompts_model)
+
     def _save_settings(self):
         """Save all settings."""
         if not self.config_manager:
             QtWidgets.QMessageBox.warning(self, "Error", "Configuration manager not available")
             return
+
+        # Save system prompts
+        if self.prompts_model:
+            prompts_data = self.prompts_model.get_prompts_data()
+            self.config_manager.set_config("system_prompts", prompts_data)
 
         success = self.config_manager.save_config()
         if success:
@@ -284,3 +665,10 @@ class SettingsWidget(QtWidgets.QWidget):
                 QtWidgets.QMessageBox.information(self, "Success", "Configuration exported successfully")
             else:
                 QtWidgets.QMessageBox.warning(self, "Error", "Failed to export configuration")
+
+    def get_system_prompt(self, context: str = "default") -> str:
+        """Get system prompt for a specific context."""
+        if self.prompts_model:
+            prompts_data = self.prompts_model.get_prompts_data()
+            return prompts_data.get(context, prompts_data.get("default", ""))
+        return ""

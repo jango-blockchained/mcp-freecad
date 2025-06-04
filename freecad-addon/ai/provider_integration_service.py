@@ -74,6 +74,21 @@ class ProviderIntegrationService(QtCore.QObject):
             self.logger.error(f"Failed to setup ConfigManager: {e}")
             self.config_manager = None
 
+    def _normalize_provider_name(self, provider_name: str) -> str:
+        """Normalize provider name to lowercase for consistent handling."""
+        return provider_name.lower()
+
+    def _get_provider_display_name(self, provider_name: str) -> str:
+        """Get the display name for a provider (capitalized)."""
+        name_map = {
+            "anthropic": "Anthropic",
+            "openai": "OpenAI",
+            "google": "Google",
+            "openrouter": "OpenRouter"
+        }
+        normalized = self._normalize_provider_name(provider_name)
+        return name_map.get(normalized, provider_name.title())
+
     def initialize_providers_from_config(self) -> bool:
         """Initialize AI providers based on saved configuration."""
         if not self.config_manager:
@@ -81,19 +96,48 @@ class ProviderIntegrationService(QtCore.QObject):
             return False
 
         try:
-            # Get available providers and their API keys
-            providers_to_init = ["openai", "anthropic", "google"]
+            self.logger.info("Starting provider initialization from configuration...")
+
+            # Get all configured providers (both default and custom)
+            all_api_keys = self.config_manager.list_api_keys()
+            self.logger.info(f"Found API keys for providers: {all_api_keys}")
+
             initialized_count = 0
 
-            for provider_name in providers_to_init:
-                api_key = self.config_manager.get_api_key(provider_name)
-                provider_config = self.config_manager.get_provider_config(provider_name)
+            # Try to initialize any provider that has an API key
+            for provider_key in all_api_keys:
+                normalized_name = self._normalize_provider_name(provider_key)
+                display_name = self._get_provider_display_name(provider_key)
 
-                if api_key and provider_config.get("enabled", False):
-                    success = self._initialize_provider(provider_name, api_key, provider_config)
-                    if success:
-                        initialized_count += 1
-                        self.logger.info(f"Initialized provider: {provider_name}")
+                api_key = self.config_manager.get_api_key(provider_key)
+                if not api_key:
+                    self.logger.warning(f"No API key found for {provider_key}")
+                    continue
+
+                # Get provider config - create default if none exists
+                provider_config = self.config_manager.get_provider_config(display_name)
+                if not provider_config:
+                    provider_config = self.config_manager.get_provider_config(provider_key)
+
+                if not provider_config:
+                    # Create default config if none exists
+                    provider_config = {
+                        'enabled': True,  # Default to enabled if API key exists
+                        'model': self._get_default_model_for_provider(normalized_name),
+                        'temperature': 0.7,
+                        'timeout': 30,
+                        'max_tokens': 4000
+                    }
+                    self.logger.info(f"Created default config for {display_name}")
+
+                # Always try to initialize if we have an API key, regardless of enabled status
+                self.logger.info(f"Attempting to initialize {display_name} with config: {provider_config}")
+                success = self._initialize_provider(display_name, api_key, provider_config)
+                if success:
+                    initialized_count += 1
+                    self.logger.info(f"Successfully initialized provider: {display_name}")
+                else:
+                    self.logger.error(f"Failed to initialize provider: {display_name}")
 
             self.logger.info(f"Initialized {initialized_count} providers from configuration")
             self.providers_updated.emit()
@@ -101,23 +145,40 @@ class ProviderIntegrationService(QtCore.QObject):
 
         except Exception as e:
             self.logger.error(f"Error initializing providers from config: {e}")
+            import traceback
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
             return False
+
+    def _get_default_model_for_provider(self, provider_name: str) -> str:
+        """Get default model for a provider type."""
+        model_map = {
+            "anthropic": "claude-4-20241120",
+            "openai": "gpt-4o-mini",
+            "google": "gemini-1.5-flash",
+            "openrouter": "anthropic/claude-3.5-sonnet"
+        }
+        return model_map.get(provider_name, "default-model")
 
     def _initialize_provider(self, provider_name: str, api_key: str, config: Dict[str, Any]) -> bool:
         """Initialize a specific AI provider."""
         try:
+            normalized_name = self._normalize_provider_name(provider_name)
+
             # Map provider names to types
             provider_type_map = {
                 "openai": "openrouter",  # Using OpenRouter for OpenAI compatibility
                 "anthropic": "claude",
-                "google": "gemini"
+                "google": "gemini",
+                "openrouter": "openrouter"
             }
 
-            provider_type = provider_type_map.get(provider_name, provider_name)
+            provider_type = provider_type_map.get(normalized_name, normalized_name)
+            self.logger.info(f"Initializing {provider_name} as type {provider_type}")
 
-            # Add provider to AI manager
+            # Add provider to AI manager with unique name
+            ai_manager_name = f"{normalized_name}_main"
             success = self.ai_manager.add_provider(
-                name=f"{provider_name}_main",
+                name=ai_manager_name,
                 provider_type=provider_type,
                 api_key=api_key,
                 config=config
@@ -137,13 +198,19 @@ class ProviderIntegrationService(QtCore.QObject):
                 self.provider_added.emit(provider_name, provider_type)
                 self.provider_status_changed.emit(provider_name, "initialized", "Provider ready")
 
+                # Automatically test connection
+                QtCore.QTimer.singleShot(500, lambda: self.test_provider_connection(provider_name))
+
                 return True
             else:
                 self.logger.error(f"Failed to add provider {provider_name} to AI manager")
+                self._update_provider_status(provider_name, "error", "Failed to initialize in AI manager")
                 return False
 
         except Exception as e:
             self.logger.error(f"Error initializing provider {provider_name}: {e}")
+            import traceback
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
             self._update_provider_status(provider_name, "error", str(e))
             return False
 
@@ -153,8 +220,10 @@ class ProviderIntegrationService(QtCore.QObject):
             return False
 
         try:
+            normalized_name = self._normalize_provider_name(provider_name)
+
             # Save API key to config
-            if not self.config_manager.set_api_key(provider_name, api_key):
+            if not self.config_manager.set_api_key(normalized_name, api_key):
                 return False
 
             # Save provider config
@@ -173,8 +242,10 @@ class ProviderIntegrationService(QtCore.QObject):
     def remove_provider(self, provider_name: str) -> bool:
         """Remove an AI provider."""
         try:
+            normalized_name = self._normalize_provider_name(provider_name)
+
             # Remove from AI manager
-            ai_manager_name = f"{provider_name}_main"
+            ai_manager_name = f"{normalized_name}_main"
             self.ai_manager.remove_provider(ai_manager_name)
 
             # Remove from status tracking
@@ -206,7 +277,8 @@ class ProviderIntegrationService(QtCore.QObject):
     def _perform_connection_test(self, provider_name: str):
         """Perform the actual connection test."""
         try:
-            ai_manager_name = f"{provider_name}_main"
+            normalized_name = self._normalize_provider_name(provider_name)
+            ai_manager_name = f"{normalized_name}_main"
             provider = self.ai_manager.providers.get(ai_manager_name)
 
             if not provider:
@@ -215,19 +287,23 @@ class ProviderIntegrationService(QtCore.QObject):
 
             # Try to validate the provider
             if hasattr(provider, 'validate_connection'):
-                # Use provider's validation method if available
+                # Use provider's validation method
                 result = provider.validate_connection()
                 if result:
                     self._update_provider_status(provider_name, "connected", "Connection successful")
                 else:
-                    self._update_provider_status(provider_name, "error", "Connection failed")
+                    self._update_provider_status(provider_name, "error", "Connection validation failed")
             else:
                 # Fallback: basic API key validation
-                api_key = self.config_manager.get_api_key(provider_name) if self.config_manager else None
-                if api_key and len(api_key) > 20:
-                    self._update_provider_status(provider_name, "connected", "API key format valid")
+                if hasattr(provider, 'validate_api_key'):
+                    result = provider.validate_api_key()
+                    if result:
+                        self._update_provider_status(provider_name, "connected", "API key format valid")
+                    else:
+                        self._update_provider_status(provider_name, "error", "Invalid API key format")
                 else:
-                    self._update_provider_status(provider_name, "error", "Invalid API key")
+                    # Last resort: assume connected if provider exists
+                    self._update_provider_status(provider_name, "connected", "Provider available")
 
         except Exception as e:
             self._update_provider_status(provider_name, "error", f"Test failed: {str(e)}")
@@ -269,7 +345,7 @@ class ProviderIntegrationService(QtCore.QObject):
         """Get list of active (connected) providers."""
         return [
             name for name, status in self.provider_status.items()
-            if status.get("status") == "connected"
+            if status.get("status") in ["connected", "initialized"]
         ]
 
     def register_status_callback(self, callback: Callable):
@@ -288,15 +364,16 @@ class ProviderIntegrationService(QtCore.QObject):
             return
 
         try:
-            api_key = self.config_manager.get_api_key(provider_name)
+            normalized_name = self._normalize_provider_name(provider_name)
+            api_key = self.config_manager.get_api_key(normalized_name)
             config = self.config_manager.get_provider_config(provider_name)
 
-            if api_key and config.get("enabled", False):
+            if api_key:
                 # Re-initialize provider with new settings
                 self.remove_provider(provider_name)
-                self._initialize_provider(provider_name, api_key, config)
+                self._initialize_provider(provider_name, api_key, config or {})
             else:
-                # Remove provider if disabled or no API key
+                # Remove provider if no API key
                 self.remove_provider(provider_name)
 
         except Exception as e:
@@ -305,7 +382,8 @@ class ProviderIntegrationService(QtCore.QObject):
     def send_message_to_provider(self, provider_name: str, message: str, context: Optional[Dict] = None) -> str:
         """Send a message to a specific provider."""
         try:
-            ai_manager_name = f"{provider_name}_main"
+            normalized_name = self._normalize_provider_name(provider_name)
+            ai_manager_name = f"{normalized_name}_main"
 
             # Use asyncio.run for async call (simplified for Qt integration)
             loop = asyncio.new_event_loop()

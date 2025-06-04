@@ -21,6 +21,7 @@ class ConversationWidget(QtWidgets.QWidget):
 
         self._setup_services()
         self._setup_ui()
+        self._load_providers_fallback()
 
     def _setup_services(self):
         """Setup AI manager and config manager."""
@@ -30,11 +31,16 @@ class ConversationWidget(QtWidgets.QWidget):
         except ImportError:
             self.ai_manager = None
 
+        # Try multiple import strategies for config manager
         try:
             from ..config.config_manager import ConfigManager
             self.config_manager = ConfigManager()
         except ImportError:
-            self.config_manager = None
+            try:
+                from config.config_manager import ConfigManager
+                self.config_manager = ConfigManager()
+            except ImportError:
+                self.config_manager = None
 
     def _setup_ui(self):
         """Setup the user interface."""
@@ -64,6 +70,20 @@ class ConversationWidget(QtWidgets.QWidget):
         self.provider_status_label = QtWidgets.QLabel("Not Connected")
         self.provider_status_label.setStyleSheet("color: red; font-weight: bold; padding: 5px;")
         provider_layout.addWidget(self.provider_status_label)
+
+        # Refresh button for debugging
+        self.refresh_providers_btn = QtWidgets.QPushButton("🔄")
+        self.refresh_providers_btn.setMaximumWidth(30)
+        self.refresh_providers_btn.setToolTip("Refresh providers list")
+        self.refresh_providers_btn.clicked.connect(self.refresh_providers)
+        provider_layout.addWidget(self.refresh_providers_btn)
+
+        # Debug button
+        self.debug_providers_btn = QtWidgets.QPushButton("🐛")
+        self.debug_providers_btn.setMaximumWidth(30)
+        self.debug_providers_btn.setToolTip("Debug provider status")
+        self.debug_providers_btn.clicked.connect(self._debug_providers)
+        provider_layout.addWidget(self.debug_providers_btn)
 
         provider_layout.addStretch()
 
@@ -210,6 +230,14 @@ class ConversationWidget(QtWidgets.QWidget):
                         self.provider_status_label.setText("Connected")
                         self.provider_status_label.setStyleSheet("color: green; font-weight: bold; padding: 5px;")
                         self.send_btn.setEnabled(True)
+                    elif status == "initialized":
+                        self.provider_status_label.setText("Ready")
+                        self.provider_status_label.setStyleSheet("color: blue; font-weight: bold; padding: 5px;")
+                        self.send_btn.setEnabled(True)
+                    elif status == "testing":
+                        self.provider_status_label.setText("Testing...")
+                        self.provider_status_label.setStyleSheet("color: orange; font-weight: bold; padding: 5px;")
+                        self.send_btn.setEnabled(False)
                     elif status == "error":
                         self.provider_status_label.setText("Error")
                         self.provider_status_label.setStyleSheet("color: red; font-weight: bold; padding: 5px;")
@@ -223,14 +251,125 @@ class ConversationWidget(QtWidgets.QWidget):
                     self.provider_status_label.setStyleSheet("color: red; font-weight: bold; padding: 5px;")
                     self.send_btn.setEnabled(False)
             else:
-                # Fallback if no provider service
-                self.provider_status_label.setText("Ready")
-                self.provider_status_label.setStyleSheet("color: green; font-weight: bold; padding: 5px;")
-                self.send_btn.setEnabled(True)
+                # Fallback if no provider service - check if we have config
+                if self.config_manager:
+                    api_key = self.config_manager.get_api_key(self.current_provider.lower())
+                    if api_key:
+                        self.provider_status_label.setText("Configured")
+                        self.provider_status_label.setStyleSheet("color: blue; font-weight: bold; padding: 5px;")
+                        self.send_btn.setEnabled(True)
+                    else:
+                        self.provider_status_label.setText("Not Configured")
+                        self.provider_status_label.setStyleSheet("color: red; font-weight: bold; padding: 5px;")
+                        self.send_btn.setEnabled(False)
+                else:
+                    self.provider_status_label.setText("Service Unavailable")
+                    self.provider_status_label.setStyleSheet("color: red; font-weight: bold; padding: 5px;")
+                    self.send_btn.setEnabled(False)
         else:
             self.provider_status_label.setText("No Provider")
             self.provider_status_label.setStyleSheet("color: red; font-weight: bold; padding: 5px;")
             self.send_btn.setEnabled(False)
+
+    def _load_providers_fallback(self):
+        """Load providers directly from config if service is not available."""
+        if not self.config_manager:
+            return
+
+        try:
+            # Get configured API keys as a fallback
+            api_keys = self.config_manager.list_api_keys()
+            if api_keys:
+                for provider_key in api_keys:
+                    # Normalize provider names for display
+                    display_name = self._get_provider_display_name(provider_key)
+                    if self.provider_combo.findText(display_name) == -1:
+                        self.provider_combo.addItem(display_name)
+
+                # Set default provider
+                default_provider = self.config_manager.get_default_provider()
+                if default_provider:
+                    index = self.provider_combo.findText(default_provider)
+                    if index >= 0:
+                        self.provider_combo.setCurrentIndex(index)
+
+        except Exception as e:
+            print(f"Error loading providers fallback: {e}")
+
+    def _get_provider_display_name(self, provider_key: str) -> str:
+        """Get display name for provider."""
+        name_map = {
+            "anthropic": "Anthropic",
+            "openai": "OpenAI",
+            "google": "Google",
+            "openrouter": "OpenRouter"
+        }
+        return name_map.get(provider_key.lower(), provider_key.title())
+
+    def _debug_providers(self):
+        """Debug provider status and configuration."""
+        debug_info = []
+        debug_info.append("=== PROVIDER DEBUG INFO ===")
+        debug_info.append(f"Current Provider: {self.current_provider}")
+        debug_info.append(f"Provider Service Available: {self.provider_service is not None}")
+        debug_info.append(f"Config Manager Available: {self.config_manager is not None}")
+        debug_info.append(f"AI Manager Available: {self.ai_manager is not None}")
+        debug_info.append("")
+
+        # Provider combo box contents
+        debug_info.append("Provider Combo Box Contents:")
+        for i in range(self.provider_combo.count()):
+            debug_info.append(f"  {i}: {self.provider_combo.itemText(i)}")
+        debug_info.append("")
+
+        # Provider service status
+        if self.provider_service:
+            debug_info.append("Provider Service Status:")
+            all_providers = self.provider_service.get_all_providers()
+            for name, status in all_providers.items():
+                debug_info.append(f"  {name}: {status}")
+            debug_info.append("")
+
+        # Config manager status
+        if self.config_manager:
+            debug_info.append("Config Manager Status:")
+            api_keys = self.config_manager.list_api_keys()
+            debug_info.append(f"  API Keys: {api_keys}")
+            default_provider = self.config_manager.get_default_provider()
+            debug_info.append(f"  Default Provider: {default_provider}")
+            debug_info.append("")
+
+        # AI manager status
+        if self.ai_manager:
+            debug_info.append("AI Manager Status:")
+            debug_info.append(f"  Providers: {list(self.ai_manager.providers.keys())}")
+            debug_info.append(f"  Active Provider: {self.ai_manager.active_provider}")
+
+        # Show debug dialog
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle("Provider Debug Information")
+        dialog.resize(600, 400)
+
+        layout = QtWidgets.QVBoxLayout(dialog)
+
+        text_edit = QtWidgets.QTextEdit()
+        text_edit.setPlainText("\n".join(debug_info))
+        text_edit.setReadOnly(True)
+        text_edit.setStyleSheet("font-family: monospace; font-size: 10px;")
+        layout.addWidget(text_edit)
+
+        button_layout = QtWidgets.QHBoxLayout()
+
+        refresh_btn = QtWidgets.QPushButton("Refresh Providers")
+        refresh_btn.clicked.connect(lambda: (self.refresh_providers(), dialog.accept()))
+        button_layout.addWidget(refresh_btn)
+
+        close_btn = QtWidgets.QPushButton("Close")
+        close_btn.clicked.connect(dialog.accept)
+        button_layout.addWidget(close_btn)
+
+        layout.addLayout(button_layout)
+        dialog.exec_()
 
     def _on_send_message(self):
         """Handle send message button click."""
@@ -264,20 +403,58 @@ class ConversationWidget(QtWidgets.QWidget):
         # Show thinking indicator
         self._add_conversation_message("AI", "Thinking...")
 
-        # Simulate AI response (real implementation would be async)
-        QtCore.QTimer.singleShot(1500, lambda: self._simulate_ai_response(message))
+        # Try to send via provider service first, then fallback to simulation
+        if self.provider_service:
+            try:
+                # Use provider service to send message
+                QtCore.QTimer.singleShot(100, lambda: self._send_via_provider_service(message))
+            except Exception as e:
+                self._add_system_message(f"Error using provider service: {e}")
+                QtCore.QTimer.singleShot(1500, lambda: self._simulate_ai_response(message))
+        else:
+            # Fallback to simulation
+            QtCore.QTimer.singleShot(1500, lambda: self._simulate_ai_response(message))
 
         # Update usage statistics
         current_count = len(self.conversation_history)
         self.usage_label.setText(f"Messages: {current_count}")
 
+    def _send_via_provider_service(self, message):
+        """Send message via provider service."""
+        try:
+            response = self.provider_service.send_message_to_provider(self.current_provider, message)
+
+            # Remove thinking indicator
+            self._remove_thinking_indicator()
+
+            # Add AI response
+            self._add_conversation_message("AI", response)
+
+        except Exception as e:
+            # Remove thinking indicator
+            self._remove_thinking_indicator()
+
+            # Add error message
+            self._add_conversation_message("AI", f"Error: {str(e)}")
+
+    def _remove_thinking_indicator(self):
+        """Remove the thinking indicator from conversation."""
+        text = self.conversation_text.toPlainText()
+        if "AI: Thinking..." in text:
+            # Find and remove the last "Thinking..." message
+            lines = text.split('\n')
+            for i in range(len(lines) - 1, -1, -1):
+                if "AI" in lines[i] and "Thinking..." in lines[i]:
+                    lines.pop(i)
+                    if i < len(lines) and lines[i].strip() == "":
+                        lines.pop(i)
+                    break
+            self.conversation_text.setPlainText('\n'.join(lines))
+
     def _simulate_ai_response(self, user_message):
         """Simulate AI response (placeholder for real implementation)."""
         # Remove thinking indicator
-        text = self.conversation_text.toPlainText()
-        if text.endswith("AI: Thinking..."):
-            text = text[:-len("AI: Thinking...")]
-            self.conversation_text.setPlainText(text)
+        self._remove_thinking_indicator()
 
         # Generate simulated response based on message content
         if "box" in user_message.lower() or "cube" in user_message.lower():
@@ -384,16 +561,31 @@ class ConversationWidget(QtWidgets.QWidget):
         current_provider = self.provider_combo.currentText()
         self.provider_combo.clear()
 
-        # Get providers from various sources
-        if self.provider_service:
-            providers = self.provider_service.get_all_providers()
-            for provider_name in providers.keys():
-                self.provider_combo.addItem(provider_name)
+        providers_found = False
 
-        if self.ai_manager:
-            for provider_name in self.ai_manager.providers.keys():
-                if self.provider_combo.findText(provider_name) == -1:
+        # Get providers from provider service first
+        if self.provider_service:
+            try:
+                providers = self.provider_service.get_all_providers()
+                for provider_name in providers.keys():
                     self.provider_combo.addItem(provider_name)
+                    providers_found = True
+            except Exception as e:
+                print(f"Error getting providers from service: {e}")
+
+        # Get providers from AI manager
+        if self.ai_manager:
+            try:
+                for provider_name in self.ai_manager.providers.keys():
+                    if self.provider_combo.findText(provider_name) == -1:
+                        self.provider_combo.addItem(provider_name)
+                        providers_found = True
+            except Exception as e:
+                print(f"Error getting providers from AI manager: {e}")
+
+        # Fallback: load from config manager
+        if not providers_found:
+            self._load_providers_fallback()
 
         # Restore previous selection if available
         if current_provider:
@@ -401,13 +593,19 @@ class ConversationWidget(QtWidgets.QWidget):
             if index >= 0:
                 self.provider_combo.setCurrentIndex(index)
 
-        # Set default provider if available
+        # Set default provider if no current selection
         if not current_provider and self.config_manager:
-            default_provider = self.config_manager.get_default_provider()
-            if default_provider:
-                index = self.provider_combo.findText(default_provider)
-                if index >= 0:
-                    self.provider_combo.setCurrentIndex(index)
+            try:
+                default_provider = self.config_manager.get_default_provider()
+                if default_provider:
+                    index = self.provider_combo.findText(default_provider)
+                    if index >= 0:
+                        self.provider_combo.setCurrentIndex(index)
+            except Exception as e:
+                print(f"Error setting default provider: {e}")
+
+        # Update status after refresh
+        self._update_provider_status()
 
     def set_provider_service(self, provider_service):
         """Set the provider integration service."""
@@ -443,7 +641,6 @@ class ConversationWidget(QtWidgets.QWidget):
         self.conversation_text.clear()
         for entry in self.conversation_history:
             self._add_conversation_message(entry['sender'], entry['message'])
-        self.usage_label.setText(f"Messages: {len(self.conversation_history)}")
 
 
 class ConversationHistoryDialog(QtWidgets.QDialog):
@@ -453,49 +650,34 @@ class ConversationHistoryDialog(QtWidgets.QDialog):
         super(ConversationHistoryDialog, self).__init__(parent)
         self.history = history
         self.setWindowTitle("Conversation History")
-        self.setModal(True)
-        self.resize(600, 500)
+        self.resize(600, 400)
         self._setup_ui()
 
     def _setup_ui(self):
         """Setup the dialog UI."""
         layout = QtWidgets.QVBoxLayout(self)
 
-        # Header
-        header_label = QtWidgets.QLabel(f"Conversation History ({len(self.history)} messages)")
-        header_label.setStyleSheet("font-weight: bold; font-size: 14px; padding: 10px;")
-        layout.addWidget(header_label)
-
         # History list
         self.history_list = QtWidgets.QListWidget()
-        self.history_list.setAlternatingRowColors(True)
-
-        for entry in self.history:
-            item_text = f"{entry['sender']} ({entry['timestamp']}): {entry['message'][:100]}{'...' if len(entry['message']) > 100 else ''}"
+        for i, entry in enumerate(self.history):
+            item_text = f"{entry['sender']} ({entry['timestamp']}): {entry['message'][:50]}..."
             item = QtWidgets.QListWidgetItem(item_text)
-
-            # Color code by sender
-            if entry['sender'] == "You":
-                item.setForeground(QtGui.QColor("#2196F3"))
-            elif entry['sender'] == "AI":
-                item.setForeground(QtGui.QColor("#4CAF50"))
-            else:
-                item.setForeground(QtGui.QColor("#FF9800"))
-
+            item.setData(QtCore.Qt.UserRole, i)
             self.history_list.addItem(item)
 
+        self.history_list.itemClicked.connect(self._on_item_selected)
         layout.addWidget(self.history_list)
 
-        # Details area
-        self.details_text = QtWidgets.QTextEdit()
-        self.details_text.setMaximumHeight(150)
-        self.details_text.setReadOnly(True)
-        layout.addWidget(self.details_text)
+        # Detail view
+        self.detail_text = QtWidgets.QTextEdit()
+        self.detail_text.setReadOnly(True)
+        self.detail_text.setMaximumHeight(150)
+        layout.addWidget(self.detail_text)
 
         # Buttons
         button_layout = QtWidgets.QHBoxLayout()
 
-        self.export_btn = QtWidgets.QPushButton("Export History")
+        self.export_btn = QtWidgets.QPushButton("Export")
         self.export_btn.clicked.connect(self._export_history)
         button_layout.addWidget(self.export_btn)
 
@@ -507,33 +689,26 @@ class ConversationHistoryDialog(QtWidgets.QDialog):
 
         layout.addLayout(button_layout)
 
-        # Connect signals
-        self.history_list.currentRowChanged.connect(self._on_item_selected)
-
-    def _on_item_selected(self, row):
+    def _on_item_selected(self, item):
         """Handle history item selection."""
-        if 0 <= row < len(self.history):
-            entry = self.history[row]
-            details = f"Sender: {entry['sender']}\nTime: {entry['timestamp']}\n\nMessage:\n{entry['message']}"
-            self.details_text.setPlainText(details)
+        index = item.data(QtCore.Qt.UserRole)
+        if 0 <= index < len(self.history):
+            entry = self.history[index]
+            self.detail_text.setPlainText(f"Sender: {entry['sender']}\nTime: {entry['timestamp']}\n\nMessage:\n{entry['message']}")
 
     def _export_history(self):
-        """Export history to file."""
+        """Export conversation history."""
         filename, _ = QtWidgets.QFileDialog.getSaveFileName(
             self, "Export History",
             f"conversation_history_{QtCore.QDateTime.currentDateTime().toString('yyyyMMdd_HHmmss')}.txt",
-            "Text Files (*.txt);;CSV Files (*.csv);;All Files (*)"
+            "Text Files (*.txt);;All Files (*)"
         )
 
         if filename:
             try:
                 with open(filename, 'w', encoding='utf-8') as f:
-                    f.write("FreeCAD AI Conversation History\n")
-                    f.write("=" * 40 + "\n\n")
-
                     for entry in self.history:
                         f.write(f"{entry['sender']} ({entry['timestamp']}): {entry['message']}\n\n")
-
                 QtWidgets.QMessageBox.information(self, "Success", f"History exported to {filename}")
             except Exception as e:
                 QtWidgets.QMessageBox.warning(self, "Error", f"Failed to export history: {str(e)}")
