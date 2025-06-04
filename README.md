@@ -16,7 +16,7 @@ This project provides a robust integration between AI assistants and FreeCAD CAD
 ### Option 1: FreeCAD Addon (Recommended for Users)
 For the best user experience with GUI integration:
 
-📦 **[FreeCAD MCP Integration Addon](freecad-addon/README.md)**
+📦 **[FreeCAD MCP Integration Addon](freecad-ai/README.md)**
 
 - 🧠 **Claude 4 with Thinking Mode** - Advanced AI reasoning
 - 🤖 **Multi-Provider Support** - Claude, Gemini, OpenRouter with 13+ models  
@@ -215,7 +215,7 @@ await server.initialize()
 ### Project Structure
 
 - **`src/mcp_freecad/`** - Main package
-- **`freecad-addon/`** - FreeCAD GUI addon
+- **`freecad-ai/`** - FreeCAD GUI addon
 - **`tests/`** - Test suite
 - **`docs/`** - Documentation
 - **`scripts/`** - Setup and utility scripts

@@ -41,7 +41,7 @@ The addon requires these Python packages (automatically installed):
 
 3. **Copy the addon folder**:
    ```bash
-   cp -r mcp-freecad/freecad-addon ~/.local/share/FreeCAD/Mod/MCPIntegration
+   cp -r mcp-freecad/freecad-ai ~/.local/share/FreeCAD/Mod/MCPIntegration
    ```
 
 4. **Install Python dependencies**:
@@ -65,10 +65,10 @@ The addon requires these Python packages (automatically installed):
 2. **Create a symbolic link**:
    ```bash
    # Linux/macOS
-   ln -s $(pwd)/freecad-addon ~/.local/share/FreeCAD/Mod/MCPIntegration
+   ln -s $(pwd)/freecad-ai ~/.local/share/FreeCAD/Mod/MCPIntegration
    
    # Windows (run as Administrator)
-   mklink /D "%APPDATA%\FreeCAD\Mod\MCPIntegration" "C:\path\to\mcp-freecad\freecad-addon"
+   mklink /D "%APPDATA%\FreeCAD\Mod\MCPIntegration" "C:\path\to\mcp-freecad\freecad-ai"
    ```
 
 3. **Install dependencies in development mode**:

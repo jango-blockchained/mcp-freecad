@@ -40,7 +40,7 @@ We are excited to announce the official v1.0.0 release of the MCP-FreeCAD integr
 
 ## 📦 What's Included
 
-### FreeCAD Addon (`freecad-addon/`)
+### FreeCAD Addon (`freecad-ai/`)
 - Complete workbench implementation
 - All tool implementations (primitives, operations, measurements, export/import)
 - AI provider integrations (Claude, Gemini, OpenRouter)
@@ -106,7 +106,7 @@ cd ~/.local/share/FreeCAD/Mod/
 git clone https://github.com/jango-blockchained/mcp-freecad.git MCPIntegration
 ```
 
-See [INSTALL.md](freecad-addon/INSTALL.md) for detailed instructions.
+See [INSTALL.md](freecad-ai/INSTALL.md) for detailed instructions.
 
 ## 🔧 Configuration
 
@@ -120,7 +120,7 @@ See [INSTALL.md](freecad-addon/INSTALL.md) for detailed instructions.
 
 Run the test suite:
 ```bash
-cd freecad-addon
+cd freecad-ai
 python tests/test_tools.py
 ```
 

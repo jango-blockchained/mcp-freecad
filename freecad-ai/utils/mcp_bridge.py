@@ -23,8 +23,8 @@ class MCPBridge:
         if mcp_root_path:
             self.mcp_root = Path(mcp_root_path)
         else:
-            # Auto-detect MCP root (addon is in freecad-addon/ subdirectory)
-            addon_dir = Path(__file__).parent.parent  # freecad-addon/
+            # Auto-detect MCP root (addon is in freecad-ai/ subdirectory)
+            addon_dir = Path(__file__).parent.parent  # freecad-ai/
             self.mcp_root = addon_dir.parent  # mcp-freecad/
 
         # Add MCP source to Python path

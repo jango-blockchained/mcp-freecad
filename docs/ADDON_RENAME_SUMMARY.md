@@ -32,7 +32,7 @@ From `src/mcp_freecad/tools/`:
 - **rendering.py**: Rendering capabilities (scene setup, camera, lighting, materials)
 - **smithery.py**: Fun smithery tools (anvil, hammer, tongs, blade forging)
 
-Location: `freecad-addon/tools/advanced/`
+Location: `freecad-ai/tools/advanced/`
 
 ### 2. Resources Added
 From `src/mcp_freecad/resources/`:
@@ -41,7 +41,7 @@ From `src/mcp_freecad/resources/`:
 - **measurement.py**: Advanced measurement resources
 - **cad_model.py**: CAD model management
 
-Location: `freecad-addon/resources/`
+Location: `freecad-ai/resources/`
 
 ### 3. Events Added
 From `src/mcp_freecad/events/`:
@@ -49,7 +49,7 @@ From `src/mcp_freecad/events/`:
 - **command_events.py**: Command execution events
 - **error_events.py**: Error handling events
 
-Location: `freecad-addon/events/`
+Location: `freecad-ai/events/`
 
 ### 4. API Added
 From `src/mcp_freecad/api/`:
@@ -57,14 +57,14 @@ From `src/mcp_freecad/api/`:
 - **tools.py**: Tool management API
 - **resources.py**: Resource management API
 
-Location: `freecad-addon/api/`
+Location: `freecad-ai/api/`
 
 ### 5. Clients Added
 From `src/mcp_freecad/clients/`:
 - **freecad_client.py**: FreeCAD client capabilities
 - **cursor_mcp_bridge.py**: Cursor MCP bridge
 
-Location: `freecad-addon/clients/`
+Location: `freecad-ai/clients/`
 
 ## New Features in the Addon
 

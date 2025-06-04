@@ -145,7 +145,7 @@ def main():
     else:
         # Try to find addon relative to this script
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        addon_path = os.path.join(script_dir, "..", "freecad-addon")
+        addon_path = os.path.join(script_dir, "..", "freecad-ai")
 
     addon_path = os.path.abspath(addon_path)
     if os.path.exists(addon_path):

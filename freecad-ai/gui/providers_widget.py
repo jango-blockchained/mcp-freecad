@@ -11,7 +11,7 @@ class FallbackConfigManager:
 
     def __init__(self):
         """Initialize fallback config manager."""
-        self.config_dir = Path.home() / ".freecad" / "freecad-addon"
+        self.config_dir = Path.home() / ".freecad" / "freecad-ai"
         self.config_dir.mkdir(parents=True, exist_ok=True)
         self.config_file = self.config_dir / "addon_config.json"
         self.keys_file = self.config_dir / "api_keys.json"

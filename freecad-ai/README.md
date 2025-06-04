@@ -110,7 +110,7 @@ cd ~/.local/share/FreeCAD/Addon/
 git clone https://github.com/jango-blockchained/mcp-freecad.git
 
 # Navigate to addon directory
-cd mcp-freecad/freecad-addon/
+cd mcp-freecad/freecad-ai/
 ```
 
 ### ⚙️ **Initial Setup**
@@ -360,7 +360,7 @@ pip install -r requirements-dev.txt
 python -m pytest tests/
 
 # Start FreeCAD with addon in development mode
-freecad --addon-dev freecad-addon/
+freecad --addon-dev freecad-ai/
 ```
 
 ### 📋 **Code Style**
@@ -493,8 +493,8 @@ pip install cryptography
 ## Configuration
 
 The addon creates configuration files in:
-- FreeCAD: `{UserAppData}/Mod/freecad-addon/`
-- Fallback: `~/.freecad/freecad-addon/`
+- FreeCAD: `{UserAppData}/Mod/freecad-ai/`
+- Fallback: `~/.freecad/freecad-ai/`
 
 ## Usage
 
