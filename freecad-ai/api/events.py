@@ -4,9 +4,18 @@ import logging
 import uuid
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Header, HTTPException, Query, Request
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+try:
+    from fastapi import APIRouter, Header, HTTPException, Query, Request
+    from fastapi.responses import StreamingResponse
+    from pydantic import BaseModel
+    FASTAPI_AVAILABLE = True
+except ImportError:
+    # FastAPI not available, create minimal stubs
+    FASTAPI_AVAILABLE = False
+    APIRouter = None
+    HTTPException = Exception
+    BaseModel = object
+    StreamingResponse = None
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +101,10 @@ class EventSubscription(BaseModel):
 
 def create_event_router(mcp_server):
     """Create a FastAPI router for events."""
+    if not FASTAPI_AVAILABLE:
+        logger.warning("FastAPI not available, event router disabled")
+        return None
+
     router = APIRouter()
 
     @router.get("")

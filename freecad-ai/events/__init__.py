@@ -25,10 +25,14 @@ for module_name, class_name in handlers_to_import:
             from .document_events import DocumentEventProvider as DocumentEventHandler
             globals()["DocumentEventHandler"] = DocumentEventHandler
             available_handlers.append("DocumentEventHandler")
-        else:
-            module = __import__(f"events.{module_name}", fromlist=[class_name])
-            globals()[class_name] = getattr(module, class_name)
-            available_handlers.append(class_name)
+        elif module_name == "command_events":
+            from .command_events import CommandExecutionEventProvider as CommandEventHandler
+            globals()["CommandEventHandler"] = CommandEventHandler
+            available_handlers.append("CommandEventHandler")
+        elif module_name == "error_events":
+            from .error_events import ErrorEventProvider as ErrorEventHandler
+            globals()["ErrorEventHandler"] = ErrorEventHandler
+            available_handlers.append("ErrorEventHandler")
     except ImportError as e:
         try:
             import FreeCAD

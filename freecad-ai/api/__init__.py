@@ -10,9 +10,9 @@ available_apis = []
 
 # Try importing each API individually to be more robust
 apis_to_import = [
-    ("tools", "create_tool_router"),  # Use the function name instead
-    ("resources", "ResourcesAPI"),
-    ("events", "EventsAPI")
+    ("tools", "create_tool_router"),
+    ("resources", "create_resource_router"),
+    ("events", "create_event_router")
 ]
 
 for module_name, item_name in apis_to_import:

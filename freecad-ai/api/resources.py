@@ -1,15 +1,35 @@
 import logging
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, HTTPException
+try:
+    from fastapi import APIRouter, HTTPException
+    FASTAPI_AVAILABLE = True
+except ImportError:
+    # FastAPI not available, create minimal stubs
+    FASTAPI_AVAILABLE = False
+    APIRouter = None
+    HTTPException = Exception
 
-from ..core.server import MCPServer
+try:
+    from ..core.server import MCPServer
+except ImportError:
+    # Fallback for when module is loaded by FreeCAD
+    import sys
+    import os
+    addon_dir = os.path.dirname(os.path.dirname(__file__))
+    if addon_dir not in sys.path:
+        sys.path.insert(0, addon_dir)
+    from core.server import MCPServer
 
 logger = logging.getLogger(__name__)
 
 
-def create_resource_router(server: MCPServer) -> APIRouter:
+def create_resource_router(server: MCPServer):
     """Create a router for resource endpoints."""
+    if not FASTAPI_AVAILABLE:
+        logger.warning("FastAPI not available, resource router disabled")
+        return None
+
     router = APIRouter(
         prefix="/resources",
         tags=["resources"],

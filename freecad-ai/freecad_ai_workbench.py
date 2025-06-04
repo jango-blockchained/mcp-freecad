@@ -112,7 +112,7 @@ except ImportError as e:
 # Import API
 API_AVAILABLE = False
 try:
-    from api import ToolsAPI, ResourcesAPI, EventsAPI, API_AVAILABLE
+    from api import create_tool_router, create_resource_router, create_event_router, API_AVAILABLE
 
     FreeCAD.Console.PrintMessage("FreeCAD AI: API loaded successfully\n")
 except ImportError as e:
