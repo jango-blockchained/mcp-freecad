@@ -33,12 +33,22 @@ class MCPMainWidget(QtWidgets.QDockWidget):
     def _setup_ui(self):
         """Setup the user interface."""
         layout = QtWidgets.QVBoxLayout(self.main_widget)
-        layout.setSpacing(5)
-        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setSpacing(2)  # Reduced spacing
+        layout.setContentsMargins(2, 2, 2, 2)  # Reduced margins
 
-        header_label = QtWidgets.QLabel("FreeCAD AI")
-        header_label.setStyleSheet("font-weight: bold; font-size: 14px; padding: 10px;")
-        layout.addWidget(header_label)
+        # Compact header with inline status
+        header_layout = QtWidgets.QHBoxLayout()
+        header_label = QtWidgets.QLabel("🤖 FreeCAD AI")
+        header_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        header_layout.addWidget(header_label)
+
+        header_layout.addStretch()
+
+        self.status_label = QtWidgets.QLabel("Ready")
+        self.status_label.setStyleSheet("padding: 2px 8px; background-color: #f0f0f0; border-radius: 10px; font-size: 11px;")
+        header_layout.addWidget(self.status_label)
+
+        layout.addLayout(header_layout)
 
         self.tab_widget = QtWidgets.QTabWidget()
         # Make tabs flexible
@@ -46,11 +56,6 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         self.tab_widget.setElideMode(QtCore.Qt.ElideRight)
         layout.addWidget(self.tab_widget)
         self._create_tabs()
-
-        self.status_label = QtWidgets.QLabel("Ready")
-        self.status_label.setStyleSheet("padding: 5px; background-color: #f0f0f0;")
-        self.status_label.setWordWrap(True)  # Allow text wrapping for narrow widths
-        layout.addWidget(self.status_label)
 
     def _setup_provider_service(self):
         """Setup the provider integration service."""
@@ -74,9 +79,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
 
         except ImportError as e:
             if hasattr(self, "status_label"):
-                self.status_label.setText(
-                    f"Warning: Provider service unavailable - {e}"
-                )
+                self.status_label.setText(f"Warning: {e}")
             print(f"FreeCAD AI: Provider service unavailable - {e}")
 
     def _on_provider_status_changed(
@@ -84,19 +87,19 @@ class MCPMainWidget(QtWidgets.QDockWidget):
     ):
         """Handle provider status changes."""
         if status == "connected":
-            self.status_label.setText(f"Provider {provider_name}: Connected")
+            self.status_label.setText(f"✅ {provider_name}")
             self.status_label.setStyleSheet(
-                "padding: 5px; background-color: #c8e6c9; color: #2e7d32;"
+                "padding: 2px 8px; background-color: #c8e6c9; color: #2e7d32; border-radius: 10px; font-size: 11px;"
             )
         elif status == "error":
-            self.status_label.setText(f"Provider {provider_name}: {message}")
+            self.status_label.setText(f"❌ {provider_name}")
             self.status_label.setStyleSheet(
-                "padding: 5px; background-color: #ffcdd2; color: #c62828;"
+                "padding: 2px 8px; background-color: #ffcdd2; color: #c62828; border-radius: 10px; font-size: 11px;"
             )
         else:
-            self.status_label.setText(f"Provider {provider_name}: {status}")
+            self.status_label.setText(f"⚡ {provider_name}")
             self.status_label.setStyleSheet(
-                "padding: 5px; background-color: #fff3e0; color: #ef6c00;"
+                "padding: 2px 8px; background-color: #fff3e0; color: #ef6c00; border-radius: 10px; font-size: 11px;"
             )
 
     def _on_providers_updated(self):
@@ -104,14 +107,14 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         if self.provider_service:
             active_count = len(self.provider_service.get_active_providers())
             total_count = len(self.provider_service.get_all_providers())
-            self.status_label.setText(f"Providers: {active_count}/{total_count} active")
+            self.status_label.setText(f"{active_count}/{total_count} active")
             if active_count > 0:
                 self.status_label.setStyleSheet(
-                    "padding: 5px; background-color: #c8e6c9; color: #2e7d32;"
+                    "padding: 2px 8px; background-color: #c8e6c9; color: #2e7d32; border-radius: 10px; font-size: 11px;"
                 )
             else:
                 self.status_label.setStyleSheet(
-                    "padding: 5px; background-color: #f0f0f0; color: #666;"
+                    "padding: 2px 8px; background-color: #f0f0f0; color: #666; border-radius: 10px; font-size: 11px;"
                 )
 
     def _retry_provider_initialization(self):
@@ -135,7 +138,6 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             from .conversation_widget import ConversationWidget
             from .tools_widget_compact import ToolsWidget  # Use compact version
             from .settings_widget import SettingsWidget
-            from .logs_widget import LogsWidget
 
             # Create widgets with provider service integration
             self.connection_widget = ConnectionWidget()
@@ -148,14 +150,13 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             if self.provider_service:
                 self._connect_widgets_to_service()
 
-            # Add tabs in logical order
+            # Add tabs in logical order (removed Logs)
             self.tab_widget.addTab(self.providers_widget, "Providers")
             self.tab_widget.addTab(self.conversation_widget, "Chat")
             self.tab_widget.addTab(self.tools_widget, "Tools")
             self.tab_widget.addTab(self.connection_widget, "Connections")
             self.tab_widget.addTab(ServerWidget(), "Servers")
             self.tab_widget.addTab(self.settings_widget, "Settings")
-            self.tab_widget.addTab(LogsWidget(), "Logs")
 
         except ImportError:
             for name in [
@@ -165,7 +166,6 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 "Connections",
                 "Servers",
                 "Settings",
-                "Logs",
             ]:
                 tab = QtWidgets.QWidget()
                 tab_layout = QtWidgets.QVBoxLayout(tab)
@@ -194,7 +194,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 self.connection_widget.set_provider_service(self.provider_service)
 
         except Exception as e:
-            self.status_label.setText(f"Widget integration warning: {e}")
+            self.status_label.setText(f"⚠️ {e}")
 
     def _on_settings_api_key_changed(self, provider_name: str):
         """Handle API key changes from settings widget."""

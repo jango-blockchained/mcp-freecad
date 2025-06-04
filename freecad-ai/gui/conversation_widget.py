@@ -77,16 +77,44 @@ class ConversationWidget(QtWidgets.QWidget):
         provider_layout.addWidget(self.provider_status_label)
 
         # Refresh button for debugging
-        self.refresh_providers_btn = QtWidgets.QPushButton("🔄")
-        self.refresh_providers_btn.setMaximumWidth(30)
+        self.refresh_providers_btn = QtWidgets.QPushButton("⟳")
+        self.refresh_providers_btn.setMaximumWidth(35)
         self.refresh_providers_btn.setToolTip("Refresh providers list")
+        self.refresh_providers_btn.setStyleSheet("""
+            QPushButton {
+                font-size: 16px;
+                font-weight: bold;
+                padding: 2px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                background-color: #f5f5f5;
+            }
+            QPushButton:hover {
+                background-color: #e0e0e0;
+                border-color: #999;
+            }
+        """)
         self.refresh_providers_btn.clicked.connect(self.refresh_providers)
         provider_layout.addWidget(self.refresh_providers_btn)
 
         # Debug button
-        self.debug_providers_btn = QtWidgets.QPushButton("🐛")
-        self.debug_providers_btn.setMaximumWidth(30)
+        self.debug_providers_btn = QtWidgets.QPushButton("DBG")
+        self.debug_providers_btn.setMaximumWidth(35)
         self.debug_providers_btn.setToolTip("Debug provider status")
+        self.debug_providers_btn.setStyleSheet("""
+            QPushButton {
+                font-size: 10px;
+                font-weight: bold;
+                padding: 2px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                background-color: #f5f5f5;
+            }
+            QPushButton:hover {
+                background-color: #e0e0e0;
+                border-color: #999;
+            }
+        """)
         self.debug_providers_btn.clicked.connect(self._debug_providers)
         provider_layout.addWidget(self.debug_providers_btn)
 

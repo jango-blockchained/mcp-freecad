@@ -18,7 +18,6 @@ try:
     from .conversation_widget import ConversationWidget
     from .tools_widget import ToolsWidget
     from .settings_widget import SettingsWidget
-    from .logs_widget import LogsWidget
 
     # Try to import compact tools widget
     try:
@@ -33,7 +32,6 @@ try:
             "ToolsWidget",
             "CompactToolsWidget",
             "SettingsWidget",
-            "LogsWidget",
         ]
     except ImportError:
         __all__ = [
@@ -44,7 +42,6 @@ try:
             "ConversationWidget",
             "ToolsWidget",
             "SettingsWidget",
-            "LogsWidget",
         ]
 
 except ImportError as e:
