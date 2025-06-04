@@ -23,12 +23,19 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         # Initialize provider service
         self.provider_service = None
 
+        # Initialize agent manager
+        self.agent_manager = None
+        self._init_agent_manager()
+
         self._setup_ui()
         self._setup_provider_service()
 
         # Set flexible sizing
         self.setMinimumWidth(350)
         self.resize(450, 700)
+
+        # Load persisted mode
+        self._load_persisted_mode()
 
     def _setup_ui(self):
         """Setup the user interface."""
@@ -41,6 +48,30 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         header_label = QtWidgets.QLabel("🤖 FreeCAD AI")
         header_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         header_layout.addWidget(header_label)
+
+        # Add mode selector
+        self.mode_label = QtWidgets.QLabel("Mode:")
+        self.mode_label.setStyleSheet("font-size: 12px; margin-left: 10px;")
+        header_layout.addWidget(self.mode_label)
+
+        self.mode_selector = QtWidgets.QComboBox()
+        self.mode_selector.addItems(["💬 Chat", "🤖 Agent"])
+        self.mode_selector.setToolTip("Chat: AI provides instructions\nAgent: AI executes autonomously")
+        self.mode_selector.setStyleSheet("""
+            QComboBox {
+                padding: 2px 8px;
+                font-size: 12px;
+                min-width: 100px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                background-color: white;
+            }
+            QComboBox:hover {
+                border-color: #2196F3;
+            }
+        """)
+        self.mode_selector.currentTextChanged.connect(self._on_mode_changed)
+        header_layout.addWidget(self.mode_selector)
 
         header_layout.addStretch()
 
@@ -138,6 +169,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             from .conversation_widget import ConversationWidget
             from .tools_widget_compact import ToolsWidget  # Use compact version
             from .settings_widget import SettingsWidget
+            from .agent_control_widget import AgentControlWidget
 
             # Create widgets with provider service integration
             self.connection_widget = ConnectionWidget()
@@ -145,6 +177,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             self.conversation_widget = ConversationWidget()
             self.settings_widget = SettingsWidget()
             self.tools_widget = ToolsWidget()  # Use compact tools widget
+            self.agent_control_widget = AgentControlWidget()
 
             # Connect widgets to provider service if available
             if self.provider_service:
@@ -153,6 +186,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             # Add tabs in logical order (removed Logs)
             self.tab_widget.addTab(self.providers_widget, "Providers")
             self.tab_widget.addTab(self.conversation_widget, "Chat")
+            self.tab_widget.addTab(self.agent_control_widget, "Agent")
             self.tab_widget.addTab(self.tools_widget, "Tools")
             self.tab_widget.addTab(self.connection_widget, "Connections")
             self.tab_widget.addTab(ServerWidget(), "Servers")
@@ -189,6 +223,14 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             if hasattr(self.conversation_widget, "set_provider_service"):
                 self.conversation_widget.set_provider_service(self.provider_service)
 
+            # Connect conversation widget to agent manager
+            if self.agent_manager and hasattr(self.conversation_widget, "set_agent_manager"):
+                self.conversation_widget.set_agent_manager(self.agent_manager)
+
+            # Connect agent control widget to agent manager
+            if self.agent_manager and hasattr(self.agent_control_widget, "set_agent_manager"):
+                self.agent_control_widget.set_agent_manager(self.agent_manager)
+
             # Connect connection widget to show MCP connection status (no AI provider status)
             if hasattr(self.connection_widget, "set_provider_service"):
                 self.connection_widget.set_provider_service(self.provider_service)
@@ -200,3 +242,126 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         """Handle API key changes from settings widget."""
         if self.provider_service:
             self.provider_service.update_provider_from_settings(provider_name)
+
+    def _init_agent_manager(self):
+        """Initialize the agent manager."""
+        try:
+            from ..core.agent_manager import AgentManager, AgentMode
+            self.agent_manager = AgentManager()
+
+            # Register callbacks
+            self.agent_manager.register_callback(
+                "on_mode_change",
+                self._on_agent_mode_changed
+            )
+            self.agent_manager.register_callback(
+                "on_state_change",
+                self._on_agent_state_changed
+            )
+
+            print("FreeCAD AI: Agent Manager initialized")
+        except ImportError as e:
+            print(f"FreeCAD AI: Agent Manager unavailable - {e}")
+
+    def _on_mode_changed(self, mode_text: str):
+        """Handle mode selector change."""
+        if not self.agent_manager:
+            return
+
+        try:
+            from ..core.agent_manager import AgentMode
+
+            if "Chat" in mode_text:
+                self.agent_manager.set_mode(AgentMode.CHAT)
+                self._update_ui_for_chat_mode()
+            elif "Agent" in mode_text:
+                self.agent_manager.set_mode(AgentMode.AGENT)
+                self._update_ui_for_agent_mode()
+
+            # Save mode preference
+            self._save_mode(mode_text)
+
+            # Notify conversation widget of mode change
+            if hasattr(self, 'conversation_widget') and hasattr(self.conversation_widget, 'set_agent_mode'):
+                self.conversation_widget.set_agent_mode(self.agent_manager.get_mode())
+
+        except Exception as e:
+            print(f"FreeCAD AI: Error changing mode - {e}")
+
+    def _on_agent_mode_changed(self, old_mode, new_mode):
+        """Handle agent mode change callback."""
+        self.status_label.setText(f"Mode: {new_mode.value}")
+
+    def _on_agent_state_changed(self, old_state, new_state):
+        """Handle agent state change callback."""
+        # Update status based on execution state
+        state_display = {
+            "idle": "Ready",
+            "planning": "Planning...",
+            "executing": "Executing...",
+            "paused": "Paused",
+            "error": "Error",
+            "completed": "Completed"
+        }
+        status_text = state_display.get(new_state.value, new_state.value)
+        self.status_label.setText(status_text)
+
+        # Update status color
+        if new_state.value == "executing":
+            self.status_label.setStyleSheet(
+                "padding: 2px 8px; background-color: #fff3e0; color: #ef6c00; border-radius: 10px; font-size: 11px;"
+            )
+        elif new_state.value == "error":
+            self.status_label.setStyleSheet(
+                "padding: 2px 8px; background-color: #ffcdd2; color: #c62828; border-radius: 10px; font-size: 11px;"
+            )
+        elif new_state.value == "completed":
+            self.status_label.setStyleSheet(
+                "padding: 2px 8px; background-color: #c8e6c9; color: #2e7d32; border-radius: 10px; font-size: 11px;"
+            )
+        else:
+            self.status_label.setStyleSheet(
+                "padding: 2px 8px; background-color: #f0f0f0; border-radius: 10px; font-size: 11px;"
+            )
+
+    def _update_ui_for_chat_mode(self):
+        """Update UI elements for chat mode."""
+        # In chat mode, disable autonomous execution features
+        if hasattr(self, 'tools_widget'):
+            self.tools_widget.setEnabled(True)  # Manual tool use allowed
+
+    def _update_ui_for_agent_mode(self):
+        """Update UI elements for agent mode."""
+        # In agent mode, enable autonomous execution features
+        if hasattr(self, 'tools_widget'):
+            self.tools_widget.setEnabled(True)  # Tools can be executed by agent
+
+    def get_agent_manager(self):
+        """Get the agent manager instance."""
+        return self.agent_manager
+
+    def _load_persisted_mode(self):
+        """Load persisted mode from settings."""
+        try:
+            settings = QtCore.QSettings("FreeCAD", "AI_Agent")
+            mode = settings.value("agent_mode", "Chat")
+
+            # Find and set the mode in selector
+            for i in range(self.mode_selector.count()):
+                if mode in self.mode_selector.itemText(i):
+                    self.mode_selector.setCurrentIndex(i)
+                    break
+
+        except Exception as e:
+            print(f"FreeCAD AI: Error loading persisted mode - {e}")
+
+    def _save_mode(self, mode_text: str):
+        """Save mode to settings."""
+        try:
+            settings = QtCore.QSettings("FreeCAD", "AI_Agent")
+            # Extract mode name (Chat or Agent)
+            mode = "Chat" if "Chat" in mode_text else "Agent"
+            settings.setValue("agent_mode", mode)
+            settings.sync()
+        except Exception as e:
+            print(f"FreeCAD AI: Error saving mode - {e}")
