@@ -2,7 +2,7 @@ import logging
 import math
 from typing import Any, Dict, Optional
 
-from ..tools.base import ToolProvider
+from ..base import ToolProvider, ToolResult, ToolSchema
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +33,59 @@ class SmitheryToolProvider(ToolProvider):
                 self.app = None
                 self.Part = None
 
-    async def execute_tool(
-        self, tool_id: str, params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    @property
+    def tool_schema(self) -> ToolSchema:
+        return ToolSchema(
+            name="smithery",
+            description="Tools for creating blacksmith and smithery objects in FreeCAD",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": [
+                            "create_anvil",
+                            "create_hammer",
+                            "create_tongs",
+                            "forge_blade",
+                            "create_horseshoe",
+                        ],
+                        "description": "The smithery action to perform",
+                    },
+                    "length": {
+                        "type": "number",
+                        "description": "Length dimension in mm",
+                    },
+                    "width": {
+                        "type": "number",
+                        "description": "Width dimension in mm",
+                    },
+                    "height": {
+                        "type": "number",
+                        "description": "Height dimension in mm",
+                    },
+                    "thickness": {
+                        "type": "number",
+                        "description": "Thickness in mm",
+                    },
+                },
+                "required": ["action"],
+            },
+            returns={
+                "type": "object",
+                "properties": {
+                    "status": {"type": "string"},
+                    "result": {"type": "object"},
+                    "error": {"type": "string"},
+                },
+            },
+            examples=[
+                {"action": "create_anvil", "length": 400, "width": 120, "height": 200},
+                {"action": "create_hammer", "handle_length": 300, "handle_diameter": 25},
+            ],
+        )
+
+    async def execute_tool(self, tool_id: str, params: Dict[str, Any]) -> ToolResult:
         """
         Execute a smithery tool.
 
@@ -44,25 +94,31 @@ class SmitheryToolProvider(ToolProvider):
             params: Parameters for the tool
 
         Returns:
-            The result of the tool execution
+            ToolResult containing the execution status and result
         """
         if self.app is None:
-            return {"error": "FreeCAD not available"}
+            return self.format_result("error", error="FreeCAD not available")
 
-        if tool_id == "create_anvil":
-            return await self._create_anvil(params)
-        elif tool_id == "create_hammer":
-            return await self._create_hammer(params)
-        elif tool_id == "create_tongs":
-            return await self._create_tongs(params)
-        elif tool_id == "forge_blade":
-            return await self._forge_blade(params)
-        elif tool_id == "create_horseshoe":
-            return await self._create_horseshoe(params)
-        else:
-            raise ValueError(f"Unknown smithery tool: {tool_id}")
+        action = params.get("action", tool_id)
 
-    async def _create_anvil(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            if action == "create_anvil":
+                return await self._create_anvil(params)
+            elif action == "create_hammer":
+                return await self._create_hammer(params)
+            elif action == "create_tongs":
+                return await self._create_tongs(params)
+            elif action == "forge_blade":
+                return await self._forge_blade(params)
+            elif action == "create_horseshoe":
+                return await self._create_horseshoe(params)
+            else:
+                return self.format_result("error", error=f"Unknown smithery action: {action}")
+        except Exception as e:
+            logger.error(f"Smithery tool failed: {e}")
+            return self.format_result("error", error=str(e))
+
+    async def _create_anvil(self, params: Dict[str, Any]) -> ToolResult:
         """Create an anvil model."""
         # Get parameters with default values
         length = params.get("length", 400.0)  # mm
@@ -107,22 +163,24 @@ class SmitheryToolProvider(ToolProvider):
             # Recompute document
             doc.recompute()
 
-            return {
-                "status": "success",
-                "object_id": fusion.Name,
-                "object_type": "Anvil",
-                "properties": {
-                    "Length": length,
-                    "Width": width,
-                    "Height": height,
-                    "HornLength": horn_length,
-                },
-            }
+            return self.format_result(
+                "success",
+                result={
+                    "object_id": fusion.Name,
+                    "object_type": "Anvil",
+                    "properties": {
+                        "Length": length,
+                        "Width": width,
+                        "Height": height,
+                        "HornLength": horn_length,
+                    },
+                }
+            )
         except Exception as e:
             logger.error(f"Error creating anvil: {str(e)}")
-            return {"error": f"Failed to create anvil: {str(e)}"}
+            return self.format_result("error", error=f"Failed to create anvil: {str(e)}")
 
-    async def _create_hammer(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _create_hammer(self, params: Dict[str, Any]) -> ToolResult:
         """Create a blacksmith hammer model."""
         # Get parameters with default values
         handle_length = params.get("handle_length", 300.0)  # mm
@@ -161,23 +219,25 @@ class SmitheryToolProvider(ToolProvider):
             # Recompute document
             doc.recompute()
 
-            return {
-                "status": "success",
-                "object_id": fusion.Name,
-                "object_type": "Hammer",
-                "properties": {
-                    "HandleLength": handle_length,
-                    "HandleDiameter": handle_diameter,
-                    "HeadLength": head_length,
-                    "HeadWidth": head_width,
-                    "HeadHeight": head_height,
-                },
-            }
+            return self.format_result(
+                "success",
+                result={
+                    "object_id": fusion.Name,
+                    "object_type": "Hammer",
+                    "properties": {
+                        "HandleLength": handle_length,
+                        "HandleDiameter": handle_diameter,
+                        "HeadLength": head_length,
+                        "HeadWidth": head_width,
+                        "HeadHeight": head_height,
+                    },
+                }
+            )
         except Exception as e:
             logger.error(f"Error creating hammer: {str(e)}")
-            return {"error": f"Failed to create hammer: {str(e)}"}
+            return self.format_result("error", error=f"Failed to create hammer: {str(e)}")
 
-    async def _create_tongs(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _create_tongs(self, params: Dict[str, Any]) -> ToolResult:
         """Create blacksmith tongs model."""
         # Get parameters with default values
         handle_length = params.get("handle_length", 300.0)  # mm
@@ -240,23 +300,25 @@ class SmitheryToolProvider(ToolProvider):
             # Recompute document
             doc.recompute()
 
-            return {
-                "status": "success",
-                "object_id": tongs.Name,
-                "object_type": "Tongs",
-                "properties": {
-                    "HandleLength": handle_length,
-                    "JawLength": jaw_length,
-                    "Thickness": thickness,
-                    "Width": width,
-                    "OpeningAngle": opening_angle,
-                },
-            }
+            return self.format_result(
+                "success",
+                result={
+                    "object_id": tongs.Name,
+                    "object_type": "Tongs",
+                    "properties": {
+                        "HandleLength": handle_length,
+                        "JawLength": jaw_length,
+                        "Thickness": thickness,
+                        "Width": width,
+                        "OpeningAngle": opening_angle,
+                    },
+                }
+            )
         except Exception as e:
             logger.error(f"Error creating tongs: {str(e)}")
-            return {"error": f"Failed to create tongs: {str(e)}"}
+            return self.format_result("error", error=f"Failed to create tongs: {str(e)}")
 
-    async def _forge_blade(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _forge_blade(self, params: Dict[str, Any]) -> ToolResult:
         """Create a forged blade model."""
         # Get parameters with default values
         blade_length = params.get("blade_length", 250.0)  # mm
@@ -271,7 +333,7 @@ class SmitheryToolProvider(ToolProvider):
 
         try:
             if not self.Part:
-                return {"error": "Part module not available"}
+                return self.format_result("error", error="Part module not available")
 
             # Create blade as a loft between two wires
             # Base wire (at the guard)
@@ -312,24 +374,26 @@ class SmitheryToolProvider(ToolProvider):
             # Recompute document
             doc.recompute()
 
-            return {
-                "status": "success",
-                "object_id": fusion.Name,
-                "object_type": "Blade",
-                "properties": {
-                    "BladeLength": blade_length,
-                    "BladeWidth": blade_width,
-                    "Thickness": thickness,
-                    "TangLength": tang_length,
-                    "TangWidth": tang_width,
-                    "Curvature": curvature,
-                },
-            }
+            return self.format_result(
+                "success",
+                result={
+                    "object_id": fusion.Name,
+                    "object_type": "Blade",
+                    "properties": {
+                        "BladeLength": blade_length,
+                        "BladeWidth": blade_width,
+                        "Thickness": thickness,
+                        "TangLength": tang_length,
+                        "TangWidth": tang_width,
+                        "Curvature": curvature,
+                    },
+                }
+            )
         except Exception as e:
             logger.error(f"Error forging blade: {str(e)}")
-            return {"error": f"Failed to forge blade: {str(e)}"}
+            return self.format_result("error", error=f"Failed to forge blade: {str(e)}")
 
-    async def _create_horseshoe(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _create_horseshoe(self, params: Dict[str, Any]) -> ToolResult:
         """Create a horseshoe model."""
         # Get parameters with default values
         outer_radius = params.get("outer_radius", 60.0)  # mm
@@ -342,7 +406,7 @@ class SmitheryToolProvider(ToolProvider):
 
         try:
             if not self.Part:
-                return {"error": "Part module not available"}
+                return self.format_result("error", error="Part module not available")
 
             # Create the outer circle
             outer_circle = self.Part.makeCircle(outer_radius)
@@ -370,20 +434,22 @@ class SmitheryToolProvider(ToolProvider):
             # Recompute document
             doc.recompute()
 
-            return {
-                "status": "success",
-                "object_id": horseshoe_part.Name,
-                "object_type": "Horseshoe",
-                "properties": {
-                    "OuterRadius": outer_radius,
-                    "InnerRadius": inner_radius,
-                    "Thickness": thickness,
-                    "OpeningAngle": opening_angle,
-                },
-            }
+            return self.format_result(
+                "success",
+                result={
+                    "object_id": horseshoe_part.Name,
+                    "object_type": "Horseshoe",
+                    "properties": {
+                        "OuterRadius": outer_radius,
+                        "InnerRadius": inner_radius,
+                        "Thickness": thickness,
+                        "OpeningAngle": opening_angle,
+                    },
+                }
+            )
         except Exception as e:
             logger.error(f"Error creating horseshoe: {str(e)}")
-            return {"error": f"Failed to create horseshoe: {str(e)}"}
+            return self.format_result("error", error=f"Failed to create horseshoe: {str(e)}")
 
     def _get_active_document(self):
         """Get the active document or create a new one if none exists."""

@@ -22,9 +22,16 @@ logger = logging.getLogger("cursor_mcp_bridge")
 
 # Get the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+# Try to find the MCP server script in the parent project directory
+ADDON_DIR = os.path.dirname(SCRIPT_DIR)
+PROJECT_DIR = os.path.dirname(ADDON_DIR)
 MCP_SERVER_SCRIPT = os.path.join(
-    SCRIPT_DIR, "src", "mcp_freecad", "server", "freecad_mcp_server.py"
+    PROJECT_DIR, "src", "mcp_freecad", "server", "freecad_mcp_server.py"
 )
+
+# Fallback to a local server script if the main one doesn't exist
+if not os.path.exists(MCP_SERVER_SCRIPT):
+    MCP_SERVER_SCRIPT = os.path.join(ADDON_DIR, "mcp_server.py")
 
 # Track processes for cleanup
 processes = []

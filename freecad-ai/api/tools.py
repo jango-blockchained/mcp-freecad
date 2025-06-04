@@ -1,10 +1,27 @@
 import logging
 from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+try:
+    from fastapi import APIRouter, HTTPException
+    from pydantic import BaseModel
+    FASTAPI_AVAILABLE = True
+except ImportError:
+    # FastAPI not available, create minimal stubs
+    FASTAPI_AVAILABLE = False
+    APIRouter = None
+    HTTPException = Exception
+    BaseModel = object
 
-from ..core.server import MCPServer
+try:
+    from ..core.server import MCPServer
+except ImportError:
+    # Fallback for when module is loaded by FreeCAD
+    import sys
+    import os
+    addon_dir = os.path.dirname(os.path.dirname(__file__))
+    if addon_dir not in sys.path:
+        sys.path.insert(0, addon_dir)
+    from core.server import MCPServer
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +36,12 @@ class ToolResponse(BaseModel):
     result: Dict[str, Any]
 
 
-def create_tool_router(server: MCPServer) -> APIRouter:
+def create_tool_router(server: MCPServer):
     """Create a router for tool endpoints."""
+    if not FASTAPI_AVAILABLE:
+        logger.warning("FastAPI not available, tool router disabled")
+        return None
+
     router = APIRouter(
         prefix="/tools",
         tags=["tools"],

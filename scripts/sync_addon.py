@@ -15,9 +15,9 @@ def create_symlink():
     """Create symlink from installation to development directory."""
 
     # Define paths
-    dev_addon_dir = Path(__file__).parent.parent / "freecad-addon"
-    install_addon_dir = Path.home() / ".local/share/FreeCAD/Mod/freecad-addon"
-    backup_dir = install_addon_dir.parent / "freecad-addon-backup"
+    dev_addon_dir = Path(__file__).parent.parent / "freecad-ai"
+    install_addon_dir = Path.home() / ".local/share/FreeCAD/Mod/freecad-ai"
+    backup_dir = Path.home() / ".freecad-ai/freecad-ai-backup"
 
     print(f"Development addon: {dev_addon_dir}")
     print(f"Installation target: {install_addon_dir}")
