@@ -35,7 +35,7 @@ def _lazy_import_provider(provider_name: str, module_name: str, class_name: str)
         FreeCAD.Console.PrintWarning(f"FreeCAD AI: {error_msg}\n")
 
         # Check if it's a missing dependency issue
-        if 'aiohttp' in str(e):
+        if "aiohttp" in str(e):
             FreeCAD.Console.PrintMessage(
                 "FreeCAD AI: Missing 'aiohttp' dependency. "
                 "Use the Dependencies tab in the FreeCAD AI interface to install it.\n"
@@ -60,7 +60,9 @@ def get_gemini_provider():
 
 def get_openrouter_provider():
     """Get OpenRouter provider class with lazy loading."""
-    return _lazy_import_provider("OpenRouter", "openrouter_provider", "OpenRouterProvider")
+    return _lazy_import_provider(
+        "OpenRouter", "openrouter_provider", "OpenRouterProvider"
+    )
 
 
 def get_available_providers() -> Dict[str, Any]:
@@ -72,7 +74,7 @@ def get_available_providers() -> Dict[str, Any]:
     return {
         "Claude": get_claude_provider(),
         "Gemini": get_gemini_provider(),
-        "OpenRouter": get_openrouter_provider()
+        "OpenRouter": get_openrouter_provider(),
     }
 
 
@@ -93,21 +95,24 @@ def check_dependencies() -> Dict[str, bool]:
     """
     try:
         from ..utils.dependency_manager import check_dependencies
+
         return check_dependencies()
     except ImportError:
         # Fallback manual check
         dependencies = {}
         try:
             import aiohttp
-            dependencies['aiohttp'] = True
+
+            dependencies["aiohttp"] = True
         except ImportError:
-            dependencies['aiohttp'] = False
+            dependencies["aiohttp"] = False
 
         try:
             import requests
-            dependencies['requests'] = True
+
+            dependencies["requests"] = True
         except ImportError:
-            dependencies['requests'] = False
+            dependencies["requests"] = False
 
         return dependencies
 
@@ -122,7 +127,9 @@ OpenRouterProvider = get_openrouter_provider()
 try:
     from .mcp_integrated_provider import MCPIntegratedProvider
 except ImportError as e:
-    FreeCAD.Console.PrintWarning(f"FreeCAD AI: Failed to import MCPIntegratedProvider: {e}\n")
+    FreeCAD.Console.PrintWarning(
+        f"FreeCAD AI: Failed to import MCPIntegratedProvider: {e}\n"
+    )
     MCPIntegratedProvider = None
 
 # Export list for explicit imports
@@ -137,7 +144,7 @@ __all__ = [
     "get_available_providers",
     "get_provider_errors",
     "check_dependencies",
-    "MCPIntegratedProvider"
+    "MCPIntegratedProvider",
 ]
 
 # Add provider classes if they loaded successfully

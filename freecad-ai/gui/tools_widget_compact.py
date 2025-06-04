@@ -22,7 +22,8 @@ class CompactToolButton(QtWidgets.QPushButton):
         self.setText(icon_text or text[:3].upper())
         self.setToolTip(f"<b>{text}</b><br>{tooltip}")
         self.setFixedSize(50, 35)  # Smaller size
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             QPushButton {
                 font-size: 10px;
                 font-weight: bold;
@@ -38,7 +39,8 @@ class CompactToolButton(QtWidgets.QPushButton):
             QPushButton:pressed {
                 background-color: #d8d8d8;
             }
-        """)
+        """
+        )
 
 
 class ToolCategoryWidget(QtWidgets.QGroupBox):
@@ -48,7 +50,8 @@ class ToolCategoryWidget(QtWidgets.QGroupBox):
         super().__init__(title, parent)
         self.setCheckable(True)
         self.setChecked(True)
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             QGroupBox {
                 font-weight: bold;
                 font-size: 11px;
@@ -62,7 +65,8 @@ class ToolCategoryWidget(QtWidgets.QGroupBox):
                 left: 8px;
                 padding: 0 4px 0 4px;
             }
-        """)
+        """
+        )
 
     def setContentVisible(self, visible):
         """Show/hide content based on checked state."""
@@ -118,7 +122,7 @@ class ToolsWidget(QtWidgets.QWidget):
                 "export_import": ExportImportTool(),
                 "advanced_primitives": AdvancedPrimitivesTool(),
                 "advanced_operations": AdvancedOperationsTool(),
-                "surface_modification": SurfaceModificationTool()
+                "surface_modification": SurfaceModificationTool(),
             }
             self.logger.info("All tools loaded successfully")
         except ImportError as e:
@@ -140,7 +144,7 @@ class ToolsWidget(QtWidgets.QWidget):
                     "primitives": PrimitivesTool(),
                     "operations": OperationsTool(),
                     "measurements": MeasurementsTool(),
-                    "export_import": ExportImportTool()
+                    "export_import": ExportImportTool(),
                 }
                 self.logger.warning("Only basic tools loaded")
             except Exception as e2:
@@ -188,7 +192,9 @@ class ToolsWidget(QtWidgets.QWidget):
 
         # Compact status bar
         self.status_label = QtWidgets.QLabel("Ready")
-        self.status_label.setStyleSheet("padding: 3px; background-color: #f0f0f0; border-radius: 2px; font-size: 10px;")
+        self.status_label.setStyleSheet(
+            "padding: 3px; background-color: #f0f0f0; border-radius: 2px; font-size: 10px;"
+        )
         layout.addWidget(self.status_label)
 
     def _create_basic_primitives(self, layout):
@@ -204,7 +210,7 @@ class ToolsWidget(QtWidgets.QWidget):
             ("Sphere", "Create a sphere", "SPH", "create_sphere"),
             ("Cone", "Create a cone", "CON", "create_cone"),
             ("Torus", "Create a torus", "TOR", "create_torus"),
-            ("Plane", "Create a plane", "PLN", "create_plane")
+            ("Plane", "Create a plane", "PLN", "create_plane"),
         ]
 
         def create_handler(method_name):
@@ -234,7 +240,7 @@ class ToolsWidget(QtWidgets.QWidget):
             ("Rotate", "Rotate object", "ROT", "rotate_object"),
             ("Scale", "Scale object", "SCL", "scale_object"),
             ("Mirror", "Mirror object", "MIR", "mirror_object"),
-            ("Array", "Create array of objects", "ARR", "create_array")
+            ("Array", "Create array of objects", "ARR", "create_array"),
         ]
 
         def create_handler(method_name):
@@ -263,7 +269,7 @@ class ToolsWidget(QtWidgets.QWidget):
             ("Length", "Measure length", "LEN", "measure_length"),
             ("Radius", "Measure radius", "RAD", "measure_radius"),
             ("BBox", "Bounding box", "BBX", "measure_bounding_box"),
-            ("CoG", "Center of gravity", "COG", "measure_center_of_gravity")
+            ("CoG", "Center of gravity", "COG", "measure_center_of_gravity"),
         ]
 
         def create_handler(method_name):
@@ -292,7 +298,7 @@ class ToolsWidget(QtWidgets.QWidget):
             ("Import IGES", "Import IGES file", "I-IGS", "import_iges"),
             ("Export IGES", "Export to IGES", "E-IGS", "export_iges"),
             ("Import OBJ", "Import OBJ file", "I-OBJ", "import_obj"),
-            ("Export OBJ", "Export to OBJ", "E-OBJ", "export_obj")
+            ("Export OBJ", "Export to OBJ", "E-OBJ", "export_obj"),
         ]
 
         def create_handler(method_name):
@@ -321,12 +327,14 @@ class ToolsWidget(QtWidgets.QWidget):
             ("Spring", "Create spring/helix", "SPR", "create_spring"),
             ("Gear", "Create gear", "GER", "create_gear"),
             ("Thread", "Create thread", "THR", "create_thread"),
-            ("Text", "Create 3D text", "TXT", "create_text")
+            ("Text", "Create 3D text", "TXT", "create_text"),
         ]
 
         def create_handler(method_name):
             """Create a proper closure for the button handler."""
-            return lambda checked: self._execute_tool("advanced_primitives", method_name)
+            return lambda checked: self._execute_tool(
+                "advanced_primitives", method_name
+            )
 
         for i, (name, tooltip, icon, method) in enumerate(tools):
             btn = CompactToolButton(name, tooltip, icon)
@@ -350,12 +358,14 @@ class ToolsWidget(QtWidgets.QWidget):
             ("Helix", "Create helix curve", "HLX", "create_helix"),
             ("Pattern", "Create pattern", "PTN", "create_pattern"),
             ("Project", "Project onto surface", "PRJ", "project_to_surface"),
-            ("Wrap", "Wrap onto surface", "WRP", "wrap_to_surface")
+            ("Wrap", "Wrap onto surface", "WRP", "wrap_to_surface"),
         ]
 
         def create_handler(method_name):
             """Create a proper closure for the button handler."""
-            return lambda checked: self._execute_tool("advanced_operations", method_name)
+            return lambda checked: self._execute_tool(
+                "advanced_operations", method_name
+            )
 
         for i, (name, tooltip, icon, method) in enumerate(tools):
             btn = CompactToolButton(name, tooltip, icon)
@@ -379,12 +389,14 @@ class ToolsWidget(QtWidgets.QWidget):
             ("Offset", "Offset surface", "OFS", "offset_surface"),
             ("Blend", "Blend surfaces", "BLD", "blend_surfaces"),
             ("Patch", "Create patch", "PCH", "create_patch"),
-            ("Simplify", "Simplify shape", "SMP", "simplify_shape")
+            ("Simplify", "Simplify shape", "SMP", "simplify_shape"),
         ]
 
         def create_handler(method_name):
             """Create a proper closure for the button handler."""
-            return lambda checked: self._execute_tool("surface_modification", method_name)
+            return lambda checked: self._execute_tool(
+                "surface_modification", method_name
+            )
 
         for i, (name, tooltip, icon, method) in enumerate(tools):
             btn = CompactToolButton(name, tooltip, icon)
@@ -397,12 +409,16 @@ class ToolsWidget(QtWidgets.QWidget):
     def _execute_tool(self, category, method):
         """Execute a tool with parameter dialog."""
         if category not in self.tools:
-            QtWidgets.QMessageBox.warning(self, "Error", f"Tool category '{category}' not available")
+            QtWidgets.QMessageBox.warning(
+                self, "Error", f"Tool category '{category}' not available"
+            )
             return
 
         tool = self.tools[category]
         if not hasattr(tool, method):
-            QtWidgets.QMessageBox.warning(self, "Error", f"Method '{method}' not found in {category}")
+            QtWidgets.QMessageBox.warning(
+                self, "Error", f"Method '{method}' not found in {category}"
+            )
             return
 
         # Create parameter dialog
@@ -415,12 +431,16 @@ class ToolsWidget(QtWidgets.QWidget):
                 result = getattr(tool, method)(**params)
 
                 # Update status
-                if result.get('success'):
+                if result.get("success"):
                     self.status_label.setText(f"✅ {result.get('message', 'Success')}")
-                    self.status_label.setStyleSheet("padding: 5px; background-color: #c8e6c9; border-radius: 3px;")
+                    self.status_label.setStyleSheet(
+                        "padding: 5px; background-color: #c8e6c9; border-radius: 3px;"
+                    )
                 else:
                     self.status_label.setText(f"❌ {result.get('message', 'Failed')}")
-                    self.status_label.setStyleSheet("padding: 5px; background-color: #ffcdd2; border-radius: 3px;")
+                    self.status_label.setStyleSheet(
+                        "padding: 5px; background-color: #ffcdd2; border-radius: 3px;"
+                    )
 
                 # Emit signal
                 self.tool_executed.emit(f"{category}.{method}", params, result)
@@ -428,7 +448,9 @@ class ToolsWidget(QtWidgets.QWidget):
             except Exception as e:
                 self.logger.error(f"Error executing {category}.{method}: {e}")
                 self.status_label.setText(f"❌ Error: {str(e)}")
-                self.status_label.setStyleSheet("padding: 5px; background-color: #ffcdd2; border-radius: 3px;")
+                self.status_label.setStyleSheet(
+                    "padding: 5px; background-color: #ffcdd2; border-radius: 3px;"
+                )
 
 
 class ToolParameterDialog(QtWidgets.QDialog):
@@ -441,137 +463,127 @@ class ToolParameterDialog(QtWidgets.QDialog):
             ("length", "float", 10.0, "Length", "mm"),
             ("width", "float", 10.0, "Width", "mm"),
             ("height", "float", 10.0, "Height", "mm"),
-            ("name", "string", "", "Name (optional)", "")
+            ("name", "string", "", "Name (optional)", ""),
         ],
         "primitives.create_cylinder": [
             ("radius", "float", 5.0, "Radius", "mm"),
             ("height", "float", 10.0, "Height", "mm"),
-            ("name", "string", "", "Name (optional)", "")
+            ("name", "string", "", "Name (optional)", ""),
         ],
         "primitives.create_sphere": [
             ("radius", "float", 5.0, "Radius", "mm"),
-            ("name", "string", "", "Name (optional)", "")
+            ("name", "string", "", "Name (optional)", ""),
         ],
         "primitives.create_cone": [
             ("radius1", "float", 5.0, "Bottom Radius", "mm"),
             ("radius2", "float", 0.0, "Top Radius", "mm"),
             ("height", "float", 10.0, "Height", "mm"),
-            ("name", "string", "", "Name (optional)", "")
+            ("name", "string", "", "Name (optional)", ""),
         ],
         "primitives.create_torus": [
             ("radius1", "float", 10.0, "Major Radius", "mm"),
             ("radius2", "float", 2.0, "Minor Radius", "mm"),
-            ("name", "string", "", "Name (optional)", "")
+            ("name", "string", "", "Name (optional)", ""),
         ],
         "primitives.create_plane": [
             ("length", "float", 10.0, "Length", "mm"),
             ("width", "float", 10.0, "Width", "mm"),
-            ("name", "string", "", "Name (optional)", "")
+            ("name", "string", "", "Name (optional)", ""),
         ],
-
         # Basic Operations
         "operations.boolean_union": [
             ("obj1_name", "object", "", "First Object", ""),
             ("obj2_name", "object", "", "Second Object", ""),
-            ("keep_originals", "bool", False, "Keep Originals", "")
+            ("keep_originals", "bool", False, "Keep Originals", ""),
         ],
         "operations.boolean_cut": [
             ("obj1_name", "object", "", "Base Object", ""),
             ("obj2_name", "object", "", "Tool Object", ""),
-            ("keep_originals", "bool", False, "Keep Originals", "")
+            ("keep_originals", "bool", False, "Keep Originals", ""),
         ],
         "operations.boolean_intersection": [
             ("obj1_name", "object", "", "First Object", ""),
             ("obj2_name", "object", "", "Second Object", ""),
-            ("keep_originals", "bool", False, "Keep Originals", "")
+            ("keep_originals", "bool", False, "Keep Originals", ""),
         ],
         "operations.move_object": [
             ("obj_name", "object", "", "Object", ""),
             ("x", "float", 0.0, "X", "mm"),
             ("y", "float", 0.0, "Y", "mm"),
             ("z", "float", 0.0, "Z", "mm"),
-            ("relative", "bool", True, "Relative", "")
+            ("relative", "bool", True, "Relative", ""),
         ],
         "operations.rotate_object": [
             ("obj_name", "object", "", "Object", ""),
             ("angle", "float", 90.0, "Angle", "°"),
             ("axis", "choice", "z", "Axis", ["x", "y", "z"]),
-            ("center", "point", "", "Center (optional)", "")
+            ("center", "point", "", "Center (optional)", ""),
         ],
         "operations.scale_object": [
             ("obj_name", "object", "", "Object", ""),
             ("scale_x", "float", 1.0, "Scale X", ""),
             ("scale_y", "float", 1.0, "Scale Y", ""),
-            ("scale_z", "float", 1.0, "Scale Z", "")
+            ("scale_z", "float", 1.0, "Scale Z", ""),
         ],
-
         # Measurements
         "measurements.measure_distance": [
             ("point1", "point", "", "First Point/Object", ""),
-            ("point2", "point", "", "Second Point/Object", "")
+            ("point2", "point", "", "Second Point/Object", ""),
         ],
         "measurements.measure_angle": [
             ("obj1_name", "object", "", "First Object/Edge", ""),
-            ("obj2_name", "object", "", "Second Object/Edge", "")
+            ("obj2_name", "object", "", "Second Object/Edge", ""),
         ],
-        "measurements.measure_volume": [
-            ("obj_name", "object", "", "Object", "")
-        ],
-        "measurements.measure_area": [
-            ("obj_name", "object", "", "Object/Face", "")
-        ],
-
+        "measurements.measure_volume": [("obj_name", "object", "", "Object", "")],
+        "measurements.measure_area": [("obj_name", "object", "", "Object/Face", "")],
         # Import/Export
         "export_import.export_stl": [
             ("filepath", "file_save", "model.stl", "Output File", ""),
             ("object_names", "objects", "", "Objects (empty=all)", ""),
-            ("ascii", "bool", False, "ASCII Format", "")
+            ("ascii", "bool", False, "ASCII Format", ""),
         ],
         "export_import.import_stl": [
             ("filepath", "file_open", "", "STL File", ""),
-            ("object_name", "string", "", "Name (optional)", "")
+            ("object_name", "string", "", "Name (optional)", ""),
         ],
-
         # Advanced Primitives
         "advanced_primitives.create_tube": [
             ("outer_radius", "float", 10.0, "Outer Radius", "mm"),
             ("inner_radius", "float", 5.0, "Inner Radius", "mm"),
             ("height", "float", 10.0, "Height", "mm"),
-            ("name", "string", "", "Name (optional)", "")
+            ("name", "string", "", "Name (optional)", ""),
         ],
         "advanced_primitives.create_prism": [
             ("sides", "int", 6, "Number of Sides", ""),
             ("radius", "float", 5.0, "Radius", "mm"),
             ("height", "float", 10.0, "Height", "mm"),
-            ("name", "string", "", "Name (optional)", "")
+            ("name", "string", "", "Name (optional)", ""),
         ],
-
         # Advanced Operations
         "advanced_operations.extrude_profile": [
             ("profile_name", "object", "", "Profile Object", ""),
             ("distance", "float", 10.0, "Distance", "mm"),
             ("direction", "vector", "[0,0,1]", "Direction", ""),
-            ("name", "string", "", "Name (optional)", "")
+            ("name", "string", "", "Name (optional)", ""),
         ],
         "advanced_operations.revolve_profile": [
             ("profile_name", "object", "", "Profile Object", ""),
             ("angle", "float", 360.0, "Angle", "°"),
             ("axis", "vector", "[0,0,1]", "Axis", ""),
-            ("name", "string", "", "Name (optional)", "")
+            ("name", "string", "", "Name (optional)", ""),
         ],
-
         # Surface Modification
         "surface_modification.fillet_edges": [
             ("obj_name", "object", "", "Object", ""),
             ("edge_indices", "indices", "", "Edge Indices", ""),
             ("radius", "float", 1.0, "Radius", "mm"),
-            ("name", "string", "", "Name (optional)", "")
+            ("name", "string", "", "Name (optional)", ""),
         ],
         "surface_modification.chamfer_edges": [
             ("obj_name", "object", "", "Object", ""),
             ("edge_indices", "indices", "", "Edge Indices", ""),
             ("distance", "float", 1.0, "Distance", "mm"),
-            ("name", "string", "", "Name (optional)", "")
+            ("name", "string", "", "Name (optional)", ""),
         ],
     }
 
@@ -592,7 +604,7 @@ class ToolParameterDialog(QtWidgets.QDialog):
         layout = QtWidgets.QVBoxLayout(self)
 
         # Title
-        title = QtWidgets.QLabel(self.method.replace('_', ' ').title())
+        title = QtWidgets.QLabel(self.method.replace("_", " ").title())
         title.setStyleSheet("font-size: 14px; font-weight: bold; margin-bottom: 10px;")
         layout.addWidget(title)
 
@@ -601,8 +613,12 @@ class ToolParameterDialog(QtWidgets.QDialog):
         if param_key in self.PARAM_CONFIGS:
             form = QtWidgets.QFormLayout()
 
-            for param_name, param_type, default, label, unit in self.PARAM_CONFIGS[param_key]:
-                widget = self._create_input_widget(param_name, param_type, default, unit)
+            for param_name, param_type, default, label, unit in self.PARAM_CONFIGS[
+                param_key
+            ]:
+                widget = self._create_input_widget(
+                    param_name, param_type, default, unit
+                )
                 if widget:
                     form.addRow(f"{label}:", widget)
                     self.inputs[param_name] = widget
@@ -610,7 +626,9 @@ class ToolParameterDialog(QtWidgets.QDialog):
             layout.addLayout(form)
         else:
             # Generic message for unconfigured tools
-            msg = QtWidgets.QLabel("This tool requires no parameters or is not yet configured.")
+            msg = QtWidgets.QLabel(
+                "This tool requires no parameters or is not yet configured."
+            )
             msg.setWordWrap(True)
             layout.addWidget(msg)
 
@@ -715,10 +733,16 @@ class ToolParameterDialog(QtWidgets.QDialog):
                 if text:
                     # Handle special cases
                     if name == "object_names" and text:
-                        params[name] = [s.strip() for s in text.split(',') if s.strip()]
+                        params[name] = [s.strip() for s in text.split(",") if s.strip()]
                     elif name == "edge_indices" and text:
-                        params[name] = [int(s.strip()) for s in text.split(',') if s.strip()]
-                    elif (name.startswith("point") or name == "direction" or name == "axis") and text.startswith('['):
+                        params[name] = [
+                            int(s.strip()) for s in text.split(",") if s.strip()
+                        ]
+                    elif (
+                        name.startswith("point")
+                        or name == "direction"
+                        or name == "axis"
+                    ) and text.startswith("["):
                         try:
                             params[name] = eval(text)
                         except:
@@ -754,9 +778,13 @@ class FileSelectWidget(QtWidgets.QWidget):
     def _browse(self):
         """Open file dialog."""
         if self.save_mode:
-            path, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save File", self.path_edit.text())
+            path, _ = QtWidgets.QFileDialog.getSaveFileName(
+                self, "Save File", self.path_edit.text()
+            )
         else:
-            path, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", self.path_edit.text())
+            path, _ = QtWidgets.QFileDialog.getOpenFileName(
+                self, "Open File", self.path_edit.text()
+            )
 
         if path:
             self.path_edit.setText(path)

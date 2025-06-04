@@ -15,10 +15,13 @@ class CAMToolProvider(ToolProvider):
         if self.app is None:
             try:
                 import FreeCAD
+
                 self.app = FreeCAD
                 logger.info("Connected to FreeCAD")
             except ImportError:
-                logger.warning("Could not import FreeCAD. Make sure it's installed and in your Python path.")
+                logger.warning(
+                    "Could not import FreeCAD. Make sure it's installed and in your Python path."
+                )
                 self.app = None
 
     @property
@@ -31,62 +34,74 @@ class CAMToolProvider(ToolProvider):
                 "properties": {
                     "action": {
                         "type": "string",
-                        "enum": ["create_job", "add_tool", "create_operation", "generate_gcode", "simulate"],
-                        "description": "The CAM action to perform"
+                        "enum": [
+                            "create_job",
+                            "add_tool",
+                            "create_operation",
+                            "generate_gcode",
+                            "simulate",
+                        ],
+                        "description": "The CAM action to perform",
                     },
                     "job_name": {
                         "type": "string",
-                        "description": "Name of the CAM job"
+                        "description": "Name of the CAM job",
                     },
                     "base_object": {
                         "type": "string",
-                        "description": "Name of the base object for machining"
+                        "description": "Name of the base object for machining",
                     },
                     "operation_type": {
                         "type": "string",
-                        "enum": ["profile", "pocket", "drilling", "adaptive", "surface"],
-                        "description": "Type of machining operation"
+                        "enum": [
+                            "profile",
+                            "pocket",
+                            "drilling",
+                            "adaptive",
+                            "surface",
+                        ],
+                        "description": "Type of machining operation",
                     },
                     "tool_diameter": {
                         "type": "number",
-                        "description": "Tool diameter in mm"
+                        "description": "Tool diameter in mm",
                     },
                     "spindle_speed": {
                         "type": "number",
-                        "description": "Spindle speed in RPM"
+                        "description": "Spindle speed in RPM",
                     },
                     "feed_rate": {
                         "type": "number",
-                        "description": "Feed rate in mm/min"
+                        "description": "Feed rate in mm/min",
                     },
                     "cut_depth": {
                         "type": "number",
-                        "description": "Depth of cut in mm"
-                    }
+                        "description": "Depth of cut in mm",
+                    },
                 },
-                "required": ["action"]
+                "required": ["action"],
             },
             returns={
                 "type": "object",
                 "properties": {
                     "status": {"type": "string"},
                     "result": {"type": "object"},
-                    "error": {"type": "string"}
-                }
+                    "error": {"type": "string"},
+                },
             },
             examples=[
                 {
                     "action": "create_job",
                     "job_name": "MyCAMJob",
-                    "base_object": "Part001"
+                    "base_object": "Part001",
                 },
                 {
                     "action": "add_tool",
                     "job_name": "MyCAMJob",
                     "tool_diameter": 6.0,
-                    "spindle_speed": 12000
-                }
-            ]
+                    "spindle_speed": 12000,
+                },
+            ],
         )
 
     async def execute_tool(self, tool_id: str, params: Dict[str, Any]) -> ToolResult:
@@ -138,15 +153,21 @@ class CAMToolProvider(ToolProvider):
 
                 doc.recompute()
 
-                return self.format_result("success", result={
-                    "job_name": job.Name,
-                    "label": job.Label,
-                    "base_object": base_object,
-                    "message": f"CAM job '{job_name}' created successfully"
-                })
+                return self.format_result(
+                    "success",
+                    result={
+                        "job_name": job.Name,
+                        "label": job.Label,
+                        "base_object": base_object,
+                        "message": f"CAM job '{job_name}' created successfully",
+                    },
+                )
 
             except ImportError:
-                return self.format_result("error", error="Path workbench not available. Please install FreeCAD with Path workbench.")
+                return self.format_result(
+                    "error",
+                    error="Path workbench not available. Please install FreeCAD with Path workbench.",
+                )
 
         except Exception as e:
             return self.format_result("error", error=f"Failed to create CAM job: {e}")
@@ -163,7 +184,9 @@ class CAMToolProvider(ToolProvider):
             job = doc.getObject(job_name)
 
             if not job:
-                return self.format_result("error", error=f"CAM job '{job_name}' not found")
+                return self.format_result(
+                    "error", error=f"CAM job '{job_name}' not found"
+                )
 
             try:
                 import Path
@@ -183,13 +206,16 @@ class CAMToolProvider(ToolProvider):
 
                 doc.recompute()
 
-                return self.format_result("success", result={
-                    "tool_controller": tc.Name,
-                    "tool_diameter": tool_diameter,
-                    "spindle_speed": spindle_speed,
-                    "feed_rate": feed_rate,
-                    "message": f"Tool added to job '{job_name}'"
-                })
+                return self.format_result(
+                    "success",
+                    result={
+                        "tool_controller": tc.Name,
+                        "tool_diameter": tool_diameter,
+                        "spindle_speed": spindle_speed,
+                        "feed_rate": feed_rate,
+                        "message": f"Tool added to job '{job_name}'",
+                    },
+                )
 
             except ImportError:
                 return self.format_result("error", error="Path workbench not available")
@@ -208,7 +234,9 @@ class CAMToolProvider(ToolProvider):
             job = doc.getObject(job_name)
 
             if not job:
-                return self.format_result("error", error=f"CAM job '{job_name}' not found")
+                return self.format_result(
+                    "error", error=f"CAM job '{job_name}' not found"
+                )
 
             try:
                 import Path
@@ -216,15 +244,20 @@ class CAMToolProvider(ToolProvider):
                 # Create operation based on type
                 if operation_type == "profile":
                     import PathScripts.PathProfile as PathProfile
+
                     op = PathProfile.Create("Profile")
                 elif operation_type == "pocket":
                     import PathScripts.PathPocket as PathPocket
+
                     op = PathPocket.Create("Pocket")
                 elif operation_type == "drilling":
                     import PathScripts.PathDrilling as PathDrilling
+
                     op = PathDrilling.Create("Drilling")
                 else:
-                    return self.format_result("error", error=f"Unsupported operation type: {operation_type}")
+                    return self.format_result(
+                        "error", error=f"Unsupported operation type: {operation_type}"
+                    )
 
                 # Set operation properties
                 op.FinalDepth = -cut_depth
@@ -234,15 +267,20 @@ class CAMToolProvider(ToolProvider):
 
                 doc.recompute()
 
-                return self.format_result("success", result={
-                    "operation_name": op.Name,
-                    "operation_type": operation_type,
-                    "cut_depth": cut_depth,
-                    "message": f"Operation '{operation_type}' added to job '{job_name}'"
-                })
+                return self.format_result(
+                    "success",
+                    result={
+                        "operation_name": op.Name,
+                        "operation_type": operation_type,
+                        "cut_depth": cut_depth,
+                        "message": f"Operation '{operation_type}' added to job '{job_name}'",
+                    },
+                )
 
             except ImportError:
-                return self.format_result("error", error="Path workbench operations not available")
+                return self.format_result(
+                    "error", error="Path workbench operations not available"
+                )
 
         except Exception as e:
             return self.format_result("error", error=f"Failed to create operation: {e}")
@@ -256,7 +294,9 @@ class CAMToolProvider(ToolProvider):
             job = doc.getObject(job_name)
 
             if not job:
-                return self.format_result("error", error=f"CAM job '{job_name}' not found")
+                return self.format_result(
+                    "error", error=f"CAM job '{job_name}' not found"
+                )
 
             try:
                 import Path
@@ -264,21 +304,32 @@ class CAMToolProvider(ToolProvider):
                 # Generate G-code
                 gcode_lines = []
                 for op in job.Operations:
-                    if hasattr(op, 'Path'):
+                    if hasattr(op, "Path"):
                         for command in op.Path.Commands:
-                            gcode_lines.append(command.Name + " " + " ".join([f"{k}{v}" for k, v in command.Parameters.items()]))
+                            gcode_lines.append(
+                                command.Name
+                                + " "
+                                + " ".join(
+                                    [f"{k}{v}" for k, v in command.Parameters.items()]
+                                )
+                            )
 
                 gcode = "\n".join(gcode_lines)
 
-                return self.format_result("success", result={
-                    "job_name": job_name,
-                    "gcode": gcode,
-                    "line_count": len(gcode_lines),
-                    "message": f"G-code generated for job '{job_name}'"
-                })
+                return self.format_result(
+                    "success",
+                    result={
+                        "job_name": job_name,
+                        "gcode": gcode,
+                        "line_count": len(gcode_lines),
+                        "message": f"G-code generated for job '{job_name}'",
+                    },
+                )
 
             except Exception as e:
-                return self.format_result("error", error=f"Failed to generate G-code: {e}")
+                return self.format_result(
+                    "error", error=f"Failed to generate G-code: {e}"
+                )
 
         except Exception as e:
             return self.format_result("error", error=f"Failed to generate G-code: {e}")
@@ -290,12 +341,15 @@ class CAMToolProvider(ToolProvider):
 
             # This is a simplified simulation
             # Real implementation would use Path simulation tools
-            return self.format_result("success", result={
-                "job_name": job_name,
-                "simulation_status": "completed",
-                "message": f"Simulation completed for job '{job_name}' (simplified implementation)",
-                "note": "Full simulation requires Path workbench simulation tools"
-            })
+            return self.format_result(
+                "success",
+                result={
+                    "job_name": job_name,
+                    "simulation_status": "completed",
+                    "message": f"Simulation completed for job '{job_name}' (simplified implementation)",
+                    "note": "Full simulation requires Path workbench simulation tools",
+                },
+            )
 
         except Exception as e:
             return self.format_result("error", error=f"Failed to simulate: {e}")

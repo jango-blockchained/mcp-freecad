@@ -16,6 +16,7 @@ from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
+
 class FreeCADWrapper:
     """Wrapper for FreeCAD functionality via subprocess communication"""
 
@@ -36,7 +37,9 @@ class FreeCADWrapper:
             self.log("Starting FreeCAD subprocess")
 
             # Check if the subprocess script exists
-            subprocess_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "freecad_subprocess.py")
+            subprocess_script = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "freecad_subprocess.py"
+            )
 
             if not os.path.exists(subprocess_script):
                 self.log(f"Error: Subprocess script not found at {subprocess_script}")
@@ -49,7 +52,7 @@ class FreeCADWrapper:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                bufsize=1  # Line buffered
+                bufsize=1,  # Line buffered
             )
 
             # Give the subprocess time to initialize
@@ -69,7 +72,7 @@ class FreeCADWrapper:
                 self.connected = True
                 self.version_info = {
                     "version": result.get("freecad_version", ["unknown"]),
-                    "gui_available": result.get("gui_available", False)
+                    "gui_available": result.get("gui_available", False),
                 }
                 self.log(f"Connected to FreeCAD version {self.version_info['version']}")
                 return True
@@ -96,7 +99,9 @@ class FreeCADWrapper:
                 self.process = None
                 self.connected = False
 
-    def send_command(self, cmd_type: str, params: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def send_command(
+        self, cmd_type: str, params: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """Send a command to the FreeCAD subprocess and get the result"""
         if not self.process or not self.connected:
             self.log("Not connected to FreeCAD subprocess")
@@ -106,15 +111,20 @@ class FreeCADWrapper:
             # Check if process is still running
             if self.process.poll() is not None:
                 self.connected = False
-                stderr = self.process.stderr.read() if self.process.stderr else "No stderr output"
-                self.log(f"FreeCAD subprocess has terminated unexpectedly. Exit code: {self.process.returncode}. Stderr: {stderr}")
-                return {"error": f"FreeCAD subprocess has terminated. Exit code: {self.process.returncode}"}
+                stderr = (
+                    self.process.stderr.read()
+                    if self.process.stderr
+                    else "No stderr output"
+                )
+                self.log(
+                    f"FreeCAD subprocess has terminated unexpectedly. Exit code: {self.process.returncode}. Stderr: {stderr}"
+                )
+                return {
+                    "error": f"FreeCAD subprocess has terminated. Exit code: {self.process.returncode}"
+                }
 
             # Prepare the command
-            command = {
-                "type": cmd_type,
-                "params": params
-            }
+            command = {"type": cmd_type, "params": params}
 
             # Send the command
             command_json = json.dumps(command) + "\n"
@@ -131,12 +141,21 @@ class FreeCADWrapper:
                 # Check if process is still alive
                 if self.process.poll() is not None:
                     self.connected = False
-                    stderr = self.process.stderr.read() if self.process.stderr else "No stderr output"
-                    self.log(f"FreeCAD subprocess terminated during command. Exit code: {self.process.returncode}. Stderr: {stderr}")
-                    return {"error": f"FreeCAD subprocess terminated during command. Exit code: {self.process.returncode}"}
+                    stderr = (
+                        self.process.stderr.read()
+                        if self.process.stderr
+                        else "No stderr output"
+                    )
+                    self.log(
+                        f"FreeCAD subprocess terminated during command. Exit code: {self.process.returncode}. Stderr: {stderr}"
+                    )
+                    return {
+                        "error": f"FreeCAD subprocess terminated during command. Exit code: {self.process.returncode}"
+                    }
 
                 # Check if there's data to read (non-blocking)
                 import select
+
                 rlist, _, _ = select.select([self.process.stdout], [], [], 0.1)
                 if rlist:
                     response_line = self.process.stdout.readline()
@@ -156,7 +175,7 @@ class FreeCADWrapper:
 
                 return {
                     "error": f"No response from FreeCAD subprocess after {timeout} seconds",
-                    "stderr": stderr
+                    "stderr": stderr,
                 }
 
             # Parse the response
@@ -168,36 +187,41 @@ class FreeCADWrapper:
                 self.log(f"Failed to parse JSON response: {response_line.strip()}")
                 return {
                     "error": f"Invalid JSON response: {str(e)}",
-                    "raw_response": response_line.strip()
+                    "raw_response": response_line.strip(),
                 }
 
         except Exception as e:
-            self.log(f"Error sending command to FreeCAD subprocess: {type(e).__name__}: {e}")
+            self.log(
+                f"Error sending command to FreeCAD subprocess: {type(e).__name__}: {e}"
+            )
             # Try to check if the process is still running
             if self.process and self.process.poll() is not None:
                 self.connected = False
-                self.log(f"Process has terminated. Exit code: {self.process.returncode}")
+                self.log(
+                    f"Process has terminated. Exit code: {self.process.returncode}"
+                )
 
-            return {"error": f"Command error: {type(e).__name__}: {str(e)}", "traceback": traceback.format_exc()}
+            return {
+                "error": f"Command error: {type(e).__name__}: {str(e)}",
+                "traceback": traceback.format_exc(),
+            }
 
     def create_document(self, name: str = "Unnamed") -> Dict[str, Any]:
         """Create a new FreeCAD document"""
         return self.send_command("create_document", {"name": name})
 
-    def create_object(self,
-                      obj_type: str,
-                      obj_name: str = "",
-                      doc_name: str = None,
-                      properties: Dict[str, Any] = None) -> Dict[str, Any]:
+    def create_object(
+        self,
+        obj_type: str,
+        obj_name: str = "",
+        doc_name: str = None,
+        properties: Dict[str, Any] = None,
+    ) -> Dict[str, Any]:
         """Create a new object in a FreeCAD document"""
         if properties is None:
             properties = {}
 
-        params = {
-            "type": obj_type,
-            "name": obj_name,
-            "properties": properties
-        }
+        params = {"type": obj_type, "name": obj_name, "properties": properties}
 
         if doc_name:
             params["document"] = doc_name
@@ -233,11 +257,12 @@ if __name__ == "__main__":
             print(f"Create document result: {doc_result}")
 
             # Create a box
-            box_result = freecad.create_object("box", "TestBox", "TestDoc", {
-                "length": 10.0,
-                "width": 20.0,
-                "height": 30.0
-            })
+            box_result = freecad.create_object(
+                "box",
+                "TestBox",
+                "TestDoc",
+                {"length": 10.0, "width": 20.0, "height": 30.0},
+            )
             print(f"Create box result: {box_result}")
         else:
             print("Failed to connect to FreeCAD")

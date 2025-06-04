@@ -25,10 +25,21 @@ try:
     from mcp.server.models import InitializationOptions
     from mcp.server.stdio import stdio_server
     from mcp.types import (
-        Resource, Tool, TextContent, ImageContent, EmbeddedResource,
-        CallToolRequest, CallToolResult, ListResourcesRequest, ListResourcesResult,
-        ListToolsRequest, ListToolsResult, ReadResourceRequest, ReadResourceResult
+        Resource,
+        Tool,
+        TextContent,
+        ImageContent,
+        EmbeddedResource,
+        CallToolRequest,
+        CallToolResult,
+        ListResourcesRequest,
+        ListResourcesResult,
+        ListToolsRequest,
+        ListToolsResult,
+        ReadResourceRequest,
+        ReadResourceResult,
     )
+
     MCP_AVAILABLE = True
 except ImportError:
     MCP_AVAILABLE = False
@@ -59,6 +70,7 @@ class FreeCADMCPServer:
             # Try to import FreeCAD
             import FreeCAD
             import FreeCADGui
+
             self.freecad_available = True
             logger.info("FreeCAD imported successfully")
 
@@ -94,210 +106,319 @@ class FreeCADMCPServer:
                 return tools
 
             # Primitive creation tools
-            tools.extend([
-                Tool(
-                    name="create_box",
-                    description="Create a box/cube primitive in FreeCAD",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "length": {"type": "number", "description": "Length of the box (mm)"},
-                            "width": {"type": "number", "description": "Width of the box (mm)"},
-                            "height": {"type": "number", "description": "Height of the box (mm)"},
-                            "name": {"type": "string", "description": "Optional name for the object"}
+            tools.extend(
+                [
+                    Tool(
+                        name="create_box",
+                        description="Create a box/cube primitive in FreeCAD",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "length": {
+                                    "type": "number",
+                                    "description": "Length of the box (mm)",
+                                },
+                                "width": {
+                                    "type": "number",
+                                    "description": "Width of the box (mm)",
+                                },
+                                "height": {
+                                    "type": "number",
+                                    "description": "Height of the box (mm)",
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Optional name for the object",
+                                },
+                            },
+                            "required": ["length", "width", "height"],
                         },
-                        "required": ["length", "width", "height"]
-                    }
-                ),
-                Tool(
-                    name="create_cylinder",
-                    description="Create a cylinder primitive in FreeCAD",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "radius": {"type": "number", "description": "Radius of the cylinder (mm)"},
-                            "height": {"type": "number", "description": "Height of the cylinder (mm)"},
-                            "name": {"type": "string", "description": "Optional name for the object"}
+                    ),
+                    Tool(
+                        name="create_cylinder",
+                        description="Create a cylinder primitive in FreeCAD",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "radius": {
+                                    "type": "number",
+                                    "description": "Radius of the cylinder (mm)",
+                                },
+                                "height": {
+                                    "type": "number",
+                                    "description": "Height of the cylinder (mm)",
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Optional name for the object",
+                                },
+                            },
+                            "required": ["radius", "height"],
                         },
-                        "required": ["radius", "height"]
-                    }
-                ),
-                Tool(
-                    name="create_sphere",
-                    description="Create a sphere primitive in FreeCAD",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "radius": {"type": "number", "description": "Radius of the sphere (mm)"},
-                            "name": {"type": "string", "description": "Optional name for the object"}
+                    ),
+                    Tool(
+                        name="create_sphere",
+                        description="Create a sphere primitive in FreeCAD",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "radius": {
+                                    "type": "number",
+                                    "description": "Radius of the sphere (mm)",
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Optional name for the object",
+                                },
+                            },
+                            "required": ["radius"],
                         },
-                        "required": ["radius"]
-                    }
-                ),
-                Tool(
-                    name="create_cone",
-                    description="Create a cone primitive in FreeCAD",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "radius1": {"type": "number", "description": "Bottom radius of the cone (mm)"},
-                            "radius2": {"type": "number", "description": "Top radius of the cone (mm)"},
-                            "height": {"type": "number", "description": "Height of the cone (mm)"},
-                            "name": {"type": "string", "description": "Optional name for the object"}
+                    ),
+                    Tool(
+                        name="create_cone",
+                        description="Create a cone primitive in FreeCAD",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "radius1": {
+                                    "type": "number",
+                                    "description": "Bottom radius of the cone (mm)",
+                                },
+                                "radius2": {
+                                    "type": "number",
+                                    "description": "Top radius of the cone (mm)",
+                                },
+                                "height": {
+                                    "type": "number",
+                                    "description": "Height of the cone (mm)",
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Optional name for the object",
+                                },
+                            },
+                            "required": ["radius1", "radius2", "height"],
                         },
-                        "required": ["radius1", "radius2", "height"]
-                    }
-                )
-            ])
+                    ),
+                ]
+            )
 
             # Boolean operation tools
-            tools.extend([
-                Tool(
-                    name="boolean_union",
-                    description="Perform boolean union of two objects",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "obj1_name": {"type": "string", "description": "Name of first object"},
-                            "obj2_name": {"type": "string", "description": "Name of second object"},
-                            "keep_originals": {"type": "boolean", "description": "Keep original objects", "default": False}
+            tools.extend(
+                [
+                    Tool(
+                        name="boolean_union",
+                        description="Perform boolean union of two objects",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "obj1_name": {
+                                    "type": "string",
+                                    "description": "Name of first object",
+                                },
+                                "obj2_name": {
+                                    "type": "string",
+                                    "description": "Name of second object",
+                                },
+                                "keep_originals": {
+                                    "type": "boolean",
+                                    "description": "Keep original objects",
+                                    "default": False,
+                                },
+                            },
+                            "required": ["obj1_name", "obj2_name"],
                         },
-                        "required": ["obj1_name", "obj2_name"]
-                    }
-                ),
-                Tool(
-                    name="boolean_cut",
-                    description="Perform boolean cut (subtraction) of two objects",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "obj1_name": {"type": "string", "description": "Object to cut from"},
-                            "obj2_name": {"type": "string", "description": "Object to cut with"},
-                            "keep_originals": {"type": "boolean", "description": "Keep original objects", "default": False}
+                    ),
+                    Tool(
+                        name="boolean_cut",
+                        description="Perform boolean cut (subtraction) of two objects",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "obj1_name": {
+                                    "type": "string",
+                                    "description": "Object to cut from",
+                                },
+                                "obj2_name": {
+                                    "type": "string",
+                                    "description": "Object to cut with",
+                                },
+                                "keep_originals": {
+                                    "type": "boolean",
+                                    "description": "Keep original objects",
+                                    "default": False,
+                                },
+                            },
+                            "required": ["obj1_name", "obj2_name"],
                         },
-                        "required": ["obj1_name", "obj2_name"]
-                    }
-                ),
-                Tool(
-                    name="boolean_intersection",
-                    description="Perform boolean intersection of two objects",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "obj1_name": {"type": "string", "description": "Name of first object"},
-                            "obj2_name": {"type": "string", "description": "Name of second object"},
-                            "keep_originals": {"type": "boolean", "description": "Keep original objects", "default": False}
+                    ),
+                    Tool(
+                        name="boolean_intersection",
+                        description="Perform boolean intersection of two objects",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "obj1_name": {
+                                    "type": "string",
+                                    "description": "Name of first object",
+                                },
+                                "obj2_name": {
+                                    "type": "string",
+                                    "description": "Name of second object",
+                                },
+                                "keep_originals": {
+                                    "type": "boolean",
+                                    "description": "Keep original objects",
+                                    "default": False,
+                                },
+                            },
+                            "required": ["obj1_name", "obj2_name"],
                         },
-                        "required": ["obj1_name", "obj2_name"]
-                    }
-                )
-            ])
+                    ),
+                ]
+            )
 
             # Measurement tools
-            tools.extend([
-                Tool(
-                    name="measure_distance",
-                    description="Measure distance between two points or objects",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "point1": {"type": "string", "description": "First point or object name"},
-                            "point2": {"type": "string", "description": "Second point or object name"}
+            tools.extend(
+                [
+                    Tool(
+                        name="measure_distance",
+                        description="Measure distance between two points or objects",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "point1": {
+                                    "type": "string",
+                                    "description": "First point or object name",
+                                },
+                                "point2": {
+                                    "type": "string",
+                                    "description": "Second point or object name",
+                                },
+                            },
+                            "required": ["point1", "point2"],
                         },
-                        "required": ["point1", "point2"]
-                    }
-                ),
-                Tool(
-                    name="measure_volume",
-                    description="Measure volume of an object",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "obj_name": {"type": "string", "description": "Name of object to measure"}
+                    ),
+                    Tool(
+                        name="measure_volume",
+                        description="Measure volume of an object",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "obj_name": {
+                                    "type": "string",
+                                    "description": "Name of object to measure",
+                                }
+                            },
+                            "required": ["obj_name"],
                         },
-                        "required": ["obj_name"]
-                    }
-                ),
-                Tool(
-                    name="measure_area",
-                    description="Measure surface area of an object",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "obj_name": {"type": "string", "description": "Name of object to measure"}
+                    ),
+                    Tool(
+                        name="measure_area",
+                        description="Measure surface area of an object",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "obj_name": {
+                                    "type": "string",
+                                    "description": "Name of object to measure",
+                                }
+                            },
+                            "required": ["obj_name"],
                         },
-                        "required": ["obj_name"]
-                    }
-                )
-            ])
+                    ),
+                ]
+            )
 
             # Export/Import tools
-            tools.extend([
-                Tool(
-                    name="export_stl",
-                    description="Export objects to STL file",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "filepath": {"type": "string", "description": "Output file path"},
-                            "object_names": {"type": "array", "items": {"type": "string"}, "description": "Objects to export (empty = all)"},
-                            "ascii": {"type": "boolean", "description": "Use ASCII format", "default": False}
+            tools.extend(
+                [
+                    Tool(
+                        name="export_stl",
+                        description="Export objects to STL file",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "filepath": {
+                                    "type": "string",
+                                    "description": "Output file path",
+                                },
+                                "object_names": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                    "description": "Objects to export (empty = all)",
+                                },
+                                "ascii": {
+                                    "type": "boolean",
+                                    "description": "Use ASCII format",
+                                    "default": False,
+                                },
+                            },
+                            "required": ["filepath"],
                         },
-                        "required": ["filepath"]
-                    }
-                ),
-                Tool(
-                    name="export_step",
-                    description="Export objects to STEP file",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "filepath": {"type": "string", "description": "Output file path"},
-                            "object_names": {"type": "array", "items": {"type": "string"}, "description": "Objects to export (empty = all)"}
+                    ),
+                    Tool(
+                        name="export_step",
+                        description="Export objects to STEP file",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "filepath": {
+                                    "type": "string",
+                                    "description": "Output file path",
+                                },
+                                "object_names": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                    "description": "Objects to export (empty = all)",
+                                },
+                            },
+                            "required": ["filepath"],
                         },
-                        "required": ["filepath"]
-                    }
-                ),
-                Tool(
-                    name="list_objects",
-                    description="List all objects in the current FreeCAD document",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {}
-                    }
-                ),
-                Tool(
-                    name="create_document",
-                    description="Create a new FreeCAD document",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "name": {"type": "string", "description": "Document name"}
-                        }
-                    }
-                )
-            ])
+                    ),
+                    Tool(
+                        name="list_objects",
+                        description="List all objects in the current FreeCAD document",
+                        inputSchema={"type": "object", "properties": {}},
+                    ),
+                    Tool(
+                        name="create_document",
+                        description="Create a new FreeCAD document",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Document name",
+                                }
+                            },
+                        },
+                    ),
+                ]
+            )
 
             return tools
 
         @self.server.call_tool()
-        async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
+        async def handle_call_tool(
+            name: str, arguments: Dict[str, Any]
+        ) -> List[TextContent]:
             """Handle tool calls from Claude."""
             if not self.tools_available:
-                return [TextContent(
-                    type="text",
-                    text="Error: FreeCAD tools are not available"
-                )]
+                return [
+                    TextContent(
+                        type="text", text="Error: FreeCAD tools are not available"
+                    )
+                ]
 
             try:
                 result = await self._execute_tool(name, arguments)
                 return [TextContent(type="text", text=str(result))]
             except Exception as e:
                 logger.error(f"Tool execution error: {e}")
-                return [TextContent(
-                    type="text",
-                    text=f"Error executing {name}: {str(e)}"
-                )]
+                return [
+                    TextContent(type="text", text=f"Error executing {name}: {str(e)}")
+                ]
 
         @self.server.list_resources()
         async def handle_list_resources() -> List[Resource]:
@@ -305,19 +426,23 @@ class FreeCADMCPServer:
             resources = []
 
             if self.freecad_available:
-                resources.append(Resource(
-                    uri="freecad://document/info",
-                    name="FreeCAD Document Info",
-                    description="Information about the current FreeCAD document",
-                    mimeType="application/json"
-                ))
+                resources.append(
+                    Resource(
+                        uri="freecad://document/info",
+                        name="FreeCAD Document Info",
+                        description="Information about the current FreeCAD document",
+                        mimeType="application/json",
+                    )
+                )
 
-                resources.append(Resource(
-                    uri="freecad://objects/list",
-                    name="FreeCAD Objects",
-                    description="List of all objects in the current document",
-                    mimeType="application/json"
-                ))
+                resources.append(
+                    Resource(
+                        uri="freecad://objects/list",
+                        name="FreeCAD Objects",
+                        description="List of all objects in the current document",
+                        mimeType="application/json",
+                    )
+                )
 
             return resources
 
@@ -337,7 +462,9 @@ class FreeCADMCPServer:
                             "name": doc.Name,
                             "label": doc.Label,
                             "object_count": len(doc.Objects),
-                            "file_name": doc.FileName if hasattr(doc, 'FileName') else None
+                            "file_name": (
+                                doc.FileName if hasattr(doc, "FileName") else None
+                            ),
                         }
                     else:
                         info = {"error": "No active document"}
@@ -352,7 +479,11 @@ class FreeCADMCPServer:
                                 "name": obj.Name,
                                 "label": obj.Label,
                                 "type": obj.TypeId,
-                                "visible": obj.ViewObject.Visibility if hasattr(obj, 'ViewObject') else True
+                                "visible": (
+                                    obj.ViewObject.Visibility
+                                    if hasattr(obj, "ViewObject")
+                                    else True
+                                ),
                             }
                             objects.append(obj_info)
                         return json.dumps({"objects": objects}, indent=2)
@@ -374,25 +505,24 @@ class FreeCADMCPServer:
                     length=arguments["length"],
                     width=arguments["width"],
                     height=arguments["height"],
-                    name=arguments.get("name")
+                    name=arguments.get("name"),
                 )
             elif name == "create_cylinder":
                 result = self.primitives_tool.create_cylinder(
                     radius=arguments["radius"],
                     height=arguments["height"],
-                    name=arguments.get("name")
+                    name=arguments.get("name"),
                 )
             elif name == "create_sphere":
                 result = self.primitives_tool.create_sphere(
-                    radius=arguments["radius"],
-                    name=arguments.get("name")
+                    radius=arguments["radius"], name=arguments.get("name")
                 )
             elif name == "create_cone":
                 result = self.primitives_tool.create_cone(
                     radius1=arguments["radius1"],
                     radius2=arguments["radius2"],
                     height=arguments["height"],
-                    name=arguments.get("name")
+                    name=arguments.get("name"),
                 )
 
             # Boolean operations
@@ -400,26 +530,25 @@ class FreeCADMCPServer:
                 result = self.operations_tool.boolean_union(
                     obj1_name=arguments["obj1_name"],
                     obj2_name=arguments["obj2_name"],
-                    keep_originals=arguments.get("keep_originals", False)
+                    keep_originals=arguments.get("keep_originals", False),
                 )
             elif name == "boolean_cut":
                 result = self.operations_tool.boolean_cut(
                     obj1_name=arguments["obj1_name"],
                     obj2_name=arguments["obj2_name"],
-                    keep_originals=arguments.get("keep_originals", False)
+                    keep_originals=arguments.get("keep_originals", False),
                 )
             elif name == "boolean_intersection":
                 result = self.operations_tool.boolean_intersection(
                     obj1_name=arguments["obj1_name"],
                     obj2_name=arguments["obj2_name"],
-                    keep_originals=arguments.get("keep_originals", False)
+                    keep_originals=arguments.get("keep_originals", False),
                 )
 
             # Measurements
             elif name == "measure_distance":
                 result = self.measurements_tool.measure_distance(
-                    point1=arguments["point1"],
-                    point2=arguments["point2"]
+                    point1=arguments["point1"], point2=arguments["point2"]
                 )
             elif name == "measure_volume":
                 result = self.measurements_tool.measure_volume(
@@ -435,27 +564,31 @@ class FreeCADMCPServer:
                 result = self.export_import_tool.export_stl(
                     filepath=arguments["filepath"],
                     object_names=arguments.get("object_names", []),
-                    ascii=arguments.get("ascii", False)
+                    ascii=arguments.get("ascii", False),
                 )
             elif name == "export_step":
                 result = self.export_import_tool.export_step(
                     filepath=arguments["filepath"],
-                    object_names=arguments.get("object_names", [])
+                    object_names=arguments.get("object_names", []),
                 )
 
             # Document management
             elif name == "list_objects":
                 import FreeCAD
+
                 doc = FreeCAD.ActiveDocument
                 if doc:
-                    objects = [{"name": obj.Name, "label": obj.Label, "type": obj.TypeId}
-                              for obj in doc.Objects]
+                    objects = [
+                        {"name": obj.Name, "label": obj.Label, "type": obj.TypeId}
+                        for obj in doc.Objects
+                    ]
                     result = {"success": True, "objects": objects}
                 else:
                     result = {"success": False, "message": "No active document"}
 
             elif name == "create_document":
                 import FreeCAD
+
                 doc_name = arguments.get("name", "MCPDocument")
                 doc = FreeCAD.newDocument(doc_name)
                 FreeCAD.setActiveDocument(doc.Name)
@@ -495,10 +628,9 @@ class FreeCADMCPServer:
                     server_name="freecad-mcp-server",
                     server_version="1.0.0",
                     capabilities=self.server.get_capabilities(
-                        notification_options=None,
-                        experimental_capabilities=None
-                    )
-                )
+                        notification_options=None, experimental_capabilities=None
+                    ),
+                ),
             )
 
 

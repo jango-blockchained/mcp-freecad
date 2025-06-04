@@ -6,6 +6,7 @@ import sys
 # Try to import psutil, but handle gracefully if not available
 try:
     import psutil
+
     HAS_PSUTIL = True
 except ImportError:
     HAS_PSUTIL = False
@@ -43,6 +44,7 @@ class ServerWidget(QtWidgets.QWidget):
         """Setup MCP bridge for server management."""
         try:
             from ..utils.mcp_bridge import MCPBridge
+
             self.mcp_bridge = MCPBridge()
         except ImportError:
             self.mcp_bridge = None
@@ -71,14 +73,18 @@ class ServerWidget(QtWidgets.QWidget):
     def _create_status_overview(self, layout):
         """Create server status overview section."""
         status_group = QtWidgets.QGroupBox("Server Status")
-        status_group.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        status_group.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed
+        )
         status_layout = QtWidgets.QVBoxLayout(status_group)
 
         # Main server status
         main_status_layout = QtWidgets.QHBoxLayout()
 
         self.main_status_label = QtWidgets.QLabel("MCP Server: Stopped")
-        self.main_status_label.setStyleSheet("font-weight: bold; font-size: 14px; padding: 5px;")
+        self.main_status_label.setStyleSheet(
+            "font-weight: bold; font-size: 14px; padding: 5px;"
+        )
         main_status_layout.addWidget(self.main_status_label)
 
         self.main_status_indicator = QtWidgets.QLabel("●")
@@ -89,7 +95,9 @@ class ServerWidget(QtWidgets.QWidget):
 
         # Server info table
         self.server_table = QtWidgets.QTableWidget(0, 4)
-        self.server_table.setHorizontalHeaderLabels(["Server", "Status", "PID", "Uptime"])
+        self.server_table.setHorizontalHeaderLabels(
+            ["Server", "Status", "PID", "Uptime"]
+        )
         self.server_table.horizontalHeader().setStretchLastSection(True)
         self.server_table.setMaximumHeight(150)
         status_layout.addWidget(self.server_table)
@@ -99,21 +107,29 @@ class ServerWidget(QtWidgets.QWidget):
     def _create_server_controls(self, layout):
         """Create server control buttons."""
         controls_group = QtWidgets.QGroupBox("Server Controls")
-        controls_group.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        controls_group.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed
+        )
         controls_layout = QtWidgets.QVBoxLayout(controls_group)
 
         # Main controls
         main_controls_layout = QtWidgets.QHBoxLayout()
 
         self.start_btn = QtWidgets.QPushButton("Start Server")
-        self.start_btn.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 10px; }")
+        self.start_btn.setStyleSheet(
+            "QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 10px; }"
+        )
 
         self.stop_btn = QtWidgets.QPushButton("Stop Server")
-        self.stop_btn.setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; padding: 10px; }")
+        self.stop_btn.setStyleSheet(
+            "QPushButton { background-color: #f44336; color: white; font-weight: bold; padding: 10px; }"
+        )
         self.stop_btn.setEnabled(False)
 
         self.restart_btn = QtWidgets.QPushButton("Restart Server")
-        self.restart_btn.setStyleSheet("QPushButton { background-color: #FF9800; color: white; font-weight: bold; padding: 10px; }")
+        self.restart_btn.setStyleSheet(
+            "QPushButton { background-color: #FF9800; color: white; font-weight: bold; padding: 10px; }"
+        )
         self.restart_btn.setEnabled(False)
 
         main_controls_layout.addWidget(self.start_btn)
@@ -126,13 +142,19 @@ class ServerWidget(QtWidgets.QWidget):
         additional_controls_layout = QtWidgets.QHBoxLayout()
 
         self.config_btn = QtWidgets.QPushButton("Configure")
-        self.config_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; padding: 8px; }")
+        self.config_btn.setStyleSheet(
+            "QPushButton { background-color: #2196F3; color: white; padding: 8px; }"
+        )
 
         self.logs_btn = QtWidgets.QPushButton("View Logs")
-        self.logs_btn.setStyleSheet("QPushButton { background-color: #9C27B0; color: white; padding: 8px; }")
+        self.logs_btn.setStyleSheet(
+            "QPushButton { background-color: #9C27B0; color: white; padding: 8px; }"
+        )
 
         self.refresh_btn = QtWidgets.QPushButton("Refresh")
-        self.refresh_btn.setStyleSheet("QPushButton { background-color: #607D8B; color: white; padding: 8px; }")
+        self.refresh_btn.setStyleSheet(
+            "QPushButton { background-color: #607D8B; color: white; padding: 8px; }"
+        )
 
         additional_controls_layout.addWidget(self.config_btn)
         additional_controls_layout.addWidget(self.logs_btn)
@@ -153,7 +175,9 @@ class ServerWidget(QtWidgets.QWidget):
     def _create_performance_section(self, layout):
         """Create performance monitoring section."""
         perf_group = QtWidgets.QGroupBox("Performance Metrics")
-        perf_group.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        perf_group.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed
+        )
         perf_layout = QtWidgets.QGridLayout(perf_group)
 
         # CPU usage
@@ -185,7 +209,9 @@ class ServerWidget(QtWidgets.QWidget):
     def _create_logs_section(self, layout):
         """Create logs display section."""
         logs_group = QtWidgets.QGroupBox("Recent Logs")
-        logs_group.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        logs_group.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed
+        )
         logs_layout = QtWidgets.QVBoxLayout(logs_group)
 
         self.logs_text = QtWidgets.QTextEdit()
@@ -331,6 +357,7 @@ class ServerWidget(QtWidgets.QWidget):
     def _add_log(self, message):
         """Add message to logs display."""
         from datetime import datetime
+
         timestamp = datetime.now().strftime("%H:%M:%S")
         log_entry = f"[{timestamp}] {message}"
 

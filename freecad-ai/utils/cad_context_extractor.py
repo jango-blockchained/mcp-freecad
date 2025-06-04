@@ -20,11 +20,13 @@ class CADContextExtractor:
 
         try:
             import FreeCAD
+
             self.freecad = FreeCAD
             self.freecad_available = True
 
             try:
                 import FreeCADGui
+
                 self.freecad_gui = FreeCADGui
             except ImportError:
                 pass
@@ -40,7 +42,7 @@ class CADContextExtractor:
                 "documents": [],
                 "workbench": "Unknown",
                 "selection": [],
-                "view": {}
+                "view": {},
             }
 
         context = {
@@ -51,7 +53,7 @@ class CADContextExtractor:
             "workbench": self._get_current_workbench(),
             "selection": self._get_selection_info(),
             "view": self._get_view_info(),
-            "preferences": self._get_relevant_preferences()
+            "preferences": self._get_relevant_preferences(),
         }
 
         return context
@@ -84,7 +86,12 @@ class CADContextExtractor:
                     object_types[obj_type] = object_types.get(obj_type, 0) + 1
 
                 if object_types:
-                    type_summary = ", ".join([f"{count} {type_name}" for type_name, count in object_types.items()])
+                    type_summary = ", ".join(
+                        [
+                            f"{count} {type_name}"
+                            for type_name, count in object_types.items()
+                        ]
+                    )
                     context_parts.append(f"Object types: {type_summary}")
         else:
             context_parts.append("No active document")
@@ -108,12 +115,12 @@ class CADContextExtractor:
 
         try:
             version_info = []
-            if hasattr(self.freecad, 'Version'):
+            if hasattr(self.freecad, "Version"):
                 version_info.append(f"v{'.'.join(self.freecad.Version()[:3])}")
 
-            if hasattr(self.freecad, 'BuildVersionInfo'):
+            if hasattr(self.freecad, "BuildVersionInfo"):
                 build_info = self.freecad.BuildVersionInfo()
-                if 'BuildRevision' in build_info:
+                if "BuildRevision" in build_info:
                     version_info.append(f"Build {build_info['BuildRevision']}")
 
             return " ".join(version_info) if version_info else "Unknown"
@@ -130,10 +137,10 @@ class CADContextExtractor:
             for doc in self.freecad.listDocuments().values():
                 doc_info = {
                     "name": doc.Name,
-                    "label": getattr(doc, 'Label', doc.Name),
-                    "file_path": getattr(doc, 'FileName', ''),
+                    "label": getattr(doc, "Label", doc.Name),
+                    "file_path": getattr(doc, "FileName", ""),
                     "object_count": len(doc.Objects),
-                    "modified": getattr(doc, 'UndoMode', False)
+                    "modified": getattr(doc, "UndoMode", False),
                 }
                 documents.append(doc_info)
         except:
@@ -155,20 +162,38 @@ class CADContextExtractor:
             for obj in doc.Objects:
                 obj_info = {
                     "name": obj.Name,
-                    "label": getattr(obj, 'Label', obj.Name),
+                    "label": getattr(obj, "Label", obj.Name),
                     "type": obj.TypeId,
-                    "visible": getattr(obj, 'Visibility', True) if hasattr(obj, 'Visibility') else True
+                    "visible": (
+                        getattr(obj, "Visibility", True)
+                        if hasattr(obj, "Visibility")
+                        else True
+                    ),
                 }
 
                 # Add geometry information if available
-                if hasattr(obj, 'Shape') and obj.Shape:
+                if hasattr(obj, "Shape") and obj.Shape:
                     try:
                         shape = obj.Shape
                         obj_info["geometry"] = {
-                            "type": shape.ShapeType if hasattr(shape, 'ShapeType') else "Unknown",
-                            "volume": round(shape.Volume, 3) if hasattr(shape, 'Volume') else None,
-                            "area": round(shape.Area, 3) if hasattr(shape, 'Area') else None,
-                            "length": round(shape.Length, 3) if hasattr(shape, 'Length') else None
+                            "type": (
+                                shape.ShapeType
+                                if hasattr(shape, "ShapeType")
+                                else "Unknown"
+                            ),
+                            "volume": (
+                                round(shape.Volume, 3)
+                                if hasattr(shape, "Volume")
+                                else None
+                            ),
+                            "area": (
+                                round(shape.Area, 3) if hasattr(shape, "Area") else None
+                            ),
+                            "length": (
+                                round(shape.Length, 3)
+                                if hasattr(shape, "Length")
+                                else None
+                            ),
                         }
                     except:
                         pass
@@ -177,10 +202,10 @@ class CADContextExtractor:
 
             return {
                 "name": doc.Name,
-                "label": getattr(doc, 'Label', doc.Name),
-                "file_path": getattr(doc, 'FileName', ''),
+                "label": getattr(doc, "Label", doc.Name),
+                "file_path": getattr(doc, "FileName", ""),
                 "objects": objects_info,
-                "object_count": len(objects_info)
+                "object_count": len(objects_info),
             }
         except:
             return None
@@ -193,7 +218,11 @@ class CADContextExtractor:
         try:
             workbench = self.freecad_gui.activeWorkbench()
             if workbench:
-                return getattr(workbench, 'MenuText', getattr(workbench, '__class__', {}).get('__name__', 'Unknown'))
+                return getattr(
+                    workbench,
+                    "MenuText",
+                    getattr(workbench, "__class__", {}).get("__name__", "Unknown"),
+                )
         except:
             pass
 
@@ -210,15 +239,19 @@ class CADContextExtractor:
             for obj in selection:
                 obj_info = {
                     "name": obj.Name,
-                    "label": getattr(obj, 'Label', obj.Name),
-                    "type": obj.TypeId
+                    "label": getattr(obj, "Label", obj.Name),
+                    "type": obj.TypeId,
                 }
 
                 # Add shape information if available
-                if hasattr(obj, 'Shape') and obj.Shape:
+                if hasattr(obj, "Shape") and obj.Shape:
                     try:
                         shape = obj.Shape
-                        obj_info["shape_type"] = shape.ShapeType if hasattr(shape, 'ShapeType') else "Unknown"
+                        obj_info["shape_type"] = (
+                            shape.ShapeType
+                            if hasattr(shape, "ShapeType")
+                            else "Unknown"
+                        )
                     except:
                         pass
 
@@ -235,12 +268,20 @@ class CADContextExtractor:
 
         view_info = {}
         try:
-            view = self.freecad_gui.ActiveDocument.ActiveView if self.freecad_gui.ActiveDocument else None
+            view = (
+                self.freecad_gui.ActiveDocument.ActiveView
+                if self.freecad_gui.ActiveDocument
+                else None
+            )
             if view:
                 # Get camera information
                 camera = view.getCameraNode()
                 if camera:
-                    view_info["camera_type"] = "Perspective" if camera.getField("heightAngle") else "Orthographic"
+                    view_info["camera_type"] = (
+                        "Perspective"
+                        if camera.getField("heightAngle")
+                        else "Orthographic"
+                    )
 
                 # Get view direction
                 view_dir = view.getViewDirection()
@@ -248,7 +289,7 @@ class CADContextExtractor:
                     view_info["view_direction"] = {
                         "x": round(view_dir.x, 3),
                         "y": round(view_dir.y, 3),
-                        "z": round(view_dir.z, 3)
+                        "z": round(view_dir.z, 3),
                     }
         except:
             pass
@@ -263,7 +304,9 @@ class CADContextExtractor:
         preferences = {}
         try:
             # Get units
-            param_get = self.freecad.ParamGet("User parameter:BaseApp/Preferences/Units")
+            param_get = self.freecad.ParamGet(
+                "User parameter:BaseApp/Preferences/Units"
+            )
             if param_get:
                 unit_system = param_get.GetInt("UserSchema", 0)
                 unit_names = {
@@ -274,12 +317,16 @@ class CADContextExtractor:
                     4: "Building Euro",
                     5: "Building US",
                     6: "Metric small parts",
-                    7: "Imperial for FEM"
+                    7: "Imperial for FEM",
                 }
-                preferences["units"] = unit_names.get(unit_system, f"Custom ({unit_system})")
+                preferences["units"] = unit_names.get(
+                    unit_system, f"Custom ({unit_system})"
+                )
 
             # Get precision settings
-            param_get = self.freecad.ParamGet("User parameter:BaseApp/Preferences/Units")
+            param_get = self.freecad.ParamGet(
+                "User parameter:BaseApp/Preferences/Units"
+            )
             if param_get:
                 preferences["decimal_places"] = param_get.GetInt("Decimals", 2)
 
@@ -299,6 +346,7 @@ class CADContextExtractor:
 
 # Global instance
 _context_extractor = None
+
 
 def get_cad_context_extractor() -> CADContextExtractor:
     """Get the global CAD context extractor instance."""

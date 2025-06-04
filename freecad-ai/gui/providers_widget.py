@@ -21,7 +21,7 @@ class FallbackConfigManager:
         """Load configuration from file."""
         if self.config_file.exists():
             try:
-                with open(self.config_file, 'r') as f:
+                with open(self.config_file, "r") as f:
                     return json.load(f)
             except:
                 pass
@@ -30,7 +30,7 @@ class FallbackConfigManager:
     def save_config(self):
         """Save configuration to file."""
         try:
-            with open(self.config_file, 'w') as f:
+            with open(self.config_file, "w") as f:
                 json.dump(self.config, f, indent=2)
             return True
         except:
@@ -52,10 +52,10 @@ class FallbackConfigManager:
         try:
             api_keys = {}
             if self.keys_file.exists():
-                with open(self.keys_file, 'r') as f:
+                with open(self.keys_file, "r") as f:
                     api_keys = json.load(f)
             api_keys[provider] = key
-            with open(self.keys_file, 'w') as f:
+            with open(self.keys_file, "w") as f:
                 json.dump(api_keys, f, indent=2)
             return True
         except:
@@ -65,7 +65,7 @@ class FallbackConfigManager:
         """Retrieve API key for provider."""
         try:
             if self.keys_file.exists():
-                with open(self.keys_file, 'r') as f:
+                with open(self.keys_file, "r") as f:
                     api_keys = json.load(f)
                 return api_keys.get(provider)
         except:
@@ -86,7 +86,7 @@ class FallbackConfigManager:
         """List configured API key providers."""
         try:
             if self.keys_file.exists():
-                with open(self.keys_file, 'r') as f:
+                with open(self.keys_file, "r") as f:
                     api_keys = json.load(f)
                 return list(api_keys.keys())
         except:
@@ -131,6 +131,7 @@ class ProvidersWidget(QtWidgets.QWidget):
         """Setup AI manager and config manager."""
         try:
             from ..ai.ai_manager import AIManager
+
             self.ai_manager = AIManager()
         except ImportError:
             self.ai_manager = None
@@ -141,6 +142,7 @@ class ProvidersWidget(QtWidgets.QWidget):
         # Strategy 1: Relative import
         try:
             from ..config.config_manager import ConfigManager
+
             self.config_manager = ConfigManager()
         except ImportError:
             pass
@@ -149,6 +151,7 @@ class ProvidersWidget(QtWidgets.QWidget):
         if self.config_manager is None:
             try:
                 from config.config_manager import ConfigManager
+
                 self.config_manager = ConfigManager()
             except ImportError:
                 pass
@@ -158,12 +161,14 @@ class ProvidersWidget(QtWidgets.QWidget):
             try:
                 import sys
                 import os
+
                 # Get the addon directory
                 addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                config_dir = os.path.join(addon_dir, 'config')
+                config_dir = os.path.join(addon_dir, "config")
                 if config_dir not in sys.path:
                     sys.path.insert(0, config_dir)
                 from config_manager import ConfigManager
+
                 self.config_manager = ConfigManager()
             except ImportError:
                 pass
@@ -177,10 +182,12 @@ class ProvidersWidget(QtWidgets.QWidget):
                 # Get the path to config_manager.py
                 current_dir = os.path.dirname(os.path.abspath(__file__))
                 addon_dir = os.path.dirname(current_dir)
-                config_file = os.path.join(addon_dir, 'config', 'config_manager.py')
+                config_file = os.path.join(addon_dir, "config", "config_manager.py")
 
                 if os.path.exists(config_file):
-                    spec = importlib.util.spec_from_file_location("config_manager", config_file)
+                    spec = importlib.util.spec_from_file_location(
+                        "config_manager", config_file
+                    )
                     config_module = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(config_module)
                     ConfigManager = config_module.ConfigManager
@@ -189,7 +196,9 @@ class ProvidersWidget(QtWidgets.QWidget):
                 pass
 
         if self.config_manager is None:
-            print("Warning: Could not import ConfigManager - configuration features will be disabled")
+            print(
+                "Warning: Could not import ConfigManager - configuration features will be disabled"
+            )
             print("Tried the following import strategies:")
             print("1. from ..config.config_manager import ConfigManager")
             print("2. from config.config_manager import ConfigManager")
@@ -198,14 +207,16 @@ class ProvidersWidget(QtWidgets.QWidget):
 
             # Show current working directory and paths for debugging
             import os
+
             print(f"Current working directory: {os.getcwd()}")
             print(f"Current file location: {os.path.abspath(__file__)}")
             addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            config_file = os.path.join(addon_dir, 'config', 'config_manager.py')
+            config_file = os.path.join(addon_dir, "config", "config_manager.py")
             print(f"Expected config file location: {config_file}")
             print(f"Config file exists: {os.path.exists(config_file)}")
 
             import sys
+
             print(f"Python path: {sys.path[:3]}...")  # Show first 3 entries
 
             # Use fallback config manager
@@ -234,7 +245,9 @@ class ProvidersWidget(QtWidgets.QWidget):
     def _create_providers_section(self, layout):
         """Create providers list and management section."""
         providers_group = QtWidgets.QGroupBox("AI Providers")
-        providers_group.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        providers_group.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed
+        )
         providers_layout = QtWidgets.QVBoxLayout(providers_group)
 
         # Provider controls
@@ -243,12 +256,16 @@ class ProvidersWidget(QtWidgets.QWidget):
         controls_layout.addWidget(QtWidgets.QLabel("Active Providers:"))
 
         self.add_provider_btn = QtWidgets.QPushButton("Add Provider")
-        self.add_provider_btn.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; padding: 6px; }")
+        self.add_provider_btn.setStyleSheet(
+            "QPushButton { background-color: #4CAF50; color: white; padding: 6px; }"
+        )
         self.add_provider_btn.clicked.connect(self._add_provider)
         controls_layout.addWidget(self.add_provider_btn)
 
         self.remove_provider_btn = QtWidgets.QPushButton("Remove")
-        self.remove_provider_btn.setStyleSheet("QPushButton { background-color: #f44336; color: white; padding: 6px; }")
+        self.remove_provider_btn.setStyleSheet(
+            "QPushButton { background-color: #f44336; color: white; padding: 6px; }"
+        )
         self.remove_provider_btn.clicked.connect(self._remove_provider)
         controls_layout.addWidget(self.remove_provider_btn)
 
@@ -257,18 +274,32 @@ class ProvidersWidget(QtWidgets.QWidget):
 
         # Provider table with flexible sizing
         self.providers_table = QtWidgets.QTableWidget(0, 5)
-        self.providers_table.setHorizontalHeaderLabels(["Name", "Type", "Model", "Status", "Default"])
+        self.providers_table.setHorizontalHeaderLabels(
+            ["Name", "Type", "Model", "Status", "Default"]
+        )
 
         # Make table flexible
         header = self.providers_table.horizontalHeader()
-        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)  # Name column stretches
-        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)  # Type column fits content
-        header.setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)  # Model column stretches
-        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)  # Status column fits content
-        header.setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeToContents)  # Default column fits content
+        header.setSectionResizeMode(
+            0, QtWidgets.QHeaderView.Stretch
+        )  # Name column stretches
+        header.setSectionResizeMode(
+            1, QtWidgets.QHeaderView.ResizeToContents
+        )  # Type column fits content
+        header.setSectionResizeMode(
+            2, QtWidgets.QHeaderView.Stretch
+        )  # Model column stretches
+        header.setSectionResizeMode(
+            3, QtWidgets.QHeaderView.ResizeToContents
+        )  # Status column fits content
+        header.setSectionResizeMode(
+            4, QtWidgets.QHeaderView.ResizeToContents
+        )  # Default column fits content
 
         self.providers_table.setMaximumHeight(150)
-        self.providers_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.providers_table.setSelectionBehavior(
+            QtWidgets.QAbstractItemView.SelectRows
+        )
         self.providers_table.cellClicked.connect(self._on_provider_selected)
         providers_layout.addWidget(self.providers_table)
 
@@ -277,7 +308,9 @@ class ProvidersWidget(QtWidgets.QWidget):
     def _create_provider_config_section(self, layout):
         """Create integrated provider configuration and API key section."""
         config_group = QtWidgets.QGroupBox("Provider Configuration")
-        config_group.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        config_group.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed
+        )
         config_layout = QtWidgets.QVBoxLayout(config_group)
 
         # Provider selection
@@ -335,7 +368,9 @@ class ProvidersWidget(QtWidgets.QWidget):
 
         # Thinking mode (for compatible models)
         self.thinking_mode_check = QtWidgets.QCheckBox("Thinking Mode")
-        self.thinking_mode_check.setToolTip("Enable extended reasoning for compatible models")
+        self.thinking_mode_check.setToolTip(
+            "Enable extended reasoning for compatible models"
+        )
         self.thinking_mode_check.toggled.connect(self._on_config_changed)
         params_layout.addWidget(self.thinking_mode_check, 1, 2)
 
@@ -366,12 +401,18 @@ class ProvidersWidget(QtWidgets.QWidget):
         self.api_key_show_btn = QtWidgets.QPushButton("👁")
         self.api_key_show_btn.setMaximumWidth(30)
         self.api_key_show_btn.setCheckable(True)
-        self.api_key_show_btn.clicked.connect(lambda: self._toggle_password_visibility(self.api_key_input, self.api_key_show_btn))
+        self.api_key_show_btn.clicked.connect(
+            lambda: self._toggle_password_visibility(
+                self.api_key_input, self.api_key_show_btn
+            )
+        )
         api_key_layout.addWidget(self.api_key_show_btn)
 
         self.api_key_test_btn = QtWidgets.QPushButton("Test")
         self.api_key_test_btn.setMaximumWidth(60)
-        self.api_key_test_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; padding: 4px; }")
+        self.api_key_test_btn.setStyleSheet(
+            "QPushButton { background-color: #2196F3; color: white; padding: 4px; }"
+        )
         self.api_key_test_btn.clicked.connect(self._test_current_api_key)
         api_key_layout.addWidget(self.api_key_test_btn)
 
@@ -379,7 +420,9 @@ class ProvidersWidget(QtWidgets.QWidget):
 
         # API Key status
         self.api_key_status_label = QtWidgets.QLabel("")
-        self.api_key_status_label.setStyleSheet("color: #666; font-size: 10px; padding: 2px;")
+        self.api_key_status_label.setStyleSheet(
+            "color: #666; font-size: 10px; padding: 2px;"
+        )
         api_layout.addRow("Status:", self.api_key_status_label)
 
         self.config_tabs.addTab(api_tab, "API Key")
@@ -390,7 +433,9 @@ class ProvidersWidget(QtWidgets.QWidget):
         actions_layout = QtWidgets.QHBoxLayout()
 
         self.test_connection_btn = QtWidgets.QPushButton("Test Connection")
-        self.test_connection_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; padding: 8px; }")
+        self.test_connection_btn.setStyleSheet(
+            "QPushButton { background-color: #2196F3; color: white; padding: 8px; }"
+        )
         self.test_connection_btn.clicked.connect(self._test_connection)
         actions_layout.addWidget(self.test_connection_btn)
 
@@ -399,12 +444,16 @@ class ProvidersWidget(QtWidgets.QWidget):
 
         # Status label for configuration changes
         self.config_status_label = QtWidgets.QLabel("")
-        self.config_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+        self.config_status_label.setStyleSheet(
+            "color: #4CAF50; font-size: 10px; padding: 2px;"
+        )
         config_layout.addWidget(self.config_status_label)
 
         # Config manager status
         self.config_manager_status = QtWidgets.QLabel("")
-        self.config_manager_status.setStyleSheet("color: #666; font-size: 9px; padding: 2px;")
+        self.config_manager_status.setStyleSheet(
+            "color: #666; font-size: 9px; padding: 2px;"
+        )
         config_layout.addWidget(self.config_manager_status)
 
         # Update config manager status
@@ -423,19 +472,25 @@ class ProvidersWidget(QtWidgets.QWidget):
         button_layout.addStretch()
 
         self.save_config_btn = QtWidgets.QPushButton("Save Configuration")
-        self.save_config_btn.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 8px; }")
+        self.save_config_btn.setStyleSheet(
+            "QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 8px; }"
+        )
         self.save_config_btn.clicked.connect(self._save_configuration)
         button_layout.addWidget(self.save_config_btn)
 
         # Add debug button for troubleshooting
         self.debug_config_btn = QtWidgets.QPushButton("Debug Config")
-        self.debug_config_btn.setStyleSheet("QPushButton { background-color: #FF9800; color: white; padding: 6px; }")
+        self.debug_config_btn.setStyleSheet(
+            "QPushButton { background-color: #FF9800; color: white; padding: 6px; }"
+        )
         self.debug_config_btn.clicked.connect(self._debug_configuration)
         button_layout.addWidget(self.debug_config_btn)
 
         # Add retry config manager button
         self.retry_config_btn = QtWidgets.QPushButton("Retry Config")
-        self.retry_config_btn.setStyleSheet("QPushButton { background-color: #9C27B0; color: white; padding: 6px; }")
+        self.retry_config_btn.setStyleSheet(
+            "QPushButton { background-color: #9C27B0; color: white; padding: 6px; }"
+        )
         self.retry_config_btn.clicked.connect(self._retry_config_manager)
         button_layout.addWidget(self.retry_config_btn)
 
@@ -465,39 +520,53 @@ class ProvidersWidget(QtWidgets.QWidget):
             return
 
         if not key:
-            QtWidgets.QMessageBox.warning(self, "Error", f"Please enter {provider} API key first")
+            QtWidgets.QMessageBox.warning(
+                self, "Error", f"Please enter {provider} API key first"
+            )
             return
 
         # Validate with config manager if available
         if self.config_manager:
             is_valid = self.config_manager.validate_api_key(provider, key)
             if is_valid:
-                QtWidgets.QMessageBox.information(self, "Success", f"{provider} API key format is valid")
+                QtWidgets.QMessageBox.information(
+                    self, "Success", f"{provider} API key format is valid"
+                )
             else:
-                QtWidgets.QMessageBox.warning(self, "Error", f"{provider} API key format is invalid")
+                QtWidgets.QMessageBox.warning(
+                    self, "Error", f"{provider} API key format is invalid"
+                )
         else:
             # Basic format validation
             if self._basic_key_validation(provider, key):
-                QtWidgets.QMessageBox.information(self, "Success", f"{provider} API key format appears valid")
+                QtWidgets.QMessageBox.information(
+                    self, "Success", f"{provider} API key format appears valid"
+                )
             else:
-                QtWidgets.QMessageBox.warning(self, "Error", f"{provider} API key format is invalid")
+                QtWidgets.QMessageBox.warning(
+                    self, "Error", f"{provider} API key format is invalid"
+                )
 
     def _test_current_api_key(self):
         """Test API key for currently selected provider."""
         provider_name = self.selected_provider_label.text()
         if provider_name == "None selected":
-            QtWidgets.QMessageBox.warning(self, "Error", "Please select a provider first")
+            QtWidgets.QMessageBox.warning(
+                self, "Error", "Please select a provider first"
+            )
             return
 
         key = self.api_key_input.text()
         if not key:
-            QtWidgets.QMessageBox.warning(self, "Error", "Please enter an API key first")
+            QtWidgets.QMessageBox.warning(
+                self, "Error", "Please enter an API key first"
+            )
             return
 
         # Get provider type
         provider_info = self._get_default_provider_by_name(provider_name)
         if provider_info:
-            provider_type = provider_info['type']
+            provider_type = provider_info["type"]
         else:
             # Try to determine from provider name
             provider_type = provider_name.lower()
@@ -506,23 +575,39 @@ class ProvidersWidget(QtWidgets.QWidget):
         if self.config_manager:
             is_valid = self.config_manager.validate_api_key(provider_type, key)
             if is_valid:
-                QtWidgets.QMessageBox.information(self, "Success", f"API key format is valid")
+                QtWidgets.QMessageBox.information(
+                    self, "Success", f"API key format is valid"
+                )
                 self.api_key_status_label.setText("✅ Valid format")
-                self.api_key_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+                self.api_key_status_label.setStyleSheet(
+                    "color: #4CAF50; font-size: 10px; padding: 2px;"
+                )
             else:
-                QtWidgets.QMessageBox.warning(self, "Error", f"API key format is invalid")
+                QtWidgets.QMessageBox.warning(
+                    self, "Error", f"API key format is invalid"
+                )
                 self.api_key_status_label.setText("❌ Invalid format")
-                self.api_key_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+                self.api_key_status_label.setStyleSheet(
+                    "color: #f44336; font-size: 10px; padding: 2px;"
+                )
         else:
             # Basic format validation
             if self._basic_key_validation(provider_type, key):
-                QtWidgets.QMessageBox.information(self, "Success", f"API key format appears valid")
+                QtWidgets.QMessageBox.information(
+                    self, "Success", f"API key format appears valid"
+                )
                 self.api_key_status_label.setText("✅ Valid format")
-                self.api_key_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+                self.api_key_status_label.setStyleSheet(
+                    "color: #4CAF50; font-size: 10px; padding: 2px;"
+                )
             else:
-                QtWidgets.QMessageBox.warning(self, "Error", f"API key format is invalid")
+                QtWidgets.QMessageBox.warning(
+                    self, "Error", f"API key format is invalid"
+                )
                 self.api_key_status_label.setText("❌ Invalid format")
-                self.api_key_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+                self.api_key_status_label.setStyleSheet(
+                    "color: #f44336; font-size: 10px; padding: 2px;"
+                )
 
     def _on_api_key_changed(self):
         """Handle API key changes for the selected provider."""
@@ -535,7 +620,7 @@ class ProvidersWidget(QtWidgets.QWidget):
         # Get provider type
         provider_info = self._get_default_provider_by_name(provider_name)
         if provider_info:
-            provider_type = provider_info['type']
+            provider_type = provider_info["type"]
         else:
             provider_type = provider_name.lower()
 
@@ -547,26 +632,32 @@ class ProvidersWidget(QtWidgets.QWidget):
                 existing_config = self.config_manager.get_provider_config(provider_name)
                 if not existing_config:
                     existing_config = {
-                        'enabled': True,
-                        'model': self._get_default_model_for_provider(provider_type),
-                        'temperature': 0.7,
-                        'timeout': 30,
-                        'max_tokens': 4000
+                        "enabled": True,
+                        "model": self._get_default_model_for_provider(provider_type),
+                        "temperature": 0.7,
+                        "timeout": 30,
+                        "max_tokens": 4000,
                     }
                 else:
-                    existing_config['enabled'] = True
+                    existing_config["enabled"] = True
                 self.config_manager.set_provider_config(provider_name, existing_config)
 
                 self.api_key_changed.emit(provider_type)
                 self.api_key_status_label.setText("✅ Saved")
-                self.api_key_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+                self.api_key_status_label.setStyleSheet(
+                    "color: #4CAF50; font-size: 10px; padding: 2px;"
+                )
                 # Refresh providers to update status
                 self._refresh_providers()
                 # Clear status after 2 seconds
-                QtCore.QTimer.singleShot(2000, lambda: self.api_key_status_label.setText(""))
+                QtCore.QTimer.singleShot(
+                    2000, lambda: self.api_key_status_label.setText("")
+                )
             else:
                 self.api_key_status_label.setText("❌ Save failed")
-                self.api_key_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+                self.api_key_status_label.setStyleSheet(
+                    "color: #f44336; font-size: 10px; padding: 2px;"
+                )
         elif not key:
             self.api_key_status_label.setText("")
 
@@ -596,15 +687,15 @@ class ProvidersWidget(QtWidgets.QWidget):
     def _get_default_provider_by_name(self, provider_name):
         """Get default provider info by name."""
         # Check default providers first
-        if hasattr(self, 'default_providers'):
+        if hasattr(self, "default_providers"):
             for provider in self.default_providers:
-                if provider['name'] == provider_name:
+                if provider["name"] == provider_name:
                     return provider
 
         # Check custom providers
-        if hasattr(self, 'custom_providers'):
+        if hasattr(self, "custom_providers"):
             for provider in self.custom_providers:
-                if provider['name'] == provider_name:
+                if provider["name"] == provider_name:
                     return provider
 
         return None
@@ -615,7 +706,7 @@ class ProvidersWidget(QtWidgets.QWidget):
             "anthropic": "claude-4-20241120",
             "openai": "gpt-4o-mini",
             "google": "gemini-1.5-flash",
-            "openrouter": "anthropic/claude-3.5-sonnet"
+            "openrouter": "anthropic/claude-3.5-sonnet",
         }
         return model_map.get(provider_type, "default-model")
 
@@ -623,33 +714,43 @@ class ProvidersWidget(QtWidgets.QWidget):
         """Create default providers for common AI services."""
         default_providers = [
             {
-                'name': 'Anthropic',
-                'type': 'anthropic',
-                'models': ['claude-4-20241120', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
-                'default_model': 'claude-4-20241120',
-                'status': 'Not configured'
+                "name": "Anthropic",
+                "type": "anthropic",
+                "models": [
+                    "claude-4-20241120",
+                    "claude-3-5-sonnet-20241022",
+                    "claude-3-5-haiku-20241022",
+                    "claude-3-opus-20240229",
+                ],
+                "default_model": "claude-4-20241120",
+                "status": "Not configured",
             },
             {
-                'name': 'OpenAI',
-                'type': 'openai',
-                'models': ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
-                'default_model': 'gpt-4o-mini',
-                'status': 'Not configured'
+                "name": "OpenAI",
+                "type": "openai",
+                "models": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"],
+                "default_model": "gpt-4o-mini",
+                "status": "Not configured",
             },
             {
-                'name': 'Google',
-                'type': 'google',
-                'models': ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro'],
-                'default_model': 'gemini-1.5-flash',
-                'status': 'Not configured'
+                "name": "Google",
+                "type": "google",
+                "models": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"],
+                "default_model": "gemini-1.5-flash",
+                "status": "Not configured",
             },
             {
-                'name': 'OpenRouter',
-                'type': 'openrouter',
-                'models': ['anthropic/claude-3.5-sonnet', 'openai/gpt-4o', 'google/gemini-pro', 'meta-llama/llama-3.1-405b'],
-                'default_model': 'anthropic/claude-3.5-sonnet',
-                'status': 'Not configured'
-            }
+                "name": "OpenRouter",
+                "type": "openrouter",
+                "models": [
+                    "anthropic/claude-3.5-sonnet",
+                    "openai/gpt-4o",
+                    "google/gemini-pro",
+                    "meta-llama/llama-3.1-405b",
+                ],
+                "default_model": "anthropic/claude-3.5-sonnet",
+                "status": "Not configured",
+            },
         ]
 
         # Store default providers in a class attribute
@@ -659,7 +760,7 @@ class ProvidersWidget(QtWidgets.QWidget):
         if self.config_manager:
             current_default = self.config_manager.get_default_provider()
             if not current_default:
-                self.config_manager.set_default_provider('Anthropic')
+                self.config_manager.set_default_provider("Anthropic")
 
         # Initial refresh to show default providers
         self._refresh_providers()
@@ -671,70 +772,93 @@ class ProvidersWidget(QtWidgets.QWidget):
             provider_data = dialog.get_provider_data()
 
             # Validate provider name
-            if not provider_data['name'].strip():
-                QtWidgets.QMessageBox.warning(self, "Error", "Please enter a provider name")
+            if not provider_data["name"].strip():
+                QtWidgets.QMessageBox.warning(
+                    self, "Error", "Please enter a provider name"
+                )
                 return
 
             # Check if provider name already exists
-            if self._provider_in_table(provider_data['name']):
-                QtWidgets.QMessageBox.warning(self, "Error", "Provider name already exists")
+            if self._provider_in_table(provider_data["name"]):
+                QtWidgets.QMessageBox.warning(
+                    self, "Error", "Provider name already exists"
+                )
                 return
 
             # Create provider info
             new_provider = {
-                'name': provider_data['name'],
-                'type': provider_data['type'],
-                'models': self._get_default_models_for_type(provider_data['type']),
-                'default_model': provider_data.get('config', {}).get('model', ''),
-                'status': 'Custom provider'
+                "name": provider_data["name"],
+                "type": provider_data["type"],
+                "models": self._get_default_models_for_type(provider_data["type"]),
+                "default_model": provider_data.get("config", {}).get("model", ""),
+                "status": "Custom provider",
             }
 
             # If no specific model provided, use first default model
-            if not new_provider['default_model'] and new_provider['models']:
-                new_provider['default_model'] = new_provider['models'][0]
+            if not new_provider["default_model"] and new_provider["models"]:
+                new_provider["default_model"] = new_provider["models"][0]
 
             # Add to custom providers list
-            if not hasattr(self, 'custom_providers'):
+            if not hasattr(self, "custom_providers"):
                 self.custom_providers = []
             self.custom_providers.append(new_provider)
 
             # Save API key if provided
-            if provider_data.get('api_key') and self.config_manager:
-                self.config_manager.set_api_key(provider_data['type'], provider_data['api_key'])
+            if provider_data.get("api_key") and self.config_manager:
+                self.config_manager.set_api_key(
+                    provider_data["type"], provider_data["api_key"]
+                )
 
             # Save provider configuration to config manager
             if self.config_manager:
                 provider_config = {
-                    'enabled': True,
-                    'model': new_provider['default_model'],
-                    'temperature': 0.7,
-                    'timeout': 30,
-                    'max_tokens': 4000
+                    "enabled": True,
+                    "model": new_provider["default_model"],
+                    "temperature": 0.7,
+                    "timeout": 30,
+                    "max_tokens": 4000,
                 }
                 # Add thinking mode for Anthropic providers
-                if provider_data['type'] == 'anthropic':
-                    provider_config['thinking_mode'] = False
+                if provider_data["type"] == "anthropic":
+                    provider_config["thinking_mode"] = False
 
-                success = self.config_manager.set_provider_config(provider_data['name'], provider_config)
+                success = self.config_manager.set_provider_config(
+                    provider_data["name"], provider_config
+                )
                 if not success:
-                    QtWidgets.QMessageBox.warning(self, "Warning",
-                                                f"Provider added but failed to save configuration for {provider_data['name']}")
+                    QtWidgets.QMessageBox.warning(
+                        self,
+                        "Warning",
+                        f"Provider added but failed to save configuration for {provider_data['name']}",
+                    )
 
             # Refresh display
             self._refresh_providers()
-            self.provider_added.emit(provider_data['name'])
+            self.provider_added.emit(provider_data["name"])
 
-            QtWidgets.QMessageBox.information(self, "Success", f"Provider '{provider_data['name']}' added successfully")
+            QtWidgets.QMessageBox.information(
+                self,
+                "Success",
+                f"Provider '{provider_data['name']}' added successfully",
+            )
 
     def _get_default_models_for_type(self, provider_type):
         """Get default models for a provider type."""
         model_map = {
-            'openai': ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
-            'anthropic': ['claude-4-20241120', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'],
-            'google': ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro'],
-            'openrouter': ['anthropic/claude-3.5-sonnet', 'openai/gpt-4o', 'google/gemini-pro']
+            "openai": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"],
+            "anthropic": [
+                "claude-4-20241120",
+                "claude-3-5-sonnet-20241022",
+                "claude-3-5-haiku-20241022",
+            ],
+            "google": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"],
+            "openrouter": [
+                "anthropic/claude-3.5-sonnet",
+                "openai/gpt-4o",
+                "google/gemini-pro",
+            ],
         }
-        return model_map.get(provider_type, ['default-model'])
+        return model_map.get(provider_type, ["default-model"])
 
     def _remove_provider(self):
         """Remove selected provider."""
@@ -745,9 +869,10 @@ class ProvidersWidget(QtWidgets.QWidget):
                 provider_name = name_item.text()
 
                 reply = QtWidgets.QMessageBox.question(
-                    self, "Remove Provider",
+                    self,
+                    "Remove Provider",
                     f"Are you sure you want to remove provider '{provider_name}'?",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
                 )
 
                 if reply == QtWidgets.QMessageBox.Yes and self.ai_manager:
@@ -769,7 +894,7 @@ class ProvidersWidget(QtWidgets.QWidget):
         # Load API key for the selected provider
         provider_info = self._get_default_provider_by_name(provider_name)
         if provider_info:
-            provider_type = provider_info['type']
+            provider_type = provider_info["type"]
 
             # Load API key
             if self.config_manager:
@@ -777,19 +902,23 @@ class ProvidersWidget(QtWidgets.QWidget):
                 if api_key:
                     self.api_key_input.setText(api_key)
                     self.api_key_status_label.setText("✅ Configured")
-                    self.api_key_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+                    self.api_key_status_label.setStyleSheet(
+                        "color: #4CAF50; font-size: 10px; padding: 2px;"
+                    )
                 else:
                     self.api_key_input.setText("")
                     self.api_key_status_label.setText("⚠️ Not configured")
-                    self.api_key_status_label.setStyleSheet("color: #FF9800; font-size: 10px; padding: 2px;")
+                    self.api_key_status_label.setStyleSheet(
+                        "color: #FF9800; font-size: 10px; padding: 2px;"
+                    )
 
             # Update model list with default provider models
-            models = provider_info['models']
+            models = provider_info["models"]
             self.model_combo.clear()
             self.model_combo.addItems(models)
 
             # Set default model
-            default_model = provider_info['default_model']
+            default_model = provider_info["default_model"]
             index = self.model_combo.findText(default_model)
             if index >= 0:
                 self.model_combo.setCurrentIndex(index)
@@ -804,20 +933,22 @@ class ProvidersWidget(QtWidgets.QWidget):
             if self.config_manager:
                 saved_config = self.config_manager.get_provider_config(provider_name)
                 if saved_config:
-                    self.temperature_spin.setValue(saved_config.get('temperature', 0.7))
-                    self.max_tokens_spin.setValue(saved_config.get('max_tokens', 4096))
-                    self.timeout_spin.setValue(saved_config.get('timeout', 30))
-                    self.thinking_mode_check.setChecked(saved_config.get('thinking_mode', False))
+                    self.temperature_spin.setValue(saved_config.get("temperature", 0.7))
+                    self.max_tokens_spin.setValue(saved_config.get("max_tokens", 4096))
+                    self.timeout_spin.setValue(saved_config.get("timeout", 30))
+                    self.thinking_mode_check.setChecked(
+                        saved_config.get("thinking_mode", False)
+                    )
 
                     # Update model if saved
-                    saved_model = saved_config.get('model')
+                    saved_model = saved_config.get("model")
                     if saved_model:
                         index = self.model_combo.findText(saved_model)
                         if index >= 0:
                             self.model_combo.setCurrentIndex(index)
 
             # Enable thinking mode for Claude providers
-            if provider_info['type'] == 'anthropic':
+            if provider_info["type"] == "anthropic":
                 self.thinking_mode_check.setEnabled(True)
             else:
                 self.thinking_mode_check.setEnabled(False)
@@ -825,7 +956,9 @@ class ProvidersWidget(QtWidgets.QWidget):
             # Check if this is the default provider
             if self.config_manager:
                 default_provider = self.config_manager.get_default_provider()
-                self.default_provider_check.setChecked(provider_name == default_provider)
+                self.default_provider_check.setChecked(
+                    provider_name == default_provider
+                )
 
             return
 
@@ -836,7 +969,9 @@ class ProvidersWidget(QtWidgets.QWidget):
                 # Clear API key input for AI manager providers
                 self.api_key_input.setText("")
                 self.api_key_status_label.setText("Managed by AI Manager")
-                self.api_key_status_label.setStyleSheet("color: #666; font-size: 10px; padding: 2px;")
+                self.api_key_status_label.setStyleSheet(
+                    "color: #666; font-size: 10px; padding: 2px;"
+                )
 
                 # Update model list
                 models = provider.get_available_models()
@@ -851,12 +986,14 @@ class ProvidersWidget(QtWidgets.QWidget):
                         self.model_combo.setCurrentIndex(index)
 
                 # Load other configuration if available
-                if hasattr(provider, 'config'):
+                if hasattr(provider, "config"):
                     config = provider.config
-                    self.temperature_spin.setValue(config.get('temperature', 0.7))
-                    self.max_tokens_spin.setValue(config.get('max_tokens', 4096))
-                    self.timeout_spin.setValue(config.get('timeout', 30))
-                    self.thinking_mode_check.setChecked(config.get('thinking_mode', False))
+                    self.temperature_spin.setValue(config.get("temperature", 0.7))
+                    self.max_tokens_spin.setValue(config.get("max_tokens", 4096))
+                    self.timeout_spin.setValue(config.get("timeout", 30))
+                    self.thinking_mode_check.setChecked(
+                        config.get("thinking_mode", False)
+                    )
 
     def _on_model_changed(self, model_name):
         """Handle model selection change."""
@@ -876,25 +1013,41 @@ class ProvidersWidget(QtWidgets.QWidget):
                 existing_config = self.config_manager.get_provider_config(provider_name)
                 if not existing_config:
                     existing_config = {}
-                existing_config['model'] = model_name
+                existing_config["model"] = model_name
                 # Ensure provider is marked as enabled when model is changed
-                existing_config['enabled'] = True
+                existing_config["enabled"] = True
 
-                success = self.config_manager.set_provider_config(provider_name, existing_config)
+                success = self.config_manager.set_provider_config(
+                    provider_name, existing_config
+                )
                 if not success:
-                    self.config_status_label.setText("❌ Failed to save model configuration")
-                    self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+                    self.config_status_label.setText(
+                        "❌ Failed to save model configuration"
+                    )
+                    self.config_status_label.setStyleSheet(
+                        "color: #f44336; font-size: 10px; padding: 2px;"
+                    )
                 else:
-                    self.config_status_label.setText("✅ Model configuration saved automatically")
-                    self.config_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+                    self.config_status_label.setText(
+                        "✅ Model configuration saved automatically"
+                    )
+                    self.config_status_label.setStyleSheet(
+                        "color: #4CAF50; font-size: 10px; padding: 2px;"
+                    )
                     # Clear status after 3 seconds
-                    QtCore.QTimer.singleShot(3000, lambda: self.config_status_label.setText(""))
+                    QtCore.QTimer.singleShot(
+                        3000, lambda: self.config_status_label.setText("")
+                    )
             except Exception as e:
                 self.config_status_label.setText(f"❌ Error: {str(e)[:30]}...")
-                self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+                self.config_status_label.setStyleSheet(
+                    "color: #f44336; font-size: 10px; padding: 2px;"
+                )
         else:
             self.config_status_label.setText("❌ Config manager not available")
-            self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+            self.config_status_label.setStyleSheet(
+                "color: #f44336; font-size: 10px; padding: 2px;"
+            )
 
         self._refresh_providers()
 
@@ -906,22 +1059,22 @@ class ProvidersWidget(QtWidgets.QWidget):
 
         # Create new configuration from UI values
         new_config = {
-            'temperature': self.temperature_spin.value(),
-            'max_tokens': self.max_tokens_spin.value(),
-            'timeout': self.timeout_spin.value(),
-            'thinking_mode': self.thinking_mode_check.isChecked(),
-            'enabled': True
+            "temperature": self.temperature_spin.value(),
+            "max_tokens": self.max_tokens_spin.value(),
+            "timeout": self.timeout_spin.value(),
+            "thinking_mode": self.thinking_mode_check.isChecked(),
+            "enabled": True,
         }
 
         # Add current model if available
         current_model = self.model_combo.currentText()
         if current_model:
-            new_config['model'] = current_model
+            new_config["model"] = current_model
 
         # Update AI manager provider if it exists
         if self.ai_manager:
             provider = self.ai_manager.providers.get(provider_name)
-            if provider and hasattr(provider, 'config'):
+            if provider and hasattr(provider, "config"):
                 provider.config.update(new_config)
 
         # Save to config manager for persistence (this is the important part)
@@ -934,24 +1087,38 @@ class ProvidersWidget(QtWidgets.QWidget):
                 existing_config.update(new_config)
 
                 # Ensure provider is marked as enabled when configured
-                existing_config['enabled'] = True
+                existing_config["enabled"] = True
 
                 # Save the updated configuration
-                success = self.config_manager.set_provider_config(provider_name, existing_config)
+                success = self.config_manager.set_provider_config(
+                    provider_name, existing_config
+                )
                 if not success:
                     self.config_status_label.setText("❌ Failed to save configuration")
-                    self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+                    self.config_status_label.setStyleSheet(
+                        "color: #f44336; font-size: 10px; padding: 2px;"
+                    )
                 else:
-                    self.config_status_label.setText("✅ Configuration saved automatically")
-                    self.config_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+                    self.config_status_label.setText(
+                        "✅ Configuration saved automatically"
+                    )
+                    self.config_status_label.setStyleSheet(
+                        "color: #4CAF50; font-size: 10px; padding: 2px;"
+                    )
                     # Clear status after 3 seconds
-                    QtCore.QTimer.singleShot(3000, lambda: self.config_status_label.setText(""))
+                    QtCore.QTimer.singleShot(
+                        3000, lambda: self.config_status_label.setText("")
+                    )
             except Exception as e:
                 self.config_status_label.setText(f"❌ Error: {str(e)[:30]}...")
-                self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+                self.config_status_label.setStyleSheet(
+                    "color: #f44336; font-size: 10px; padding: 2px;"
+                )
         else:
             self.config_status_label.setText("❌ Config manager not available")
-            self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+            self.config_status_label.setStyleSheet(
+                "color: #f44336; font-size: 10px; padding: 2px;"
+            )
 
         self.provider_configured.emit(provider_name)
 
@@ -967,7 +1134,9 @@ class ProvidersWidget(QtWidgets.QWidget):
         """Test connection for selected provider."""
         provider_name = self.selected_provider_label.text()
         if provider_name == "None selected":
-            QtWidgets.QMessageBox.warning(self, "Error", "Please select a provider first")
+            QtWidgets.QMessageBox.warning(
+                self, "Error", "Please select a provider first"
+            )
             return
 
         self.test_connection_btn.setEnabled(False)
@@ -987,14 +1156,14 @@ class ProvidersWidget(QtWidgets.QWidget):
         self.providers_table.setRowCount(0)
 
         # Add default providers first
-        if hasattr(self, 'default_providers'):
+        if hasattr(self, "default_providers"):
             for provider_info in self.default_providers:
                 self._add_default_provider_to_table(provider_info)
 
         # Add custom providers
-        if hasattr(self, 'custom_providers'):
+        if hasattr(self, "custom_providers"):
             for provider_info in self.custom_providers:
-                if not self._provider_in_table(provider_info['name']):
+                if not self._provider_in_table(provider_info["name"]):
                     self._add_default_provider_to_table(provider_info)
 
         # Add providers from AI manager if available
@@ -1015,9 +1184,9 @@ class ProvidersWidget(QtWidgets.QWidget):
         row = self.providers_table.rowCount()
         self.providers_table.insertRow(row)
 
-        provider_name = provider_info['name']
-        provider_type = provider_info['type']
-        default_model = provider_info['default_model']
+        provider_name = provider_info["name"]
+        provider_type = provider_info["type"]
+        default_model = provider_info["default_model"]
 
         # Check if API key is configured
         has_api_key = False
@@ -1028,7 +1197,9 @@ class ProvidersWidget(QtWidgets.QWidget):
         status = "Configured" if has_api_key else "Not configured"
 
         self.providers_table.setItem(row, 0, QtWidgets.QTableWidgetItem(provider_name))
-        self.providers_table.setItem(row, 1, QtWidgets.QTableWidgetItem(provider_type.title()))
+        self.providers_table.setItem(
+            row, 1, QtWidgets.QTableWidgetItem(provider_type.title())
+        )
         self.providers_table.setItem(row, 2, QtWidgets.QTableWidgetItem(default_model))
 
         # Color code the status
@@ -1040,7 +1211,9 @@ class ProvidersWidget(QtWidgets.QWidget):
         self.providers_table.setItem(row, 3, status_item)
 
         # Check if default provider
-        default_provider = self.config_manager.get_default_provider() if self.config_manager else ""
+        default_provider = (
+            self.config_manager.get_default_provider() if self.config_manager else ""
+        )
         is_default = provider_name == default_provider
         default_item = QtWidgets.QTableWidgetItem("✓" if is_default else "")
         self.providers_table.setItem(row, 4, default_item)
@@ -1051,12 +1224,20 @@ class ProvidersWidget(QtWidgets.QWidget):
         self.providers_table.insertRow(row)
 
         self.providers_table.setItem(row, 0, QtWidgets.QTableWidgetItem(provider_name))
-        self.providers_table.setItem(row, 1, QtWidgets.QTableWidgetItem(provider.get_provider_name()))
-        self.providers_table.setItem(row, 2, QtWidgets.QTableWidgetItem(provider.get_current_model() or "Default"))
+        self.providers_table.setItem(
+            row, 1, QtWidgets.QTableWidgetItem(provider.get_provider_name())
+        )
+        self.providers_table.setItem(
+            row,
+            2,
+            QtWidgets.QTableWidgetItem(provider.get_current_model() or "Default"),
+        )
         self.providers_table.setItem(row, 3, QtWidgets.QTableWidgetItem("Active"))
 
         # Check if default provider
-        default_provider = self.config_manager.get_default_provider() if self.config_manager else ""
+        default_provider = (
+            self.config_manager.get_default_provider() if self.config_manager else ""
+        )
         is_default = provider_name == default_provider
         default_item = QtWidgets.QTableWidgetItem("✓" if is_default else "")
         self.providers_table.setItem(row, 4, default_item)
@@ -1067,8 +1248,16 @@ class ProvidersWidget(QtWidgets.QWidget):
         self.providers_table.insertRow(row)
 
         self.providers_table.setItem(row, 0, QtWidgets.QTableWidgetItem(provider_name))
-        self.providers_table.setItem(row, 1, QtWidgets.QTableWidgetItem(provider_info.get("type", "Unknown")))
-        self.providers_table.setItem(row, 2, QtWidgets.QTableWidgetItem(provider_info.get("config", {}).get("model", "Default")))
+        self.providers_table.setItem(
+            row, 1, QtWidgets.QTableWidgetItem(provider_info.get("type", "Unknown"))
+        )
+        self.providers_table.setItem(
+            row,
+            2,
+            QtWidgets.QTableWidgetItem(
+                provider_info.get("config", {}).get("model", "Default")
+            ),
+        )
 
         status = provider_info.get("status", "Unknown")
         status_item = QtWidgets.QTableWidgetItem(status)
@@ -1096,21 +1285,39 @@ class ProvidersWidget(QtWidgets.QWidget):
             try:
                 success = self.config_manager.save_config()
                 if success:
-                    QtWidgets.QMessageBox.information(self, "Success", "Configuration saved successfully")
+                    QtWidgets.QMessageBox.information(
+                        self, "Success", "Configuration saved successfully"
+                    )
                     self.config_status_label.setText("✅ All configuration saved")
-                    self.config_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
+                    self.config_status_label.setStyleSheet(
+                        "color: #4CAF50; font-size: 10px; padding: 2px;"
+                    )
                     # Clear status after 3 seconds
-                    QtCore.QTimer.singleShot(3000, lambda: self.config_status_label.setText(""))
+                    QtCore.QTimer.singleShot(
+                        3000, lambda: self.config_status_label.setText("")
+                    )
                 else:
-                    QtWidgets.QMessageBox.warning(self, "Error", "Failed to save configuration")
-                    self.config_status_label.setText("❌ Failed to save all configuration")
-                    self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+                    QtWidgets.QMessageBox.warning(
+                        self, "Error", "Failed to save configuration"
+                    )
+                    self.config_status_label.setText(
+                        "❌ Failed to save all configuration"
+                    )
+                    self.config_status_label.setStyleSheet(
+                        "color: #f44336; font-size: 10px; padding: 2px;"
+                    )
             except Exception as e:
-                QtWidgets.QMessageBox.critical(self, "Error", f"Error saving configuration: {str(e)}")
+                QtWidgets.QMessageBox.critical(
+                    self, "Error", f"Error saving configuration: {str(e)}"
+                )
                 self.config_status_label.setText(f"❌ Error: {str(e)}")
-                self.config_status_label.setStyleSheet("color: #f44336; font-size: 10px; padding: 2px;")
+                self.config_status_label.setStyleSheet(
+                    "color: #f44336; font-size: 10px; padding: 2px;"
+                )
         else:
-            QtWidgets.QMessageBox.warning(self, "Error", "Configuration manager not available")
+            QtWidgets.QMessageBox.warning(
+                self, "Error", "Configuration manager not available"
+            )
 
     def _load_configuration(self):
         """Load configuration from config manager."""
@@ -1125,15 +1332,23 @@ class ProvidersWidget(QtWidgets.QWidget):
         self.provider_service = provider_service
 
         if provider_service:
-            provider_service.provider_added.connect(lambda name, type: self._refresh_providers())
-            provider_service.provider_removed.connect(lambda name: self._refresh_providers())
-            provider_service.provider_status_changed.connect(self._on_provider_status_changed)
+            provider_service.provider_added.connect(
+                lambda name, type: self._refresh_providers()
+            )
+            provider_service.provider_removed.connect(
+                lambda name: self._refresh_providers()
+            )
+            provider_service.provider_status_changed.connect(
+                self._on_provider_status_changed
+            )
             provider_service.providers_updated.connect(self._refresh_providers)
 
             # Initial refresh
             self._refresh_providers()
 
-    def _on_provider_status_changed(self, provider_name: str, status: str, message: str):
+    def _on_provider_status_changed(
+        self, provider_name: str, status: str, message: str
+    ):
         """Handle provider status change."""
         # Update status in table
         for row in range(self.providers_table.rowCount()):
@@ -1168,20 +1383,24 @@ class ProvidersWidget(QtWidgets.QWidget):
     def _debug_configuration(self):
         """Debug method to show the current configuration."""
         if not self.config_manager:
-            QtWidgets.QMessageBox.warning(self, "Debug", "Configuration manager not available")
+            QtWidgets.QMessageBox.warning(
+                self, "Debug", "Configuration manager not available"
+            )
             return
 
         try:
             # Get current configuration
             config = self.config_manager.config
-            providers_config = config.get('providers', {})
+            providers_config = config.get("providers", {})
 
             # Get selected provider info
             provider_name = self.selected_provider_label.text()
 
             debug_info = []
             debug_info.append(f"Selected Provider: {provider_name}")
-            debug_info.append(f"Config Manager Available: {self.config_manager is not None}")
+            debug_info.append(
+                f"Config Manager Available: {self.config_manager is not None}"
+            )
             debug_info.append(f"Config File: {self.config_manager.config_file}")
             debug_info.append(f"Keys File: {self.config_manager.keys_file}")
             debug_info.append("")
@@ -1197,7 +1416,9 @@ class ProvidersWidget(QtWidgets.QWidget):
                 debug_info.append(f"  {key_provider}: configured")
 
             debug_info.append("")
-            debug_info.append(f"Default Provider: {self.config_manager.get_default_provider()}")
+            debug_info.append(
+                f"Default Provider: {self.config_manager.get_default_provider()}"
+            )
 
             # Show debug dialog
             dialog = QtWidgets.QDialog(self)
@@ -1218,16 +1439,24 @@ class ProvidersWidget(QtWidgets.QWidget):
             dialog.exec_()
 
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Debug Error", f"Error getting debug info: {str(e)}")
+            QtWidgets.QMessageBox.critical(
+                self, "Debug Error", f"Error getting debug info: {str(e)}"
+            )
 
     def _update_config_manager_status(self):
         """Update the config manager status."""
         if self.config_manager:
-            self.config_manager_status.setText("✅ Config manager is available and working")
-            self.config_manager_status.setStyleSheet("color: #4CAF50; font-size: 9px; padding: 2px;")
+            self.config_manager_status.setText(
+                "✅ Config manager is available and working"
+            )
+            self.config_manager_status.setStyleSheet(
+                "color: #4CAF50; font-size: 9px; padding: 2px;"
+            )
         else:
             self.config_manager_status.setText("❌ Config manager is not available")
-            self.config_manager_status.setStyleSheet("color: #f44336; font-size: 9px; padding: 2px;")
+            self.config_manager_status.setStyleSheet(
+                "color: #f44336; font-size: 9px; padding: 2px;"
+            )
 
     def _retry_config_manager(self):
         """Retry to load the config manager."""
@@ -1238,10 +1467,18 @@ class ProvidersWidget(QtWidgets.QWidget):
         if self.config_manager:
             self._refresh_providers()
             self.config_status_label.setText("✅ Config manager loaded successfully")
-            self.config_status_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
-            QtWidgets.QMessageBox.information(self, "Success", "Config manager loaded successfully!")
+            self.config_status_label.setStyleSheet(
+                "color: #4CAF50; font-size: 10px; padding: 2px;"
+            )
+            QtWidgets.QMessageBox.information(
+                self, "Success", "Config manager loaded successfully!"
+            )
         else:
-            QtWidgets.QMessageBox.warning(self, "Error", "Failed to load config manager. Check console for details.")
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Error",
+                "Failed to load config manager. Check console for details.",
+            )
 
 
 class ProviderDialog(QtWidgets.QDialog):
@@ -1271,11 +1508,15 @@ class ProviderDialog(QtWidgets.QDialog):
 
         self.api_key_input = QtWidgets.QLineEdit()
         self.api_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
-        self.api_key_input.setPlaceholderText("API key (optional - can be set in API Keys section)")
+        self.api_key_input.setPlaceholderText(
+            "API key (optional - can be set in API Keys section)"
+        )
         form_layout.addRow("API Key:", self.api_key_input)
 
         self.model_input = QtWidgets.QLineEdit()
-        self.model_input.setPlaceholderText("e.g., 'claude-3-sonnet-20240229' (optional)")
+        self.model_input.setPlaceholderText(
+            "e.g., 'claude-3-sonnet-20240229' (optional)"
+        )
         form_layout.addRow("Model:", self.model_input)
 
         layout.addLayout(form_layout)
@@ -1284,7 +1525,9 @@ class ProviderDialog(QtWidgets.QDialog):
         button_layout = QtWidgets.QHBoxLayout()
 
         self.ok_btn = QtWidgets.QPushButton("Add Provider")
-        self.ok_btn.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 8px; }")
+        self.ok_btn.setStyleSheet(
+            "QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 8px; }"
+        )
 
         self.cancel_btn = QtWidgets.QPushButton("Cancel")
 
@@ -1302,11 +1545,11 @@ class ProviderDialog(QtWidgets.QDialog):
         """Get provider data from dialog."""
         config = {}
         if self.model_input.text():
-            config['model'] = self.model_input.text()
+            config["model"] = self.model_input.text()
 
         return {
-            'name': self.name_input.text(),
-            'type': self.type_combo.currentText(),
-            'api_key': self.api_key_input.text(),
-            'config': config
+            "name": self.name_input.text(),
+            "type": self.type_combo.currentText(),
+            "api_key": self.api_key_input.text(),
+            "config": config,
         }

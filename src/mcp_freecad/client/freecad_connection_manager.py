@@ -42,21 +42,25 @@ _bridge_import_error_msg = ""
 try:
     # Try to import from the server directory where bridge implementations are located
     from ..server.freecad_bridge import FreeCADBridge
+
     BRIDGE_AVAILABLE = True
     logger.info("Successfully imported FreeCADBridge from server module")
 except ImportError:
     try:
         # Fallback: try direct import if running from project root
         from freecad_connection_bridge import FreeCADBridge
+
         BRIDGE_AVAILABLE = True
         logger.info("Successfully imported FreeCADBridge via direct import")
     except ImportError as e:
         _bridge_import_error_msg = f"Failed to import FreeCADBridge: {e}"
         logger.warning(_bridge_import_error_msg)
+
         # Create a dummy class to prevent runtime errors
         class FreeCADBridge:
             def __init__(self, *args, **kwargs):
                 pass
+
             def is_available(self):
                 return False
 
@@ -146,11 +150,23 @@ class FreeCADConnection:
         # If a preferred method is specified, try that first
         if prefer_method:
             if prefer_method == self.CONNECTION_RPC:
-                return [self.CONNECTION_RPC, self.CONNECTION_BRIDGE, self.CONNECTION_SERVER]
+                return [
+                    self.CONNECTION_RPC,
+                    self.CONNECTION_BRIDGE,
+                    self.CONNECTION_SERVER,
+                ]
             elif prefer_method == self.CONNECTION_SERVER:
-                return [self.CONNECTION_SERVER, self.CONNECTION_RPC, self.CONNECTION_BRIDGE]
+                return [
+                    self.CONNECTION_SERVER,
+                    self.CONNECTION_RPC,
+                    self.CONNECTION_BRIDGE,
+                ]
             elif prefer_method == self.CONNECTION_BRIDGE:
-                return [self.CONNECTION_BRIDGE, self.CONNECTION_RPC, self.CONNECTION_SERVER]
+                return [
+                    self.CONNECTION_BRIDGE,
+                    self.CONNECTION_RPC,
+                    self.CONNECTION_SERVER,
+                ]
 
         # Default order: RPC first (higher performance), then Server, then Bridge
         return [self.CONNECTION_RPC, self.CONNECTION_SERVER, self.CONNECTION_BRIDGE]
@@ -178,11 +194,15 @@ class FreeCADConnection:
             bool: True if successful
         """
         if not BRIDGE_AVAILABLE:
-            logger.debug("FreeCADBridge dependency not found. Bridge connection unavailable.")
+            logger.debug(
+                "FreeCADBridge dependency not found. Bridge connection unavailable."
+            )
             return False
 
         try:
-            logger.debug(f"Attempting to initialize FreeCADBridge with path: {self.freecad_path}")
+            logger.debug(
+                f"Attempting to initialize FreeCADBridge with path: {self.freecad_path}"
+            )
             self._bridge = FreeCADBridge(self.freecad_path)
             is_avail = self._bridge.is_available()
             logger.debug(f"FreeCADBridge.is_available() returned: {is_avail}")
@@ -274,9 +294,13 @@ class FreeCADConnection:
                 return {"error": "Invalid JSON response received"}
 
         except socket.timeout:
-            return {"error": f"Connection to FreeCAD server timed out ({self.host}:{self.port})"}
+            return {
+                "error": f"Connection to FreeCAD server timed out ({self.host}:{self.port})"
+            }
         except ConnectionRefusedError:
-            return {"error": f"Connection refused by FreeCAD server ({self.host}:{self.port}). Is it running?"}
+            return {
+                "error": f"Connection refused by FreeCAD server ({self.host}:{self.port}). Is it running?"
+            }
         except Exception as e:
             logger.debug(f"Error in _send_server_command: {type(e).__name__} - {e}")
             return {"error": f"Communication error with FreeCAD server: {e}"}
@@ -427,7 +451,10 @@ class FreeCADConnection:
                 if response.get("success"):
                     return {
                         "success": True,
-                        "document": {"name": response.get("document_name"), "label": response.get("document_name")},
+                        "document": {
+                            "name": response.get("document_name"),
+                            "label": response.get("document_name"),
+                        },
                     }
                 else:
                     return {"error": response.get("error", "Unknown error")}
@@ -440,7 +467,7 @@ class FreeCADConnection:
                 obj_data = {
                     "Name": f"{obj_type.split('::', 1)[-1] if '::' in obj_type else obj_type}",
                     "Type": obj_type,
-                    "Properties": properties
+                    "Properties": properties,
                 }
 
                 if obj_type == "box":
@@ -450,15 +477,18 @@ class FreeCADConnection:
                         "Properties": {
                             "Length": properties.get("length", 10.0),
                             "Width": properties.get("width", 10.0),
-                            "Height": properties.get("height", 10.0)
-                        }
+                            "Height": properties.get("height", 10.0),
+                        },
                     }
 
                 response = self._rpc.create_object(doc_name, obj_data)
                 if response.get("success"):
                     return {
                         "success": True,
-                        "object": {"name": response.get("object_name"), "type": obj_type},
+                        "object": {
+                            "name": response.get("object_name"),
+                            "type": obj_type,
+                        },
                     }
                 else:
                     return {"error": response.get("error", "Unknown error")}
@@ -471,7 +501,9 @@ class FreeCADConnection:
                 if not file_path:
                     return {"error": "No file path specified"}
 
-                return {"error": "Export functionality not yet implemented for RPC connection"}
+                return {
+                    "error": "Export functionality not yet implemented for RPC connection"
+                }
 
             return {"error": f"Unsupported command: {command_type}"}
 

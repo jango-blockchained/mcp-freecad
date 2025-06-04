@@ -38,7 +38,9 @@ class MeasurementsTool:
 
         return doc.getObject(obj_name)
 
-    def _get_point_from_spec(self, point_spec: Union[str, List[float], Tuple[float, float, float]]) -> Optional[App.Vector]:
+    def _get_point_from_spec(
+        self, point_spec: Union[str, List[float], Tuple[float, float, float]]
+    ) -> Optional[App.Vector]:
         """Convert various point specifications to FreeCAD Vector.
 
         Args:
@@ -53,12 +55,14 @@ class MeasurementsTool:
             return App.Vector(*point_spec)
         elif isinstance(point_spec, str):
             obj = self._get_object(point_spec)
-            if obj and hasattr(obj, 'Shape') and obj.Shape:
+            if obj and hasattr(obj, "Shape") and obj.Shape:
                 bbox = obj.Shape.BoundBox
                 return bbox.Center
         return None
 
-    def measure_distance(self, point1: Union[str, List[float]], point2: Union[str, List[float]]) -> Dict[str, Any]:
+    def measure_distance(
+        self, point1: Union[str, List[float]], point2: Union[str, List[float]]
+    ) -> Dict[str, Any]:
         """Measure distance between two points or object centers.
 
         Args:
@@ -74,7 +78,7 @@ class MeasurementsTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "No active document found"
+                    "message": "No active document found",
                 }
 
             # Convert point specifications to vectors
@@ -85,19 +89,21 @@ class MeasurementsTool:
                 return {
                     "success": False,
                     "error": "Invalid point1",
-                    "message": f"Could not resolve point1: {point1}"
+                    "message": f"Could not resolve point1: {point1}",
                 }
 
             if vec2 is None:
                 return {
                     "success": False,
                     "error": "Invalid point2",
-                    "message": f"Could not resolve point2: {point2}"
+                    "message": f"Could not resolve point2: {point2}",
                 }
 
             # Calculate distance
             # Calculate distance manually for mock compatibility
-            distance = ((vec2.x - vec1.x)**2 + (vec2.y - vec1.y)**2 + (vec2.z - vec1.z)**2)**0.5
+            distance = (
+                (vec2.x - vec1.x) ** 2 + (vec2.y - vec1.y) ** 2 + (vec2.z - vec1.z) ** 2
+            ) ** 0.5
 
             # Calculate component distances
             dx = abs(vec2.x - vec1.x)
@@ -113,19 +119,24 @@ class MeasurementsTool:
                     "dy": round(dy, 3),
                     "dz": round(dz, 3),
                     "point1": (round(vec1.x, 3), round(vec1.y, 3), round(vec1.z, 3)),
-                    "point2": (round(vec2.x, 3), round(vec2.y, 3), round(vec2.z, 3))
-                }
+                    "point2": (round(vec2.x, 3), round(vec2.y, 3), round(vec2.z, 3)),
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to measure distance: {str(e)}"
+                "message": f"Failed to measure distance: {str(e)}",
             }
 
-    def measure_angle(self, obj1_name: str, obj2_name: str, obj3_name: str = None,
-                     vertex_mode: bool = False) -> Dict[str, Any]:
+    def measure_angle(
+        self,
+        obj1_name: str,
+        obj2_name: str,
+        obj3_name: str = None,
+        vertex_mode: bool = False,
+    ) -> Dict[str, Any]:
         """Measure angle between objects or edges.
 
         Args:
@@ -143,7 +154,7 @@ class MeasurementsTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "No active document found"
+                    "message": "No active document found",
                 }
 
             if vertex_mode and obj3_name:
@@ -156,7 +167,7 @@ class MeasurementsTool:
                     return {
                         "success": False,
                         "error": "Invalid points",
-                        "message": "Could not resolve all three points"
+                        "message": "Could not resolve all three points",
                     }
 
                 # Calculate vectors from vertex
@@ -171,7 +182,7 @@ class MeasurementsTool:
                     return {
                         "success": False,
                         "error": "Zero length vector",
-                        "message": "One or more vectors have zero length"
+                        "message": "One or more vectors have zero length",
                     }
 
                 cos_angle = dot_product / magnitude
@@ -186,8 +197,12 @@ class MeasurementsTool:
                     "properties": {
                         "angle_degrees": round(angle_deg, 2),
                         "angle_radians": round(angle_rad, 4),
-                        "vertex": (round(vec2.x, 3), round(vec2.y, 3), round(vec2.z, 3))
-                    }
+                        "vertex": (
+                            round(vec2.x, 3),
+                            round(vec2.y, 3),
+                            round(vec2.z, 3),
+                        ),
+                    },
                 }
             else:
                 # Edge/face angle measurement (simplified)
@@ -198,7 +213,7 @@ class MeasurementsTool:
                     return {
                         "success": False,
                         "error": "Objects not found",
-                        "message": "One or both objects not found"
+                        "message": "One or both objects not found",
                     }
 
                 # For simplicity, measure angle between object orientations
@@ -222,15 +237,15 @@ class MeasurementsTool:
                     "properties": {
                         "angle_degrees": round(angle_deg, 2),
                         "angle_radians": round(angle_rad, 4),
-                        "type": "orientation_angle"
-                    }
+                        "type": "orientation_angle",
+                    },
                 }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to measure angle: {str(e)}"
+                "message": f"Failed to measure angle: {str(e)}",
             }
 
     def measure_volume(self, obj_name: str) -> Dict[str, Any]:
@@ -248,7 +263,7 @@ class MeasurementsTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "No active document found"
+                    "message": "No active document found",
                 }
 
             obj = self._get_object(obj_name)
@@ -256,14 +271,14 @@ class MeasurementsTool:
                 return {
                     "success": False,
                     "error": f"Object '{obj_name}' not found",
-                    "message": f"Object '{obj_name}' not found in document"
+                    "message": f"Object '{obj_name}' not found in document",
                 }
 
-            if not hasattr(obj, 'Shape') or not obj.Shape:
+            if not hasattr(obj, "Shape") or not obj.Shape:
                 return {
                     "success": False,
                     "error": "No shape",
-                    "message": f"Object '{obj_name}' has no valid shape"
+                    "message": f"Object '{obj_name}' has no valid shape",
                 }
 
             shape = obj.Shape
@@ -273,7 +288,7 @@ class MeasurementsTool:
                 return {
                     "success": False,
                     "error": "Not a solid",
-                    "message": f"Object '{obj_name}' is not a solid and has no volume"
+                    "message": f"Object '{obj_name}' is not a solid and has no volume",
                 }
 
             volume = shape.Volume  # in mm³
@@ -294,18 +309,18 @@ class MeasurementsTool:
                     "center_of_mass": (
                         round(center_of_mass.x, 3),
                         round(center_of_mass.y, 3),
-                        round(center_of_mass.z, 3)
+                        round(center_of_mass.z, 3),
                     ),
                     "is_solid": shape.isSolid(),
-                    "is_closed": shape.isClosed()
-                }
+                    "is_closed": shape.isClosed(),
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to measure volume: {str(e)}"
+                "message": f"Failed to measure volume: {str(e)}",
             }
 
     def measure_area(self, obj_name: str, face_index: int = None) -> Dict[str, Any]:
@@ -324,7 +339,7 @@ class MeasurementsTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "No active document found"
+                    "message": "No active document found",
                 }
 
             obj = self._get_object(obj_name)
@@ -332,14 +347,14 @@ class MeasurementsTool:
                 return {
                     "success": False,
                     "error": f"Object '{obj_name}' not found",
-                    "message": f"Object '{obj_name}' not found in document"
+                    "message": f"Object '{obj_name}' not found in document",
                 }
 
-            if not hasattr(obj, 'Shape') or not obj.Shape:
+            if not hasattr(obj, "Shape") or not obj.Shape:
                 return {
                     "success": False,
                     "error": "No shape",
-                    "message": f"Object '{obj_name}' has no valid shape"
+                    "message": f"Object '{obj_name}' has no valid shape",
                 }
 
             shape = obj.Shape
@@ -350,7 +365,7 @@ class MeasurementsTool:
                     return {
                         "success": False,
                         "error": "Invalid face index",
-                        "message": f"Face index {face_index} is out of range (0-{len(shape.Faces)-1})"
+                        "message": f"Face index {face_index} is out of range (0-{len(shape.Faces)-1})",
                     }
 
                 face = shape.Faces[face_index]
@@ -365,8 +380,8 @@ class MeasurementsTool:
                         "area_m2": round(area / 1e6, 6),
                         "face_index": face_index,
                         "total_faces": len(shape.Faces),
-                        "face_type": face.Surface.__class__.__name__
-                    }
+                        "face_type": face.Surface.__class__.__name__,
+                    },
                 }
             else:
                 # Measure total surface area
@@ -385,15 +400,15 @@ class MeasurementsTool:
                         "num_faces": len(shape.Faces),
                         "face_areas": face_areas,
                         "largest_face_area": max(face_areas) if face_areas else 0,
-                        "smallest_face_area": min(face_areas) if face_areas else 0
-                    }
+                        "smallest_face_area": min(face_areas) if face_areas else 0,
+                    },
                 }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to measure area: {str(e)}"
+                "message": f"Failed to measure area: {str(e)}",
             }
 
     def measure_bounding_box(self, obj_name: str) -> Dict[str, Any]:
@@ -411,7 +426,7 @@ class MeasurementsTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "No active document found"
+                    "message": "No active document found",
                 }
 
             obj = self._get_object(obj_name)
@@ -419,14 +434,14 @@ class MeasurementsTool:
                 return {
                     "success": False,
                     "error": f"Object '{obj_name}' not found",
-                    "message": f"Object '{obj_name}' not found in document"
+                    "message": f"Object '{obj_name}' not found in document",
                 }
 
-            if not hasattr(obj, 'Shape') or not obj.Shape:
+            if not hasattr(obj, "Shape") or not obj.Shape:
                 return {
                     "success": False,
                     "error": "No shape",
-                    "message": f"Object '{obj_name}' has no valid shape"
+                    "message": f"Object '{obj_name}' has no valid shape",
                 }
 
             bbox = obj.Shape.BoundBox
@@ -445,21 +460,35 @@ class MeasurementsTool:
                     "width": round(width, 3),
                     "height": round(height, 3),
                     "diagonal": round(diagonal, 3),
-                    "min_point": (round(bbox.XMin, 3), round(bbox.YMin, 3), round(bbox.ZMin, 3)),
-                    "max_point": (round(bbox.XMax, 3), round(bbox.YMax, 3), round(bbox.ZMax, 3)),
-                    "center": (round(bbox.Center.x, 3), round(bbox.Center.y, 3), round(bbox.Center.z, 3)),
-                    "volume": round(length * width * height, 2)
-                }
+                    "min_point": (
+                        round(bbox.XMin, 3),
+                        round(bbox.YMin, 3),
+                        round(bbox.ZMin, 3),
+                    ),
+                    "max_point": (
+                        round(bbox.XMax, 3),
+                        round(bbox.YMax, 3),
+                        round(bbox.ZMax, 3),
+                    ),
+                    "center": (
+                        round(bbox.Center.x, 3),
+                        round(bbox.Center.y, 3),
+                        round(bbox.Center.z, 3),
+                    ),
+                    "volume": round(length * width * height, 2),
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to measure bounding box: {str(e)}"
+                "message": f"Failed to measure bounding box: {str(e)}",
             }
 
-    def measure_edge_length(self, obj_name: str, edge_index: int = None) -> Dict[str, Any]:
+    def measure_edge_length(
+        self, obj_name: str, edge_index: int = None
+    ) -> Dict[str, Any]:
         """Measure length of edges in an object.
 
         Args:
@@ -475,7 +504,7 @@ class MeasurementsTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "No active document found"
+                    "message": "No active document found",
                 }
 
             obj = self._get_object(obj_name)
@@ -483,14 +512,14 @@ class MeasurementsTool:
                 return {
                     "success": False,
                     "error": f"Object '{obj_name}' not found",
-                    "message": f"Object '{obj_name}' not found in document"
+                    "message": f"Object '{obj_name}' not found in document",
                 }
 
-            if not hasattr(obj, 'Shape') or not obj.Shape:
+            if not hasattr(obj, "Shape") or not obj.Shape:
                 return {
                     "success": False,
                     "error": "No shape",
-                    "message": f"Object '{obj_name}' has no valid shape"
+                    "message": f"Object '{obj_name}' has no valid shape",
                 }
 
             shape = obj.Shape
@@ -501,7 +530,7 @@ class MeasurementsTool:
                     return {
                         "success": False,
                         "error": "Invalid edge index",
-                        "message": f"Edge index {edge_index} is out of range (0-{len(shape.Edges)-1})"
+                        "message": f"Edge index {edge_index} is out of range (0-{len(shape.Edges)-1})",
                     }
 
                 edge = shape.Edges[edge_index]
@@ -522,14 +551,14 @@ class MeasurementsTool:
                         "start_point": (
                             round(edge.firstVertex().X, 3),
                             round(edge.firstVertex().Y, 3),
-                            round(edge.firstVertex().Z, 3)
+                            round(edge.firstVertex().Z, 3),
                         ),
                         "end_point": (
                             round(edge.lastVertex().X, 3),
                             round(edge.lastVertex().Y, 3),
-                            round(edge.lastVertex().Z, 3)
-                        )
-                    }
+                            round(edge.lastVertex().Z, 3),
+                        ),
+                    },
                 }
             else:
                 # Measure all edges
@@ -545,15 +574,19 @@ class MeasurementsTool:
                         "edge_lengths": edge_lengths,
                         "longest_edge": max(edge_lengths) if edge_lengths else 0,
                         "shortest_edge": min(edge_lengths) if edge_lengths else 0,
-                        "average_edge": round(total_length / len(edge_lengths), 3) if edge_lengths else 0
-                    }
+                        "average_edge": (
+                            round(total_length / len(edge_lengths), 3)
+                            if edge_lengths
+                            else 0
+                        ),
+                    },
                 }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to measure edge length: {str(e)}"
+                "message": f"Failed to measure edge length: {str(e)}",
             }
 
     def get_available_measurements(self) -> Dict[str, Any]:
@@ -566,27 +599,32 @@ class MeasurementsTool:
             "measurements": {
                 "distance": {
                     "description": "Measure distance between two points or objects",
-                    "parameters": ["point1", "point2"]
+                    "parameters": ["point1", "point2"],
                 },
                 "angle": {
                     "description": "Measure angle between objects or three points",
-                    "parameters": ["obj1_name", "obj2_name", "obj3_name", "vertex_mode"]
+                    "parameters": [
+                        "obj1_name",
+                        "obj2_name",
+                        "obj3_name",
+                        "vertex_mode",
+                    ],
                 },
                 "volume": {
                     "description": "Measure volume of a solid object",
-                    "parameters": ["obj_name"]
+                    "parameters": ["obj_name"],
                 },
                 "area": {
                     "description": "Measure surface area of object or face",
-                    "parameters": ["obj_name", "face_index"]
+                    "parameters": ["obj_name", "face_index"],
                 },
                 "bounding_box": {
                     "description": "Measure bounding box dimensions",
-                    "parameters": ["obj_name"]
+                    "parameters": ["obj_name"],
                 },
                 "edge_length": {
                     "description": "Measure edge lengths",
-                    "parameters": ["obj_name", "edge_index"]
-                }
+                    "parameters": ["obj_name", "edge_index"],
+                },
             }
         }

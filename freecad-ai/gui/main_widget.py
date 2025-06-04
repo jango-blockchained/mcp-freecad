@@ -9,9 +9,13 @@ class MCPMainWidget(QtWidgets.QDockWidget):
     def __init__(self, parent=None):
         super(MCPMainWidget, self).__init__("FreeCAD AI", parent)
 
-        self.setAllowedAreas(QtCore.Qt.LeftDockWidgetArea | QtCore.Qt.RightDockWidgetArea)
-        self.setFeatures(QtWidgets.QDockWidget.DockWidgetMovable |
-                        QtWidgets.QDockWidget.DockWidgetFloatable)
+        self.setAllowedAreas(
+            QtCore.Qt.LeftDockWidgetArea | QtCore.Qt.RightDockWidgetArea
+        )
+        self.setFeatures(
+            QtWidgets.QDockWidget.DockWidgetMovable
+            | QtWidgets.QDockWidget.DockWidgetFloatable
+        )
 
         self.main_widget = QtWidgets.QWidget()
         self.setWidget(self.main_widget)
@@ -52,33 +56,48 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         """Setup the provider integration service."""
         try:
             from ..ai.provider_integration_service import get_provider_service
+
             self.provider_service = get_provider_service()
 
             # Connect provider service signals to update status
-            self.provider_service.provider_status_changed.connect(self._on_provider_status_changed)
+            self.provider_service.provider_status_changed.connect(
+                self._on_provider_status_changed
+            )
             self.provider_service.providers_updated.connect(self._on_providers_updated)
 
             # Initialize providers from configuration with multiple attempts
-            QtCore.QTimer.singleShot(1000, self.provider_service.initialize_providers_from_config)
+            QtCore.QTimer.singleShot(
+                1000, self.provider_service.initialize_providers_from_config
+            )
             # Retry after 3 seconds if first attempt fails
             QtCore.QTimer.singleShot(3000, self._retry_provider_initialization)
 
         except ImportError as e:
-            if hasattr(self, 'status_label'):
-                self.status_label.setText(f"Warning: Provider service unavailable - {e}")
+            if hasattr(self, "status_label"):
+                self.status_label.setText(
+                    f"Warning: Provider service unavailable - {e}"
+                )
             print(f"FreeCAD AI: Provider service unavailable - {e}")
 
-    def _on_provider_status_changed(self, provider_name: str, status: str, message: str):
+    def _on_provider_status_changed(
+        self, provider_name: str, status: str, message: str
+    ):
         """Handle provider status changes."""
         if status == "connected":
             self.status_label.setText(f"Provider {provider_name}: Connected")
-            self.status_label.setStyleSheet("padding: 5px; background-color: #c8e6c9; color: #2e7d32;")
+            self.status_label.setStyleSheet(
+                "padding: 5px; background-color: #c8e6c9; color: #2e7d32;"
+            )
         elif status == "error":
             self.status_label.setText(f"Provider {provider_name}: {message}")
-            self.status_label.setStyleSheet("padding: 5px; background-color: #ffcdd2; color: #c62828;")
+            self.status_label.setStyleSheet(
+                "padding: 5px; background-color: #ffcdd2; color: #c62828;"
+            )
         else:
             self.status_label.setText(f"Provider {provider_name}: {status}")
-            self.status_label.setStyleSheet("padding: 5px; background-color: #fff3e0; color: #ef6c00;")
+            self.status_label.setStyleSheet(
+                "padding: 5px; background-color: #fff3e0; color: #ef6c00;"
+            )
 
     def _on_providers_updated(self):
         """Handle providers list update."""
@@ -87,9 +106,13 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             total_count = len(self.provider_service.get_all_providers())
             self.status_label.setText(f"Providers: {active_count}/{total_count} active")
             if active_count > 0:
-                self.status_label.setStyleSheet("padding: 5px; background-color: #c8e6c9; color: #2e7d32;")
+                self.status_label.setStyleSheet(
+                    "padding: 5px; background-color: #c8e6c9; color: #2e7d32;"
+                )
             else:
-                self.status_label.setStyleSheet("padding: 5px; background-color: #f0f0f0; color: #666;")
+                self.status_label.setStyleSheet(
+                    "padding: 5px; background-color: #f0f0f0; color: #666;"
+                )
 
     def _retry_provider_initialization(self):
         """Retry provider initialization if no providers are active."""
@@ -135,7 +158,15 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             self.tab_widget.addTab(LogsWidget(), "Logs")
 
         except ImportError:
-            for name in ["Providers", "Chat", "Tools", "Connections", "Servers", "Settings", "Logs"]:
+            for name in [
+                "Providers",
+                "Chat",
+                "Tools",
+                "Connections",
+                "Servers",
+                "Settings",
+                "Logs",
+            ]:
                 tab = QtWidgets.QWidget()
                 tab_layout = QtWidgets.QVBoxLayout(tab)
                 tab_layout.addWidget(QtWidgets.QLabel(f"{name} - Loading..."))
@@ -145,19 +176,21 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         """Connect GUI widgets to the provider service."""
         try:
             # Connect providers widget to manage providers and API keys
-            if hasattr(self.providers_widget, 'set_provider_service'):
+            if hasattr(self.providers_widget, "set_provider_service"):
                 self.providers_widget.set_provider_service(self.provider_service)
 
             # Connect providers widget API key changes to service
-            if hasattr(self.providers_widget, 'api_key_changed'):
-                self.providers_widget.api_key_changed.connect(self._on_settings_api_key_changed)
+            if hasattr(self.providers_widget, "api_key_changed"):
+                self.providers_widget.api_key_changed.connect(
+                    self._on_settings_api_key_changed
+                )
 
             # Connect conversation widget to get provider updates
-            if hasattr(self.conversation_widget, 'set_provider_service'):
+            if hasattr(self.conversation_widget, "set_provider_service"):
                 self.conversation_widget.set_provider_service(self.provider_service)
 
             # Connect connection widget to show MCP connection status (no AI provider status)
-            if hasattr(self.connection_widget, 'set_provider_service'):
+            if hasattr(self.connection_widget, "set_provider_service"):
                 self.connection_widget.set_provider_service(self.provider_service)
 
         except Exception as e:

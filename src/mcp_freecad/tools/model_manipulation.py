@@ -58,41 +58,49 @@ class ModelManipulationToolProvider(ToolProvider):
                     "tool_id": {
                         "type": "string",
                         "enum": [
-                            "transform", "boolean_operation", "fillet_edge",
-                            "chamfer_edge", "mirror", "scale", "offset", "thicken"
+                            "transform",
+                            "boolean_operation",
+                            "fillet_edge",
+                            "chamfer_edge",
+                            "mirror",
+                            "scale",
+                            "offset",
+                            "thicken",
                         ],
-                        "description": "The manipulation tool to execute"
+                        "description": "The manipulation tool to execute",
                     },
                     "params": {
                         "type": "object",
-                        "description": "Parameters for the manipulation operation"
-                    }
+                        "description": "Parameters for the manipulation operation",
+                    },
                 },
-                "required": ["tool_id"]
+                "required": ["tool_id"],
             },
             returns={
                 "type": "object",
                 "properties": {
                     "status": {"type": "string"},
                     "result": {"type": "object"},
-                    "error": {"type": "string"}
-                }
+                    "error": {"type": "string"},
+                },
             },
             examples=[
                 {
                     "tool_id": "transform",
-                    "params": {"object": "Box", "translation": [10, 0, 0]}
+                    "params": {"object": "Box", "translation": [10, 0, 0]},
                 },
                 {
                     "tool_id": "boolean_operation",
-                    "params": {"operation": "union", "object1": "Box", "object2": "Cylinder"}
-                }
-            ]
+                    "params": {
+                        "operation": "union",
+                        "object1": "Box",
+                        "object2": "Cylinder",
+                    },
+                },
+            ],
         )
 
-    async def execute_tool(
-        self, tool_id: str, params: Dict[str, Any]
-    ) -> ToolResult:
+    async def execute_tool(self, tool_id: str, params: Dict[str, Any]) -> ToolResult:
         """
         Execute a model manipulation tool.
 
@@ -110,7 +118,7 @@ class ModelManipulationToolProvider(ToolProvider):
             return self.format_result(
                 status="error",
                 error="FreeCAD is not available. Cannot execute model manipulation tool.",
-                result={"mock": True}
+                result={"mock": True},
             )
 
         try:
@@ -133,21 +141,14 @@ class ModelManipulationToolProvider(ToolProvider):
                 result = await self._thicken_object(params)
             else:
                 return self.format_result(
-                    status="error",
-                    error=f"Unknown tool ID: {tool_id}"
+                    status="error", error=f"Unknown tool ID: {tool_id}"
                 )
 
-            return self.format_result(
-                status="success",
-                result=result
-            )
+            return self.format_result(status="success", result=result)
 
         except Exception as e:
             logger.error(f"Error executing model manipulation tool {tool_id}: {e}")
-            return self.format_result(
-                status="error",
-                error=str(e)
-            )
+            return self.format_result(status="error", error=str(e))
 
     async def _transform_object(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Transform an object by translation, rotation, and/or mirror."""
@@ -169,7 +170,9 @@ class ModelManipulationToolProvider(ToolProvider):
 
             # Check if object has a placement
             if not hasattr(obj, "Placement"):
-                raise ValueError(f"Object {object_name} does not support transformations")
+                raise ValueError(
+                    f"Object {object_name} does not support transformations"
+                )
 
             # Get current placement
             current_placement = obj.Placement
@@ -265,7 +268,8 @@ class ModelManipulationToolProvider(ToolProvider):
                 }
 
             return {
-                "message": f"Object {object_name} transformed: " + ", ".join(modifications),
+                "message": f"Object {object_name} transformed: "
+                + ", ".join(modifications),
                 "object": object_name,
                 "modifications": modifications,
             }
@@ -479,7 +483,9 @@ class ModelManipulationToolProvider(ToolProvider):
                 elif plane.lower() == "yz" or plane.lower() == "x":
                     mirror_vec = self.app.Vector(1, 0, 0)
                 else:
-                    raise ValueError(f"Unknown plane: {plane}. Use 'xy', 'xz', 'yz', 'x', 'y', or 'z'")
+                    raise ValueError(
+                        f"Unknown plane: {plane}. Use 'xy', 'xz', 'yz', 'x', 'y', or 'z'"
+                    )
             else:
                 # Custom normal vector
                 if isinstance(normal, list) and len(normal) == 3:

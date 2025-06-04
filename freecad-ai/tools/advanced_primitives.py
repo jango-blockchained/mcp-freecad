@@ -21,9 +21,14 @@ class AdvancedPrimitivesTool:
         self.name = "advanced_primitives"
         self.description = "Create advanced 3D primitive shapes"
 
-    def create_tube(self, outer_radius: float = 10.0, inner_radius: float = 5.0,
-                   height: float = 10.0, position: tuple = (0, 0, 0),
-                   name: str = None) -> Dict[str, Any]:
+    def create_tube(
+        self,
+        outer_radius: float = 10.0,
+        inner_radius: float = 5.0,
+        height: float = 10.0,
+        position: tuple = (0, 0, 0),
+        name: str = None,
+    ) -> Dict[str, Any]:
         """Create a tube (hollow cylinder) primitive.
 
         Args:
@@ -42,28 +47,28 @@ class AdvancedPrimitivesTool:
                 return {
                     "success": False,
                     "error": "Outer radius must be positive",
-                    "message": f"Invalid outer radius: {outer_radius}"
+                    "message": f"Invalid outer radius: {outer_radius}",
                 }
 
             if inner_radius < 0:
                 return {
                     "success": False,
                     "error": "Inner radius must be non-negative",
-                    "message": f"Invalid inner radius: {inner_radius}"
+                    "message": f"Invalid inner radius: {inner_radius}",
                 }
 
             if inner_radius >= outer_radius:
                 return {
                     "success": False,
                     "error": "Inner radius must be less than outer radius",
-                    "message": f"Inner radius {inner_radius} >= outer radius {outer_radius}"
+                    "message": f"Inner radius {inner_radius} >= outer radius {outer_radius}",
                 }
 
             if height <= 0:
                 return {
                     "success": False,
                     "error": "Height must be positive",
-                    "message": f"Invalid height: {height}"
+                    "message": f"Invalid height: {height}",
                 }
 
             # Get or create active document
@@ -110,19 +115,25 @@ class AdvancedPrimitivesTool:
                     "height": height,
                     "volume": round(volume, 2),
                     "position": position,
-                    "wall_thickness": outer_radius - inner_radius
-                }
+                    "wall_thickness": outer_radius - inner_radius,
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to create tube: {str(e)}"
+                "message": f"Failed to create tube: {str(e)}",
             }
 
-    def create_prism(self, sides: int = 6, radius: float = 5.0, height: float = 10.0,
-                    position: tuple = (0, 0, 0), name: str = None) -> Dict[str, Any]:
+    def create_prism(
+        self,
+        sides: int = 6,
+        radius: float = 5.0,
+        height: float = 10.0,
+        position: tuple = (0, 0, 0),
+        name: str = None,
+    ) -> Dict[str, Any]:
         """Create a regular polygonal prism primitive.
 
         Args:
@@ -141,21 +152,21 @@ class AdvancedPrimitivesTool:
                 return {
                     "success": False,
                     "error": "Sides must be an integer between 3 and 20",
-                    "message": f"Invalid sides count: {sides}"
+                    "message": f"Invalid sides count: {sides}",
                 }
 
             if radius <= 0:
                 return {
                     "success": False,
                     "error": "Radius must be positive",
-                    "message": f"Invalid radius: {radius}"
+                    "message": f"Invalid radius: {radius}",
                 }
 
             if height <= 0:
                 return {
                     "success": False,
                     "error": "Height must be positive",
-                    "message": f"Invalid height: {height}"
+                    "message": f"Invalid height: {height}",
                 }
 
             # Get or create active document
@@ -216,20 +227,26 @@ class AdvancedPrimitivesTool:
                     "height": height,
                     "volume": round(volume, 2),
                     "base_area": round(base_area, 2),
-                    "position": position
-                }
+                    "position": position,
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to create prism: {str(e)}"
+                "message": f"Failed to create prism: {str(e)}",
             }
 
-    def create_wedge(self, length: float = 10.0, width: float = 10.0, height: float = 10.0,
-                    angle: float = 45.0, position: tuple = (0, 0, 0),
-                    name: str = None) -> Dict[str, Any]:
+    def create_wedge(
+        self,
+        length: float = 10.0,
+        width: float = 10.0,
+        height: float = 10.0,
+        angle: float = 45.0,
+        position: tuple = (0, 0, 0),
+        name: str = None,
+    ) -> Dict[str, Any]:
         """Create a wedge (tapered block) primitive.
 
         Args:
@@ -249,28 +266,28 @@ class AdvancedPrimitivesTool:
                 return {
                     "success": False,
                     "error": "Length must be positive",
-                    "message": f"Invalid length: {length}"
+                    "message": f"Invalid length: {length}",
                 }
 
             if width <= 0:
                 return {
                     "success": False,
                     "error": "Width must be positive",
-                    "message": f"Invalid width: {width}"
+                    "message": f"Invalid width: {width}",
                 }
 
             if height <= 0:
                 return {
                     "success": False,
                     "error": "Height must be positive",
-                    "message": f"Invalid height: {height}"
+                    "message": f"Invalid height: {height}",
                 }
 
             if angle < 0 or angle > 90:
                 return {
                     "success": False,
                     "error": "Angle must be between 0 and 90 degrees",
-                    "message": f"Invalid angle: {angle}"
+                    "message": f"Invalid angle: {angle}",
                 }
 
             # Get or create active document
@@ -284,24 +301,24 @@ class AdvancedPrimitivesTool:
 
             # Create wedge vertices
             vertices = [
-                App.Vector(0, 0, 0),                    # Bottom front left
-                App.Vector(length, 0, 0),               # Bottom front right
-                App.Vector(length, width, 0),           # Bottom back right
-                App.Vector(0, width, 0),                # Bottom back left
-                App.Vector(taper_offset, 0, height),    # Top front left
-                App.Vector(length, 0, height),          # Top front right
-                App.Vector(length, width, height),      # Top back right
-                App.Vector(taper_offset, width, height) # Top back left
+                App.Vector(0, 0, 0),  # Bottom front left
+                App.Vector(length, 0, 0),  # Bottom front right
+                App.Vector(length, width, 0),  # Bottom back right
+                App.Vector(0, width, 0),  # Bottom back left
+                App.Vector(taper_offset, 0, height),  # Top front left
+                App.Vector(length, 0, height),  # Top front right
+                App.Vector(length, width, height),  # Top back right
+                App.Vector(taper_offset, width, height),  # Top back left
             ]
 
             # Define faces using vertex indices
             faces = [
-                [0, 1, 2, 3],       # Bottom face
-                [4, 7, 6, 5],       # Top face
-                [0, 4, 5, 1],       # Front face
-                [2, 6, 7, 3],       # Back face
-                [1, 5, 6, 2],       # Right face
-                [0, 3, 7, 4]        # Left face (tapered)
+                [0, 1, 2, 3],  # Bottom face
+                [4, 7, 6, 5],  # Top face
+                [0, 4, 5, 1],  # Front face
+                [2, 6, 7, 3],  # Back face
+                [1, 5, 6, 2],  # Right face
+                [0, 3, 7, 4],  # Left face (tapered)
             ]
 
             # Create faces
@@ -356,20 +373,25 @@ class AdvancedPrimitivesTool:
                     "angle": angle,
                     "volume": round(volume, 2),
                     "taper_offset": round(taper_offset, 2),
-                    "position": position
-                }
+                    "position": position,
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to create wedge: {str(e)}"
+                "message": f"Failed to create wedge: {str(e)}",
             }
 
-    def create_ellipsoid(self, radius_x: float = 5.0, radius_y: float = 3.0,
-                        radius_z: float = 4.0, position: tuple = (0, 0, 0),
-                        name: str = None) -> Dict[str, Any]:
+    def create_ellipsoid(
+        self,
+        radius_x: float = 5.0,
+        radius_y: float = 3.0,
+        radius_z: float = 4.0,
+        position: tuple = (0, 0, 0),
+        name: str = None,
+    ) -> Dict[str, Any]:
         """Create an ellipsoid primitive.
 
         Args:
@@ -388,21 +410,21 @@ class AdvancedPrimitivesTool:
                 return {
                     "success": False,
                     "error": "X-radius must be positive",
-                    "message": f"Invalid radius_x: {radius_x}"
+                    "message": f"Invalid radius_x: {radius_x}",
                 }
 
             if radius_y <= 0:
                 return {
                     "success": False,
                     "error": "Y-radius must be positive",
-                    "message": f"Invalid radius_y: {radius_y}"
+                    "message": f"Invalid radius_y: {radius_y}",
                 }
 
             if radius_z <= 0:
                 return {
                     "success": False,
                     "error": "Z-radius must be positive",
-                    "message": f"Invalid radius_z: {radius_z}"
+                    "message": f"Invalid radius_z: {radius_z}",
                 }
 
             # Get or create active document
@@ -434,7 +456,7 @@ class AdvancedPrimitivesTool:
             doc.recompute()
 
             # Calculate volume (4/3 * π * a * b * c)
-            volume = (4/3) * math.pi * radius_x * radius_y * radius_z
+            volume = (4 / 3) * math.pi * radius_x * radius_y * radius_z
 
             return {
                 "success": True,
@@ -447,15 +469,15 @@ class AdvancedPrimitivesTool:
                     "radius_z": radius_z,
                     "volume": round(volume, 2),
                     "position": position,
-                    "is_sphere": radius_x == radius_y == radius_z
-                }
+                    "is_sphere": radius_x == radius_y == radius_z,
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to create ellipsoid: {str(e)}"
+                "message": f"Failed to create ellipsoid: {str(e)}",
             }
 
     def get_available_primitives(self) -> Dict[str, Any]:
@@ -468,19 +490,38 @@ class AdvancedPrimitivesTool:
             "advanced_primitives": {
                 "tube": {
                     "description": "Create a hollow cylinder (tube)",
-                    "parameters": ["outer_radius", "inner_radius", "height", "position", "name"]
+                    "parameters": [
+                        "outer_radius",
+                        "inner_radius",
+                        "height",
+                        "position",
+                        "name",
+                    ],
                 },
                 "prism": {
                     "description": "Create a regular polygonal prism",
-                    "parameters": ["sides", "radius", "height", "position", "name"]
+                    "parameters": ["sides", "radius", "height", "position", "name"],
                 },
                 "wedge": {
                     "description": "Create a tapered block (wedge)",
-                    "parameters": ["length", "width", "height", "angle", "position", "name"]
+                    "parameters": [
+                        "length",
+                        "width",
+                        "height",
+                        "angle",
+                        "position",
+                        "name",
+                    ],
                 },
                 "ellipsoid": {
                     "description": "Create an ellipsoid (oval sphere)",
-                    "parameters": ["radius_x", "radius_y", "radius_z", "position", "name"]
-                }
+                    "parameters": [
+                        "radius_x",
+                        "radius_y",
+                        "radius_z",
+                        "position",
+                        "name",
+                    ],
+                },
             }
         }

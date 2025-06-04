@@ -14,15 +14,18 @@ try:
     ADVANCED_TOOLS_AVAILABLE = True
 
     __all__ = [
-        'AssemblyToolProvider',
-        'CAMToolProvider',
-        'RenderingToolProvider',
-        'SmitheryToolProvider',
-        'ADVANCED_TOOLS_AVAILABLE'
+        "AssemblyToolProvider",
+        "CAMToolProvider",
+        "RenderingToolProvider",
+        "SmitheryToolProvider",
+        "ADVANCED_TOOLS_AVAILABLE",
     ]
 
 except ImportError as e:
     import FreeCAD
-    FreeCAD.Console.PrintWarning(f"FreeCAD AI: Failed to import some advanced tools: {e}\n")
+
+    FreeCAD.Console.PrintWarning(
+        f"FreeCAD AI: Failed to import some advanced tools: {e}\n"
+    )
     ADVANCED_TOOLS_AVAILABLE = False
-    __all__ = ['ADVANCED_TOOLS_AVAILABLE']
+    __all__ = ["ADVANCED_TOOLS_AVAILABLE"]

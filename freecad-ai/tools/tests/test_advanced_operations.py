@@ -19,6 +19,7 @@ try:
     from advanced_primitives import AdvancedPrimitivesTool
     import FreeCAD as App
     import Part
+
     FREECAD_AVAILABLE = True
 except ImportError:
     FREECAD_AVAILABLE = False
@@ -47,7 +48,9 @@ class TestAdvancedOperationsTool(unittest.TestCase):
     def test_tool_initialization(self):
         """Test tool initialization."""
         self.assertEqual(self.tool.name, "advanced_operations")
-        self.assertEqual(self.tool.description, "Perform advanced CAD operations on objects")
+        self.assertEqual(
+            self.tool.description, "Perform advanced CAD operations on objects"
+        )
 
     def test_get_available_operations(self):
         """Test getting available operations list."""
@@ -71,7 +74,7 @@ class TestAdvancedOperationsTool(unittest.TestCase):
             App.Vector(width, 0, 0),
             App.Vector(width, height, 0),
             App.Vector(0, height, 0),
-            App.Vector(0, 0, 0)  # Close the rectangle
+            App.Vector(0, 0, 0),  # Close the rectangle
         ]
 
         edges = []
@@ -122,7 +125,7 @@ class TestAdvancedOperationsTool(unittest.TestCase):
             profile_name=profile_name,
             direction=(0, 0, 1),
             distance=15.0,
-            name="TestExtrude"
+            name="TestExtrude",
         )
 
         self.assertTrue(result["success"])
@@ -140,15 +143,21 @@ class TestAdvancedOperationsTool(unittest.TestCase):
         profile_name = self._create_test_rectangle("ExtrudeRect2", 8, 6)
 
         # Test X direction
-        result = self.tool.extrude_profile(profile_name, direction=(1, 0, 0), distance=10.0)
+        result = self.tool.extrude_profile(
+            profile_name, direction=(1, 0, 0), distance=10.0
+        )
         self.assertTrue(result["success"])
 
         # Test Y direction
-        result = self.tool.extrude_profile(profile_name, direction=(0, 1, 0), distance=10.0)
+        result = self.tool.extrude_profile(
+            profile_name, direction=(0, 1, 0), distance=10.0
+        )
         self.assertTrue(result["success"])
 
         # Test diagonal direction
-        result = self.tool.extrude_profile(profile_name, direction=(1, 1, 1), distance=10.0)
+        result = self.tool.extrude_profile(
+            profile_name, direction=(1, 1, 1), distance=10.0
+        )
         self.assertTrue(result["success"])
 
     def test_extrude_invalid_parameters(self):
@@ -186,7 +195,7 @@ class TestAdvancedOperationsTool(unittest.TestCase):
             axis_point=(0, 0, 0),
             axis_direction=(0, 0, 1),
             angle=180.0,
-            name="TestRevolve"
+            name="TestRevolve",
         )
 
         self.assertTrue(result["success"])
@@ -208,11 +217,15 @@ class TestAdvancedOperationsTool(unittest.TestCase):
         profile_name = self._create_test_rectangle("RevolveRect3", 4, 7)
 
         # X-axis
-        result = self.tool.revolve_profile(profile_name, axis_direction=(1, 0, 0), angle=90.0)
+        result = self.tool.revolve_profile(
+            profile_name, axis_direction=(1, 0, 0), angle=90.0
+        )
         self.assertTrue(result["success"])
 
         # Y-axis
-        result = self.tool.revolve_profile(profile_name, axis_direction=(0, 1, 0), angle=90.0)
+        result = self.tool.revolve_profile(
+            profile_name, axis_direction=(0, 1, 0), angle=90.0
+        )
         self.assertTrue(result["success"])
 
     def test_revolve_invalid_parameters(self):
@@ -245,10 +258,7 @@ class TestAdvancedOperationsTool(unittest.TestCase):
         self.doc.recompute()
 
         result = self.tool.loft_profiles(
-            profile_names=[profile1, profile2],
-            solid=True,
-            ruled=False,
-            name="TestLoft"
+            profile_names=[profile1, profile2], solid=True, ruled=False, name="TestLoft"
         )
 
         self.assertTrue(result["success"])
@@ -310,7 +320,7 @@ class TestAdvancedOperationsTool(unittest.TestCase):
             profile_name=profile_name,
             path_name=path_name,
             frenet=False,
-            name="TestSweep"
+            name="TestSweep",
         )
 
         self.assertTrue(result["success"])
@@ -353,7 +363,7 @@ class TestAdvancedOperationsTool(unittest.TestCase):
             height=24.0,
             direction="right",
             position=(5, 5, 0),
-            name="TestHelix"
+            name="TestHelix",
         )
 
         self.assertTrue(result["success"])
@@ -367,7 +377,9 @@ class TestAdvancedOperationsTool(unittest.TestCase):
 
     def test_create_helix_left_handed(self):
         """Test creating left-handed helix."""
-        result = self.tool.create_helix(radius=5.0, pitch=2.0, height=10.0, direction="left")
+        result = self.tool.create_helix(
+            radius=5.0, pitch=2.0, height=10.0, direction="left"
+        )
         self.assertTrue(result["success"])
         self.assertEqual(result["properties"]["direction"], "left")
 
@@ -401,7 +413,9 @@ class TestAdvancedOperationsTool(unittest.TestCase):
         self.assertIn("Height must be positive", result["error"])
 
         # Invalid direction
-        result = self.tool.create_helix(radius=5.0, pitch=2.0, height=10.0, direction="up")
+        result = self.tool.create_helix(
+            radius=5.0, pitch=2.0, height=10.0, direction="up"
+        )
         self.assertFalse(result["success"])
         self.assertIn("Direction must be 'right' or 'left'", result["error"])
 

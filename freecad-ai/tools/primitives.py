@@ -20,8 +20,14 @@ class PrimitivesTool:
         self.name = "primitives"
         self.description = "Create basic 3D primitive shapes"
 
-    def create_box(self, length: float = 10.0, width: float = 10.0, height: float = 10.0,
-                   position: tuple = (0, 0, 0), name: str = None) -> Dict[str, Any]:
+    def create_box(
+        self,
+        length: float = 10.0,
+        width: float = 10.0,
+        height: float = 10.0,
+        position: tuple = (0, 0, 0),
+        name: str = None,
+    ) -> Dict[str, Any]:
         """Create a box primitive.
 
         Args:
@@ -66,19 +72,24 @@ class PrimitivesTool:
                     "width": width,
                     "height": height,
                     "volume": length * width * height,
-                    "position": position
-                }
+                    "position": position,
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to create box: {str(e)}"
+                "message": f"Failed to create box: {str(e)}",
             }
 
-    def create_cylinder(self, radius: float = 5.0, height: float = 10.0,
-                       position: tuple = (0, 0, 0), name: str = None) -> Dict[str, Any]:
+    def create_cylinder(
+        self,
+        radius: float = 5.0,
+        height: float = 10.0,
+        position: tuple = (0, 0, 0),
+        name: str = None,
+    ) -> Dict[str, Any]:
         """Create a cylinder primitive.
 
         Args:
@@ -113,6 +124,7 @@ class PrimitivesTool:
             doc.recompute()
 
             import math
+
             volume = math.pi * radius * radius * height
 
             return {
@@ -124,19 +136,20 @@ class PrimitivesTool:
                     "radius": radius,
                     "height": height,
                     "volume": round(volume, 2),
-                    "position": position
-                }
+                    "position": position,
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to create cylinder: {str(e)}"
+                "message": f"Failed to create cylinder: {str(e)}",
             }
 
-    def create_sphere(self, radius: float = 5.0, position: tuple = (0, 0, 0),
-                     name: str = None) -> Dict[str, Any]:
+    def create_sphere(
+        self, radius: float = 5.0, position: tuple = (0, 0, 0), name: str = None
+    ) -> Dict[str, Any]:
         """Create a sphere primitive.
 
         Args:
@@ -170,7 +183,8 @@ class PrimitivesTool:
             doc.recompute()
 
             import math
-            volume = (4/3) * math.pi * radius * radius * radius
+
+            volume = (4 / 3) * math.pi * radius * radius * radius
 
             return {
                 "success": True,
@@ -180,19 +194,25 @@ class PrimitivesTool:
                 "properties": {
                     "radius": radius,
                     "volume": round(volume, 2),
-                    "position": position
-                }
+                    "position": position,
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to create sphere: {str(e)}"
+                "message": f"Failed to create sphere: {str(e)}",
             }
 
-    def create_cone(self, radius1: float = 5.0, radius2: float = 0.0, height: float = 10.0,
-                   position: tuple = (0, 0, 0), name: str = None) -> Dict[str, Any]:
+    def create_cone(
+        self,
+        radius1: float = 5.0,
+        radius2: float = 0.0,
+        height: float = 10.0,
+        position: tuple = (0, 0, 0),
+        name: str = None,
+    ) -> Dict[str, Any]:
         """Create a cone primitive.
 
         Args:
@@ -228,7 +248,13 @@ class PrimitivesTool:
             doc.recompute()
 
             import math
-            volume = (1/3) * math.pi * height * (radius1*radius1 + radius1*radius2 + radius2*radius2)
+
+            volume = (
+                (1 / 3)
+                * math.pi
+                * height
+                * (radius1 * radius1 + radius1 * radius2 + radius2 * radius2)
+            )
 
             return {
                 "success": True,
@@ -240,19 +266,24 @@ class PrimitivesTool:
                     "radius2": radius2,
                     "height": height,
                     "volume": round(volume, 2),
-                    "position": position
-                }
+                    "position": position,
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to create cone: {str(e)}"
+                "message": f"Failed to create cone: {str(e)}",
             }
 
-    def create_torus(self, radius1: float = 10.0, radius2: float = 2.0,
-                    position: tuple = (0, 0, 0), name: str = None) -> Dict[str, Any]:
+    def create_torus(
+        self,
+        radius1: float = 10.0,
+        radius2: float = 2.0,
+        position: tuple = (0, 0, 0),
+        name: str = None,
+    ) -> Dict[str, Any]:
         """Create a torus primitive.
 
         Args:
@@ -287,6 +318,7 @@ class PrimitivesTool:
             doc.recompute()
 
             import math
+
             volume = 2 * math.pi * math.pi * radius1 * radius2 * radius2
 
             return {
@@ -298,15 +330,15 @@ class PrimitivesTool:
                     "major_radius": radius1,
                     "minor_radius": radius2,
                     "volume": round(volume, 2),
-                    "position": position
-                }
+                    "position": position,
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to create torus: {str(e)}"
+                "message": f"Failed to create torus: {str(e)}",
             }
 
     def get_available_primitives(self) -> Dict[str, Any]:
@@ -319,23 +351,23 @@ class PrimitivesTool:
             "primitives": {
                 "box": {
                     "description": "Create a rectangular box",
-                    "parameters": ["length", "width", "height", "position", "name"]
+                    "parameters": ["length", "width", "height", "position", "name"],
                 },
                 "cylinder": {
                     "description": "Create a circular cylinder",
-                    "parameters": ["radius", "height", "position", "name"]
+                    "parameters": ["radius", "height", "position", "name"],
                 },
                 "sphere": {
                     "description": "Create a sphere",
-                    "parameters": ["radius", "position", "name"]
+                    "parameters": ["radius", "position", "name"],
                 },
                 "cone": {
                     "description": "Create a cone or truncated cone",
-                    "parameters": ["radius1", "radius2", "height", "position", "name"]
+                    "parameters": ["radius1", "radius2", "height", "position", "name"],
                 },
                 "torus": {
                     "description": "Create a torus (donut shape)",
-                    "parameters": ["radius1", "radius2", "position", "name"]
-                }
+                    "parameters": ["radius1", "radius2", "position", "name"],
+                },
             }
         }

@@ -34,7 +34,7 @@ class SystemPromptsTableModel(QtCore.QAbstractTableModel):
             "cad_context": "When CAD context is provided, analyze the current FreeCAD document state including objects, geometry, and workspace. Use this information to provide contextually relevant suggestions and solutions.",
             "error_handling": "When users encounter errors or issues, provide systematic troubleshooting steps. Consider common FreeCAD pitfalls and suggest alternative approaches when needed.",
             "beginner_mode": "Explain concepts clearly for users new to FreeCAD. Include basic terminology explanations and step-by-step guidance. Suggest learning resources when appropriate.",
-            "advanced_mode": "Provide detailed technical information for experienced users. Include advanced techniques, scripting examples, and optimization strategies. Assume familiarity with CAD concepts."
+            "advanced_mode": "Provide detailed technical information for experienced users. Include advanced techniques, scripting examples, and optimization strategies. Assume familiarity with CAD concepts.",
         }
 
     def rowCount(self, parent=QtCore.QModelIndex()):
@@ -93,7 +93,11 @@ class SystemPromptsTableModel(QtCore.QAbstractTableModel):
     def flags(self, index):
         if not index.isValid():
             return QtCore.Qt.NoItemFlags
-        return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable
+        return (
+            QtCore.Qt.ItemIsEnabled
+            | QtCore.Qt.ItemIsSelectable
+            | QtCore.Qt.ItemIsEditable
+        )
 
     def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
@@ -103,7 +107,9 @@ class SystemPromptsTableModel(QtCore.QAbstractTableModel):
     def add_prompt(self, name: str, prompt: str):
         """Add a new prompt."""
         if name not in self.prompts_data:
-            self.beginInsertRows(QtCore.QModelIndex(), len(self.prompts_data), len(self.prompts_data))
+            self.beginInsertRows(
+                QtCore.QModelIndex(), len(self.prompts_data), len(self.prompts_data)
+            )
             self.prompts_data[name] = prompt
             self.endInsertRows()
 
@@ -203,13 +209,17 @@ class CADContextPreviewDialog(QtWidgets.QDialog):
         """Copy compact context to clipboard."""
         clipboard = QtWidgets.QApplication.clipboard()
         clipboard.setText(self.compact_text.toPlainText())
-        QtWidgets.QMessageBox.information(self, "Copied", "Compact context copied to clipboard")
+        QtWidgets.QMessageBox.information(
+            self, "Copied", "Compact context copied to clipboard"
+        )
 
     def _copy_detailed(self):
         """Copy detailed context to clipboard."""
         clipboard = QtWidgets.QApplication.clipboard()
         clipboard.setText(self.detailed_text.toPlainText())
-        QtWidgets.QMessageBox.information(self, "Copied", "Detailed context copied to clipboard")
+        QtWidgets.QMessageBox.information(
+            self, "Copied", "Detailed context copied to clipboard"
+        )
 
 
 class SettingsWidget(QtWidgets.QWidget):
@@ -284,7 +294,9 @@ class SettingsWidget(QtWidgets.QWidget):
 
         # CAD Context preview button
         self.cad_context_btn = QtWidgets.QPushButton("Preview CAD Context")
-        self.cad_context_btn.setToolTip("Preview what CAD context information is sent to AI")
+        self.cad_context_btn.setToolTip(
+            "Preview what CAD context information is sent to AI"
+        )
         self.cad_context_btn.clicked.connect(self._preview_cad_context)
         header_layout.addWidget(self.cad_context_btn)
 
@@ -359,19 +371,33 @@ class SettingsWidget(QtWidgets.QWidget):
 
         self.theme_combo = QtWidgets.QComboBox()
         self.theme_combo.addItems(["default", "dark", "light"])
-        self.theme_combo.currentTextChanged.connect(lambda text: self._on_ui_setting_changed("theme", text))
+        self.theme_combo.currentTextChanged.connect(
+            lambda text: self._on_ui_setting_changed("theme", text)
+        )
         ui_layout.addRow("Theme:", self.theme_combo)
 
         self.auto_save_cb = QtWidgets.QCheckBox("Auto-save configuration")
-        self.auto_save_cb.stateChanged.connect(lambda state: self._on_ui_setting_changed("auto_save", state == QtCore.Qt.Checked))
+        self.auto_save_cb.stateChanged.connect(
+            lambda state: self._on_ui_setting_changed(
+                "auto_save", state == QtCore.Qt.Checked
+            )
+        )
         ui_layout.addRow("", self.auto_save_cb)
 
         self.tooltips_cb = QtWidgets.QCheckBox("Show tooltips")
-        self.tooltips_cb.stateChanged.connect(lambda state: self._on_ui_setting_changed("show_tooltips", state == QtCore.Qt.Checked))
+        self.tooltips_cb.stateChanged.connect(
+            lambda state: self._on_ui_setting_changed(
+                "show_tooltips", state == QtCore.Qt.Checked
+            )
+        )
         ui_layout.addRow("", self.tooltips_cb)
 
         self.confirm_cb = QtWidgets.QCheckBox("Confirm operations")
-        self.confirm_cb.stateChanged.connect(lambda state: self._on_ui_setting_changed("confirm_operations", state == QtCore.Qt.Checked))
+        self.confirm_cb.stateChanged.connect(
+            lambda state: self._on_ui_setting_changed(
+                "confirm_operations", state == QtCore.Qt.Checked
+            )
+        )
         ui_layout.addRow("", self.confirm_cb)
 
         layout.addWidget(ui_group)
@@ -382,7 +408,9 @@ class SettingsWidget(QtWidgets.QWidget):
 
         self.log_level_combo = QtWidgets.QComboBox()
         self.log_level_combo.addItems(["DEBUG", "INFO", "WARNING", "ERROR"])
-        self.log_level_combo.currentTextChanged.connect(lambda text: self._on_ui_setting_changed("log_level", text))
+        self.log_level_combo.currentTextChanged.connect(
+            lambda text: self._on_ui_setting_changed("log_level", text)
+        )
         log_layout.addRow("Log Level:", self.log_level_combo)
 
         layout.addWidget(log_group)
@@ -403,14 +431,22 @@ class SettingsWidget(QtWidgets.QWidget):
         self.default_radius_spin.setRange(0.1, 1000.0)
         self.default_radius_spin.setValue(5.0)
         self.default_radius_spin.setSuffix(" mm")
-        self.default_radius_spin.valueChanged.connect(lambda v: self._on_tool_default_changed("advanced_primitives", "default_radius", v))
+        self.default_radius_spin.valueChanged.connect(
+            lambda v: self._on_tool_default_changed(
+                "advanced_primitives", "default_radius", v
+            )
+        )
         primitives_layout.addRow("Default Radius:", self.default_radius_spin)
 
         self.default_height_spin = QtWidgets.QDoubleSpinBox()
         self.default_height_spin.setRange(0.1, 1000.0)
         self.default_height_spin.setValue(10.0)
         self.default_height_spin.setSuffix(" mm")
-        self.default_height_spin.valueChanged.connect(lambda v: self._on_tool_default_changed("advanced_primitives", "default_height", v))
+        self.default_height_spin.valueChanged.connect(
+            lambda v: self._on_tool_default_changed(
+                "advanced_primitives", "default_height", v
+            )
+        )
         primitives_layout.addRow("Default Height:", self.default_height_spin)
 
         layout.addWidget(primitives_group)
@@ -423,21 +459,33 @@ class SettingsWidget(QtWidgets.QWidget):
         self.default_fillet_spin.setRange(0.1, 100.0)
         self.default_fillet_spin.setValue(1.0)
         self.default_fillet_spin.setSuffix(" mm")
-        self.default_fillet_spin.valueChanged.connect(lambda v: self._on_tool_default_changed("surface_modification", "default_fillet_radius", v))
+        self.default_fillet_spin.valueChanged.connect(
+            lambda v: self._on_tool_default_changed(
+                "surface_modification", "default_fillet_radius", v
+            )
+        )
         surface_layout.addRow("Default Fillet Radius:", self.default_fillet_spin)
 
         self.default_chamfer_spin = QtWidgets.QDoubleSpinBox()
         self.default_chamfer_spin.setRange(0.1, 100.0)
         self.default_chamfer_spin.setValue(1.0)
         self.default_chamfer_spin.setSuffix(" mm")
-        self.default_chamfer_spin.valueChanged.connect(lambda v: self._on_tool_default_changed("surface_modification", "default_chamfer_distance", v))
+        self.default_chamfer_spin.valueChanged.connect(
+            lambda v: self._on_tool_default_changed(
+                "surface_modification", "default_chamfer_distance", v
+            )
+        )
         surface_layout.addRow("Default Chamfer Distance:", self.default_chamfer_spin)
 
         self.default_draft_spin = QtWidgets.QDoubleSpinBox()
         self.default_draft_spin.setRange(0.1, 45.0)
         self.default_draft_spin.setValue(5.0)
         self.default_draft_spin.setSuffix("°")
-        self.default_draft_spin.valueChanged.connect(lambda v: self._on_tool_default_changed("surface_modification", "default_draft_angle", v))
+        self.default_draft_spin.valueChanged.connect(
+            lambda v: self._on_tool_default_changed(
+                "surface_modification", "default_draft_angle", v
+            )
+        )
         surface_layout.addRow("Default Draft Angle:", self.default_draft_spin)
 
         layout.addWidget(surface_group)
@@ -467,7 +515,9 @@ class SettingsWidget(QtWidgets.QWidget):
 
         # Save button
         self.save_btn = QtWidgets.QPushButton("Save Settings")
-        self.save_btn.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 8px; }")
+        self.save_btn.setStyleSheet(
+            "QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 8px; }"
+        )
         self.save_btn.clicked.connect(self._save_settings)
         button_layout.addWidget(self.save_btn)
 
@@ -487,7 +537,9 @@ class SettingsWidget(QtWidgets.QWidget):
         if ok and name.strip():
             name = name.strip()
             if name in self.prompts_model.prompts_data:
-                QtWidgets.QMessageBox.warning(self, "Error", f"Prompt '{name}' already exists")
+                QtWidgets.QMessageBox.warning(
+                    self, "Error", f"Prompt '{name}' already exists"
+                )
                 return
 
             prompt, ok = QtWidgets.QInputDialog.getMultiLineText(
@@ -501,7 +553,9 @@ class SettingsWidget(QtWidgets.QWidget):
         """Remove selected system prompt."""
         selection = self.prompts_table.selectionModel().selectedRows()
         if not selection:
-            QtWidgets.QMessageBox.information(self, "Info", "Please select a prompt to remove")
+            QtWidgets.QMessageBox.information(
+                self, "Info", "Please select a prompt to remove"
+            )
             return
 
         row = selection[0].row()
@@ -510,9 +564,10 @@ class SettingsWidget(QtWidgets.QWidget):
             name = keys[row]
 
             reply = QtWidgets.QMessageBox.question(
-                self, "Remove Prompt",
+                self,
+                "Remove Prompt",
                 f"Are you sure you want to remove the prompt '{name}'?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
             )
 
             if reply == QtWidgets.QMessageBox.Yes:
@@ -521,9 +576,10 @@ class SettingsWidget(QtWidgets.QWidget):
     def _reset_prompts(self):
         """Reset prompts to defaults."""
         reply = QtWidgets.QMessageBox.question(
-            self, "Reset Prompts",
+            self,
+            "Reset Prompts",
             "Are you sure you want to reset all system prompts to defaults?\nThis will remove any custom prompts.",
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
         )
 
         if reply == QtWidgets.QMessageBox.Yes:
@@ -538,18 +594,24 @@ class SettingsWidget(QtWidgets.QWidget):
 
         if file_path:
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     prompts_data = json.load(f)
 
                 if isinstance(prompts_data, dict):
                     self.prompts_model = SystemPromptsTableModel(prompts_data)
                     self.prompts_table.setModel(self.prompts_model)
-                    QtWidgets.QMessageBox.information(self, "Success", "System prompts imported successfully")
+                    QtWidgets.QMessageBox.information(
+                        self, "Success", "System prompts imported successfully"
+                    )
                 else:
-                    QtWidgets.QMessageBox.warning(self, "Error", "Invalid prompts file format")
+                    QtWidgets.QMessageBox.warning(
+                        self, "Error", "Invalid prompts file format"
+                    )
 
             except Exception as e:
-                QtWidgets.QMessageBox.warning(self, "Error", f"Failed to import prompts: {str(e)}")
+                QtWidgets.QMessageBox.warning(
+                    self, "Error", f"Failed to import prompts: {str(e)}"
+                )
 
     def _export_prompts(self):
         """Export system prompts to file."""
@@ -560,13 +622,17 @@ class SettingsWidget(QtWidgets.QWidget):
         if file_path:
             try:
                 prompts_data = self.prompts_model.get_prompts_data()
-                with open(file_path, 'w', encoding='utf-8') as f:
+                with open(file_path, "w", encoding="utf-8") as f:
                     json.dump(prompts_data, f, indent=2, ensure_ascii=False)
 
-                QtWidgets.QMessageBox.information(self, "Success", "System prompts exported successfully")
+                QtWidgets.QMessageBox.information(
+                    self, "Success", "System prompts exported successfully"
+                )
 
             except Exception as e:
-                QtWidgets.QMessageBox.warning(self, "Error", f"Failed to export prompts: {str(e)}")
+                QtWidgets.QMessageBox.warning(
+                    self, "Error", f"Failed to export prompts: {str(e)}"
+                )
 
     def _on_ui_setting_changed(self, key, value):
         """Handle UI setting change."""
@@ -585,15 +651,19 @@ class SettingsWidget(QtWidgets.QWidget):
         if not self.config_manager:
             self.logger.error("Cannot load settings: config_manager is None")
             # Show error message to user
-            error_label = QtWidgets.QLabel("Error: Configuration manager failed to initialize.\nCheck console for details.")
+            error_label = QtWidgets.QLabel(
+                "Error: Configuration manager failed to initialize.\nCheck console for details."
+            )
             error_label.setStyleSheet("color: red; font-weight: bold; padding: 20px;")
             error_label.setAlignment(QtCore.Qt.AlignCenter)
 
             # Add error label to each tab
             for i in range(self.tab_widget.count()):
                 tab = self.tab_widget.widget(i)
-                if hasattr(tab, 'layout') and tab.layout():
-                    tab.layout().insertWidget(0, QtWidgets.QLabel("Configuration Error - Check console"))
+                if hasattr(tab, "layout") and tab.layout():
+                    tab.layout().insertWidget(
+                        0, QtWidgets.QLabel("Configuration Error - Check console")
+                    )
             return
 
         self.logger.info("ConfigManager available, loading settings...")
@@ -611,13 +681,23 @@ class SettingsWidget(QtWidgets.QWidget):
         tool_defaults = self.config_manager.get_config("tool_defaults", {})
         self.logger.info(f"Loaded tool defaults: {tool_defaults}")
         primitives_defaults = tool_defaults.get("advanced_primitives", {})
-        self.default_radius_spin.setValue(primitives_defaults.get("default_radius", 5.0))
-        self.default_height_spin.setValue(primitives_defaults.get("default_height", 10.0))
+        self.default_radius_spin.setValue(
+            primitives_defaults.get("default_radius", 5.0)
+        )
+        self.default_height_spin.setValue(
+            primitives_defaults.get("default_height", 10.0)
+        )
 
         surface_defaults = tool_defaults.get("surface_modification", {})
-        self.default_fillet_spin.setValue(surface_defaults.get("default_fillet_radius", 1.0))
-        self.default_chamfer_spin.setValue(surface_defaults.get("default_chamfer_distance", 1.0))
-        self.default_draft_spin.setValue(surface_defaults.get("default_draft_angle", 5.0))
+        self.default_fillet_spin.setValue(
+            surface_defaults.get("default_fillet_radius", 1.0)
+        )
+        self.default_chamfer_spin.setValue(
+            surface_defaults.get("default_chamfer_distance", 1.0)
+        )
+        self.default_draft_spin.setValue(
+            surface_defaults.get("default_draft_angle", 5.0)
+        )
 
         # Load system prompts
         system_prompts = self.config_manager.get_config("system_prompts", {})
@@ -631,7 +711,9 @@ class SettingsWidget(QtWidgets.QWidget):
     def _save_settings(self):
         """Save all settings."""
         if not self.config_manager:
-            QtWidgets.QMessageBox.warning(self, "Error", "Configuration manager not available")
+            QtWidgets.QMessageBox.warning(
+                self, "Error", "Configuration manager not available"
+            )
             return
 
         # Save system prompts
@@ -641,7 +723,9 @@ class SettingsWidget(QtWidgets.QWidget):
 
         success = self.config_manager.save_config()
         if success:
-            QtWidgets.QMessageBox.information(self, "Success", "Settings saved successfully")
+            QtWidgets.QMessageBox.information(
+                self, "Success", "Settings saved successfully"
+            )
             self.settings_changed.emit()
         else:
             QtWidgets.QMessageBox.warning(self, "Error", "Failed to save settings")
@@ -649,19 +733,24 @@ class SettingsWidget(QtWidgets.QWidget):
     def _reset_config(self):
         """Reset configuration to defaults."""
         reply = QtWidgets.QMessageBox.question(
-            self, "Reset Configuration",
+            self,
+            "Reset Configuration",
             "Are you sure you want to reset all settings to defaults?\nThis will remove all API keys and custom configurations.",
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-            QtWidgets.QMessageBox.No
+            QtWidgets.QMessageBox.No,
         )
 
         if reply == QtWidgets.QMessageBox.Yes and self.config_manager:
             success = self.config_manager.reset_config()
             if success:
                 self._load_settings()
-                QtWidgets.QMessageBox.information(self, "Success", "Configuration reset to defaults")
+                QtWidgets.QMessageBox.information(
+                    self, "Success", "Configuration reset to defaults"
+                )
             else:
-                QtWidgets.QMessageBox.warning(self, "Error", "Failed to reset configuration")
+                QtWidgets.QMessageBox.warning(
+                    self, "Error", "Failed to reset configuration"
+                )
 
     def _import_config(self):
         """Import configuration from file."""
@@ -673,32 +762,44 @@ class SettingsWidget(QtWidgets.QWidget):
             success = self.config_manager.import_config(file_path)
             if success:
                 self._load_settings()
-                QtWidgets.QMessageBox.information(self, "Success", "Configuration imported successfully")
+                QtWidgets.QMessageBox.information(
+                    self, "Success", "Configuration imported successfully"
+                )
             else:
-                QtWidgets.QMessageBox.warning(self, "Error", "Failed to import configuration")
+                QtWidgets.QMessageBox.warning(
+                    self, "Error", "Failed to import configuration"
+                )
 
     def _export_config(self):
         """Export configuration to file."""
         file_path, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self, "Export Configuration", "mcp_freecad_config.json", "JSON Files (*.json)"
+            self,
+            "Export Configuration",
+            "mcp_freecad_config.json",
+            "JSON Files (*.json)",
         )
 
         if file_path and self.config_manager:
             # Ask if user wants to include API keys
             reply = QtWidgets.QMessageBox.question(
-                self, "Export API Keys",
+                self,
+                "Export API Keys",
                 "Do you want to include API keys in the export?\n(Keys will be encrypted)",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                QtWidgets.QMessageBox.No
+                QtWidgets.QMessageBox.No,
             )
 
             include_keys = reply == QtWidgets.QMessageBox.Yes
             success = self.config_manager.export_config(file_path, include_keys)
 
             if success:
-                QtWidgets.QMessageBox.information(self, "Success", "Configuration exported successfully")
+                QtWidgets.QMessageBox.information(
+                    self, "Success", "Configuration exported successfully"
+                )
             else:
-                QtWidgets.QMessageBox.warning(self, "Error", "Failed to export configuration")
+                QtWidgets.QMessageBox.warning(
+                    self, "Error", "Failed to export configuration"
+                )
 
     def get_system_prompt(self, context: str = "default") -> str:
         """Get system prompt for a specific context."""

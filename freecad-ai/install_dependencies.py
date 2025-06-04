@@ -13,6 +13,7 @@ Usage:
 Author: jango-blockchained
 """
 
+
 def install_mcp_dependencies():
     """Install dependencies for FreeCAD FreeCAD AI."""
     import subprocess
@@ -30,6 +31,7 @@ def install_mcp_dependencies():
         # Method 1: FreeCAD 0.22+
         try:
             from freecad.utils import get_python_exe
+
             python_exe = get_python_exe()
             print("✅ Found Python executable using freecad.utils")
         except ImportError:
@@ -39,7 +41,8 @@ def install_mcp_dependencies():
         if not python_exe:
             try:
                 import addonmanager_utilities as utils
-                if hasattr(utils, 'get_python_exe'):
+
+                if hasattr(utils, "get_python_exe"):
                     python_exe = utils.get_python_exe()
                     print("✅ Found Python executable using addonmanager_utilities")
             except ImportError:
@@ -55,7 +58,8 @@ def install_mcp_dependencies():
         # Get target directory
         try:
             import addonmanager_utilities as utils
-            if hasattr(utils, 'get_pip_target_directory'):
+
+            if hasattr(utils, "get_pip_target_directory"):
                 vendor_path = utils.get_pip_target_directory()
                 print("✅ Found target directory using addonmanager_utilities")
         except ImportError:
@@ -65,11 +69,14 @@ def install_mcp_dependencies():
         if not vendor_path:
             try:
                 import FreeCAD
+
                 user_dir = FreeCAD.getUserAppDataDir()
-                vendor_path = os.path.join(user_dir, 'Mod', 'vendor')
+                vendor_path = os.path.join(user_dir, "Mod", "vendor")
                 print("⚠️ Using fallback target directory")
             except:
-                vendor_path = os.path.join(os.path.expanduser('~'), '.freecad', 'vendor')
+                vendor_path = os.path.join(
+                    os.path.expanduser("~"), ".freecad", "vendor"
+                )
                 print("⚠️ Using home directory fallback")
 
         print(f"📁 Target directory: {vendor_path}")
@@ -81,8 +88,8 @@ def install_mcp_dependencies():
 
         # Dependencies to install
         dependencies = [
-            ('aiohttp', '>=3.8.0', 'Async HTTP client for AI provider communication'),
-            ('requests', '>=2.28.0', 'HTTP library for API requests')
+            ("aiohttp", ">=3.8.0", "Async HTTP client for AI provider communication"),
+            ("requests", ">=2.28.0", "HTTP library for API requests"),
         ]
 
         print(f"\n📦 Installing {len(dependencies)} dependencies...")
@@ -105,7 +112,7 @@ def install_mcp_dependencies():
                 "--disable-pip-version-check",
                 "--target",
                 vendor_path,
-                package_spec
+                package_spec,
             ]
 
             print(f"   Command: {' '.join(cmd)}")
@@ -113,10 +120,7 @@ def install_mcp_dependencies():
             try:
                 # Run pip installation
                 result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    timeout=120
+                    cmd, capture_output=True, text=True, timeout=120
                 )
 
                 if result.returncode == 0:
@@ -155,6 +159,7 @@ def install_mcp_dependencies():
     except Exception as e:
         print(f"❌ Unexpected error: {str(e)}")
         print("💡 Please report this error to the addon developers")
+
 
 # Run the installer
 if __name__ == "__main__":

@@ -27,7 +27,7 @@ class GeminiProvider(BaseAIProvider):
         "gemini-2.5-pro-latest",
         "gemini-1.5-pro-latest",
         "gemini-1.5-flash-latest",
-        "gemini-1.0-pro-latest"
+        "gemini-1.0-pro-latest",
     ]
 
     # Model context windows
@@ -35,7 +35,7 @@ class GeminiProvider(BaseAIProvider):
         "gemini-2.5-pro-latest": 1000000,  # 1M tokens
         "gemini-1.5-pro-latest": 1000000,  # 1M tokens
         "gemini-1.5-flash-latest": 1000000,  # 1M tokens
-        "gemini-1.0-pro-latest": 30720     # 30K tokens
+        "gemini-1.0-pro-latest": 30720,  # 30K tokens
     }
 
     def __init__(self, api_key: str, model: str = "gemini-2.5-pro-latest", **kwargs):
@@ -53,11 +53,13 @@ class GeminiProvider(BaseAIProvider):
             self.model = "gemini-2.5-pro-latest"
 
         # Gemini-specific configuration
-        self.max_tokens = kwargs.get('max_tokens', 8192)
-        self.temperature = kwargs.get('temperature', 0.7)
-        self.top_p = kwargs.get('top_p', 0.95)
-        self.top_k = kwargs.get('top_k', 40)
-        self.system_prompt = kwargs.get('system_prompt', self._get_default_system_prompt())
+        self.max_tokens = kwargs.get("max_tokens", 8192)
+        self.temperature = kwargs.get("temperature", 0.7)
+        self.top_p = kwargs.get("top_p", 0.95)
+        self.top_k = kwargs.get("top_k", 40)
+        self.system_prompt = kwargs.get(
+            "system_prompt", self._get_default_system_prompt()
+        )
 
     @property
     def name(self) -> str:
@@ -97,7 +99,9 @@ You have access to Gemini's multimodal capabilities, so you can:
 
 Be precise with measurements and technical details. When working with visual content, describe what you observe clearly."""
 
-    def _convert_to_gemini_format(self, messages: List[Dict[str, str]]) -> List[Dict[str, Any]]:
+    def _convert_to_gemini_format(
+        self, messages: List[Dict[str, str]]
+    ) -> List[Dict[str, Any]]:
         """Convert messages to Gemini format.
 
         Args:
@@ -109,24 +113,21 @@ Be precise with measurements and technical details. When working with visual con
         gemini_messages = []
 
         for msg in messages:
-            role = msg.get('role', 'user')
-            content = msg.get('content', '')
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
 
             # Gemini uses 'user' and 'model' as roles
-            if role == 'assistant':
-                role = 'model'
-            elif role == 'system':
+            if role == "assistant":
+                role = "model"
+            elif role == "system":
                 # Prepend system message to first user message
                 if not gemini_messages:
                     continue
                 # Add as context to the conversation
                 content = f"Context: {content}\n\nUser: {messages[1]['content'] if len(messages) > 1 else ''}"
-                role = 'user'
+                role = "user"
 
-            gemini_messages.append({
-                "role": role,
-                "parts": [{"text": content}]
-            })
+            gemini_messages.append({"role": role, "parts": [{"text": content}]})
 
         return gemini_messages
 
@@ -147,7 +148,9 @@ Be precise with measurements and technical details. When working with visual con
             await self._rate_limit()
 
             # Prepare the request
-            model_name = self.model.replace('-latest', '')  # Remove -latest suffix for API
+            model_name = self.model.replace(
+                "-latest", ""
+            )  # Remove -latest suffix for API
             url = f"{self.API_BASE}/models/{model_name}:generateContent?key={self.api_key}"
 
             # Build conversation history
@@ -155,23 +158,16 @@ Be precise with measurements and technical details. When working with visual con
 
             # Add system prompt as first message
             if self.system_prompt:
-                messages.append({
-                    "role": "system",
-                    "content": self.system_prompt
-                })
+                messages.append({"role": "system", "content": self.system_prompt})
 
             # Add conversation history
             for hist_msg in self.conversation_history[-10:]:  # Last 10 messages
-                messages.append({
-                    "role": hist_msg.role.value,
-                    "content": hist_msg.content
-                })
+                messages.append(
+                    {"role": hist_msg.role.value, "content": hist_msg.content}
+                )
 
             # Add current message
-            messages.append({
-                "role": "user",
-                "content": message
-            })
+            messages.append({"role": "user", "content": message})
 
             # Convert to Gemini format
             gemini_messages = self._convert_to_gemini_format(messages)
@@ -180,42 +176,42 @@ Be precise with measurements and technical details. When working with visual con
             request_data = {
                 "contents": gemini_messages,
                 "generationConfig": {
-                    "temperature": kwargs.get('temperature', self.temperature),
-                    "topP": kwargs.get('top_p', self.top_p),
-                    "topK": kwargs.get('top_k', self.top_k),
-                    "maxOutputTokens": kwargs.get('max_tokens', self.max_tokens)
+                    "temperature": kwargs.get("temperature", self.temperature),
+                    "topP": kwargs.get("top_p", self.top_p),
+                    "topK": kwargs.get("top_k", self.top_k),
+                    "maxOutputTokens": kwargs.get("max_tokens", self.max_tokens),
                 },
                 "safetySettings": [
                     {
                         "category": "HARM_CATEGORY_HARASSMENT",
-                        "threshold": "BLOCK_ONLY_HIGH"
+                        "threshold": "BLOCK_ONLY_HIGH",
                     },
                     {
                         "category": "HARM_CATEGORY_HATE_SPEECH",
-                        "threshold": "BLOCK_ONLY_HIGH"
+                        "threshold": "BLOCK_ONLY_HIGH",
                     },
                     {
                         "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                        "threshold": "BLOCK_ONLY_HIGH"
+                        "threshold": "BLOCK_ONLY_HIGH",
                     },
                     {
                         "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                        "threshold": "BLOCK_ONLY_HIGH"
-                    }
-                ]
+                        "threshold": "BLOCK_ONLY_HIGH",
+                    },
+                ],
             }
 
             # Make API request
             async with aiohttp.ClientSession() as session:
                 async with session.post(
-                    url,
-                    json=request_data,
-                    timeout=aiohttp.ClientTimeout(total=120)
+                    url, json=request_data, timeout=aiohttp.ClientTimeout(total=120)
                 ) as response:
 
                     if response.status != 200:
                         error_text = await response.text()
-                        raise Exception(f"Gemini API error {response.status}: {error_text}")
+                        raise Exception(
+                            f"Gemini API error {response.status}: {error_text}"
+                        )
 
                     result = await response.json()
 
@@ -224,7 +220,7 @@ Be precise with measurements and technical details. When working with visual con
 
             # Update statistics
             response_time = time.time() - start_time
-            tokens_used = ai_response.usage.get('output_tokens', 0)
+            tokens_used = ai_response.usage.get("output_tokens", 0)
             self._update_stats(response_time, tokens_used)
 
             # Add to conversation history
@@ -267,7 +263,7 @@ Be precise with measurements and technical details. When working with visual con
             usage = {
                 "input_tokens": usage_data.get("promptTokenCount", 0),
                 "output_tokens": usage_data.get("candidatesTokenCount", 0),
-                "total_tokens": usage_data.get("totalTokenCount", 0)
+                "total_tokens": usage_data.get("totalTokenCount", 0),
             }
 
         # Create response object
@@ -277,8 +273,10 @@ Be precise with measurements and technical details. When working with visual con
             usage=usage,
             metadata={
                 "provider": "gemini",
-                "safety_ratings": response_data.get("candidates", [{}])[0].get("safetyRatings", [])
-            }
+                "safety_ratings": response_data.get("candidates", [{}])[0].get(
+                    "safetyRatings", []
+                ),
+            },
         )
 
     async def test_connection(self) -> bool:
@@ -287,7 +285,7 @@ Be precise with measurements and technical details. When working with visual con
             test_response = await self.send_message(
                 "Hello! Please respond with just 'Connection successful' to test the API.",
                 max_tokens=50,
-                temperature=0.1
+                temperature=0.1,
             )
             return "successful" in test_response.content.lower()
         except Exception:
@@ -308,7 +306,7 @@ Be precise with measurements and technical details. When working with visual con
                 "context_window": 1000000,
                 "supports_images": True,
                 "supports_video": True,
-                "supports_audio": True
+                "supports_audio": True,
             },
             "gemini-1.5-pro-latest": {
                 "description": "Previous generation with excellent performance",
@@ -317,7 +315,7 @@ Be precise with measurements and technical details. When working with visual con
                 "context_window": 1000000,
                 "supports_images": True,
                 "supports_video": True,
-                "supports_audio": True
+                "supports_audio": True,
             },
             "gemini-1.5-flash-latest": {
                 "description": "Fast and efficient for quick tasks",
@@ -326,7 +324,7 @@ Be precise with measurements and technical details. When working with visual con
                 "context_window": 1000000,
                 "supports_images": True,
                 "supports_video": False,
-                "supports_audio": False
+                "supports_audio": False,
             },
             "gemini-1.0-pro-latest": {
                 "description": "Stable model for production use",
@@ -335,8 +333,8 @@ Be precise with measurements and technical details. When working with visual con
                 "context_window": 30720,
                 "supports_images": False,
                 "supports_video": False,
-                "supports_audio": False
-            }
+                "supports_audio": False,
+            },
         }
 
         if target_model in model_details:
@@ -344,7 +342,9 @@ Be precise with measurements and technical details. When working with visual con
 
         return base_info
 
-    async def analyze_image(self, image_path: str, prompt: str = "Describe this image") -> AIResponse:
+    async def analyze_image(
+        self, image_path: str, prompt: str = "Describe this image"
+    ) -> AIResponse:
         """Analyze an image using Gemini's multimodal capabilities.
 
         Args:
@@ -356,7 +356,9 @@ Be precise with measurements and technical details. When working with visual con
         """
         # This would require image encoding and multimodal API support
         # For now, return a placeholder
-        raise NotImplementedError("Image analysis will be implemented with multimodal support")
+        raise NotImplementedError(
+            "Image analysis will be implemented with multimodal support"
+        )
 
     def get_context_window(self) -> int:
         """Get the context window size for current model."""

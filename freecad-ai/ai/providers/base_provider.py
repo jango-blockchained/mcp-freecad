@@ -17,6 +17,7 @@ from typing import Dict, List, Optional, Any, Union
 
 class MessageRole(Enum):
     """Message roles for conversation history."""
+
     USER = "user"
     ASSISTANT = "assistant"
     SYSTEM = "system"
@@ -25,6 +26,7 @@ class MessageRole(Enum):
 @dataclass
 class AIMessage:
     """Represents a message in the conversation history."""
+
     role: MessageRole
     content: str
     thinking_process: Optional[str] = None
@@ -35,6 +37,7 @@ class AIMessage:
 @dataclass
 class AIResponse:
     """Represents a response from an AI provider."""
+
     content: str
     thinking_process: Optional[str] = None
     model: Optional[str] = None
@@ -59,31 +62,31 @@ class BaseAIProvider(ABC):
         self.model = model
 
         # Configuration
-        self.max_tokens = kwargs.get('max_tokens', 4000)
-        self.temperature = kwargs.get('temperature', 0.7)
-        self.timeout = kwargs.get('timeout', 120)
+        self.max_tokens = kwargs.get("max_tokens", 4000)
+        self.temperature = kwargs.get("temperature", 0.7)
+        self.timeout = kwargs.get("timeout", 120)
 
         # Conversation management
         self.conversation_history: List[AIMessage] = []
-        self.max_history_length = kwargs.get('max_history_length', 50)
+        self.max_history_length = kwargs.get("max_history_length", 50)
 
         # Rate limiting
-        self.rate_limit_delay = kwargs.get('rate_limit_delay', 1.0)  # seconds
+        self.rate_limit_delay = kwargs.get("rate_limit_delay", 1.0)  # seconds
         self.last_request_time = 0.0
 
         # Statistics tracking
         self.stats = {
-            'total_requests': 0,
-            'successful_requests': 0,
-            'failed_requests': 0,
-            'total_tokens': 0,
-            'total_response_time': 0.0,
-            'average_response_time': 0.0
+            "total_requests": 0,
+            "successful_requests": 0,
+            "failed_requests": 0,
+            "total_tokens": 0,
+            "total_response_time": 0.0,
+            "average_response_time": 0.0,
         }
 
         # Thinking mode configuration
-        self.thinking_mode_enabled = kwargs.get('thinking_mode_enabled', False)
-        self.thinking_budget = kwargs.get('thinking_budget', 2000)
+        self.thinking_mode_enabled = kwargs.get("thinking_mode_enabled", False)
+        self.thinking_budget = kwargs.get("thinking_budget", 2000)
 
     @property
     @abstractmethod
@@ -135,11 +138,21 @@ class BaseAIProvider(ABC):
         # Trim history if it exceeds max length
         if len(self.conversation_history) > self.max_history_length:
             # Keep system messages and trim older user/assistant messages
-            system_messages = [msg for msg in self.conversation_history if msg.role == MessageRole.SYSTEM]
-            other_messages = [msg for msg in self.conversation_history if msg.role != MessageRole.SYSTEM]
+            system_messages = [
+                msg
+                for msg in self.conversation_history
+                if msg.role == MessageRole.SYSTEM
+            ]
+            other_messages = [
+                msg
+                for msg in self.conversation_history
+                if msg.role != MessageRole.SYSTEM
+            ]
 
             # Keep the most recent messages
-            recent_messages = other_messages[-(self.max_history_length - len(system_messages)):]
+            recent_messages = other_messages[
+                -(self.max_history_length - len(system_messages)) :
+            ]
             self.conversation_history = system_messages + recent_messages
 
     def clear_conversation_history(self):
@@ -158,7 +171,11 @@ class BaseAIProvider(ABC):
         if include_system:
             return self.conversation_history.copy()
         else:
-            return [msg for msg in self.conversation_history if msg.role != MessageRole.SYSTEM]
+            return [
+                msg
+                for msg in self.conversation_history
+                if msg.role != MessageRole.SYSTEM
+            ]
 
     async def _rate_limit(self):
         """Apply rate limiting to prevent API abuse."""
@@ -171,7 +188,9 @@ class BaseAIProvider(ABC):
 
         self.last_request_time = time.time()
 
-    def _update_stats(self, response_time: float, tokens_used: int = 0, error: bool = False):
+    def _update_stats(
+        self, response_time: float, tokens_used: int = 0, error: bool = False
+    ):
         """Update provider statistics.
 
         Args:
@@ -179,20 +198,20 @@ class BaseAIProvider(ABC):
             tokens_used: Number of tokens used
             error: Whether the request resulted in an error
         """
-        self.stats['total_requests'] += 1
+        self.stats["total_requests"] += 1
 
         if error:
-            self.stats['failed_requests'] += 1
+            self.stats["failed_requests"] += 1
         else:
-            self.stats['successful_requests'] += 1
-            self.stats['total_tokens'] += tokens_used
+            self.stats["successful_requests"] += 1
+            self.stats["total_tokens"] += tokens_used
 
-        self.stats['total_response_time'] += response_time
+        self.stats["total_response_time"] += response_time
 
         # Calculate average response time
-        if self.stats['total_requests'] > 0:
-            self.stats['average_response_time'] = (
-                self.stats['total_response_time'] / self.stats['total_requests']
+        if self.stats["total_requests"] > 0:
+            self.stats["average_response_time"] = (
+                self.stats["total_response_time"] / self.stats["total_requests"]
             )
 
     def get_stats(self) -> Dict[str, Any]:
@@ -206,12 +225,12 @@ class BaseAIProvider(ABC):
     def reset_stats(self):
         """Reset provider statistics."""
         self.stats = {
-            'total_requests': 0,
-            'successful_requests': 0,
-            'failed_requests': 0,
-            'total_tokens': 0,
-            'total_response_time': 0.0,
-            'average_response_time': 0.0
+            "total_requests": 0,
+            "successful_requests": 0,
+            "failed_requests": 0,
+            "total_tokens": 0,
+            "total_response_time": 0.0,
+            "average_response_time": 0.0,
         }
 
     def enable_thinking_mode(self, budget: int = 2000):
@@ -242,11 +261,11 @@ class BaseAIProvider(ABC):
         target_model = model or self.model
 
         return {
-            'name': target_model,
-            'provider': self.name,
-            'supports_thinking_mode': self.supports_thinking_mode,
-            'max_tokens': self.max_tokens,
-            'temperature': self.temperature
+            "name": target_model,
+            "provider": self.name,
+            "supports_thinking_mode": self.supports_thinking_mode,
+            "max_tokens": self.max_tokens,
+            "temperature": self.temperature,
         }
 
     def set_system_prompt(self, prompt: str):
@@ -257,8 +276,7 @@ class BaseAIProvider(ABC):
         """
         # Remove existing system messages
         self.conversation_history = [
-            msg for msg in self.conversation_history
-            if msg.role != MessageRole.SYSTEM
+            msg for msg in self.conversation_history if msg.role != MessageRole.SYSTEM
         ]
 
         # Add new system message at the beginning

@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     from advanced_primitives import AdvancedPrimitivesTool
+
     FREECAD_AVAILABLE = True
 except ImportError:
     FREECAD_AVAILABLE = False
@@ -57,7 +58,7 @@ class TestAdvancedPrimitivesTool(unittest.TestCase):
             inner_radius=5.0,
             height=20.0,
             position=(0, 0, 0),
-            name="TestTube"
+            name="TestTube",
         )
 
         self.assertTrue(result["success"])
@@ -72,11 +73,7 @@ class TestAdvancedPrimitivesTool(unittest.TestCase):
 
     def test_create_tube_solid_cylinder(self):
         """Test creating tube with inner_radius = 0 (solid cylinder)."""
-        result = self.tool.create_tube(
-            outer_radius=8.0,
-            inner_radius=0.0,
-            height=15.0
-        )
+        result = self.tool.create_tube(outer_radius=8.0, inner_radius=0.0, height=15.0)
 
         self.assertTrue(result["success"])
         props = result["properties"]
@@ -96,7 +93,9 @@ class TestAdvancedPrimitivesTool(unittest.TestCase):
         self.assertIn("Outer radius must be positive", result["error"])
 
         # Negative inner radius
-        result = self.tool.create_tube(outer_radius=10.0, inner_radius=-2.0, height=10.0)
+        result = self.tool.create_tube(
+            outer_radius=10.0, inner_radius=-2.0, height=10.0
+        )
         self.assertFalse(result["success"])
         self.assertIn("Inner radius must be non-negative", result["error"])
 
@@ -110,11 +109,7 @@ class TestAdvancedPrimitivesTool(unittest.TestCase):
     def test_create_prism_valid_parameters(self):
         """Test creating prism with valid parameters."""
         result = self.tool.create_prism(
-            sides=6,
-            radius=8.0,
-            height=12.0,
-            position=(10, 0, 0),
-            name="TestHexagon"
+            sides=6, radius=8.0, height=12.0, position=(10, 0, 0), name="TestHexagon"
         )
 
         self.assertTrue(result["success"])
@@ -166,7 +161,7 @@ class TestAdvancedPrimitivesTool(unittest.TestCase):
             height=8.0,
             angle=30.0,
             position=(0, 10, 0),
-            name="TestWedge"
+            name="TestWedge",
         )
 
         self.assertTrue(result["success"])
@@ -195,19 +190,25 @@ class TestAdvancedPrimitivesTool(unittest.TestCase):
         self.assertIn("Length must be positive", result["error"])
 
         # Negative width
-        result = self.tool.create_wedge(length=10.0, width=-5.0, height=10.0, angle=45.0)
+        result = self.tool.create_wedge(
+            length=10.0, width=-5.0, height=10.0, angle=45.0
+        )
         self.assertFalse(result["success"])
         self.assertIn("Width must be positive", result["error"])
 
     def test_create_wedge_invalid_angle(self):
         """Test creating wedge with invalid angle."""
         # Negative angle
-        result = self.tool.create_wedge(length=10.0, width=10.0, height=10.0, angle=-10.0)
+        result = self.tool.create_wedge(
+            length=10.0, width=10.0, height=10.0, angle=-10.0
+        )
         self.assertFalse(result["success"])
         self.assertIn("Angle must be between 0 and 90 degrees", result["error"])
 
         # Angle > 90
-        result = self.tool.create_wedge(length=10.0, width=10.0, height=10.0, angle=95.0)
+        result = self.tool.create_wedge(
+            length=10.0, width=10.0, height=10.0, angle=95.0
+        )
         self.assertFalse(result["success"])
         self.assertIn("Angle must be between 0 and 90 degrees", result["error"])
 
@@ -219,7 +220,7 @@ class TestAdvancedPrimitivesTool(unittest.TestCase):
             radius_y=5.0,
             radius_z=6.0,
             position=(0, 0, 10),
-            name="TestEllipsoid"
+            name="TestEllipsoid",
         )
 
         self.assertTrue(result["success"])
@@ -231,11 +232,7 @@ class TestAdvancedPrimitivesTool(unittest.TestCase):
 
     def test_create_ellipsoid_sphere(self):
         """Test creating ellipsoid with equal radii (sphere)."""
-        result = self.tool.create_ellipsoid(
-            radius_x=7.0,
-            radius_y=7.0,
-            radius_z=7.0
-        )
+        result = self.tool.create_ellipsoid(radius_x=7.0, radius_y=7.0, radius_z=7.0)
 
         self.assertTrue(result["success"])
         props = result["properties"]
@@ -261,18 +258,24 @@ class TestAdvancedPrimitivesTool(unittest.TestCase):
     def test_volume_calculations(self):
         """Test volume calculations for different primitives."""
         # Test tube volume calculation
-        tube_result = self.tool.create_tube(outer_radius=10.0, inner_radius=5.0, height=20.0)
+        tube_result = self.tool.create_tube(
+            outer_radius=10.0, inner_radius=5.0, height=20.0
+        )
         if tube_result["success"]:
             # Volume should be π * (R² - r²) * h
             expected_volume = 3.14159 * (10**2 - 5**2) * 20
             actual_volume = tube_result["properties"]["volume"]
-            self.assertAlmostEqual(actual_volume, expected_volume, delta=100)  # Allow some tolerance
+            self.assertAlmostEqual(
+                actual_volume, expected_volume, delta=100
+            )  # Allow some tolerance
 
         # Test ellipsoid volume calculation
-        ellipsoid_result = self.tool.create_ellipsoid(radius_x=3.0, radius_y=4.0, radius_z=5.0)
+        ellipsoid_result = self.tool.create_ellipsoid(
+            radius_x=3.0, radius_y=4.0, radius_z=5.0
+        )
         if ellipsoid_result["success"]:
             # Volume should be (4/3) * π * a * b * c
-            expected_volume = (4/3) * 3.14159 * 3.0 * 4.0 * 5.0
+            expected_volume = (4 / 3) * 3.14159 * 3.0 * 4.0 * 5.0
             actual_volume = ellipsoid_result["properties"]["volume"]
             self.assertAlmostEqual(actual_volume, expected_volume, delta=10)
 

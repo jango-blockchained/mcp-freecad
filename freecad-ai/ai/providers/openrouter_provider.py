@@ -30,38 +30,32 @@ class OpenRouterProvider(BaseAIProvider):
         "anthropic/claude-3.5-sonnet",
         "anthropic/claude-3-opus",
         "anthropic/claude-3-haiku",
-
         # OpenAI models
         "openai/gpt-4.1-turbo",
         "openai/gpt-4-turbo",
         "openai/gpt-3.5-turbo",
         "openai/o3-mini",
-
         # Google models
         "google/gemini-2.5-pro",
         "google/gemini-1.5-pro",
         "google/gemini-1.5-flash",
-
         # Meta models
         "meta/llama-3.1-405b-instruct",
         "meta/llama-3.1-70b-instruct",
-
         # Mistral models
         "mistralai/mistral-large",
         "mistralai/mixtral-8x7b-instruct",
-
         # Open source models
         "huggingface/qwen-2.5-72b-instruct",
-        "deepseek/deepseek-v3"
+        "deepseek/deepseek-v3",
     ]
 
     # Models that support thinking mode (Claude models)
-    THINKING_MODE_MODELS = [
-        "anthropic/claude-4-opus",
-        "anthropic/claude-4-sonnet"
-    ]
+    THINKING_MODE_MODELS = ["anthropic/claude-4-opus", "anthropic/claude-4-sonnet"]
 
-    def __init__(self, api_key: str, model: str = "anthropic/claude-4-sonnet", **kwargs):
+    def __init__(
+        self, api_key: str, model: str = "anthropic/claude-4-sonnet", **kwargs
+    ):
         """Initialize OpenRouter provider.
 
         Args:
@@ -76,21 +70,25 @@ class OpenRouterProvider(BaseAIProvider):
             self.model = "anthropic/claude-4-sonnet"
 
         # OpenRouter-specific configuration
-        self.max_tokens = kwargs.get('max_tokens', 4000)
-        self.temperature = kwargs.get('temperature', 0.7)
-        self.top_p = kwargs.get('top_p', 0.9)
-        self.system_prompt = kwargs.get('system_prompt', self._get_default_system_prompt())
+        self.max_tokens = kwargs.get("max_tokens", 4000)
+        self.temperature = kwargs.get("temperature", 0.7)
+        self.top_p = kwargs.get("top_p", 0.9)
+        self.system_prompt = kwargs.get(
+            "system_prompt", self._get_default_system_prompt()
+        )
 
         # OpenRouter requires site URL and app name
-        self.site_url = kwargs.get('site_url', 'https://github.com/jango-blockchained/mcp-freecad')
-        self.app_name = kwargs.get('app_name', 'MCP-FreeCAD')
+        self.site_url = kwargs.get(
+            "site_url", "https://github.com/jango-blockchained/mcp-freecad"
+        )
+        self.app_name = kwargs.get("app_name", "MCP-FreeCAD")
 
         # Headers for API requests
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
             "HTTP-Referer": self.site_url,
             "X-Title": self.app_name,
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
     @property
@@ -152,24 +150,18 @@ Be precise with measurements and technical details. Adapt your response style ba
 
             # Add system prompt
             if self.system_prompt:
-                messages.append({
-                    "role": "system",
-                    "content": self.system_prompt
-                })
+                messages.append({"role": "system", "content": self.system_prompt})
 
             # Add conversation history
             for hist_msg in self.conversation_history[-10:]:  # Last 10 messages
                 role = hist_msg.role.value
                 # OpenRouter uses standard OpenAI roles
-                if role == 'user':
-                    role = 'user'
-                elif role == 'assistant':
-                    role = 'assistant'
+                if role == "user":
+                    role = "user"
+                elif role == "assistant":
+                    role = "assistant"
 
-                msg_dict = {
-                    "role": role,
-                    "content": hist_msg.content
-                }
+                msg_dict = {"role": role, "content": hist_msg.content}
 
                 # Add thinking content for Claude models if available
                 if hist_msg.thinking_process and self.supports_thinking_mode:
@@ -178,19 +170,16 @@ Be precise with measurements and technical details. Adapt your response style ba
                 messages.append(msg_dict)
 
             # Add current message
-            messages.append({
-                "role": "user",
-                "content": message
-            })
+            messages.append({"role": "user", "content": message})
 
             # Build request data
             request_data = {
                 "model": self.model,
                 "messages": messages,
-                "max_tokens": kwargs.get('max_tokens', self.max_tokens),
-                "temperature": kwargs.get('temperature', self.temperature),
-                "top_p": kwargs.get('top_p', self.top_p),
-                "stream": False  # We don't support streaming yet
+                "max_tokens": kwargs.get("max_tokens", self.max_tokens),
+                "temperature": kwargs.get("temperature", self.temperature),
+                "top_p": kwargs.get("top_p", self.top_p),
+                "stream": False,  # We don't support streaming yet
             }
 
             # Add thinking mode parameters for Claude models
@@ -199,7 +188,7 @@ Be precise with measurements and technical details. Adapt your response style ba
                     "anthropic": {
                         "thinking": {
                             "enabled": True,
-                            "max_thinking_tokens": self.thinking_budget
+                            "max_thinking_tokens": self.thinking_budget,
                         }
                     }
                 }
@@ -208,8 +197,8 @@ Be precise with measurements and technical details. Adapt your response style ba
             if "openai" in self.model:
                 request_data["provider"] = request_data.get("provider", {})
                 request_data["provider"]["openai"] = {
-                    "frequency_penalty": kwargs.get('frequency_penalty', 0.0),
-                    "presence_penalty": kwargs.get('presence_penalty', 0.0)
+                    "frequency_penalty": kwargs.get("frequency_penalty", 0.0),
+                    "presence_penalty": kwargs.get("presence_penalty", 0.0),
                 }
 
             # Make API request
@@ -218,7 +207,7 @@ Be precise with measurements and technical details. Adapt your response style ba
                     f"{self.API_BASE}/chat/completions",
                     headers=self.headers,
                     json=request_data,
-                    timeout=aiohttp.ClientTimeout(total=120)
+                    timeout=aiohttp.ClientTimeout(total=120),
                 ) as response:
 
                     if response.status != 200:
@@ -229,8 +218,12 @@ Be precise with measurements and technical details. Adapt your response style ba
                         except:
                             pass
 
-                        error_message = error_json.get('error', {}).get('message', error_text)
-                        raise Exception(f"OpenRouter API error {response.status}: {error_message}")
+                        error_message = error_json.get("error", {}).get(
+                            "message", error_text
+                        )
+                        raise Exception(
+                            f"OpenRouter API error {response.status}: {error_message}"
+                        )
 
                     result = await response.json()
 
@@ -239,7 +232,7 @@ Be precise with measurements and technical details. Adapt your response style ba
 
             # Update statistics
             response_time = time.time() - start_time
-            tokens_used = ai_response.usage.get('completion_tokens', 0)
+            tokens_used = ai_response.usage.get("completion_tokens", 0)
             self._update_stats(response_time, tokens_used)
 
             # Add to conversation history
@@ -247,7 +240,7 @@ Be precise with measurements and technical details. Adapt your response style ba
             assistant_msg = AIMessage(
                 MessageRole.ASSISTANT,
                 ai_response.content,
-                thinking_process=ai_response.thinking_process
+                thinking_process=ai_response.thinking_process,
             )
 
             self.add_message_to_history(user_msg)
@@ -299,8 +292,10 @@ Be precise with measurements and technical details. Adapt your response style ba
                 "id": response_data.get("id"),
                 "created": response_data.get("created"),
                 "model": model_info,
-                "provider_name": response_data.get("provider", {}).get("name", "unknown")
-            }
+                "provider_name": response_data.get("provider", {}).get(
+                    "name", "unknown"
+                ),
+            },
         )
 
     async def test_connection(self) -> bool:
@@ -313,7 +308,7 @@ Be precise with measurements and technical details. Adapt your response style ba
             test_response = await self.send_message(
                 "Hello! Please respond with just 'Connection successful' to test the API.",
                 max_tokens=20,
-                temperature=0.1
+                temperature=0.1,
             )
 
             # Restore original model
@@ -328,8 +323,10 @@ Be precise with measurements and technical details. Adapt your response style ba
     def enable_thinking_mode(self, budget: int = 2000):
         """Enable thinking mode for supported models."""
         if not self.supports_thinking_mode:
-            raise ValueError(f"Model {self.model} does not support thinking mode. "
-                           f"Supported models: {self.THINKING_MODE_MODELS}")
+            raise ValueError(
+                f"Model {self.model} does not support thinking mode. "
+                f"Supported models: {self.THINKING_MODE_MODELS}"
+            )
 
         super().enable_thinking_mode(budget)
 
@@ -344,33 +341,33 @@ Be precise with measurements and technical details. Adapt your response style ba
             "anthropic/claude": {
                 "provider": "Anthropic",
                 "strengths": ["Complex reasoning", "Code generation", "Long context"],
-                "thinking_mode": "claude-4" in target_model
+                "thinking_mode": "claude-4" in target_model,
             },
             "openai/gpt": {
                 "provider": "OpenAI",
                 "strengths": ["General tasks", "Fast responses", "Wide knowledge"],
-                "thinking_mode": False
+                "thinking_mode": False,
             },
             "google/gemini": {
                 "provider": "Google",
                 "strengths": ["Multimodal", "Large context", "Technical tasks"],
-                "thinking_mode": False
+                "thinking_mode": False,
             },
             "meta/llama": {
                 "provider": "Meta",
                 "strengths": ["Open source", "Customizable", "Cost-effective"],
-                "thinking_mode": False
+                "thinking_mode": False,
             },
             "mistralai": {
                 "provider": "Mistral AI",
                 "strengths": ["European AI", "Efficient", "Multilingual"],
-                "thinking_mode": False
-            }
+                "thinking_mode": False,
+            },
         }
 
         # Find matching category
         for prefix, info in model_categories.items():
-            if target_model.startswith(prefix.split('/')[0]):
+            if target_model.startswith(prefix.split("/")[0]):
                 base_info.update(info)
                 break
 
@@ -395,11 +392,18 @@ Be precise with measurements and technical details. Adapt your response style ba
 
     def _get_cost_category(self, model: str) -> str:
         """Get cost category for a model."""
-        if any(expensive in model for expensive in ["claude-4-opus", "gpt-4", "gemini-2.5-pro"]):
+        if any(
+            expensive in model
+            for expensive in ["claude-4-opus", "gpt-4", "gemini-2.5-pro"]
+        ):
             return "Premium"
-        elif any(mid in model for mid in ["claude-4-sonnet", "claude-3.5", "llama-3.1-405b"]):
+        elif any(
+            mid in model for mid in ["claude-4-sonnet", "claude-3.5", "llama-3.1-405b"]
+        ):
             return "Standard"
-        elif any(cheap in model for cheap in ["gpt-3.5", "claude-3-haiku", "mistral-7b"]):
+        elif any(
+            cheap in model for cheap in ["gpt-3.5", "claude-3-haiku", "mistral-7b"]
+        ):
             return "Economy"
         else:
             return "Variable"
@@ -411,7 +415,7 @@ Be precise with measurements and technical details. Adapt your response style ba
                 async with session.get(
                     f"{self.API_BASE}/models",
                     headers=self.headers,
-                    timeout=aiohttp.ClientTimeout(total=10)
+                    timeout=aiohttp.ClientTimeout(total=10),
                 ) as response:
 
                     if response.status == 200:
@@ -440,7 +444,7 @@ Be precise with measurements and technical details. Adapt your response style ba
             "gpt-4": {"input": 10.0, "output": 30.0},
             "gpt-3.5": {"input": 0.5, "output": 1.5},
             "gemini-2.5-pro": {"input": 1.25, "output": 5.0},
-            "llama-3.1-405b": {"input": 3.0, "output": 3.0}
+            "llama-3.1-405b": {"input": 3.0, "output": 3.0},
         }
 
         # Find matching cost
@@ -462,5 +466,5 @@ Be precise with measurements and technical details. Adapt your response style ba
             "input_cost": round(input_cost, 6),
             "output_cost": round(output_cost, 6),
             "total_cost": round(total_cost, 6),
-            "currency": "USD"
+            "currency": "USD",
         }

@@ -23,12 +23,14 @@ logger = logging.getLogger(__name__)
 def load_config(config_path: str) -> Dict[str, Any]:
     """Load configuration from file with fallback to defaults."""
     try:
-        with open(config_path, 'r') as f:
+        with open(config_path, "r") as f:
             config = json.load(f)
         logger.info(f"Loaded configuration from {config_path}")
         return config
     except (FileNotFoundError, json.JSONDecodeError) as e:
-        logger.warning(f"Could not load config from {config_path}: {e}. Using defaults.")
+        logger.warning(
+            f"Could not load config from {config_path}: {e}. Using defaults."
+        )
         return get_default_config()
 
 
@@ -38,30 +40,24 @@ def get_default_config() -> Dict[str, Any]:
         "server": {
             "name": "mcp-freecad-server",
             "version": __version__,
-            "description": "MCP server for FreeCAD integration"
+            "description": "MCP server for FreeCAD integration",
         },
-        "auth": {
-            "api_key": "development",
-            "enabled": False
-        },
+        "auth": {"api_key": "development", "enabled": False},
         "freecad": {
             "auto_connect": True,
             "connection_method": "auto",
             "host": "localhost",
             "port": 12345,
-            "freecad_path": "freecad"
+            "freecad_path": "freecad",
         },
         "tools": {
             "enable_primitives": True,
             "enable_model_manipulation": True,
             "enable_export_import": True,
             "enable_measurement": True,
-            "enable_code_generator": True
+            "enable_code_generator": True,
         },
-        "logging": {
-            "level": "INFO",
-            "file": "logs/mcp_freecad.log"
-        }
+        "logging": {"level": "INFO", "file": "logs/mcp_freecad.log"},
     }
 
 
@@ -78,7 +74,9 @@ async def setup_server(config: Dict[str, Any]) -> MCPServer:
         logger.info("Registered primitives tool provider")
 
     if tools_config.get("enable_model_manipulation", True):
-        server.register_tool("model_manipulation", TOOL_PROVIDERS["model_manipulation"]())
+        server.register_tool(
+            "model_manipulation", TOOL_PROVIDERS["model_manipulation"]()
+        )
         logger.info("Registered model manipulation tool provider")
 
     # TODO: Register other tool providers as they become available
@@ -101,22 +99,16 @@ Examples:
   python -m mcp_freecad.main                    # Start with default config
   python -m mcp_freecad.main --config my.json   # Start with custom config
   python -m mcp_freecad.main --debug            # Start with debug logging
-        """
+        """,
     )
     parser.add_argument(
         "--config",
         default="config.json",
-        help="Configuration file path (default: config.json)"
+        help="Configuration file path (default: config.json)",
     )
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Enable debug logging"
-    )
-    parser.add_argument(
-        "--version",
-        action="version",
-        version=f"MCP-FreeCAD v{__version__}"
+        "--version", action="version", version=f"MCP-FreeCAD v{__version__}"
     )
 
     args = parser.parse_args()
@@ -128,8 +120,8 @@ Examples:
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
             logging.StreamHandler(sys.stdout),
-            logging.FileHandler("logs/mcp_freecad.log", mode='a')
-        ]
+            logging.FileHandler("logs/mcp_freecad.log", mode="a"),
+        ],
     )
 
     # Ensure logs directory exists

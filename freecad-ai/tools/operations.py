@@ -59,16 +59,21 @@ class OperationsTool:
         if not obj2:
             return False, None, None, f"Object '{obj2_name}' not found"
 
-        if not hasattr(obj1, 'Shape') or not obj1.Shape:
+        if not hasattr(obj1, "Shape") or not obj1.Shape:
             return False, None, None, f"Object '{obj1_name}' has no valid shape"
 
-        if not hasattr(obj2, 'Shape') or not obj2.Shape:
+        if not hasattr(obj2, "Shape") or not obj2.Shape:
             return False, None, None, f"Object '{obj2_name}' has no valid shape"
 
         return True, obj1, obj2, None
 
-    def boolean_union(self, obj1_name: str, obj2_name: str,
-                     result_name: str = None, keep_originals: bool = False) -> Dict[str, Any]:
+    def boolean_union(
+        self,
+        obj1_name: str,
+        obj2_name: str,
+        result_name: str = None,
+        keep_originals: bool = False,
+    ) -> Dict[str, Any]:
         """Perform a boolean union (fuse) operation on two objects.
 
         Args:
@@ -87,7 +92,7 @@ class OperationsTool:
                 return {
                     "success": False,
                     "error": error,
-                    "message": f"Boolean union failed: {error}"
+                    "message": f"Boolean union failed: {error}",
                 }
 
             doc = App.ActiveDocument
@@ -117,19 +122,24 @@ class OperationsTool:
                 "properties": {
                     "volume": round(union_shape.Volume, 2),
                     "area": round(union_shape.Area, 2),
-                    "originals_kept": keep_originals
-                }
+                    "originals_kept": keep_originals,
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to perform boolean union: {str(e)}"
+                "message": f"Failed to perform boolean union: {str(e)}",
             }
 
-    def boolean_cut(self, obj1_name: str, obj2_name: str,
-                   result_name: str = None, keep_originals: bool = False) -> Dict[str, Any]:
+    def boolean_cut(
+        self,
+        obj1_name: str,
+        obj2_name: str,
+        result_name: str = None,
+        keep_originals: bool = False,
+    ) -> Dict[str, Any]:
         """Perform a boolean cut (difference) operation - subtract obj2 from obj1.
 
         Args:
@@ -148,7 +158,7 @@ class OperationsTool:
                 return {
                     "success": False,
                     "error": error,
-                    "message": f"Boolean cut failed: {error}"
+                    "message": f"Boolean cut failed: {error}",
                 }
 
             doc = App.ActiveDocument
@@ -178,19 +188,24 @@ class OperationsTool:
                 "properties": {
                     "volume": round(cut_shape.Volume, 2),
                     "area": round(cut_shape.Area, 2),
-                    "originals_kept": keep_originals
-                }
+                    "originals_kept": keep_originals,
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to perform boolean cut: {str(e)}"
+                "message": f"Failed to perform boolean cut: {str(e)}",
             }
 
-    def boolean_intersection(self, obj1_name: str, obj2_name: str,
-                           result_name: str = None, keep_originals: bool = False) -> Dict[str, Any]:
+    def boolean_intersection(
+        self,
+        obj1_name: str,
+        obj2_name: str,
+        result_name: str = None,
+        keep_originals: bool = False,
+    ) -> Dict[str, Any]:
         """Perform a boolean intersection (common) operation on two objects.
 
         Args:
@@ -209,7 +224,7 @@ class OperationsTool:
                 return {
                     "success": False,
                     "error": error,
-                    "message": f"Boolean intersection failed: {error}"
+                    "message": f"Boolean intersection failed: {error}",
                 }
 
             doc = App.ActiveDocument
@@ -222,7 +237,7 @@ class OperationsTool:
                 return {
                     "success": False,
                     "error": "No intersection",
-                    "message": f"Objects {obj1_name} and {obj2_name} do not intersect"
+                    "message": f"Objects {obj1_name} and {obj2_name} do not intersect",
                 }
 
             # Create result object
@@ -247,19 +262,25 @@ class OperationsTool:
                 "properties": {
                     "volume": round(intersect_shape.Volume, 2),
                     "area": round(intersect_shape.Area, 2),
-                    "originals_kept": keep_originals
-                }
+                    "originals_kept": keep_originals,
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to perform boolean intersection: {str(e)}"
+                "message": f"Failed to perform boolean intersection: {str(e)}",
             }
 
-    def move_object(self, obj_name: str, x: float = 0, y: float = 0, z: float = 0,
-                   relative: bool = True) -> Dict[str, Any]:
+    def move_object(
+        self,
+        obj_name: str,
+        x: float = 0,
+        y: float = 0,
+        z: float = 0,
+        relative: bool = True,
+    ) -> Dict[str, Any]:
         """Move an object to a new position.
 
         Args:
@@ -278,7 +299,7 @@ class OperationsTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "No active document found"
+                    "message": "No active document found",
                 }
 
             obj = self._get_object(obj_name, doc)
@@ -286,7 +307,7 @@ class OperationsTool:
                 return {
                     "success": False,
                     "error": f"Object '{obj_name}' not found",
-                    "message": f"Object '{obj_name}' not found in document"
+                    "message": f"Object '{obj_name}' not found in document",
                 }
 
             # Get current position
@@ -295,9 +316,7 @@ class OperationsTool:
             if relative:
                 # Move relative to current position
                 new_pos = App.Vector(
-                    current_pos.x + x,
-                    current_pos.y + y,
-                    current_pos.z + z
+                    current_pos.x + x, current_pos.y + y, current_pos.z + z
                 )
                 operation = "moved"
             else:
@@ -319,19 +338,25 @@ class OperationsTool:
                 "properties": {
                     "old_position": (current_pos.x, current_pos.y, current_pos.z),
                     "new_position": (new_pos.x, new_pos.y, new_pos.z),
-                    "relative": relative
-                }
+                    "relative": relative,
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to move object: {str(e)}"
+                "message": f"Failed to move object: {str(e)}",
             }
 
-    def rotate_object(self, obj_name: str, angle_x: float = 0, angle_y: float = 0,
-                     angle_z: float = 0, center: tuple = None) -> Dict[str, Any]:
+    def rotate_object(
+        self,
+        obj_name: str,
+        angle_x: float = 0,
+        angle_y: float = 0,
+        angle_z: float = 0,
+        center: tuple = None,
+    ) -> Dict[str, Any]:
         """Rotate an object around its center or a specified point.
 
         Args:
@@ -350,7 +375,7 @@ class OperationsTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "No active document found"
+                    "message": "No active document found",
                 }
 
             obj = self._get_object(obj_name, doc)
@@ -358,18 +383,22 @@ class OperationsTool:
                 return {
                     "success": False,
                     "error": f"Object '{obj_name}' not found",
-                    "message": f"Object '{obj_name}' not found in document"
+                    "message": f"Object '{obj_name}' not found in document",
                 }
 
             # Create rotation
-            rot = App.Rotation(angle_z, angle_y, angle_x)  # Note: FreeCAD uses ZYX order
+            rot = App.Rotation(
+                angle_z, angle_y, angle_x
+            )  # Note: FreeCAD uses ZYX order
 
             if center:
                 # Rotate around specified center
                 center_vec = App.Vector(*center)
                 placement = App.Placement(center_vec, App.Rotation())
                 placement = placement.multiply(App.Placement(App.Vector(), rot))
-                placement = placement.multiply(App.Placement(-center_vec, App.Rotation()))
+                placement = placement.multiply(
+                    App.Placement(-center_vec, App.Rotation())
+                )
                 obj.Placement = obj.Placement.multiply(placement)
             else:
                 # Rotate around object's current position
@@ -387,19 +416,25 @@ class OperationsTool:
                 "message": f"Successfully rotated {obj_name} by ({angle_x}°, {angle_y}°, {angle_z}°)",
                 "properties": {
                     "rotation_angles": (angle_x, angle_y, angle_z),
-                    "rotation_center": center if center else "object center"
-                }
+                    "rotation_center": center if center else "object center",
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to rotate object: {str(e)}"
+                "message": f"Failed to rotate object: {str(e)}",
             }
 
-    def scale_object(self, obj_name: str, scale_x: float = 1.0, scale_y: float = None,
-                    scale_z: float = None, uniform: bool = True) -> Dict[str, Any]:
+    def scale_object(
+        self,
+        obj_name: str,
+        scale_x: float = 1.0,
+        scale_y: float = None,
+        scale_z: float = None,
+        uniform: bool = True,
+    ) -> Dict[str, Any]:
         """Scale an object by specified factors.
 
         Args:
@@ -418,7 +453,7 @@ class OperationsTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "No active document found"
+                    "message": "No active document found",
                 }
 
             obj = self._get_object(obj_name, doc)
@@ -426,14 +461,14 @@ class OperationsTool:
                 return {
                     "success": False,
                     "error": f"Object '{obj_name}' not found",
-                    "message": f"Object '{obj_name}' not found in document"
+                    "message": f"Object '{obj_name}' not found in document",
                 }
 
-            if not hasattr(obj, 'Shape') or not obj.Shape:
+            if not hasattr(obj, "Shape") or not obj.Shape:
                 return {
                     "success": False,
                     "error": "Object has no shape",
-                    "message": f"Object '{obj_name}' has no valid shape to scale"
+                    "message": f"Object '{obj_name}' has no valid shape to scale",
                 }
 
             # Determine scale factors
@@ -475,15 +510,15 @@ class OperationsTool:
                     "scale_factors": (sx, sy, sz),
                     "uniform_scale": uniform,
                     "new_volume": round(scaled_shape.Volume, 2),
-                    "new_area": round(scaled_shape.Area, 2)
-                }
+                    "new_area": round(scaled_shape.Area, 2),
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to scale object: {str(e)}"
+                "message": f"Failed to scale object: {str(e)}",
             }
 
     def get_available_operations(self) -> Dict[str, Any]:
@@ -496,27 +531,54 @@ class OperationsTool:
             "operations": {
                 "boolean_union": {
                     "description": "Fuse two objects together",
-                    "parameters": ["obj1_name", "obj2_name", "result_name", "keep_originals"]
+                    "parameters": [
+                        "obj1_name",
+                        "obj2_name",
+                        "result_name",
+                        "keep_originals",
+                    ],
                 },
                 "boolean_cut": {
                     "description": "Subtract one object from another",
-                    "parameters": ["obj1_name", "obj2_name", "result_name", "keep_originals"]
+                    "parameters": [
+                        "obj1_name",
+                        "obj2_name",
+                        "result_name",
+                        "keep_originals",
+                    ],
                 },
                 "boolean_intersection": {
                     "description": "Find common volume between two objects",
-                    "parameters": ["obj1_name", "obj2_name", "result_name", "keep_originals"]
+                    "parameters": [
+                        "obj1_name",
+                        "obj2_name",
+                        "result_name",
+                        "keep_originals",
+                    ],
                 },
                 "move_object": {
                     "description": "Move object to new position",
-                    "parameters": ["obj_name", "x", "y", "z", "relative"]
+                    "parameters": ["obj_name", "x", "y", "z", "relative"],
                 },
                 "rotate_object": {
                     "description": "Rotate object around axes",
-                    "parameters": ["obj_name", "angle_x", "angle_y", "angle_z", "center"]
+                    "parameters": [
+                        "obj_name",
+                        "angle_x",
+                        "angle_y",
+                        "angle_z",
+                        "center",
+                    ],
                 },
                 "scale_object": {
                     "description": "Scale object by factors",
-                    "parameters": ["obj_name", "scale_x", "scale_y", "scale_z", "uniform"]
-                }
+                    "parameters": [
+                        "obj_name",
+                        "scale_x",
+                        "scale_y",
+                        "scale_z",
+                        "uniform",
+                    ],
+                },
             }
         }

@@ -15,36 +15,34 @@ logger = logging.getLogger(__name__)
 CONFIG: Dict[str, Any] = {}
 CONFIG_PATH = "config.json"
 
+
 def load_config(config_path: str = None) -> Dict[str, Any]:
     """Load configuration from file with fallback defaults."""
     global CONFIG
-    
+
     if config_path is None:
         config_path = CONFIG_PATH
-    
+
     # Default configuration
     default_config = {
-        "server": {
-            "name": "advanced-freecad-mcp-server",
-            "version": "0.7.11"
-        },
+        "server": {"name": "advanced-freecad-mcp-server", "version": "0.7.11"},
         "freecad": {
             "host": "localhost",
             "port": 12345,
             "freecad_path": "freecad",
             "auto_connect": True,
-            "prefer_method": "bridge"
+            "prefer_method": "bridge",
         },
         "logging": {
             "level": "INFO",
             "port": 9020,
-            "file": "logs/freecad_mcp_server.log"
-        }
+            "file": "logs/freecad_mcp_server.log",
+        },
     }
-    
+
     try:
         if os.path.exists(config_path):
-            with open(config_path, 'r') as f:
+            with open(config_path, "r") as f:
                 file_config = json.load(f)
             # Merge file config with defaults
             CONFIG = _merge_configs(default_config, file_config)
@@ -55,8 +53,9 @@ def load_config(config_path: str = None) -> Dict[str, Any]:
     except Exception as e:
         logger.warning(f"Error loading config from {config_path}: {e}")
         CONFIG = default_config
-    
+
     return CONFIG
+
 
 def _merge_configs(default: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
     """Recursively merge configuration dictionaries."""
@@ -68,13 +67,16 @@ def _merge_configs(default: Dict[str, Any], override: Dict[str, Any]) -> Dict[st
             result[key] = value
     return result
 
+
 def get_config() -> Dict[str, Any]:
     """Get current configuration."""
     return CONFIG
 
+
 def get_server_name() -> str:
     """Get configured server name."""
     return CONFIG.get("server", {}).get("name", "advanced-freecad-mcp-server")
+
 
 def get_server_version() -> str:
     """Get configured server version."""

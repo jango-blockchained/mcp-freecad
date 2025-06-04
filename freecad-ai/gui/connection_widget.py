@@ -22,6 +22,7 @@ class ConnectionWidget(QtWidgets.QWidget):
         """Setup MCP bridge for connection management."""
         try:
             from ..utils.mcp_bridge import MCPBridge
+
             self.mcp_bridge = MCPBridge()
             self.connection_config = self.mcp_bridge.get_connection_config()
         except ImportError:
@@ -31,7 +32,8 @@ class ConnectionWidget(QtWidgets.QWidget):
     def _setup_ui(self):
         """Setup the user interface."""
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setSpacing(10); layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
+        layout.setContentsMargins(10, 10, 10, 10)
         self._create_status_section(layout)
         self._create_method_section(layout)
         self._create_controls_section(layout)
@@ -42,7 +44,9 @@ class ConnectionWidget(QtWidgets.QWidget):
     def _create_status_section(self, layout):
         """Create connection status section."""
         status_group = QtWidgets.QGroupBox("Connection Status")
-        status_group.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        status_group.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed
+        )
         status_layout = QtWidgets.QHBoxLayout(status_group)
 
         self.status_label = QtWidgets.QLabel("Disconnected")
@@ -57,11 +61,15 @@ class ConnectionWidget(QtWidgets.QWidget):
     def _create_method_section(self, layout):
         """Create connection method selection section."""
         method_group = QtWidgets.QGroupBox("Connection Method")
-        method_group.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        method_group.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed
+        )
         method_layout = QtWidgets.QVBoxLayout(method_group)
 
         self.method_combo = QtWidgets.QComboBox()
-        self.method_combo.addItems(["Auto", "Launcher", "Wrapper", "Server", "Bridge", "Mock"])
+        self.method_combo.addItems(
+            ["Auto", "Launcher", "Wrapper", "Server", "Bridge", "Mock"]
+        )
         method_layout.addWidget(self.method_combo)
 
         # Method description
@@ -80,14 +88,20 @@ class ConnectionWidget(QtWidgets.QWidget):
         controls_layout = QtWidgets.QHBoxLayout()
 
         self.connect_btn = QtWidgets.QPushButton("Connect")
-        self.connect_btn.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 8px; }")
+        self.connect_btn.setStyleSheet(
+            "QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 8px; }"
+        )
 
         self.disconnect_btn = QtWidgets.QPushButton("Disconnect")
-        self.disconnect_btn.setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; padding: 8px; }")
+        self.disconnect_btn.setStyleSheet(
+            "QPushButton { background-color: #f44336; color: white; font-weight: bold; padding: 8px; }"
+        )
         self.disconnect_btn.setEnabled(False)
 
         self.test_btn = QtWidgets.QPushButton("Test")
-        self.test_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; font-weight: bold; padding: 8px; }")
+        self.test_btn.setStyleSheet(
+            "QPushButton { background-color: #2196F3; color: white; font-weight: bold; padding: 8px; }"
+        )
 
         controls_layout.addWidget(self.connect_btn)
         controls_layout.addWidget(self.disconnect_btn)
@@ -102,15 +116,15 @@ class ConnectionWidget(QtWidgets.QWidget):
 
     def _auto_detect_connection(self):
         """Auto-detect available connection method."""
-        if self.connection_config.get('connection_method'):
-            method = self.connection_config['connection_method']
-            if method == 'launcher':
+        if self.connection_config.get("connection_method"):
+            method = self.connection_config["connection_method"]
+            if method == "launcher":
                 self.method_combo.setCurrentText("Launcher")
-            elif method == 'wrapper':
+            elif method == "wrapper":
                 self.method_combo.setCurrentText("Wrapper")
-            elif method == 'server':
+            elif method == "server":
                 self.method_combo.setCurrentText("Server")
-            elif method == 'bridge':
+            elif method == "bridge":
                 self.method_combo.setCurrentText("Bridge")
             else:
                 self.method_combo.setCurrentText("Auto")
@@ -123,7 +137,7 @@ class ConnectionWidget(QtWidgets.QWidget):
             "Wrapper": "Use subprocess wrapper",
             "Server": "Connect to running FreeCAD socket server",
             "Bridge": "Use FreeCAD CLI bridge",
-            "Mock": "Use mock connection for testing"
+            "Mock": "Use mock connection for testing",
         }
         self.method_desc.setText(descriptions.get(method, "Unknown method"))
 
@@ -173,7 +187,11 @@ class ConnectionWidget(QtWidgets.QWidget):
             if self.mcp_bridge:
                 # Test with actual MCP bridge
                 success = self._test_connection(method)
-                message = "Connection test successful" if success else "Connection test failed"
+                message = (
+                    "Connection test successful"
+                    if success
+                    else "Connection test failed"
+                )
             else:
                 # Fallback simulation
                 success = True
@@ -184,7 +202,9 @@ class ConnectionWidget(QtWidgets.QWidget):
             # Show result in status
             original_status = self.status_label.text()
             self.status_label.setText(message)
-            QtCore.QTimer.singleShot(3000, lambda: self.status_label.setText(original_status))
+            QtCore.QTimer.singleShot(
+                3000, lambda: self.status_label.setText(original_status)
+            )
 
         except Exception as e:
             self.connection_tested.emit(False, str(e))
@@ -192,7 +212,9 @@ class ConnectionWidget(QtWidgets.QWidget):
     def _update_connection_status(self, status, color):
         """Update connection status display."""
         self.status_label.setText(status)
-        self.status_label.setStyleSheet(f"color: {color}; font-weight: bold; padding: 5px;")
+        self.status_label.setStyleSheet(
+            f"color: {color}; font-weight: bold; padding: 5px;"
+        )
         self.status_indicator.setStyleSheet(f"color: {color}; font-size: 16px;")
         self.connection_status = status
 
@@ -200,20 +222,20 @@ class ConnectionWidget(QtWidgets.QWidget):
         """Attempt to establish connection using specified method."""
         # This would interface with the actual MCP connection system
         # For now, return success for launcher/wrapper methods
-        return method in ['auto', 'launcher', 'wrapper', 'mock']
+        return method in ["auto", "launcher", "wrapper", "mock"]
 
     def _test_connection(self, method):
         """Test connection with specified method."""
         # This would test the actual connection
         # For now, return success for most methods
-        return method != 'server'  # Server might not be running
+        return method != "server"  # Server might not be running
 
     def get_connection_status(self):
         """Get current connection status."""
         return {
-            'method': self.current_connection,
-            'status': self.connection_status,
-            'connected': self.disconnect_btn.isEnabled()
+            "method": self.current_connection,
+            "status": self.connection_status,
+            "connected": self.disconnect_btn.isEnabled(),
         }
 
     def set_provider_service(self, provider_service):

@@ -24,10 +24,7 @@ class MCPIntegratedProvider(BaseAIProvider):
             base_provider: The underlying AI provider (Claude, Gemini, etc.)
         """
         # Copy settings from base provider
-        super().__init__(
-            api_key=base_provider.api_key,
-            model=base_provider.model
-        )
+        super().__init__(api_key=base_provider.api_key, model=base_provider.model)
 
         self.base_provider = base_provider
         self.tools_registry = {}
@@ -72,69 +69,68 @@ class MCPIntegratedProvider(BaseAIProvider):
                     "tool": primitives,
                     "method": "create_box",
                     "description": "Create a box/cube primitive",
-                    "parameters": ["length", "width", "height", "name?"]
+                    "parameters": ["length", "width", "height", "name?"],
                 },
                 "create_cylinder": {
                     "tool": primitives,
                     "method": "create_cylinder",
                     "description": "Create a cylinder primitive",
-                    "parameters": ["radius", "height", "name?"]
+                    "parameters": ["radius", "height", "name?"],
                 },
                 "create_sphere": {
                     "tool": primitives,
                     "method": "create_sphere",
                     "description": "Create a sphere primitive",
-                    "parameters": ["radius", "name?"]
+                    "parameters": ["radius", "name?"],
                 },
                 "create_cone": {
                     "tool": primitives,
                     "method": "create_cone",
                     "description": "Create a cone primitive",
-                    "parameters": ["radius1", "radius2", "height", "name?"]
+                    "parameters": ["radius1", "radius2", "height", "name?"],
                 },
-
                 # Boolean operations
                 "boolean_union": {
                     "tool": operations,
                     "method": "boolean_union",
                     "description": "Perform boolean union of two objects",
-                    "parameters": ["obj1_name", "obj2_name", "keep_originals?"]
+                    "parameters": ["obj1_name", "obj2_name", "keep_originals?"],
                 },
                 "boolean_cut": {
                     "tool": operations,
                     "method": "boolean_cut",
                     "description": "Perform boolean cut (subtraction)",
-                    "parameters": ["obj1_name", "obj2_name", "keep_originals?"]
+                    "parameters": ["obj1_name", "obj2_name", "keep_originals?"],
                 },
-
                 # Measurements
                 "measure_distance": {
                     "tool": measurements,
                     "method": "measure_distance",
                     "description": "Measure distance between points/objects",
-                    "parameters": ["point1", "point2"]
+                    "parameters": ["point1", "point2"],
                 },
                 "measure_volume": {
                     "tool": measurements,
                     "method": "measure_volume",
                     "description": "Measure volume of an object",
-                    "parameters": ["obj_name"]
+                    "parameters": ["obj_name"],
                 },
-
                 # Export
                 "export_stl": {
                     "tool": export_import,
                     "method": "export_stl",
                     "description": "Export objects to STL file",
-                    "parameters": ["filepath", "object_names?", "ascii?"]
-                }
+                    "parameters": ["filepath", "object_names?", "ascii?"],
+                },
             }
 
             # Try to add advanced tools if available
             try:
                 from tools.advanced import (
-                    AssemblyToolProvider, CAMToolProvider,
-                    RenderingToolProvider, SmitheryToolProvider
+                    AssemblyToolProvider,
+                    CAMToolProvider,
+                    RenderingToolProvider,
+                    SmitheryToolProvider,
                 )
 
                 assembly = AssemblyToolProvider()
@@ -145,7 +141,7 @@ class MCPIntegratedProvider(BaseAIProvider):
                     "tool": assembly,
                     "method": "execute_tool",
                     "description": "Create a new assembly",
-                    "parameters": ["action='create_assembly'", "assembly_name"]
+                    "parameters": ["action='create_assembly'", "assembly_name"],
                 }
 
                 # Add CAM tools
@@ -153,7 +149,7 @@ class MCPIntegratedProvider(BaseAIProvider):
                     "tool": cam,
                     "method": "execute_tool",
                     "description": "Create a CAM job",
-                    "parameters": ["action='create_job'", "job_name", "base_object"]
+                    "parameters": ["action='create_job'", "job_name", "base_object"],
                 }
 
             except ImportError:
@@ -161,14 +157,17 @@ class MCPIntegratedProvider(BaseAIProvider):
 
         except Exception as e:
             import FreeCAD
+
             FreeCAD.Console.PrintWarning(f"Failed to initialize MCP tools: {e}\n")
 
     def _initialize_resources(self):
         """Initialize available MCP resources."""
         try:
             from resources import (
-                MaterialResourceProvider, ConstraintResourceProvider,
-                MeasurementResourceProvider, CADModelResourceProvider
+                MaterialResourceProvider,
+                ConstraintResourceProvider,
+                MeasurementResourceProvider,
+                CADModelResourceProvider,
             )
 
             # Initialize resource providers
@@ -176,19 +175,22 @@ class MCPIntegratedProvider(BaseAIProvider):
                 "materials": MaterialResourceProvider(),
                 "constraints": ConstraintResourceProvider(),
                 "measurements": MeasurementResourceProvider(),
-                "cad_model": CADModelResourceProvider()
+                "cad_model": CADModelResourceProvider(),
             }
 
         except Exception as e:
             import FreeCAD
+
             FreeCAD.Console.PrintWarning(f"Failed to initialize resources: {e}\n")
 
     def _update_system_prompt(self):
         """Update system prompt to include tool usage instructions."""
-        tools_list = "\n".join([
-            f"- {name}: {info['description']} (params: {', '.join(info['parameters'])})"
-            for name, info in self.tools_registry.items()
-        ])
+        tools_list = "\n".join(
+            [
+                f"- {name}: {info['description']} (params: {', '.join(info['parameters'])})"
+                for name, info in self.tools_registry.items()
+            ]
+        )
 
         enhanced_prompt = f"""{self.base_provider.system_prompt}
 
@@ -231,10 +233,7 @@ When users ask you to create objects, perform operations, or analyze models, use
                 thinking_process=ai_response.thinking_process,
                 model=ai_response.model,
                 usage=ai_response.usage,
-                metadata={
-                    **ai_response.metadata,
-                    "tools_executed": len(tool_calls)
-                }
+                metadata={**ai_response.metadata, "tools_executed": len(tool_calls)},
             )
 
         return ai_response
@@ -244,7 +243,7 @@ When users ask you to create objects, perform operations, or analyze models, use
         tool_calls = []
 
         # Find all tool_use blocks
-        pattern = r'<tool_use>\s*<tool_name>(.*?)</tool_name>\s*<parameters>(.*?)</parameters>\s*</tool_use>'
+        pattern = r"<tool_use>\s*<tool_name>(.*?)</tool_name>\s*<parameters>(.*?)</parameters>\s*</tool_use>"
         matches = re.findall(pattern, content, re.DOTALL)
 
         for tool_name, params_str in matches:
@@ -253,10 +252,7 @@ When users ask you to create objects, perform operations, or analyze models, use
                 parameters = json.loads(params_str.strip())
 
                 if tool_name in self.tools_registry:
-                    tool_calls.append({
-                        "name": tool_name,
-                        "parameters": parameters
-                    })
+                    tool_calls.append({"name": tool_name, "parameters": parameters})
             except json.JSONDecodeError:
                 pass  # Invalid JSON, skip this tool call
 
@@ -284,7 +280,7 @@ When users ask you to create objects, perform operations, or analyze models, use
 </tool_result>"""
 
             # Replace the tool_use block with tool_result
-            pattern = rf'<tool_use>\s*<tool_name>{re.escape(tool_name)}</tool_name>.*?</tool_use>'
+            pattern = rf"<tool_use>\s*<tool_name>{re.escape(tool_name)}</tool_name>.*?</tool_use>"
             enhanced_content = re.sub(
                 pattern, result_block, enhanced_content, count=1, flags=re.DOTALL
             )
@@ -337,7 +333,7 @@ When users ask you to create objects, perform operations, or analyze models, use
             {
                 "name": name,
                 "description": info["description"],
-                "parameters": info["parameters"]
+                "parameters": info["parameters"],
             }
             for name, info in self.tools_registry.items()
         ]

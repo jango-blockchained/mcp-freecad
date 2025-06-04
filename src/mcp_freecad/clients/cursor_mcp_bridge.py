@@ -16,16 +16,19 @@ import atexit
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    stream=sys.stderr  # Send all logging to stderr, not stdout
+    stream=sys.stderr,  # Send all logging to stderr, not stdout
 )
 logger = logging.getLogger("cursor_mcp_bridge")
 
 # Get the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-MCP_SERVER_SCRIPT = os.path.join(SCRIPT_DIR, "src", "mcp_freecad", "server", "freecad_mcp_server.py")
+MCP_SERVER_SCRIPT = os.path.join(
+    SCRIPT_DIR, "src", "mcp_freecad", "server", "freecad_mcp_server.py"
+)
 
 # Track processes for cleanup
 processes = []
+
 
 def cleanup():
     """Clean up processes on exit"""
@@ -41,8 +44,10 @@ def cleanup():
             except Exception as e:
                 logger.error(f"Error terminating process {proc.pid}: {e}")
 
+
 # Register cleanup function
 atexit.register(cleanup)
+
 
 def start_mcp_server():
     """Start the MCP server in stdio mode, properly connecting stdin/stdout"""
@@ -50,17 +55,20 @@ def start_mcp_server():
 
     # CORRECTION: We must connect our stdin/stdout to the MCP server process
     # for proper communication, but send stderr to a log file
-    with open(os.path.join(SCRIPT_DIR, "logs","mcp_server_stderr.log"), "w") as stderr_log:
+    with open(
+        os.path.join(SCRIPT_DIR, "logs", "mcp_server_stderr.log"), "w"
+    ) as stderr_log:
         proc = subprocess.Popen(
             [sys.executable, MCP_SERVER_SCRIPT],
-            stdin=sys.stdin,     # Connect our stdin to the MCP server
-            stdout=sys.stdout,   # Connect MCP server's output directly to our stdout
-            stderr=stderr_log,   # Redirect stderr to a log file
-            bufsize=0,           # Unbuffered communication
+            stdin=sys.stdin,  # Connect our stdin to the MCP server
+            stdout=sys.stdout,  # Connect MCP server's output directly to our stdout
+            stderr=stderr_log,  # Redirect stderr to a log file
+            bufsize=0,  # Unbuffered communication
         )
         processes.append(proc)
         logger.info(f"MCP server started with PID: {proc.pid}")
         return proc
+
 
 def main():
     """Start the servers and handle graceful shutdown"""
@@ -85,6 +93,7 @@ def main():
         cleanup()
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

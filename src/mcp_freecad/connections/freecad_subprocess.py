@@ -18,6 +18,7 @@ import traceback
 
 try:
     import FreeCAD
+
     print("Successfully imported FreeCAD")
     print(f"FreeCAD Version: {FreeCAD.Version}")
     print(f"FreeCAD Build Date: {FreeCAD.BuildDate}")
@@ -26,6 +27,7 @@ try:
     # Try to import FreeCADGui
     try:
         import FreeCADGui
+
         print("Successfully imported FreeCADGui")
         gui_available = True
     except ImportError as e:
@@ -102,7 +104,12 @@ try:
                 if result["success"]:
                     # Apply other properties
                     for prop, value in properties.items():
-                        if prop not in ["length", "width", "height", "radius"] and hasattr(obj, prop):
+                        if prop not in [
+                            "length",
+                            "width",
+                            "height",
+                            "radius",
+                        ] and hasattr(obj, prop):
                             setattr(obj, prop, value)
 
                     # Recompute the document
@@ -111,7 +118,7 @@ try:
                     result["object"] = {
                         "name": obj.Name,
                         "label": obj.Label,
-                        "type": obj.TypeId
+                        "type": obj.TypeId,
                     }
 
             # Send the result back
@@ -123,7 +130,7 @@ try:
             error_result = {
                 "success": False,
                 "error": str(e),
-                "traceback": traceback.format_exc()
+                "traceback": traceback.format_exc(),
             }
             sys.stdout.write(json.dumps(error_result) + "\n")
             sys.stdout.flush()
@@ -137,7 +144,7 @@ except ImportError as e:
     error_result = {
         "success": False,
         "error": f"Failed to import FreeCAD: {e}",
-        "traceback": traceback.format_exc()
+        "traceback": traceback.format_exc(),
     }
     sys.stdout.write(json.dumps(error_result) + "\n")
     sys.stdout.flush()

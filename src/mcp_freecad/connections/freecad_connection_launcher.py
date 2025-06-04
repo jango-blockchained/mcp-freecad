@@ -14,10 +14,17 @@ import subprocess
 import time
 from typing import Dict, Any, Optional
 
+
 class FreeCADLauncher:
     """Class to launch FreeCAD with scripts"""
 
-    def __init__(self, freecad_path="/usr/bin/freecad", script_path=None, debug=False, use_apprun=False):
+    def __init__(
+        self,
+        freecad_path="/usr/bin/freecad",
+        script_path=None,
+        debug=False,
+        use_apprun=False,
+    ):
         """Initialize the launcher"""
         self.freecad_path = freecad_path
         self.debug = debug
@@ -28,8 +35,7 @@ class FreeCADLauncher:
             self.script_path = script_path
         else:
             self.script_path = os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "freecad_launcher_script.py"
+                os.path.dirname(os.path.abspath(__file__)), "freecad_launcher_script.py"
             )
 
         # Check if the script exists
@@ -43,7 +49,9 @@ class FreeCADLauncher:
                 self.apprun_path = self.freecad_path
             else:
                 # Then check if AppRun is in the same directory
-                potential_apprun = os.path.join(os.path.dirname(self.freecad_path), "AppRun")
+                potential_apprun = os.path.join(
+                    os.path.dirname(self.freecad_path), "AppRun"
+                )
                 if os.path.exists(potential_apprun):
                     self.apprun_path = potential_apprun
                 else:
@@ -52,13 +60,17 @@ class FreeCADLauncher:
                     if os.path.exists(potential_apprun):
                         self.apprun_path = potential_apprun
                     else:
-                        raise FileNotFoundError(f"AppRun not found at or near {self.freecad_path}. Please specify the correct path.")
+                        raise FileNotFoundError(
+                            f"AppRun not found at or near {self.freecad_path}. Please specify the correct path."
+                        )
 
             self.log(f"Using AppRun at: {self.apprun_path}")
         else:
             # Check if freecad executable exists
             if not os.path.exists(self.freecad_path):
-                raise FileNotFoundError(f"FreeCAD executable not found at {self.freecad_path}")
+                raise FileNotFoundError(
+                    f"FreeCAD executable not found at {self.freecad_path}"
+                )
 
             self.log(f"Using FreeCAD executable at: {self.freecad_path}")
 
@@ -81,23 +93,23 @@ class FreeCADLauncher:
         if self.use_apprun:
             # ---- REVERT TO ORIGINAL COMMAND ----
             cmd = [
-                self.apprun_path,      # Use the resolved AppRun path
-                self.script_path,      # Script path as direct argument
-                "--",                  # Separate script arguments
-                command,              # Pass command name as arg to our script
-                params_json           # Pass params JSON as arg to our script
+                self.apprun_path,  # Use the resolved AppRun path
+                self.script_path,  # Script path as direct argument
+                "--",  # Separate script arguments
+                command,  # Pass command name as arg to our script
+                params_json,  # Pass params JSON as arg to our script
             ]
             # ---- END REVERTED COMMAND ----
         else:
             # Standard mode using FreeCAD executable
             # This mode likely needs refinement to work consistently
             cmd = [
-                self.freecad_path,     # e.g., /usr/bin/freecad
+                self.freecad_path,  # e.g., /usr/bin/freecad
                 "--console",
                 self.script_path,
-                "--",                 # Separator might be needed depending on FreeCAD version
+                "--",  # Separator might be needed depending on FreeCAD version
                 command,
-                params_json
+                params_json,
             ]
 
         self.log(f"Running command: {' '.join(map(str, cmd))}")
@@ -115,8 +127,8 @@ class FreeCADLauncher:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                encoding='utf-8',
-                errors='replace'  # Handle encoding errors gracefully
+                encoding="utf-8",
+                errors="replace",  # Handle encoding errors gracefully
                 # env=env # ---> REMOVE Modified Environment <---
             )
 
@@ -131,7 +143,7 @@ class FreeCADLauncher:
                 self.log(f"Command execution timed out after {timeout} seconds")
                 return {
                     "success": False,
-                    "error": f"Command execution timed out after {timeout} seconds"
+                    "error": f"Command execution timed out after {timeout} seconds",
                 }
 
             self.log(f"Command executed with return code: {process.returncode}")
@@ -146,24 +158,26 @@ class FreeCADLauncher:
                 return {
                     "success": False,
                     "error": f"FreeCAD execution failed with code {process.returncode}",
-                    "stderr": stderr
+                    "stderr": stderr,
                 }
 
             # Parse the output
             try:
                 # Look for JSON output in stdout
-                output_lines = stdout.strip().split('\n')
+                output_lines = stdout.strip().split("\n")
 
                 # Detailed logging for debugging
                 if self.debug:
                     self.log(f"Output lines: {len(output_lines)}")
                     for i, line in enumerate(output_lines):
-                        self.log(f"Line {i}: {line[:100]}{'...' if len(line) > 100 else ''}")
+                        self.log(
+                            f"Line {i}: {line[:100]}{'...' if len(line) > 100 else ''}"
+                        )
 
                 # Start from the end to find the last JSON
                 for line in reversed(output_lines):
                     line = line.strip()
-                    if line and line[0] == '{' and line[-1] == '}':
+                    if line and line[0] == "{" and line[-1] == "}":
                         try:
                             result = json.loads(line)
                             self.log(f"Found valid JSON result")
@@ -178,7 +192,7 @@ class FreeCADLauncher:
                     "success": False,
                     "error": "No valid JSON output found in FreeCAD response",
                     "stdout": stdout,
-                    "stderr": stderr
+                    "stderr": stderr,
                 }
 
             except json.JSONDecodeError as e:
@@ -187,14 +201,14 @@ class FreeCADLauncher:
                     "success": False,
                     "error": f"Error parsing output: {e}",
                     "stdout": stdout,
-                    "stderr": stderr
+                    "stderr": stderr,
                 }
 
         except Exception as e:
             self.log(f"Error executing command: {type(e).__name__}: {e}")
             return {
                 "success": False,
-                "error": f"Error executing command: {type(e).__name__}: {e}"
+                "error": f"Error executing command: {type(e).__name__}: {e}",
             }
 
     def get_version(self):
@@ -207,11 +221,7 @@ class FreeCADLauncher:
 
     def create_box(self, length=10.0, width=10.0, height=10.0, doc_name=None):
         """Create a box"""
-        params = {
-            "length": length,
-            "width": width,
-            "height": height
-        }
+        params = {"length": length, "width": width, "height": height}
 
         if doc_name:
             params["document"] = doc_name
@@ -220,10 +230,7 @@ class FreeCADLauncher:
 
     def export_stl(self, obj_name, file_path, doc_name=None):
         """Export an object to STL"""
-        params = {
-            "object": obj_name,
-            "path": file_path
-        }
+        params = {"object": obj_name, "path": file_path}
 
         if doc_name:
             params["document"] = doc_name
@@ -237,13 +244,15 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Test FreeCAD Launcher")
     parser.add_argument("--apprun", action="store_true", help="Use AppRun mode")
-    parser.add_argument("--path", default="/usr/bin/freecad", help="Path to FreeCAD or AppImage extraction directory")
+    parser.add_argument(
+        "--path",
+        default="/usr/bin/freecad",
+        help="Path to FreeCAD or AppImage extraction directory",
+    )
     args = parser.parse_args()
 
     launcher = FreeCADLauncher(
-        freecad_path=args.path,
-        debug=True,
-        use_apprun=args.apprun
+        freecad_path=args.path, debug=True, use_apprun=args.apprun
     )
 
     # Test get version
@@ -270,9 +279,7 @@ if __name__ == "__main__":
             # Test export STL
             print("\nTesting export_stl...")
             export_result = launcher.export_stl(
-                box_name,
-                os.path.join(os.getcwd(), "test_export.stl"),
-                doc_name
+                box_name, os.path.join(os.getcwd(), "test_export.stl"), doc_name
             )
             print(f"Export result: {export_result}")
     else:

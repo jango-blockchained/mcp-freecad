@@ -30,7 +30,9 @@ class ProviderIntegrationService(QtCore.QObject):
     # Signals for provider status changes
     provider_added = QtCore.Signal(str, str)  # provider_name, provider_type
     provider_removed = QtCore.Signal(str)  # provider_name
-    provider_status_changed = QtCore.Signal(str, str, str)  # provider_name, status, message
+    provider_status_changed = QtCore.Signal(
+        str, str, str
+    )  # provider_name, status, message
     providers_updated = QtCore.Signal()  # general providers list updated
 
     _instance = None
@@ -43,7 +45,7 @@ class ProviderIntegrationService(QtCore.QObject):
 
     def __init__(self):
         """Initialize the provider integration service."""
-        if hasattr(self, '_initialized'):
+        if hasattr(self, "_initialized"):
             return
 
         super(ProviderIntegrationService, self).__init__()
@@ -68,6 +70,7 @@ class ProviderIntegrationService(QtCore.QObject):
         try:
             # Import ConfigManager using absolute path after sys.path setup
             from config.config_manager import ConfigManager
+
             self.config_manager = ConfigManager()
             self.logger.info("ConfigManager integration established")
         except ImportError as e:
@@ -84,7 +87,7 @@ class ProviderIntegrationService(QtCore.QObject):
             "anthropic": "Anthropic",
             "openai": "OpenAI",
             "google": "Google",
-            "openrouter": "OpenRouter"
+            "openrouter": "OpenRouter",
         }
         normalized = self._normalize_provider_name(provider_name)
         return name_map.get(normalized, provider_name.title())
@@ -117,35 +120,46 @@ class ProviderIntegrationService(QtCore.QObject):
                 # Get provider config - create default if none exists
                 provider_config = self.config_manager.get_provider_config(display_name)
                 if not provider_config:
-                    provider_config = self.config_manager.get_provider_config(provider_key)
+                    provider_config = self.config_manager.get_provider_config(
+                        provider_key
+                    )
 
                 if not provider_config:
                     # Create default config if none exists
                     provider_config = {
-                        'enabled': True,  # Default to enabled if API key exists
-                        'model': self._get_default_model_for_provider(normalized_name),
-                        'temperature': 0.7,
-                        'timeout': 30,
-                        'max_tokens': 4000
+                        "enabled": True,  # Default to enabled if API key exists
+                        "model": self._get_default_model_for_provider(normalized_name),
+                        "temperature": 0.7,
+                        "timeout": 30,
+                        "max_tokens": 4000,
                     }
                     self.logger.info(f"Created default config for {display_name}")
 
                 # Always try to initialize if we have an API key, regardless of enabled status
-                self.logger.info(f"Attempting to initialize {display_name} with config: {provider_config}")
-                success = self._initialize_provider(display_name, api_key, provider_config)
+                self.logger.info(
+                    f"Attempting to initialize {display_name} with config: {provider_config}"
+                )
+                success = self._initialize_provider(
+                    display_name, api_key, provider_config
+                )
                 if success:
                     initialized_count += 1
-                    self.logger.info(f"Successfully initialized provider: {display_name}")
+                    self.logger.info(
+                        f"Successfully initialized provider: {display_name}"
+                    )
                 else:
                     self.logger.error(f"Failed to initialize provider: {display_name}")
 
-            self.logger.info(f"Initialized {initialized_count} providers from configuration")
+            self.logger.info(
+                f"Initialized {initialized_count} providers from configuration"
+            )
             self.providers_updated.emit()
             return initialized_count > 0
 
         except Exception as e:
             self.logger.error(f"Error initializing providers from config: {e}")
             import traceback
+
             self.logger.error(f"Traceback: {traceback.format_exc()}")
             return False
 
@@ -155,11 +169,13 @@ class ProviderIntegrationService(QtCore.QObject):
             "anthropic": "claude-4-20241120",
             "openai": "gpt-4o-mini",
             "google": "gemini-1.5-flash",
-            "openrouter": "anthropic/claude-3.5-sonnet"
+            "openrouter": "anthropic/claude-3.5-sonnet",
         }
         return model_map.get(provider_name, "default-model")
 
-    def _initialize_provider(self, provider_name: str, api_key: str, config: Dict[str, Any]) -> bool:
+    def _initialize_provider(
+        self, provider_name: str, api_key: str, config: Dict[str, Any]
+    ) -> bool:
         """Initialize a specific AI provider."""
         try:
             normalized_name = self._normalize_provider_name(provider_name)
@@ -169,7 +185,7 @@ class ProviderIntegrationService(QtCore.QObject):
                 "openai": "openrouter",  # Using OpenRouter for OpenAI compatibility
                 "anthropic": "claude",
                 "google": "gemini",
-                "openrouter": "openrouter"
+                "openrouter": "openrouter",
             }
 
             provider_type = provider_type_map.get(normalized_name, normalized_name)
@@ -181,7 +197,7 @@ class ProviderIntegrationService(QtCore.QObject):
                 name=ai_manager_name,
                 provider_type=provider_type,
                 api_key=api_key,
-                config=config
+                config=config,
             )
 
             if success:
@@ -191,30 +207,41 @@ class ProviderIntegrationService(QtCore.QObject):
                     "status": "initialized",
                     "message": "Provider initialized successfully",
                     "last_test": None,
-                    "config": config
+                    "config": config,
                 }
 
                 # Emit signals
                 self.provider_added.emit(provider_name, provider_type)
-                self.provider_status_changed.emit(provider_name, "initialized", "Provider ready")
+                self.provider_status_changed.emit(
+                    provider_name, "initialized", "Provider ready"
+                )
 
                 # Automatically test connection
-                QtCore.QTimer.singleShot(500, lambda: self.test_provider_connection(provider_name))
+                QtCore.QTimer.singleShot(
+                    500, lambda: self.test_provider_connection(provider_name)
+                )
 
                 return True
             else:
-                self.logger.error(f"Failed to add provider {provider_name} to AI manager")
-                self._update_provider_status(provider_name, "error", "Failed to initialize in AI manager")
+                self.logger.error(
+                    f"Failed to add provider {provider_name} to AI manager"
+                )
+                self._update_provider_status(
+                    provider_name, "error", "Failed to initialize in AI manager"
+                )
                 return False
 
         except Exception as e:
             self.logger.error(f"Error initializing provider {provider_name}: {e}")
             import traceback
+
             self.logger.error(f"Traceback: {traceback.format_exc()}")
             self._update_provider_status(provider_name, "error", str(e))
             return False
 
-    def add_provider(self, provider_name: str, api_key: str, config: Optional[Dict[str, Any]] = None) -> bool:
+    def add_provider(
+        self, provider_name: str, api_key: str, config: Optional[Dict[str, Any]] = None
+    ) -> bool:
         """Add a new AI provider with the given configuration."""
         if not self.config_manager:
             return False
@@ -232,7 +259,9 @@ class ProviderIntegrationService(QtCore.QObject):
                     return False
 
             # Initialize the provider
-            effective_config = config or self.config_manager.get_provider_config(provider_name)
+            effective_config = config or self.config_manager.get_provider_config(
+                provider_name
+            )
             return self._initialize_provider(provider_name, api_key, effective_config)
 
         except Exception as e:
@@ -265,14 +294,18 @@ class ProviderIntegrationService(QtCore.QObject):
     def test_provider_connection(self, provider_name: str) -> None:
         """Test connection to a specific provider (async)."""
         if provider_name not in self.provider_status:
-            self.provider_status_changed.emit(provider_name, "error", "Provider not found")
+            self.provider_status_changed.emit(
+                provider_name, "error", "Provider not found"
+            )
             return
 
         # Update status to testing
         self._update_provider_status(provider_name, "testing", "Testing connection...")
 
         # Perform async test
-        QtCore.QTimer.singleShot(100, lambda: self._perform_connection_test(provider_name))
+        QtCore.QTimer.singleShot(
+            100, lambda: self._perform_connection_test(provider_name)
+        )
 
     def _perform_connection_test(self, provider_name: str):
         """Perform the actual connection test."""
@@ -282,42 +315,58 @@ class ProviderIntegrationService(QtCore.QObject):
             provider = self.ai_manager.providers.get(ai_manager_name)
 
             if not provider:
-                self._update_provider_status(provider_name, "error", "Provider not initialized")
+                self._update_provider_status(
+                    provider_name, "error", "Provider not initialized"
+                )
                 return
 
             # Try to validate the provider
-            if hasattr(provider, 'validate_connection'):
+            if hasattr(provider, "validate_connection"):
                 # Use provider's validation method
                 result = provider.validate_connection()
                 if result:
-                    self._update_provider_status(provider_name, "connected", "Connection successful")
+                    self._update_provider_status(
+                        provider_name, "connected", "Connection successful"
+                    )
                 else:
-                    self._update_provider_status(provider_name, "error", "Connection validation failed")
+                    self._update_provider_status(
+                        provider_name, "error", "Connection validation failed"
+                    )
             else:
                 # Fallback: basic API key validation
-                if hasattr(provider, 'validate_api_key'):
+                if hasattr(provider, "validate_api_key"):
                     result = provider.validate_api_key()
                     if result:
-                        self._update_provider_status(provider_name, "connected", "API key format valid")
+                        self._update_provider_status(
+                            provider_name, "connected", "API key format valid"
+                        )
                     else:
-                        self._update_provider_status(provider_name, "error", "Invalid API key format")
+                        self._update_provider_status(
+                            provider_name, "error", "Invalid API key format"
+                        )
                 else:
                     # Last resort: assume connected if provider exists
-                    self._update_provider_status(provider_name, "connected", "Provider available")
+                    self._update_provider_status(
+                        provider_name, "connected", "Provider available"
+                    )
 
         except Exception as e:
-            self._update_provider_status(provider_name, "error", f"Test failed: {str(e)}")
+            self._update_provider_status(
+                provider_name, "error", f"Test failed: {str(e)}"
+            )
 
     def _update_provider_status(self, provider_name: str, status: str, message: str):
         """Update provider status and notify listeners."""
         if provider_name not in self.provider_status:
             self.provider_status[provider_name] = {}
 
-        self.provider_status[provider_name].update({
-            "status": status,
-            "message": message,
-            "last_test": QtCore.QDateTime.currentDateTime().toString()
-        })
+        self.provider_status[provider_name].update(
+            {
+                "status": status,
+                "message": message,
+                "last_test": QtCore.QDateTime.currentDateTime().toString(),
+            }
+        )
 
         # Emit signal
         self.provider_status_changed.emit(provider_name, status, message)
@@ -331,11 +380,10 @@ class ProviderIntegrationService(QtCore.QObject):
 
     def get_provider_status(self, provider_name: str) -> Dict[str, Any]:
         """Get current status of a provider."""
-        return self.provider_status.get(provider_name, {
-            "status": "unknown",
-            "message": "Provider not found",
-            "last_test": None
-        })
+        return self.provider_status.get(
+            provider_name,
+            {"status": "unknown", "message": "Provider not found", "last_test": None},
+        )
 
     def get_all_providers(self) -> Dict[str, Dict[str, Any]]:
         """Get status of all providers."""
@@ -344,7 +392,8 @@ class ProviderIntegrationService(QtCore.QObject):
     def get_active_providers(self) -> List[str]:
         """Get list of active (connected) providers."""
         return [
-            name for name, status in self.provider_status.items()
+            name
+            for name, status in self.provider_status.items()
             if status.get("status") in ["connected", "initialized"]
         ]
 
@@ -377,9 +426,13 @@ class ProviderIntegrationService(QtCore.QObject):
                 self.remove_provider(provider_name)
 
         except Exception as e:
-            self.logger.error(f"Error updating provider {provider_name} from settings: {e}")
+            self.logger.error(
+                f"Error updating provider {provider_name} from settings: {e}"
+            )
 
-    def send_message_to_provider(self, provider_name: str, message: str, context: Optional[Dict] = None) -> str:
+    def send_message_to_provider(
+        self, provider_name: str, message: str, context: Optional[Dict] = None
+    ) -> str:
         """Send a message to a specific provider."""
         try:
             normalized_name = self._normalize_provider_name(provider_name)
@@ -403,6 +456,7 @@ class ProviderIntegrationService(QtCore.QObject):
 
 # Global service instance
 _service_instance = None
+
 
 def get_provider_service() -> ProviderIntegrationService:
     """Get the global provider integration service instance."""

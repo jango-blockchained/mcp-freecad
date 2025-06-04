@@ -22,37 +22,38 @@ class IDEIntegrationToolProvider(ToolProvider):
                 "properties": {
                     "action": {
                         "type": "string",
-                        "enum": ["setup_pyzo", "setup_vscode", "setup_atom", "install_stubs", "configure_debugger"],
-                        "description": "The IDE integration action to perform"
+                        "enum": [
+                            "setup_pyzo",
+                            "setup_vscode",
+                            "setup_atom",
+                            "install_stubs",
+                            "configure_debugger",
+                        ],
+                        "description": "The IDE integration action to perform",
                     },
                     "ide_path": {
                         "type": "string",
-                        "description": "Path to the IDE executable (optional)"
+                        "description": "Path to the IDE executable (optional)",
                     },
                     "project_path": {
                         "type": "string",
-                        "description": "Path to the project directory"
-                    }
+                        "description": "Path to the project directory",
+                    },
                 },
-                "required": ["action"]
+                "required": ["action"],
             },
             returns={
                 "type": "object",
                 "properties": {
                     "status": {"type": "string"},
                     "result": {"type": "object"},
-                    "error": {"type": "string"}
-                }
+                    "error": {"type": "string"},
+                },
             },
             examples=[
-                {
-                    "action": "setup_pyzo",
-                    "project_path": "/path/to/freecad/project"
-                },
-                {
-                    "action": "install_stubs"
-                }
-            ]
+                {"action": "setup_pyzo", "project_path": "/path/to/freecad/project"},
+                {"action": "install_stubs"},
+            ],
         )
 
     async def execute_tool(self, tool_id: str, params: Dict[str, Any]) -> ToolResult:
@@ -88,14 +89,14 @@ class IDEIntegrationToolProvider(ToolProvider):
                     "name": "freecad",
                     "exe": self._get_freecad_python_path(),
                     "gui": "PySide2",
-                    "startup_script": self._create_freecad_startup_script(project_path)
+                    "startup_script": self._create_freecad_startup_script(project_path),
                 },
                 "setup_instructions": [
                     "1. Install Pyzo from https://pyzo.org",
                     "2. Add new shell configuration in Pyzo (Shell -> Edit shell configurations...)",
                     "3. Use the provided configuration",
-                    "4. Set LC_NUMERIC=en_US.UTF-8 in environment if on Linux"
-                ]
+                    "4. Set LC_NUMERIC=en_US.UTF-8 in environment if on Linux",
+                ],
             }
 
             return self.format_result("success", result=config)
@@ -112,11 +113,9 @@ class IDEIntegrationToolProvider(ToolProvider):
             vscode_config = {
                 "settings.json": {
                     "python.defaultInterpreterPath": self._get_freecad_python_path(),
-                    "python.analysis.extraPaths": [
-                        self._get_freecad_lib_path()
-                    ],
+                    "python.analysis.extraPaths": [self._get_freecad_lib_path()],
                     "python.linting.enabled": True,
-                    "python.linting.pylintEnabled": True
+                    "python.linting.pylintEnabled": True,
                 },
                 "launch.json": {
                     "version": "0.2.0",
@@ -127,17 +126,15 @@ class IDEIntegrationToolProvider(ToolProvider):
                             "request": "launch",
                             "program": "${workspaceFolder}/debug_freecad.py",
                             "console": "integratedTerminal",
-                            "env": {
-                                "PYTHONPATH": self._get_freecad_lib_path()
-                            }
+                            "env": {"PYTHONPATH": self._get_freecad_lib_path()},
                         }
-                    ]
+                    ],
                 },
                 "extensions": [
                     "ms-python.python",
                     "ms-python.pylint",
-                    "ms-python.debugpy"
-                ]
+                    "ms-python.debugpy",
+                ],
             }
 
             return self.format_result("success", result=vscode_config)
@@ -149,17 +146,24 @@ class IDEIntegrationToolProvider(ToolProvider):
         """Install FreeCAD Python stubs for better IDE support."""
         try:
             # Try to install freecad-stubs package
-            result = subprocess.run([
-                sys.executable, "-m", "pip", "install", "freecad-stubs"
-            ], capture_output=True, text=True)
+            result = subprocess.run(
+                [sys.executable, "-m", "pip", "install", "freecad-stubs"],
+                capture_output=True,
+                text=True,
+            )
 
             if result.returncode == 0:
-                return self.format_result("success", result={
-                    "message": "FreeCAD stubs installed successfully",
-                    "output": result.stdout
-                })
+                return self.format_result(
+                    "success",
+                    result={
+                        "message": "FreeCAD stubs installed successfully",
+                        "output": result.stdout,
+                    },
+                )
             else:
-                return self.format_result("error", error=f"Failed to install stubs: {result.stderr}")
+                return self.format_result(
+                    "error", error=f"Failed to install stubs: {result.stderr}"
+                )
 
         except Exception as e:
             return self.format_result("error", error=f"Failed to install stubs: {e}")
@@ -168,6 +172,7 @@ class IDEIntegrationToolProvider(ToolProvider):
         """Get the path to FreeCAD's Python executable."""
         try:
             import FreeCAD
+
             return sys.executable
         except ImportError:
             # Fallback paths

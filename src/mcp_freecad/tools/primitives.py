@@ -40,39 +40,42 @@ class PrimitiveToolProvider(ToolProvider):
                 "properties": {
                     "tool_id": {
                         "type": "string",
-                        "enum": ["create_box", "create_cylinder", "create_sphere", "create_cone"],
-                        "description": "The primitive tool to execute"
+                        "enum": [
+                            "create_box",
+                            "create_cylinder",
+                            "create_sphere",
+                            "create_cone",
+                        ],
+                        "description": "The primitive tool to execute",
                     },
                     "params": {
                         "type": "object",
-                        "description": "Parameters for the primitive creation"
-                    }
+                        "description": "Parameters for the primitive creation",
+                    },
                 },
-                "required": ["tool_id"]
+                "required": ["tool_id"],
             },
             returns={
                 "type": "object",
                 "properties": {
                     "status": {"type": "string"},
                     "result": {"type": "object"},
-                    "error": {"type": "string"}
-                }
+                    "error": {"type": "string"},
+                },
             },
             examples=[
                 {
                     "tool_id": "create_box",
-                    "params": {"length": 10.0, "width": 5.0, "height": 3.0}
+                    "params": {"length": 10.0, "width": 5.0, "height": 3.0},
                 },
                 {
                     "tool_id": "create_cylinder",
-                    "params": {"radius": 5.0, "height": 10.0}
-                }
-            ]
+                    "params": {"radius": 5.0, "height": 10.0},
+                },
+            ],
         )
 
-    async def execute_tool(
-        self, tool_id: str, params: Dict[str, Any]
-    ) -> ToolResult:
+    async def execute_tool(self, tool_id: str, params: Dict[str, Any]) -> ToolResult:
         """
         Execute a primitive creation tool.
 
@@ -84,10 +87,7 @@ class PrimitiveToolProvider(ToolProvider):
             ToolResult containing the execution status and result
         """
         if self.app is None:
-            return self.format_result(
-                status="error",
-                error="FreeCAD not available"
-            )
+            return self.format_result(status="error", error="FreeCAD not available")
 
         try:
             if tool_id == "create_box":
@@ -100,21 +100,14 @@ class PrimitiveToolProvider(ToolProvider):
                 result = await self._create_cone(params)
             else:
                 return self.format_result(
-                    status="error",
-                    error=f"Unknown tool: {tool_id}"
+                    status="error", error=f"Unknown tool: {tool_id}"
                 )
 
-            return self.format_result(
-                status="success",
-                result=result
-            )
+            return self.format_result(status="success", result=result)
 
         except Exception as e:
             logger.error(f"Error executing primitive tool {tool_id}: {e}")
-            return self.format_result(
-                status="error",
-                error=str(e)
-            )
+            return self.format_result(status="error", error=str(e))
 
     async def _create_box(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Create a box primitive."""

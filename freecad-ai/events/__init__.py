@@ -14,15 +14,18 @@ try:
     EVENTS_AVAILABLE = True
 
     __all__ = [
-        'EventHandler',
-        'DocumentEventHandler',
-        'CommandEventHandler',
-        'ErrorEventHandler',
-        'EVENTS_AVAILABLE'
+        "EventHandler",
+        "DocumentEventHandler",
+        "CommandEventHandler",
+        "ErrorEventHandler",
+        "EVENTS_AVAILABLE",
     ]
 
 except ImportError as e:
     import FreeCAD
-    FreeCAD.Console.PrintWarning(f"FreeCAD AI: Failed to import some event handlers: {e}\n")
+
+    FreeCAD.Console.PrintWarning(
+        f"FreeCAD AI: Failed to import some event handlers: {e}\n"
+    )
     EVENTS_AVAILABLE = False
-    __all__ = ['EVENTS_AVAILABLE']
+    __all__ = ["EVENTS_AVAILABLE"]

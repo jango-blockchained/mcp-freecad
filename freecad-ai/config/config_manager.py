@@ -16,6 +16,7 @@ try:
     from cryptography.fernet import Fernet
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
     CRYPTOGRAPHY_AVAILABLE = True
 except ImportError:
     CRYPTOGRAPHY_AVAILABLE = False
@@ -38,6 +39,7 @@ class ConfigManager:
             # Use FreeCAD user data directory
             try:
                 import FreeCAD
+
                 user_dir = FreeCAD.getUserAppDataDir()
                 self.config_dir = Path(user_dir) / "Mod" / "freecad-addon"
             except ImportError:
@@ -57,7 +59,9 @@ class ConfigManager:
         else:
             self.keys_file = self.config_dir / "api_keys.json"
             self.salt_file = None
-            self.logger.warning("Cryptography not available - API keys will be stored in plain text")
+            self.logger.warning(
+                "Cryptography not available - API keys will be stored in plain text"
+            )
 
         # Initialize encryption if available
         self.cipher = None
@@ -77,11 +81,11 @@ class ConfigManager:
         try:
             # Generate or load salt
             if self.salt_file.exists():
-                with open(self.salt_file, 'rb') as f:
+                with open(self.salt_file, "rb") as f:
                     salt = f.read()
             else:
                 salt = os.urandom(16)
-                with open(self.salt_file, 'wb') as f:
+                with open(self.salt_file, "wb") as f:
                     f.write(salt)
                 # Set restrictive permissions
                 os.chmod(self.salt_file, 0o600)
@@ -105,16 +109,17 @@ class ConfigManager:
         """Get a machine-specific identifier."""
         try:
             # Try to get machine ID from various sources
-            if os.path.exists('/etc/machine-id'):
-                with open('/etc/machine-id', 'r') as f:
+            if os.path.exists("/etc/machine-id"):
+                with open("/etc/machine-id", "r") as f:
                     return f.read().strip()
-            elif os.path.exists('/var/lib/dbus/machine-id'):
-                with open('/var/lib/dbus/machine-id', 'r') as f:
+            elif os.path.exists("/var/lib/dbus/machine-id"):
+                with open("/var/lib/dbus/machine-id", "r") as f:
                     return f.read().strip()
             else:
                 # Fallback to hostname + user
                 import socket
                 import getpass
+
                 return f"{socket.gethostname()}-{getpass.getuser()}"
         except:
             return "default-machine-id"
@@ -123,7 +128,7 @@ class ConfigManager:
         """Load configuration from file."""
         if self.config_file.exists():
             try:
-                with open(self.config_file, 'r') as f:
+                with open(self.config_file, "r") as f:
                     config = json.load(f)
                 self.logger.info(f"Configuration loaded from {self.config_file}")
                 return config
@@ -137,7 +142,7 @@ class ConfigManager:
     def save_config(self) -> bool:
         """Save configuration to file."""
         try:
-            with open(self.config_file, 'w') as f:
+            with open(self.config_file, "w") as f:
                 json.dump(self.config, f, indent=2)
             # Set restrictive permissions
             os.chmod(self.config_file, 0o600)
@@ -157,57 +162,57 @@ class ConfigManager:
                     "model": "gpt-4",
                     "temperature": 0.7,
                     "timeout": 30,
-                    "max_tokens": 4000
+                    "max_tokens": 4000,
                 },
                 "anthropic": {
                     "enabled": False,
                     "model": "claude-3-sonnet-20240229",
                     "temperature": 0.7,
                     "timeout": 30,
-                    "max_tokens": 4000
+                    "max_tokens": 4000,
                 },
                 "google": {
                     "enabled": False,
                     "model": "gemini-pro",
                     "temperature": 0.7,
                     "timeout": 30,
-                    "max_tokens": 4000
-                }
+                    "max_tokens": 4000,
+                },
             },
             "ui_settings": {
                 "theme": "default",
                 "auto_save": True,
                 "log_level": "INFO",
                 "show_tooltips": True,
-                "confirm_operations": True
+                "confirm_operations": True,
             },
             "tool_defaults": {
                 "advanced_primitives": {
                     "default_radius": 5.0,
                     "default_height": 10.0,
-                    "default_position": [0, 0, 0]
+                    "default_position": [0, 0, 0],
                 },
                 "advanced_operations": {
                     "default_distance": 10.0,
-                    "default_angle": 360.0
+                    "default_angle": 360.0,
                 },
                 "surface_modification": {
                     "default_fillet_radius": 1.0,
                     "default_chamfer_distance": 1.0,
-                    "default_draft_angle": 5.0
-                }
+                    "default_draft_angle": 5.0,
+                },
             },
             "connection": {
                 "default_method": "auto",
                 "retry_attempts": 3,
-                "retry_delay": 1.0
-            }
+                "retry_delay": 1.0,
+            },
         }
 
     def get_config(self, key: str, default: Any = None) -> Any:
         """Get specific configuration value."""
         try:
-            keys = key.split('.')
+            keys = key.split(".")
             value = self.config
             for k in keys:
                 value = value[k]
@@ -218,7 +223,7 @@ class ConfigManager:
     def set_config(self, key: str, value: Any) -> bool:
         """Set specific configuration value."""
         try:
-            keys = key.split('.')
+            keys = key.split(".")
             config = self.config
             for k in keys[:-1]:
                 if k not in config:
@@ -251,8 +256,10 @@ class ConfigManager:
                 api_keys[provider] = base64.urlsafe_b64encode(encrypted_key).decode()
             else:
                 # Store in plain text with warning
-                if not hasattr(self, '_warned_plain_text'):
-                    self.logger.warning("Storing API key in plain text - install 'cryptography' package for secure storage")
+                if not hasattr(self, "_warned_plain_text"):
+                    self.logger.warning(
+                        "Storing API key in plain text - install 'cryptography' package for secure storage"
+                    )
                     self._warned_plain_text = True
                 api_keys[provider] = key
 
@@ -280,7 +287,9 @@ class ConfigManager:
                     return decrypted_key.decode()
                 except Exception:
                     # If decryption fails, it might be a plain text key from before encryption was available
-                    self.logger.warning(f"Failed to decrypt API key for {provider}, treating as plain text")
+                    self.logger.warning(
+                        f"Failed to decrypt API key for {provider}, treating as plain text"
+                    )
                     return stored_key
             else:
                 # Plain text storage
@@ -318,7 +327,7 @@ class ConfigManager:
             return {}
 
         try:
-            with open(self.keys_file, 'r') as f:
+            with open(self.keys_file, "r") as f:
                 return json.load(f)
         except Exception as e:
             self.logger.error(f"Error loading API keys: {e}")
@@ -327,7 +336,7 @@ class ConfigManager:
     def _save_api_keys(self, api_keys: Dict[str, str]) -> bool:
         """Save encrypted API keys to file."""
         try:
-            with open(self.keys_file, 'w') as f:
+            with open(self.keys_file, "w") as f:
                 json.dump(api_keys, f, indent=2)
             # Set restrictive permissions
             os.chmod(self.keys_file, 0o600)
@@ -374,7 +383,7 @@ class ConfigManager:
                 api_keys = self._load_api_keys()
                 export_data["api_keys"] = api_keys
 
-            with open(file_path, 'w') as f:
+            with open(file_path, "w") as f:
                 json.dump(export_data, f, indent=2)
             return True
         except Exception as e:
@@ -384,7 +393,7 @@ class ConfigManager:
     def import_config(self, file_path: str) -> bool:
         """Import configuration from file."""
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 imported_config = json.load(f)
 
             # Extract API keys if present

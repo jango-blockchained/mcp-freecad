@@ -19,6 +19,7 @@ try:
     from advanced_primitives import AdvancedPrimitivesTool
     import FreeCAD as App
     import Part
+
     FREECAD_AVAILABLE = True
 except ImportError:
     FREECAD_AVAILABLE = False
@@ -47,7 +48,9 @@ class TestSurfaceModificationTool(unittest.TestCase):
     def test_tool_initialization(self):
         """Test tool initialization."""
         self.assertEqual(self.tool.name, "surface_modification")
-        self.assertEqual(self.tool.description, "Modify surfaces and edges for manufacturing")
+        self.assertEqual(
+            self.tool.description, "Modify surfaces and edges for manufacturing"
+        )
 
     def test_get_available_modifications(self):
         """Test getting available modifications list."""
@@ -97,7 +100,7 @@ class TestSurfaceModificationTool(unittest.TestCase):
             object_name=box_name,
             edge_indices=[0],  # First edge
             radius=2.0,
-            name="TestFillet"
+            name="TestFillet",
         )
 
         self.assertTrue(result["success"])
@@ -118,7 +121,7 @@ class TestSurfaceModificationTool(unittest.TestCase):
         result = self.tool.fillet_edges(
             object_name=box_name,
             edge_indices=[0, 1, 2, 3],  # Multiple edges
-            radius=1.5
+            radius=1.5,
         )
 
         self.assertTrue(result["success"])
@@ -160,7 +163,7 @@ class TestSurfaceModificationTool(unittest.TestCase):
             object_name=box_name,
             edge_indices=[0],  # First edge
             distance=1.5,
-            name="TestChamfer"
+            name="TestChamfer",
         )
 
         self.assertTrue(result["success"])
@@ -176,7 +179,7 @@ class TestSurfaceModificationTool(unittest.TestCase):
         result = self.tool.chamfer_edges(
             object_name=cylinder_name,
             edge_indices=[0, 2],  # Top and bottom circular edges
-            distance=1.0
+            distance=1.0,
         )
 
         self.assertTrue(result["success"])
@@ -208,7 +211,7 @@ class TestSurfaceModificationTool(unittest.TestCase):
             face_indices=[0, 1],  # Two faces
             angle=5.0,
             direction=(0, 0, 1),
-            name="TestDraft"
+            name="TestDraft",
         )
 
         # Note: Draft is simplified implementation, should succeed
@@ -244,9 +247,7 @@ class TestSurfaceModificationTool(unittest.TestCase):
         box_name = self._create_test_box("ThicknessBox1", 10, 8, 6)
 
         result = self.tool.create_thickness(
-            object_name=box_name,
-            thickness=2.0,
-            name="TestThickness"
+            object_name=box_name, thickness=2.0, name="TestThickness"
         )
 
         self.assertTrue(result["success"])
@@ -264,7 +265,7 @@ class TestSurfaceModificationTool(unittest.TestCase):
             object_name=box_name,
             thickness=1.5,
             face_indices=[5],  # Remove top face
-            name="TestShell"
+            name="TestShell",
         )
 
         self.assertTrue(result["success"])
@@ -293,9 +294,7 @@ class TestSurfaceModificationTool(unittest.TestCase):
         cylinder_name = self._create_test_cylinder("OffsetCylinder1", 5, 10)
 
         result = self.tool.offset_surface(
-            object_name=cylinder_name,
-            distance=2.0,
-            name="TestOffsetOut"
+            object_name=cylinder_name, distance=2.0, name="TestOffsetOut"
         )
 
         self.assertTrue(result["success"])
@@ -310,9 +309,7 @@ class TestSurfaceModificationTool(unittest.TestCase):
         box_name = self._create_test_box("OffsetBox", 15, 12, 10)
 
         result = self.tool.offset_surface(
-            object_name=box_name,
-            distance=-1.5,
-            name="TestOffsetIn"
+            object_name=box_name, distance=-1.5, name="TestOffsetIn"
         )
 
         self.assertTrue(result["success"])

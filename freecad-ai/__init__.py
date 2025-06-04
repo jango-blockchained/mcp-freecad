@@ -23,7 +23,9 @@ __license__ = "MIT"
 
 # FreeCAD addon metadata
 ADDON_NAME = "FreeCAD AI"
-ADDON_DESCRIPTION = "AI-powered CAD assistance integrated directly into FreeCAD with MCP support"
+ADDON_DESCRIPTION = (
+    "AI-powered CAD assistance integrated directly into FreeCAD with MCP support"
+)
 ADDON_AUTHOR = "jango-blockchained"
 ADDON_VERSION = __version__
 ADDON_LICENSE = __license__
@@ -38,10 +40,16 @@ try:
         # Import will be handled by InitGui.py
         pass
     else:
-        FreeCAD.Console.PrintMessage("MCP FreeCAD Addon: GUI not available, console mode only\n")
+        FreeCAD.Console.PrintMessage(
+            "MCP FreeCAD Addon: GUI not available, console mode only\n"
+        )
 
 except ImportError as e:
-    print(f"MCP FreeCAD Addon: Failed to import FreeCAD modules: {e}")# Addon information for FreeCAD
+    print(
+        f"MCP FreeCAD Addon: Failed to import FreeCAD modules: {e}"
+    )  # Addon information for FreeCAD
+
+
 def getInfo():
     """Return addon information for FreeCAD addon manager."""
     return {
@@ -54,5 +62,5 @@ def getInfo():
         "categories": ["AI", "Automation", "External"],
         "freecad_version": "0.20.0",
         "python_version": "3.8",
-        "icon": "resources/icons/mcp_workbench.svg"
+        "icon": "resources/icons/mcp_workbench.svg",
     }

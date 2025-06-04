@@ -30,6 +30,7 @@ except ImportError:
 # Define Gemini API constants
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent"
 
+
 class FreeCADClient:
     """Client for communicating with FreeCAD"""
 
@@ -334,6 +335,7 @@ class FreeCADClient:
             self._connection.close()
             self._connection = None
 
+
 def call_gemini_api(api_key: str, prompt: str) -> Dict[str, Any]:
     """
     Call the Google Gemini API with the given prompt.
@@ -350,26 +352,12 @@ def call_gemini_api(api_key: str, prompt: str) -> Dict[str, Any]:
     }
 
     data = {
-        "contents": [
-            {
-                "parts": [
-                    {
-                        "text": prompt
-                    }
-                ]
-            }
-        ],
-        "generationConfig": {
-            "temperature": 0.2,
-            "topP": 0.8,
-            "topK": 40
-        }
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.2, "topP": 0.8, "topK": 40},
     }
 
     response = requests.post(
-        f"{GEMINI_API_URL}?key={api_key}",
-        headers=headers,
-        json=data
+        f"{GEMINI_API_URL}?key={api_key}", headers=headers, json=data
     )
 
     if response.status_code != 200:
@@ -378,6 +366,7 @@ def call_gemini_api(api_key: str, prompt: str) -> Dict[str, Any]:
         return {"error": f"API error: {response.status_code}"}
 
     return response.json()
+
 
 def extract_freecad_commands(gemini_response: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -401,7 +390,9 @@ def extract_freecad_commands(gemini_response: Dict[str, Any]) -> Dict[str, Any]:
             # Extract code between triple backticks
             code_blocks = text.split("```")
             # Code blocks are at odd indices (1, 3, 5, etc.)
-            commands_text = "\n".join([code_blocks[i] for i in range(1, len(code_blocks), 2)])
+            commands_text = "\n".join(
+                [code_blocks[i] for i in range(1, len(code_blocks), 2)]
+            )
         else:
             # If no code blocks, use the whole text
             commands_text = text
@@ -417,14 +408,19 @@ def extract_freecad_commands(gemini_response: Dict[str, Any]) -> Dict[str, Any]:
                 continue
 
             # Try to determine the command type
-            if any(keyword in line.lower() for keyword in ["create_document", "new document"]):
+            if any(
+                keyword in line.lower()
+                for keyword in ["create_document", "new document"]
+            ):
                 command_parts["type"] = "create-document"
                 # Try to extract document name
                 if "name" not in command_parts and ":" in line:
-                    name = line.split(":", 1)[1].strip().strip('"\'')
+                    name = line.split(":", 1)[1].strip().strip("\"'")
                     command_parts["name"] = name
 
-            elif any(keyword in line.lower() for keyword in ["create_box", "box", "cube"]):
+            elif any(
+                keyword in line.lower() for keyword in ["create_box", "box", "cube"]
+            ):
                 command_parts["type"] = "create-box"
                 # Look for dimensions
                 if "length" in line.lower():
@@ -443,7 +439,9 @@ def extract_freecad_commands(gemini_response: Dict[str, Any]) -> Dict[str, Any]:
                     except:
                         pass
 
-            elif any(keyword in line.lower() for keyword in ["create_cylinder", "cylinder"]):
+            elif any(
+                keyword in line.lower() for keyword in ["create_cylinder", "cylinder"]
+            ):
                 command_parts["type"] = "create-cylinder"
                 if "radius" in line.lower():
                     try:
@@ -456,7 +454,9 @@ def extract_freecad_commands(gemini_response: Dict[str, Any]) -> Dict[str, Any]:
                     except:
                         pass
 
-            elif any(keyword in line.lower() for keyword in ["create_sphere", "sphere"]):
+            elif any(
+                keyword in line.lower() for keyword in ["create_sphere", "sphere"]
+            ):
                 command_parts["type"] = "create-sphere"
                 if "radius" in line.lower():
                     try:
@@ -468,13 +468,13 @@ def extract_freecad_commands(gemini_response: Dict[str, Any]) -> Dict[str, Any]:
                 command_parts["type"] = "export-document"
                 if "path" in line.lower() or "file" in line.lower():
                     try:
-                        path = line.split("=")[1].strip().strip('"\'')
+                        path = line.split("=")[1].strip().strip("\"'")
                         command_parts["path"] = path
                     except:
                         pass
                 if "format" in line.lower():
                     try:
-                        format_type = line.split("=")[1].strip().strip('"\'')
+                        format_type = line.split("=")[1].strip().strip("\"'")
                         command_parts["format"] = format_type
                     except:
                         pass
@@ -482,7 +482,7 @@ def extract_freecad_commands(gemini_response: Dict[str, Any]) -> Dict[str, Any]:
             # Look for document reference in any command
             if "document" in line.lower() and "document" not in command_parts:
                 try:
-                    doc = line.split("=")[1].strip().strip('"\'')
+                    doc = line.split("=")[1].strip().strip("\"'")
                     command_parts["document"] = doc
                 except:
                     pass
@@ -490,13 +490,14 @@ def extract_freecad_commands(gemini_response: Dict[str, Any]) -> Dict[str, Any]:
         if not command_parts.get("type"):
             return {
                 "error": "Could not determine a clear FreeCAD command from the response",
-                "original_response": text
+                "original_response": text,
             }
 
         return command_parts
 
     except Exception as e:
         return {"error": f"Error parsing Gemini response: {str(e)}"}
+
 
 def interactive_prompt_mode(client, api_key):
     """
@@ -529,7 +530,9 @@ def interactive_prompt_mode(client, api_key):
 
             # Call Gemini API
             print("Thinking...")
-            gemini_response = call_gemini_api(api_key, f"""
+            gemini_response = call_gemini_api(
+                api_key,
+                f"""
             You are a FreeCAD command translator. Convert the following natural language request into
             a specific FreeCAD command. Only output the command name and parameters, nothing else.
             Available commands are:
@@ -540,7 +543,8 @@ def interactive_prompt_mode(client, api_key):
             - export-document --path PATH --format FORMAT --document DOC
 
             USER REQUEST: {user_input}
-            """)
+            """,
+            )
 
             if "error" in gemini_response:
                 print(f"Error: {gemini_response['error']}")
@@ -571,10 +575,7 @@ def interactive_prompt_mode(client, api_key):
                 document = command.get("document")
                 print(f"Creating box: {length}x{width}x{height}")
                 result = client.create_box(
-                    length=length,
-                    width=width,
-                    height=height,
-                    document=document
+                    length=length, width=width, height=height, document=document
                 )
 
             elif cmd_type == "create-cylinder":
@@ -583,19 +584,14 @@ def interactive_prompt_mode(client, api_key):
                 document = command.get("document")
                 print(f"Creating cylinder: radius={radius}, height={height}")
                 result = client.create_cylinder(
-                    radius=radius,
-                    height=height,
-                    document=document
+                    radius=radius, height=height, document=document
                 )
 
             elif cmd_type == "create-sphere":
                 radius = command.get("radius", 5.0)
                 document = command.get("document")
                 print(f"Creating sphere: radius={radius}")
-                result = client.create_sphere(
-                    radius=radius,
-                    document=document
-                )
+                result = client.create_sphere(radius=radius, document=document)
 
             elif cmd_type == "export-document":
                 path = command.get("path", "model.step")
@@ -603,9 +599,7 @@ def interactive_prompt_mode(client, api_key):
                 document = command.get("document")
                 print(f"Exporting document to: {path}")
                 result = client.export_document(
-                    file_path=path,
-                    file_type=format_type,
-                    document=document
+                    file_path=path, file_type=format_type, document=document
                 )
 
             else:
@@ -621,13 +615,18 @@ def interactive_prompt_mode(client, api_key):
         except Exception as e:
             print(f"Error: {str(e)}")
 
+
 def main():
     """Main function for CLI usage"""
     parser = argparse.ArgumentParser(description="FreeCAD Client")
     parser.add_argument("--host", default="localhost", help="Server host")
     parser.add_argument("--port", type=int, default=12345, help="Server port")
-    parser.add_argument("--timeout", type=float, default=10.0, help="Connection timeout")
-    parser.add_argument("--freecad", default="freecad", help="Path to FreeCAD executable")
+    parser.add_argument(
+        "--timeout", type=float, default=10.0, help="Connection timeout"
+    )
+    parser.add_argument(
+        "--freecad", default="freecad", help="Path to FreeCAD executable"
+    )
     parser.add_argument(
         "--connect",
         action="store_true",
@@ -660,24 +659,34 @@ def main():
     # Create cylinder command
     cyl_parser = subparsers.add_parser("create-cylinder", help="Create a cylinder")
     cyl_parser.add_argument("--radius", type=float, default=5.0, help="Cylinder radius")
-    cyl_parser.add_argument("--height", type=float, default=10.0, help="Cylinder height")
+    cyl_parser.add_argument(
+        "--height", type=float, default=10.0, help="Cylinder height"
+    )
     cyl_parser.add_argument("--document", help="Document name")
     cyl_parser.add_argument("--name", help="Object name")
 
     # Create sphere command
     sphere_parser = subparsers.add_parser("create-sphere", help="Create a sphere")
-    sphere_parser.add_argument("--radius", type=float, default=5.0, help="Sphere radius")
+    sphere_parser.add_argument(
+        "--radius", type=float, default=5.0, help="Sphere radius"
+    )
     sphere_parser.add_argument("--document", help="Document name")
     sphere_parser.add_argument("--name", help="Object name")
 
     # Export document command
-    export_parser = subparsers.add_parser("export-document", help="Export document to a file")
+    export_parser = subparsers.add_parser(
+        "export-document", help="Export document to a file"
+    )
     export_parser.add_argument("--path", required=True, help="Output file path")
     export_parser.add_argument("--document", help="Document name")
-    export_parser.add_argument("--format", default="step", help="Export format (step, stl, etc.)")
+    export_parser.add_argument(
+        "--format", default="step", help="Export format (step, stl, etc.)"
+    )
 
     # Prompt mode command
-    prompt_parser = subparsers.add_parser("prompt", help="Interactive prompt mode using Google Gemini")
+    prompt_parser = subparsers.add_parser(
+        "prompt", help="Interactive prompt mode using Google Gemini"
+    )
     prompt_parser.add_argument("--api-key", help="Google Gemini API key")
 
     args = parser.parse_args()
@@ -744,7 +753,7 @@ def main():
             width=args.width,
             height=args.height,
             document=args.document,
-            name=args.name
+            name=args.name,
         )
         if "error" in result:
             print(f"Error: {result['error']}")
@@ -759,7 +768,7 @@ def main():
             radius=args.radius,
             height=args.height,
             document=args.document,
-            name=args.name
+            name=args.name,
         )
         if "error" in result:
             print(f"Error: {result['error']}")
@@ -771,9 +780,7 @@ def main():
     elif args.command == "create-sphere":
         # Create a sphere
         result = client.create_sphere(
-            radius=args.radius,
-            document=args.document,
-            name=args.name
+            radius=args.radius, document=args.document, name=args.name
         )
         if "error" in result:
             print(f"Error: {result['error']}")
@@ -785,9 +792,7 @@ def main():
     elif args.command == "export-document":
         # Export document
         result = client.export_document(
-            file_path=args.path,
-            file_type=args.format,
-            document=args.document
+            file_path=args.path, file_type=args.format, document=args.document
         )
         if "error" in result:
             print(f"Error: {result['error']}")

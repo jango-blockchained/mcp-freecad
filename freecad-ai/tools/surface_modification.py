@@ -21,8 +21,13 @@ class SurfaceModificationTool:
         self.name = "surface_modification"
         self.description = "Modify surfaces and edges for manufacturing"
 
-    def fillet_edges(self, object_name: str, edge_indices: List[int], radius: float = 1.0,
-                    name: str = None) -> Dict[str, Any]:
+    def fillet_edges(
+        self,
+        object_name: str,
+        edge_indices: List[int],
+        radius: float = 1.0,
+        name: str = None,
+    ) -> Dict[str, Any]:
         """Create fillets (rounded edges) on specified edges.
 
         Args:
@@ -40,14 +45,14 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": "Radius must be positive",
-                    "message": f"Invalid radius: {radius}"
+                    "message": f"Invalid radius: {radius}",
                 }
 
             if not isinstance(edge_indices, list) or len(edge_indices) == 0:
                 return {
                     "success": False,
                     "error": "Edge indices must be a non-empty list",
-                    "message": f"Invalid edge_indices: {edge_indices}"
+                    "message": f"Invalid edge_indices: {edge_indices}",
                 }
 
             # Get active document
@@ -56,7 +61,7 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "Please create or open a FreeCAD document"
+                    "message": "Please create or open a FreeCAD document",
                 }
 
             # Find the object
@@ -65,15 +70,15 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": f"Object '{object_name}' not found",
-                    "message": f"Available objects: {[o.Name for o in doc.Objects]}"
+                    "message": f"Available objects: {[o.Name for o in doc.Objects]}",
                 }
 
             # Get the shape
-            if not hasattr(obj, 'Shape'):
+            if not hasattr(obj, "Shape"):
                 return {
                     "success": False,
                     "error": "Object has no Shape attribute",
-                    "message": f"Object {object_name} is not a valid geometric object"
+                    "message": f"Object {object_name} is not a valid geometric object",
                 }
 
             shape = obj.Shape
@@ -81,11 +86,15 @@ class SurfaceModificationTool:
             # Validate edge indices
             num_edges = len(shape.Edges)
             for edge_idx in edge_indices:
-                if not isinstance(edge_idx, int) or edge_idx < 0 or edge_idx >= num_edges:
+                if (
+                    not isinstance(edge_idx, int)
+                    or edge_idx < 0
+                    or edge_idx >= num_edges
+                ):
                     return {
                         "success": False,
                         "error": f"Invalid edge index: {edge_idx}",
-                        "message": f"Edge index must be between 0 and {num_edges-1}"
+                        "message": f"Edge index must be between 0 and {num_edges-1}",
                     }
 
             # Create fillet
@@ -100,7 +109,7 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": f"Fillet operation failed: {str(e)}",
-                    "message": "Edges may not be suitable for filleting or radius too large"
+                    "message": "Edges may not be suitable for filleting or radius too large",
                 }
 
             # Create FreeCAD object
@@ -125,19 +134,24 @@ class SurfaceModificationTool:
                     "edge_indices": edge_indices,
                     "radius": radius,
                     "edges_filleted": len(edge_indices),
-                    "volume": round(volume, 2)
-                }
+                    "volume": round(volume, 2),
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to create fillet: {str(e)}"
+                "message": f"Failed to create fillet: {str(e)}",
             }
 
-    def chamfer_edges(self, object_name: str, edge_indices: List[int], distance: float = 1.0,
-                     name: str = None) -> Dict[str, Any]:
+    def chamfer_edges(
+        self,
+        object_name: str,
+        edge_indices: List[int],
+        distance: float = 1.0,
+        name: str = None,
+    ) -> Dict[str, Any]:
         """Create chamfers (beveled edges) on specified edges.
 
         Args:
@@ -155,14 +169,14 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": "Distance must be positive",
-                    "message": f"Invalid distance: {distance}"
+                    "message": f"Invalid distance: {distance}",
                 }
 
             if not isinstance(edge_indices, list) or len(edge_indices) == 0:
                 return {
                     "success": False,
                     "error": "Edge indices must be a non-empty list",
-                    "message": f"Invalid edge_indices: {edge_indices}"
+                    "message": f"Invalid edge_indices: {edge_indices}",
                 }
 
             # Get active document
@@ -171,7 +185,7 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "Please create or open a FreeCAD document"
+                    "message": "Please create or open a FreeCAD document",
                 }
 
             # Find the object
@@ -180,15 +194,15 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": f"Object '{object_name}' not found",
-                    "message": f"Available objects: {[o.Name for o in doc.Objects]}"
+                    "message": f"Available objects: {[o.Name for o in doc.Objects]}",
                 }
 
             # Get the shape
-            if not hasattr(obj, 'Shape'):
+            if not hasattr(obj, "Shape"):
                 return {
                     "success": False,
                     "error": "Object has no Shape attribute",
-                    "message": f"Object {object_name} is not a valid geometric object"
+                    "message": f"Object {object_name} is not a valid geometric object",
                 }
 
             shape = obj.Shape
@@ -196,11 +210,15 @@ class SurfaceModificationTool:
             # Validate edge indices
             num_edges = len(shape.Edges)
             for edge_idx in edge_indices:
-                if not isinstance(edge_idx, int) or edge_idx < 0 or edge_idx >= num_edges:
+                if (
+                    not isinstance(edge_idx, int)
+                    or edge_idx < 0
+                    or edge_idx >= num_edges
+                ):
                     return {
                         "success": False,
                         "error": f"Invalid edge index: {edge_idx}",
-                        "message": f"Edge index must be between 0 and {num_edges-1}"
+                        "message": f"Edge index must be between 0 and {num_edges-1}",
                     }
 
             # Create chamfer
@@ -215,7 +233,7 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": f"Chamfer operation failed: {str(e)}",
-                    "message": "Edges may not be suitable for chamfering or distance too large"
+                    "message": "Edges may not be suitable for chamfering or distance too large",
                 }
 
             # Create FreeCAD object
@@ -240,19 +258,25 @@ class SurfaceModificationTool:
                     "edge_indices": edge_indices,
                     "distance": distance,
                     "edges_chamfered": len(edge_indices),
-                    "volume": round(volume, 2)
-                }
+                    "volume": round(volume, 2),
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to create chamfer: {str(e)}"
+                "message": f"Failed to create chamfer: {str(e)}",
             }
 
-    def draft_faces(self, object_name: str, face_indices: List[int], angle: float = 5.0,
-                   direction: tuple = (0, 0, 1), name: str = None) -> Dict[str, Any]:
+    def draft_faces(
+        self,
+        object_name: str,
+        face_indices: List[int],
+        angle: float = 5.0,
+        direction: tuple = (0, 0, 1),
+        name: str = None,
+    ) -> Dict[str, Any]:
         """Create draft angles on specified faces for manufacturing.
 
         Args:
@@ -271,21 +295,21 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": "Angle must be between 0 and 45 degrees",
-                    "message": f"Invalid angle: {angle}"
+                    "message": f"Invalid angle: {angle}",
                 }
 
             if not isinstance(face_indices, list) or len(face_indices) == 0:
                 return {
                     "success": False,
                     "error": "Face indices must be a non-empty list",
-                    "message": f"Invalid face_indices: {face_indices}"
+                    "message": f"Invalid face_indices: {face_indices}",
                 }
 
             if len(direction) != 3:
                 return {
                     "success": False,
                     "error": "Direction must be a 3-element tuple (x, y, z)",
-                    "message": f"Invalid direction: {direction}"
+                    "message": f"Invalid direction: {direction}",
                 }
 
             # Normalize direction vector
@@ -294,7 +318,7 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": "Direction vector cannot be zero",
-                    "message": f"Invalid direction vector: {direction}"
+                    "message": f"Invalid direction vector: {direction}",
                 }
             dir_vector.normalize()
 
@@ -304,7 +328,7 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "Please create or open a FreeCAD document"
+                    "message": "Please create or open a FreeCAD document",
                 }
 
             # Find the object
@@ -313,15 +337,15 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": f"Object '{object_name}' not found",
-                    "message": f"Available objects: {[o.Name for o in doc.Objects]}"
+                    "message": f"Available objects: {[o.Name for o in doc.Objects]}",
                 }
 
             # Get the shape
-            if not hasattr(obj, 'Shape'):
+            if not hasattr(obj, "Shape"):
                 return {
                     "success": False,
                     "error": "Object has no Shape attribute",
-                    "message": f"Object {object_name} is not a valid geometric object"
+                    "message": f"Object {object_name} is not a valid geometric object",
                 }
 
             shape = obj.Shape
@@ -329,11 +353,15 @@ class SurfaceModificationTool:
             # Validate face indices
             num_faces = len(shape.Faces)
             for face_idx in face_indices:
-                if not isinstance(face_idx, int) or face_idx < 0 or face_idx >= num_faces:
+                if (
+                    not isinstance(face_idx, int)
+                    or face_idx < 0
+                    or face_idx >= num_faces
+                ):
                     return {
                         "success": False,
                         "error": f"Invalid face index: {face_idx}",
-                        "message": f"Face index must be between 0 and {num_faces-1}"
+                        "message": f"Face index must be between 0 and {num_faces-1}",
                     }
 
             # Create draft
@@ -359,26 +387,31 @@ class SurfaceModificationTool:
                         "angle": angle,
                         "direction": direction,
                         "faces_drafted": len(face_indices),
-                        "note": "Simplified draft implementation - full draft requires advanced geometry operations"
-                    }
+                        "note": "Simplified draft implementation - full draft requires advanced geometry operations",
+                    },
                 }
 
             except Exception as e:
                 return {
                     "success": False,
                     "error": f"Draft operation failed: {str(e)}",
-                    "message": "Faces may not be suitable for drafting"
+                    "message": "Faces may not be suitable for drafting",
                 }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to create draft: {str(e)}"
+                "message": f"Failed to create draft: {str(e)}",
             }
 
-    def create_thickness(self, object_name: str, thickness: float = 1.0,
-                        face_indices: List[int] = None, name: str = None) -> Dict[str, Any]:
+    def create_thickness(
+        self,
+        object_name: str,
+        thickness: float = 1.0,
+        face_indices: List[int] = None,
+        name: str = None,
+    ) -> Dict[str, Any]:
         """Create a shell by adding thickness to surfaces.
 
         Args:
@@ -396,7 +429,7 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": "Thickness must be positive",
-                    "message": f"Invalid thickness: {thickness}"
+                    "message": f"Invalid thickness: {thickness}",
                 }
 
             # Get active document
@@ -405,7 +438,7 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "Please create or open a FreeCAD document"
+                    "message": "Please create or open a FreeCAD document",
                 }
 
             # Find the object
@@ -414,15 +447,15 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": f"Object '{object_name}' not found",
-                    "message": f"Available objects: {[o.Name for o in doc.Objects]}"
+                    "message": f"Available objects: {[o.Name for o in doc.Objects]}",
                 }
 
             # Get the shape
-            if not hasattr(obj, 'Shape'):
+            if not hasattr(obj, "Shape"):
                 return {
                     "success": False,
                     "error": "Object has no Shape attribute",
-                    "message": f"Object {object_name} is not a valid geometric object"
+                    "message": f"Object {object_name} is not a valid geometric object",
                 }
 
             shape = obj.Shape
@@ -433,16 +466,20 @@ class SurfaceModificationTool:
                     return {
                         "success": False,
                         "error": "Face indices must be a list",
-                        "message": f"Invalid face_indices: {face_indices}"
+                        "message": f"Invalid face_indices: {face_indices}",
                     }
 
                 num_faces = len(shape.Faces)
                 for face_idx in face_indices:
-                    if not isinstance(face_idx, int) or face_idx < 0 or face_idx >= num_faces:
+                    if (
+                        not isinstance(face_idx, int)
+                        or face_idx < 0
+                        or face_idx >= num_faces
+                    ):
                         return {
                             "success": False,
                             "error": f"Invalid face index: {face_idx}",
-                            "message": f"Face index must be between 0 and {num_faces-1}"
+                            "message": f"Face index must be between 0 and {num_faces-1}",
                         }
 
             # Create thickness
@@ -459,7 +496,7 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": f"Thickness operation failed: {str(e)}",
-                    "message": "Object may not be suitable for thickness operation or thickness too large"
+                    "message": "Object may not be suitable for thickness operation or thickness too large",
                 }
 
             # Create FreeCAD object
@@ -485,19 +522,20 @@ class SurfaceModificationTool:
                     "removed_faces": face_indices or [],
                     "faces_removed": len(face_indices) if face_indices else 0,
                     "volume": round(volume, 2),
-                    "is_shell": len(face_indices) > 0 if face_indices else False
-                }
+                    "is_shell": len(face_indices) > 0 if face_indices else False,
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to create thickness: {str(e)}"
+                "message": f"Failed to create thickness: {str(e)}",
             }
 
-    def offset_surface(self, object_name: str, distance: float = 1.0,
-                      name: str = None) -> Dict[str, Any]:
+    def offset_surface(
+        self, object_name: str, distance: float = 1.0, name: str = None
+    ) -> Dict[str, Any]:
         """Create an offset surface parallel to the original.
 
         Args:
@@ -514,7 +552,7 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": "Distance cannot be zero",
-                    "message": f"Invalid distance: {distance}"
+                    "message": f"Invalid distance: {distance}",
                 }
 
             # Get active document
@@ -523,7 +561,7 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "Please create or open a FreeCAD document"
+                    "message": "Please create or open a FreeCAD document",
                 }
 
             # Find the object
@@ -532,15 +570,15 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": f"Object '{object_name}' not found",
-                    "message": f"Available objects: {[o.Name for o in doc.Objects]}"
+                    "message": f"Available objects: {[o.Name for o in doc.Objects]}",
                 }
 
             # Get the shape
-            if not hasattr(obj, 'Shape'):
+            if not hasattr(obj, "Shape"):
                 return {
                     "success": False,
                     "error": "Object has no Shape attribute",
-                    "message": f"Object {object_name} is not a valid geometric object"
+                    "message": f"Object {object_name} is not a valid geometric object",
                 }
 
             shape = obj.Shape
@@ -554,7 +592,7 @@ class SurfaceModificationTool:
                 return {
                     "success": False,
                     "error": f"Offset operation failed: {str(e)}",
-                    "message": "Object may not be suitable for offset or distance too large"
+                    "message": "Object may not be suitable for offset or distance too large",
                 }
 
             # Create FreeCAD object
@@ -579,15 +617,15 @@ class SurfaceModificationTool:
                     "source_object": object_name,
                     "distance": distance,
                     "direction": direction_str,
-                    "volume": round(volume, 2)
-                }
+                    "volume": round(volume, 2),
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to create offset: {str(e)}"
+                "message": f"Failed to create offset: {str(e)}",
             }
 
     def get_available_modifications(self) -> Dict[str, Any]:
@@ -601,27 +639,33 @@ class SurfaceModificationTool:
                 "fillet": {
                     "description": "Create rounded edges (fillets) for stress relief",
                     "parameters": ["object_name", "edge_indices", "radius", "name"],
-                    "manufacturing_use": "Stress relief, safety, aesthetics"
+                    "manufacturing_use": "Stress relief, safety, aesthetics",
                 },
                 "chamfer": {
                     "description": "Create beveled edges (chamfers) for assembly",
                     "parameters": ["object_name", "edge_indices", "distance", "name"],
-                    "manufacturing_use": "Assembly clearance, deburring"
+                    "manufacturing_use": "Assembly clearance, deburring",
                 },
                 "draft": {
                     "description": "Create tapered faces for molding and casting",
-                    "parameters": ["object_name", "face_indices", "angle", "direction", "name"],
-                    "manufacturing_use": "Injection molding, casting, forging"
+                    "parameters": [
+                        "object_name",
+                        "face_indices",
+                        "angle",
+                        "direction",
+                        "name",
+                    ],
+                    "manufacturing_use": "Injection molding, casting, forging",
                 },
                 "thickness": {
                     "description": "Create shells with specified wall thickness",
                     "parameters": ["object_name", "thickness", "face_indices", "name"],
-                    "manufacturing_use": "Lightweight structures, hollow parts"
+                    "manufacturing_use": "Lightweight structures, hollow parts",
                 },
                 "offset": {
                     "description": "Create parallel surfaces at specified distance",
                     "parameters": ["object_name", "distance", "name"],
-                    "manufacturing_use": "Clearance, material allowance"
-                }
+                    "manufacturing_use": "Clearance, material allowance",
+                },
             }
         }

@@ -19,7 +19,9 @@ try:
     from mcp_freecad.server.freecad_mcp_server import main as server_main
 except ImportError as e:
     print(f"Error importing MCP server: {e}")
-    print("Please ensure all dependencies are installed with: pip install -r requirements.txt")
+    print(
+        "Please ensure all dependencies are installed with: pip install -r requirements.txt"
+    )
     sys.exit(1)
 
 
@@ -27,30 +29,23 @@ def main():
     """Main application entry point."""
     parser = argparse.ArgumentParser(description="MCP-FreeCAD Server")
     parser.add_argument(
-        "--config", 
+        "--config",
         default="config.json",
-        help="Configuration file path (default: config.json)"
+        help="Configuration file path (default: config.json)",
     )
     parser.add_argument(
-        "--port",
-        type=int, 
-        default=8080,
-        help="Server port (default: 8080)"
+        "--port", type=int, default=8080, help="Server port (default: 8080)"
     )
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Enable debug mode"
-    )
-    
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+
     args = parser.parse_args()
-    
+
     # Set environment variables
     os.environ["PYTHONPATH"] = str(Path(__file__).parent)
-    
+
     if args.debug:
         os.environ["DEBUG"] = "1"
-    
+
     # Run the server
     try:
         asyncio.run(server_main(args))

@@ -36,6 +36,7 @@ try:
     import FreeCAD
     import FreeCADGui
     from PySide2.QtCore import QTimer
+
     FREECAD_AVAILABLE = True
 except ImportError:
     FREECAD_AVAILABLE = False
@@ -84,8 +85,8 @@ class FreeCADRPC:
                     "minor": version[1],
                     "build": version[2],
                     "string": ".".join(version[:3]),
-                    "additional": " ".join(version[3:])
-                }
+                    "additional": " ".join(version[3:]),
+                },
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
@@ -160,18 +161,16 @@ class FreeCADRPC:
                         rot = value.get("Rotation", {})
                         placement = FreeCAD.Placement(
                             FreeCAD.Vector(
-                                base.get("x", 0),
-                                base.get("y", 0),
-                                base.get("z", 0)
+                                base.get("x", 0), base.get("y", 0), base.get("z", 0)
                             ),
                             FreeCAD.Rotation(
                                 FreeCAD.Vector(
                                     rot.get("Axis", {}).get("x", 0),
                                     rot.get("Axis", {}).get("y", 0),
-                                    rot.get("Axis", {}).get("z", 1)
+                                    rot.get("Axis", {}).get("z", 1),
                                 ),
-                                rot.get("Angle", 0)
-                            )
+                                rot.get("Angle", 0),
+                            ),
                         )
                         setattr(obj, prop, placement)
                     elif prop == "ShapeColor" and isinstance(value, list):
@@ -200,7 +199,9 @@ class FreeCADRPC:
         if not FREECAD_AVAILABLE:
             return {"success": False, "error": "FreeCAD not available"}
 
-        rpc_request_queue.put(lambda: self._export_stl_gui(doc_name, obj_name, file_path))
+        rpc_request_queue.put(
+            lambda: self._export_stl_gui(doc_name, obj_name, file_path)
+        )
         res = rpc_response_queue.get()
         if isinstance(res, bool) and res:
             return {"success": True, "path": file_path}
@@ -219,6 +220,7 @@ class FreeCADRPC:
                 return f"Object '{obj_name}' not found in document '{doc_name}'"
 
             import Mesh
+
             Mesh.export([obj], file_path)
             FreeCAD.Console.PrintMessage(f"Exported '{obj_name}' to '{file_path}'.\n")
             return True
@@ -256,7 +258,7 @@ class FreeCADRPC:
             return {
                 "success": True,
                 "message": "Code executed successfully",
-                "output": output_buffer.getvalue()
+                "output": output_buffer.getvalue(),
             }
         else:
             return {"success": False, "error": res}
@@ -274,7 +276,9 @@ class FreeCADRPC:
             return None
 
         temp_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
-        rpc_request_queue.put(lambda: self._save_screenshot_gui(temp_file.name, view_name))
+        rpc_request_queue.put(
+            lambda: self._save_screenshot_gui(temp_file.name, view_name)
+        )
         res = rpc_response_queue.get()
 
         if isinstance(res, bool) and res:
@@ -393,7 +397,7 @@ if __name__ == "__main__" and FREECAD_AVAILABLE:
                 return {
                     "MenuText": "Start RPC Server",
                     "ToolTip": "Start XML-RPC Server for MCP-FreeCAD",
-                    "Pixmap": ""
+                    "Pixmap": "",
                 }
 
             def Activated(self):
@@ -410,7 +414,7 @@ if __name__ == "__main__" and FREECAD_AVAILABLE:
                 return {
                     "MenuText": "Stop RPC Server",
                     "ToolTip": "Stop XML-RPC Server for MCP-FreeCAD",
-                    "Pixmap": ""
+                    "Pixmap": "",
                 }
 
             def Activated(self):

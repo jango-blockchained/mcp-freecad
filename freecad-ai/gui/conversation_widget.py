@@ -27,6 +27,7 @@ class ConversationWidget(QtWidgets.QWidget):
         """Setup AI manager and config manager."""
         try:
             from ..ai.ai_manager import AIManager
+
             self.ai_manager = AIManager()
         except ImportError:
             self.ai_manager = None
@@ -34,10 +35,12 @@ class ConversationWidget(QtWidgets.QWidget):
         # Try multiple import strategies for config manager
         try:
             from ..config.config_manager import ConfigManager
+
             self.config_manager = ConfigManager()
         except ImportError:
             try:
                 from config.config_manager import ConfigManager
+
                 self.config_manager = ConfigManager()
             except ImportError:
                 self.config_manager = None
@@ -68,7 +71,9 @@ class ConversationWidget(QtWidgets.QWidget):
 
         # Provider status
         self.provider_status_label = QtWidgets.QLabel("Not Connected")
-        self.provider_status_label.setStyleSheet("color: red; font-weight: bold; padding: 5px;")
+        self.provider_status_label.setStyleSheet(
+            "color: red; font-weight: bold; padding: 5px;"
+        )
         provider_layout.addWidget(self.provider_status_label)
 
         # Refresh button for debugging
@@ -90,7 +95,9 @@ class ConversationWidget(QtWidgets.QWidget):
         # Quick settings
         self.context_check = QtWidgets.QCheckBox("Use CAD Context")
         self.context_check.setChecked(True)
-        self.context_check.setToolTip("Include current FreeCAD document state in AI queries")
+        self.context_check.setToolTip(
+            "Include current FreeCAD document state in AI queries"
+        )
         provider_layout.addWidget(self.context_check)
 
         layout.addWidget(provider_group)
@@ -104,7 +111,8 @@ class ConversationWidget(QtWidgets.QWidget):
         self.conversation_text = QtWidgets.QTextEdit()
         self.conversation_text.setMinimumHeight(300)
         self.conversation_text.setReadOnly(True)
-        self.conversation_text.setStyleSheet("""
+        self.conversation_text.setStyleSheet(
+            """
             QTextEdit {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
                 font-size: 12px;
@@ -113,7 +121,8 @@ class ConversationWidget(QtWidgets.QWidget):
                 border-radius: 4px;
                 padding: 8px;
             }
-        """)
+        """
+        )
         conversation_layout.addWidget(self.conversation_text)
 
         layout.addWidget(conversation_group)
@@ -132,7 +141,8 @@ class ConversationWidget(QtWidgets.QWidget):
         message_layout.addWidget(self.message_input)
 
         self.send_btn = QtWidgets.QPushButton("Send")
-        self.send_btn.setStyleSheet("""
+        self.send_btn.setStyleSheet(
+            """
             QPushButton {
                 background-color: #4CAF50;
                 color: white;
@@ -147,7 +157,8 @@ class ConversationWidget(QtWidgets.QWidget):
             QPushButton:disabled {
                 background-color: #cccccc;
             }
-        """)
+        """
+        )
         message_layout.addWidget(self.send_btn)
 
         input_layout.addLayout(message_layout)
@@ -158,18 +169,34 @@ class ConversationWidget(QtWidgets.QWidget):
         quick_actions_layout.addWidget(QtWidgets.QLabel("Quick Actions:"))
 
         self.explain_btn = QtWidgets.QPushButton("Explain Current Model")
-        self.explain_btn.setToolTip("Ask AI to explain the currently active FreeCAD model")
-        self.explain_btn.clicked.connect(lambda: self._send_quick_message("Please explain the current FreeCAD model and its components."))
+        self.explain_btn.setToolTip(
+            "Ask AI to explain the currently active FreeCAD model"
+        )
+        self.explain_btn.clicked.connect(
+            lambda: self._send_quick_message(
+                "Please explain the current FreeCAD model and its components."
+            )
+        )
         quick_actions_layout.addWidget(self.explain_btn)
 
         self.suggest_btn = QtWidgets.QPushButton("Suggest Improvements")
-        self.suggest_btn.setToolTip("Ask AI for suggestions to improve the current model")
-        self.suggest_btn.clicked.connect(lambda: self._send_quick_message("What improvements or modifications would you suggest for this FreeCAD model?"))
+        self.suggest_btn.setToolTip(
+            "Ask AI for suggestions to improve the current model"
+        )
+        self.suggest_btn.clicked.connect(
+            lambda: self._send_quick_message(
+                "What improvements or modifications would you suggest for this FreeCAD model?"
+            )
+        )
         quick_actions_layout.addWidget(self.suggest_btn)
 
         self.help_btn = QtWidgets.QPushButton("General Help")
         self.help_btn.setToolTip("Get general FreeCAD help")
-        self.help_btn.clicked.connect(lambda: self._send_quick_message("I'm working with FreeCAD. Can you provide some general tips and guidance?"))
+        self.help_btn.clicked.connect(
+            lambda: self._send_quick_message(
+                "I'm working with FreeCAD. Can you provide some general tips and guidance?"
+            )
+        )
         quick_actions_layout.addWidget(self.help_btn)
 
         quick_actions_layout.addStretch()
@@ -228,47 +255,69 @@ class ConversationWidget(QtWidgets.QWidget):
                     status = provider_info.get("status", "unknown")
                     if status == "connected":
                         self.provider_status_label.setText("Connected")
-                        self.provider_status_label.setStyleSheet("color: green; font-weight: bold; padding: 5px;")
+                        self.provider_status_label.setStyleSheet(
+                            "color: green; font-weight: bold; padding: 5px;"
+                        )
                         self.send_btn.setEnabled(True)
                     elif status == "initialized":
                         self.provider_status_label.setText("Ready")
-                        self.provider_status_label.setStyleSheet("color: blue; font-weight: bold; padding: 5px;")
+                        self.provider_status_label.setStyleSheet(
+                            "color: blue; font-weight: bold; padding: 5px;"
+                        )
                         self.send_btn.setEnabled(True)
                     elif status == "testing":
                         self.provider_status_label.setText("Testing...")
-                        self.provider_status_label.setStyleSheet("color: orange; font-weight: bold; padding: 5px;")
+                        self.provider_status_label.setStyleSheet(
+                            "color: orange; font-weight: bold; padding: 5px;"
+                        )
                         self.send_btn.setEnabled(False)
                     elif status == "error":
                         self.provider_status_label.setText("Error")
-                        self.provider_status_label.setStyleSheet("color: red; font-weight: bold; padding: 5px;")
+                        self.provider_status_label.setStyleSheet(
+                            "color: red; font-weight: bold; padding: 5px;"
+                        )
                         self.send_btn.setEnabled(False)
                     else:
                         self.provider_status_label.setText("Connecting...")
-                        self.provider_status_label.setStyleSheet("color: orange; font-weight: bold; padding: 5px;")
+                        self.provider_status_label.setStyleSheet(
+                            "color: orange; font-weight: bold; padding: 5px;"
+                        )
                         self.send_btn.setEnabled(False)
                 else:
                     self.provider_status_label.setText("Not Available")
-                    self.provider_status_label.setStyleSheet("color: red; font-weight: bold; padding: 5px;")
+                    self.provider_status_label.setStyleSheet(
+                        "color: red; font-weight: bold; padding: 5px;"
+                    )
                     self.send_btn.setEnabled(False)
             else:
                 # Fallback if no provider service - check if we have config
                 if self.config_manager:
-                    api_key = self.config_manager.get_api_key(self.current_provider.lower())
+                    api_key = self.config_manager.get_api_key(
+                        self.current_provider.lower()
+                    )
                     if api_key:
                         self.provider_status_label.setText("Configured")
-                        self.provider_status_label.setStyleSheet("color: blue; font-weight: bold; padding: 5px;")
+                        self.provider_status_label.setStyleSheet(
+                            "color: blue; font-weight: bold; padding: 5px;"
+                        )
                         self.send_btn.setEnabled(True)
                     else:
                         self.provider_status_label.setText("Not Configured")
-                        self.provider_status_label.setStyleSheet("color: red; font-weight: bold; padding: 5px;")
+                        self.provider_status_label.setStyleSheet(
+                            "color: red; font-weight: bold; padding: 5px;"
+                        )
                         self.send_btn.setEnabled(False)
                 else:
                     self.provider_status_label.setText("Service Unavailable")
-                    self.provider_status_label.setStyleSheet("color: red; font-weight: bold; padding: 5px;")
+                    self.provider_status_label.setStyleSheet(
+                        "color: red; font-weight: bold; padding: 5px;"
+                    )
                     self.send_btn.setEnabled(False)
         else:
             self.provider_status_label.setText("No Provider")
-            self.provider_status_label.setStyleSheet("color: red; font-weight: bold; padding: 5px;")
+            self.provider_status_label.setStyleSheet(
+                "color: red; font-weight: bold; padding: 5px;"
+            )
             self.send_btn.setEnabled(False)
 
     def _load_providers_fallback(self):
@@ -302,7 +351,7 @@ class ConversationWidget(QtWidgets.QWidget):
             "anthropic": "Anthropic",
             "openai": "OpenAI",
             "google": "Google",
-            "openrouter": "OpenRouter"
+            "openrouter": "OpenRouter",
         }
         return name_map.get(provider_key.lower(), provider_key.title())
 
@@ -311,8 +360,12 @@ class ConversationWidget(QtWidgets.QWidget):
         debug_info = []
         debug_info.append("=== PROVIDER DEBUG INFO ===")
         debug_info.append(f"Current Provider: {self.current_provider}")
-        debug_info.append(f"Provider Service Available: {self.provider_service is not None}")
-        debug_info.append(f"Config Manager Available: {self.config_manager is not None}")
+        debug_info.append(
+            f"Provider Service Available: {self.provider_service is not None}"
+        )
+        debug_info.append(
+            f"Config Manager Available: {self.config_manager is not None}"
+        )
         debug_info.append(f"AI Manager Available: {self.ai_manager is not None}")
         debug_info.append("")
 
@@ -378,7 +431,9 @@ class ConversationWidget(QtWidgets.QWidget):
             return
 
         if not self.current_provider:
-            QtWidgets.QMessageBox.warning(self, "Error", "Please select an AI provider first")
+            QtWidgets.QMessageBox.warning(
+                self, "Error", "Please select an AI provider first"
+            )
             return
 
         self._send_message(message)
@@ -386,7 +441,9 @@ class ConversationWidget(QtWidgets.QWidget):
     def _send_quick_message(self, message):
         """Send a predefined quick message."""
         if not self.current_provider:
-            QtWidgets.QMessageBox.warning(self, "Error", "Please select an AI provider first")
+            QtWidgets.QMessageBox.warning(
+                self, "Error", "Please select an AI provider first"
+            )
             return
 
         self._send_message(message)
@@ -407,10 +464,14 @@ class ConversationWidget(QtWidgets.QWidget):
         if self.provider_service:
             try:
                 # Use provider service to send message
-                QtCore.QTimer.singleShot(100, lambda: self._send_via_provider_service(message))
+                QtCore.QTimer.singleShot(
+                    100, lambda: self._send_via_provider_service(message)
+                )
             except Exception as e:
                 self._add_system_message(f"Error using provider service: {e}")
-                QtCore.QTimer.singleShot(1500, lambda: self._simulate_ai_response(message))
+                QtCore.QTimer.singleShot(
+                    1500, lambda: self._simulate_ai_response(message)
+                )
         else:
             # Fallback to simulation
             QtCore.QTimer.singleShot(1500, lambda: self._simulate_ai_response(message))
@@ -422,7 +483,9 @@ class ConversationWidget(QtWidgets.QWidget):
     def _send_via_provider_service(self, message):
         """Send message via provider service."""
         try:
-            response = self.provider_service.send_message_to_provider(self.current_provider, message)
+            response = self.provider_service.send_message_to_provider(
+                self.current_provider, message
+            )
 
             # Remove thinking indicator
             self._remove_thinking_indicator()
@@ -442,14 +505,14 @@ class ConversationWidget(QtWidgets.QWidget):
         text = self.conversation_text.toPlainText()
         if "AI: Thinking..." in text:
             # Find and remove the last "Thinking..." message
-            lines = text.split('\n')
+            lines = text.split("\n")
             for i in range(len(lines) - 1, -1, -1):
                 if "AI" in lines[i] and "Thinking..." in lines[i]:
                     lines.pop(i)
                     if i < len(lines) and lines[i].strip() == "":
                         lines.pop(i)
                     break
-            self.conversation_text.setPlainText('\n'.join(lines))
+            self.conversation_text.setPlainText("\n".join(lines))
 
     def _simulate_ai_response(self, user_message):
         """Simulate AI response (placeholder for real implementation)."""
@@ -477,14 +540,13 @@ class ConversationWidget(QtWidgets.QWidget):
     def _add_conversation_message(self, sender, message):
         """Add message to conversation display."""
         from datetime import datetime
+
         timestamp = datetime.now().strftime("%H:%M")
 
         # Add to history
-        self.conversation_history.append({
-            'sender': sender,
-            'message': message,
-            'timestamp': timestamp
-        })
+        self.conversation_history.append(
+            {"sender": sender, "message": message, "timestamp": timestamp}
+        )
 
         # Add message with formatting
         cursor = self.conversation_text.textCursor()
@@ -513,9 +575,10 @@ class ConversationWidget(QtWidgets.QWidget):
     def _clear_conversation(self):
         """Clear conversation history."""
         reply = QtWidgets.QMessageBox.question(
-            self, "Clear Conversation",
+            self,
+            "Clear Conversation",
             "Are you sure you want to clear the conversation history?",
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
         )
 
         if reply == QtWidgets.QMessageBox.Yes:
@@ -531,25 +594,32 @@ class ConversationWidget(QtWidgets.QWidget):
             return
 
         filename, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self, "Save Conversation",
+            self,
+            "Save Conversation",
             f"freecad_ai_conversation_{self.current_provider or 'unknown'}_{QtCore.QDateTime.currentDateTime().toString('yyyyMMdd_HHmmss')}.txt",
-            "Text Files (*.txt);;Markdown Files (*.md);;All Files (*)"
+            "Text Files (*.txt);;Markdown Files (*.md);;All Files (*)",
         )
 
         if filename:
             try:
-                with open(filename, 'w', encoding='utf-8') as f:
+                with open(filename, "w", encoding="utf-8") as f:
                     f.write(f"FreeCAD AI Conversation\n")
                     f.write(f"Provider: {self.current_provider or 'Unknown'}\n")
                     f.write(f"Date: {QtCore.QDateTime.currentDateTime().toString()}\n")
                     f.write("=" * 50 + "\n\n")
 
                     for entry in self.conversation_history:
-                        f.write(f"{entry['sender']} ({entry['timestamp']}): {entry['message']}\n\n")
+                        f.write(
+                            f"{entry['sender']} ({entry['timestamp']}): {entry['message']}\n\n"
+                        )
 
-                QtWidgets.QMessageBox.information(self, "Success", f"Conversation saved to {filename}")
+                QtWidgets.QMessageBox.information(
+                    self, "Success", f"Conversation saved to {filename}"
+                )
             except Exception as e:
-                QtWidgets.QMessageBox.warning(self, "Error", f"Failed to save conversation: {str(e)}")
+                QtWidgets.QMessageBox.warning(
+                    self, "Error", f"Failed to save conversation: {str(e)}"
+                )
 
     def _view_history(self):
         """View conversation history in a dialog."""
@@ -612,13 +682,17 @@ class ConversationWidget(QtWidgets.QWidget):
         self.provider_service = provider_service
 
         if provider_service:
-            provider_service.provider_status_changed.connect(self._on_provider_status_changed)
+            provider_service.provider_status_changed.connect(
+                self._on_provider_status_changed
+            )
             provider_service.providers_updated.connect(self.refresh_providers)
 
             # Initial refresh
             self.refresh_providers()
 
-    def _on_provider_status_changed(self, provider_name: str, status: str, message: str):
+    def _on_provider_status_changed(
+        self, provider_name: str, status: str, message: str
+    ):
         """Handle provider status change."""
         if provider_name == self.current_provider:
             self._update_provider_status()
@@ -640,7 +714,7 @@ class ConversationWidget(QtWidgets.QWidget):
         """Rebuild conversation display from history."""
         self.conversation_text.clear()
         for entry in self.conversation_history:
-            self._add_conversation_message(entry['sender'], entry['message'])
+            self._add_conversation_message(entry["sender"], entry["message"])
 
 
 class ConversationHistoryDialog(QtWidgets.QDialog):
@@ -660,7 +734,9 @@ class ConversationHistoryDialog(QtWidgets.QDialog):
         # History list
         self.history_list = QtWidgets.QListWidget()
         for i, entry in enumerate(self.history):
-            item_text = f"{entry['sender']} ({entry['timestamp']}): {entry['message'][:50]}..."
+            item_text = (
+                f"{entry['sender']} ({entry['timestamp']}): {entry['message'][:50]}..."
+            )
             item = QtWidgets.QListWidgetItem(item_text)
             item.setData(QtCore.Qt.UserRole, i)
             self.history_list.addItem(item)
@@ -694,21 +770,30 @@ class ConversationHistoryDialog(QtWidgets.QDialog):
         index = item.data(QtCore.Qt.UserRole)
         if 0 <= index < len(self.history):
             entry = self.history[index]
-            self.detail_text.setPlainText(f"Sender: {entry['sender']}\nTime: {entry['timestamp']}\n\nMessage:\n{entry['message']}")
+            self.detail_text.setPlainText(
+                f"Sender: {entry['sender']}\nTime: {entry['timestamp']}\n\nMessage:\n{entry['message']}"
+            )
 
     def _export_history(self):
         """Export conversation history."""
         filename, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self, "Export History",
+            self,
+            "Export History",
             f"conversation_history_{QtCore.QDateTime.currentDateTime().toString('yyyyMMdd_HHmmss')}.txt",
-            "Text Files (*.txt);;All Files (*)"
+            "Text Files (*.txt);;All Files (*)",
         )
 
         if filename:
             try:
-                with open(filename, 'w', encoding='utf-8') as f:
+                with open(filename, "w", encoding="utf-8") as f:
                     for entry in self.history:
-                        f.write(f"{entry['sender']} ({entry['timestamp']}): {entry['message']}\n\n")
-                QtWidgets.QMessageBox.information(self, "Success", f"History exported to {filename}")
+                        f.write(
+                            f"{entry['sender']} ({entry['timestamp']}): {entry['message']}\n\n"
+                        )
+                QtWidgets.QMessageBox.information(
+                    self, "Success", f"History exported to {filename}"
+                )
             except Exception as e:
-                QtWidgets.QMessageBox.warning(self, "Error", f"Failed to export history: {str(e)}")
+                QtWidgets.QMessageBox.warning(
+                    self, "Error", f"Failed to export history: {str(e)}"
+                )

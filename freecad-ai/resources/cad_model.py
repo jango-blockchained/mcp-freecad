@@ -21,10 +21,13 @@ class CADModelResourceProvider(ResourceProvider):
         if self.app is None:
             try:
                 import FreeCAD
+
                 self.app = FreeCAD
                 logger.info("Connected to FreeCAD for CAD model data")
             except ImportError:
-                logger.warning("Could not import FreeCAD. Make sure it's installed and in your Python path.")
+                logger.warning(
+                    "Could not import FreeCAD. Make sure it's installed and in your Python path."
+                )
                 self.app = None
 
     async def get_resource(
@@ -80,7 +83,7 @@ class CADModelResourceProvider(ResourceProvider):
                 return {
                     "name": doc.Name,
                     "label": doc.Label,
-                    "objects_count": len(doc.Objects)
+                    "objects_count": len(doc.Objects),
                 }
             else:
                 return {"error": "No active document"}
@@ -92,11 +95,9 @@ class CADModelResourceProvider(ResourceProvider):
             if self.app.ActiveDocument:
                 objects = []
                 for obj in self.app.ActiveDocument.Objects:
-                    objects.append({
-                        "name": obj.Name,
-                        "label": obj.Label,
-                        "type": obj.TypeId
-                    })
+                    objects.append(
+                        {"name": obj.Name, "label": obj.Label, "type": obj.TypeId}
+                    )
                 return {"objects": objects}
             else:
                 return {"error": "No active document"}
@@ -109,14 +110,13 @@ class CADModelResourceProvider(ResourceProvider):
         elif resource_type == "selection":
             # Return currently selected objects
             import FreeCADGui
-            if hasattr(FreeCADGui, 'Selection'):
+
+            if hasattr(FreeCADGui, "Selection"):
                 selection = []
                 for obj in FreeCADGui.Selection.getSelection():
-                    selection.append({
-                        "name": obj.Name,
-                        "label": obj.Label,
-                        "type": obj.TypeId
-                    })
+                    selection.append(
+                        {"name": obj.Name, "label": obj.Label, "type": obj.TypeId}
+                    )
                 return {"selection": selection}
             else:
                 return {"selection": []}
@@ -144,7 +144,7 @@ class CADModelResourceProvider(ResourceProvider):
         doc_info = {
             "name": doc.Name,
             "label": doc.Label,
-            "objects_count": len(doc.Objects)
+            "objects_count": len(doc.Objects),
         }
 
         return {"document": doc_info}

@@ -32,7 +32,7 @@ class ExportImportTool:
             "obj": {"ext": ".obj", "desc": "Wavefront OBJ format"},
             "dae": {"ext": ".dae", "desc": "COLLADA format"},
             "brep": {"ext": ".brep", "desc": "OpenCASCADE native format"},
-            "fcstd": {"ext": ".fcstd", "desc": "FreeCAD native format"}
+            "fcstd": {"ext": ".fcstd", "desc": "FreeCAD native format"},
         }
 
         self.import_formats = {
@@ -44,7 +44,7 @@ class ExportImportTool:
             "obj": {"ext": ".obj", "desc": "Wavefront OBJ format"},
             "dae": {"ext": ".dae", "desc": "COLLADA format"},
             "brep": {"ext": ".brep", "desc": "OpenCASCADE format"},
-            "fcstd": {"ext": ".fcstd", "desc": "FreeCAD native format"}
+            "fcstd": {"ext": ".fcstd", "desc": "FreeCAD native format"},
         }
 
     def _get_object(self, obj_name: str, doc: Any = None) -> Optional[Any]:
@@ -64,7 +64,9 @@ class ExportImportTool:
 
         return doc.getObject(obj_name)
 
-    def _get_objects_to_export(self, object_names: List[str] = None, doc: Any = None) -> List[Any]:
+    def _get_objects_to_export(
+        self, object_names: List[str] = None, doc: Any = None
+    ) -> List[Any]:
         """Get objects to export based on names or all objects if none specified.
 
         Args:
@@ -83,12 +85,12 @@ class ExportImportTool:
             objects = []
             for name in object_names:
                 obj = self._get_object(name, doc)
-                if obj and hasattr(obj, 'Shape'):
+                if obj and hasattr(obj, "Shape"):
                     objects.append(obj)
             return objects
         else:
             # Return all objects with shapes
-            return [obj for obj in doc.Objects if hasattr(obj, 'Shape') and obj.Shape]
+            return [obj for obj in doc.Objects if hasattr(obj, "Shape") and obj.Shape]
 
     def _ensure_directory(self, filepath: str) -> bool:
         """Ensure the directory for the filepath exists.
@@ -107,8 +109,13 @@ class ExportImportTool:
         except Exception:
             return False
 
-    def export_stl(self, filepath: str, object_names: List[str] = None,
-                   ascii: bool = False, max_deviation: float = 0.1) -> Dict[str, Any]:
+    def export_stl(
+        self,
+        filepath: str,
+        object_names: List[str] = None,
+        ascii: bool = False,
+        max_deviation: float = 0.1,
+    ) -> Dict[str, Any]:
         """Export objects to STL format.
 
         Args:
@@ -126,7 +133,7 @@ class ExportImportTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "No active document to export from"
+                    "message": "No active document to export from",
                 }
 
             # Get objects to export
@@ -135,7 +142,7 @@ class ExportImportTool:
                 return {
                     "success": False,
                     "error": "No objects",
-                    "message": "No valid objects found to export"
+                    "message": "No valid objects found to export",
                 }
 
             # Ensure directory exists
@@ -143,13 +150,13 @@ class ExportImportTool:
                 return {
                     "success": False,
                     "error": "Directory error",
-                    "message": f"Could not create directory for {filepath}"
+                    "message": f"Could not create directory for {filepath}",
                 }
 
             # Create mesh from shapes
             meshes = []
             for obj in objects:
-                if hasattr(obj, 'Shape') and obj.Shape:
+                if hasattr(obj, "Shape") and obj.Shape:
                     mesh = Mesh.Mesh()
                     mesh.addFacets(obj.Shape.tessellate(max_deviation))
                     meshes.append(mesh)
@@ -158,7 +165,7 @@ class ExportImportTool:
                 return {
                     "success": False,
                     "error": "No meshes",
-                    "message": "Could not create meshes from objects"
+                    "message": "Could not create meshes from objects",
                 }
 
             # Combine meshes
@@ -185,18 +192,20 @@ class ExportImportTool:
                     "file_size_bytes": file_size,
                     "file_size_mb": round(file_size / (1024 * 1024), 2),
                     "max_deviation": max_deviation,
-                    "facet_count": combined_mesh.CountFacets
-                }
+                    "facet_count": combined_mesh.CountFacets,
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to export STL: {str(e)}"
+                "message": f"Failed to export STL: {str(e)}",
             }
 
-    def export_step(self, filepath: str, object_names: List[str] = None) -> Dict[str, Any]:
+    def export_step(
+        self, filepath: str, object_names: List[str] = None
+    ) -> Dict[str, Any]:
         """Export objects to STEP format.
 
         Args:
@@ -212,7 +221,7 @@ class ExportImportTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "No active document to export from"
+                    "message": "No active document to export from",
                 }
 
             # Get objects to export
@@ -221,7 +230,7 @@ class ExportImportTool:
                 return {
                     "success": False,
                     "error": "No objects",
-                    "message": "No valid objects found to export"
+                    "message": "No valid objects found to export",
                 }
 
             # Ensure directory exists
@@ -229,11 +238,13 @@ class ExportImportTool:
                 return {
                     "success": False,
                     "error": "Directory error",
-                    "message": f"Could not create directory for {filepath}"
+                    "message": f"Could not create directory for {filepath}",
                 }
 
             # Get shapes
-            shapes = [obj.Shape for obj in objects if hasattr(obj, 'Shape') and obj.Shape]
+            shapes = [
+                obj.Shape for obj in objects if hasattr(obj, "Shape") and obj.Shape
+            ]
 
             if len(shapes) == 1:
                 # Single shape
@@ -254,18 +265,20 @@ class ExportImportTool:
                     "num_objects": len(objects),
                     "format": "STEP AP214",
                     "file_size_bytes": file_size,
-                    "file_size_mb": round(file_size / (1024 * 1024), 2)
-                }
+                    "file_size_mb": round(file_size / (1024 * 1024), 2),
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to export STEP: {str(e)}"
+                "message": f"Failed to export STEP: {str(e)}",
             }
 
-    def export_iges(self, filepath: str, object_names: List[str] = None) -> Dict[str, Any]:
+    def export_iges(
+        self, filepath: str, object_names: List[str] = None
+    ) -> Dict[str, Any]:
         """Export objects to IGES format.
 
         Args:
@@ -281,7 +294,7 @@ class ExportImportTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "No active document to export from"
+                    "message": "No active document to export from",
                 }
 
             # Get objects to export
@@ -290,7 +303,7 @@ class ExportImportTool:
                 return {
                     "success": False,
                     "error": "No objects",
-                    "message": "No valid objects found to export"
+                    "message": "No valid objects found to export",
                 }
 
             # Ensure directory exists
@@ -298,11 +311,13 @@ class ExportImportTool:
                 return {
                     "success": False,
                     "error": "Directory error",
-                    "message": f"Could not create directory for {filepath}"
+                    "message": f"Could not create directory for {filepath}",
                 }
 
             # Get shapes
-            shapes = [obj.Shape for obj in objects if hasattr(obj, 'Shape') and obj.Shape]
+            shapes = [
+                obj.Shape for obj in objects if hasattr(obj, "Shape") and obj.Shape
+            ]
 
             if len(shapes) == 1:
                 # Single shape
@@ -323,18 +338,20 @@ class ExportImportTool:
                     "num_objects": len(objects),
                     "format": "IGES 5.3",
                     "file_size_bytes": file_size,
-                    "file_size_mb": round(file_size / (1024 * 1024), 2)
-                }
+                    "file_size_mb": round(file_size / (1024 * 1024), 2),
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to export IGES: {str(e)}"
+                "message": f"Failed to export IGES: {str(e)}",
             }
 
-    def export_brep(self, filepath: str, object_names: List[str] = None) -> Dict[str, Any]:
+    def export_brep(
+        self, filepath: str, object_names: List[str] = None
+    ) -> Dict[str, Any]:
         """Export objects to BREP (OpenCASCADE) format.
 
         Args:
@@ -350,7 +367,7 @@ class ExportImportTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "No active document to export from"
+                    "message": "No active document to export from",
                 }
 
             # Get objects to export
@@ -359,7 +376,7 @@ class ExportImportTool:
                 return {
                     "success": False,
                     "error": "No objects",
-                    "message": "No valid objects found to export"
+                    "message": "No valid objects found to export",
                 }
 
             # Ensure directory exists
@@ -367,11 +384,13 @@ class ExportImportTool:
                 return {
                     "success": False,
                     "error": "Directory error",
-                    "message": f"Could not create directory for {filepath}"
+                    "message": f"Could not create directory for {filepath}",
                 }
 
             # Get shapes
-            shapes = [obj.Shape for obj in objects if hasattr(obj, 'Shape') and obj.Shape]
+            shapes = [
+                obj.Shape for obj in objects if hasattr(obj, "Shape") and obj.Shape
+            ]
 
             if len(shapes) == 1:
                 # Single shape
@@ -392,15 +411,15 @@ class ExportImportTool:
                     "num_objects": len(objects),
                     "format": "OpenCASCADE BREP",
                     "file_size_bytes": file_size,
-                    "file_size_mb": round(file_size / (1024 * 1024), 2)
-                }
+                    "file_size_mb": round(file_size / (1024 * 1024), 2),
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to export BREP: {str(e)}"
+                "message": f"Failed to export BREP: {str(e)}",
             }
 
     def import_stl(self, filepath: str, object_name: str = None) -> Dict[str, Any]:
@@ -419,7 +438,7 @@ class ExportImportTool:
                 return {
                     "success": False,
                     "error": "File not found",
-                    "message": f"STL file not found: {filepath}"
+                    "message": f"STL file not found: {filepath}",
                 }
 
             # Get or create document
@@ -437,8 +456,8 @@ class ExportImportTool:
             mesh_obj.Label = name
 
             # Get mesh properties
-            volume = mesh.Volume if hasattr(mesh, 'Volume') else 0
-            area = mesh.Area if hasattr(mesh, 'Area') else 0
+            volume = mesh.Volume if hasattr(mesh, "Volume") else 0
+            area = mesh.Area if hasattr(mesh, "Area") else 0
 
             # Recompute document
             doc.recompute()
@@ -454,15 +473,15 @@ class ExportImportTool:
                     "point_count": mesh.CountPoints,
                     "volume": round(volume, 2),
                     "area": round(area, 2),
-                    "file_size_bytes": os.path.getsize(filepath)
-                }
+                    "file_size_bytes": os.path.getsize(filepath),
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to import STL: {str(e)}"
+                "message": f"Failed to import STL: {str(e)}",
             }
 
     def import_step(self, filepath: str, object_name: str = None) -> Dict[str, Any]:
@@ -481,7 +500,7 @@ class ExportImportTool:
                 return {
                     "success": False,
                     "error": "File not found",
-                    "message": f"STEP file not found: {filepath}"
+                    "message": f"STEP file not found: {filepath}",
                 }
 
             # Get or create document
@@ -515,15 +534,15 @@ class ExportImportTool:
                     "is_closed": shape.isClosed(),
                     "num_faces": len(shape.Faces),
                     "num_edges": len(shape.Edges),
-                    "file_size_bytes": os.path.getsize(filepath)
-                }
+                    "file_size_bytes": os.path.getsize(filepath),
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to import STEP: {str(e)}"
+                "message": f"Failed to import STEP: {str(e)}",
             }
 
     def import_iges(self, filepath: str, object_name: str = None) -> Dict[str, Any]:
@@ -542,7 +561,7 @@ class ExportImportTool:
                 return {
                     "success": False,
                     "error": "File not found",
-                    "message": f"IGES file not found: {filepath}"
+                    "message": f"IGES file not found: {filepath}",
                 }
 
             # Get or create document
@@ -576,19 +595,20 @@ class ExportImportTool:
                     "is_closed": shape.isClosed(),
                     "num_faces": len(shape.Faces),
                     "num_edges": len(shape.Edges),
-                    "file_size_bytes": os.path.getsize(filepath)
-                }
+                    "file_size_bytes": os.path.getsize(filepath),
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to import IGES: {str(e)}"
+                "message": f"Failed to import IGES: {str(e)}",
             }
 
-    def export_format(self, filepath: str, format: str, object_names: List[str] = None,
-                     **kwargs) -> Dict[str, Any]:
+    def export_format(
+        self, filepath: str, format: str, object_names: List[str] = None, **kwargs
+    ) -> Dict[str, Any]:
         """Export objects to specified format.
 
         Args:
@@ -615,10 +635,12 @@ class ExportImportTool:
                 "success": False,
                 "error": "Unsupported format",
                 "message": f"Export format '{format}' is not supported",
-                "supported_formats": list(self.export_formats.keys())
+                "supported_formats": list(self.export_formats.keys()),
             }
 
-    def import_format(self, filepath: str, format: str = None, object_name: str = None) -> Dict[str, Any]:
+    def import_format(
+        self, filepath: str, format: str = None, object_name: str = None
+    ) -> Dict[str, Any]:
         """Import file of specified format.
 
         Args:
@@ -647,7 +669,7 @@ class ExportImportTool:
                 "success": False,
                 "error": "Unsupported format",
                 "message": f"Import format '{format}' is not supported",
-                "supported_formats": list(self.import_formats.keys())
+                "supported_formats": list(self.import_formats.keys()),
             }
 
     def get_supported_formats(self) -> Dict[str, Any]:
@@ -662,6 +684,6 @@ class ExportImportTool:
             "info": {
                 "recommended_3d_print": "STL",
                 "recommended_cad_exchange": "STEP",
-                "native_format": "FCStd"
-            }
+                "native_format": "FCStd",
+            },
         }

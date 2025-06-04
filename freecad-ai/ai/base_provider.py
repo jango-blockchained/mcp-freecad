@@ -43,13 +43,13 @@ class AIProvider(ABC):
     def set_model(self, model: str) -> bool:
         """Set the active model."""
         if model in self.get_available_models():
-            self.config['model'] = model
+            self.config["model"] = model
             return True
         return False
 
     def get_current_model(self) -> Optional[str]:
         """Get the currently selected model."""
-        return self.config.get('model')
+        return self.config.get("model")
 
     async def close(self):
         """Close any open connections."""

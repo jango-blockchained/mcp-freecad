@@ -16,8 +16,7 @@ from typing import Dict, Any, List, Optional
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger("connection_test")
 
@@ -27,13 +26,18 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 try:
     from src.mcp_freecad.client.freecad_connection_manager import FreeCADConnection
 except ImportError:
-    logger.error("Could not import FreeCADConnection. Make sure PYTHONPATH is set or run tests from the project root.")
+    logger.error(
+        "Could not import FreeCADConnection. Make sure PYTHONPATH is set or run tests from the project root."
+    )
     sys.exit(1)
+
 
 @pytest.fixture(scope="module")
 def connection_config() -> Dict[str, Any]:
     """Load the FreeCAD connection configuration from config.json."""
-    config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config.json"))
+    config_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "config.json")
+    )
     try:
         with open(config_path, "r") as f:
             full_config = json.load(f)
@@ -44,8 +48,10 @@ def connection_config() -> Dict[str, Any]:
     except (FileNotFoundError, json.JSONDecodeError) as e:
         pytest.fail(f"Failed to load or parse config.json at {config_path}: {e}")
 
+
 # Define the connection methods to test
 CONNECTION_METHODS = ["launcher", "wrapper", "server", "bridge", "mock"]
+
 
 @pytest.mark.parametrize("method", CONNECTION_METHODS)
 def test_connection_method(method: str, connection_config: Dict[str, Any]):
@@ -70,14 +76,16 @@ def test_connection_method(method: str, connection_config: Dict[str, Any]):
             host=connection_config.get("host", "localhost"),
             port=connection_config.get("port", 12345),
             freecad_path=connection_config.get("path"),
-            auto_connect=False
+            auto_connect=False,
         )
 
         # Connect using the specified method
         success = fc.connect(prefer_method=method)
 
         if success:
-            logger.info(f"✅ Successfully connected using {method} method ({fc.get_connection_type()})")
+            logger.info(
+                f"✅ Successfully connected using {method} method ({fc.get_connection_type()})"
+            )
 
             # Test basic operations
             version_info = fc.get_version()

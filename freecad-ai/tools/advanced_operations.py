@@ -21,8 +21,13 @@ class AdvancedOperationsTool:
         self.name = "advanced_operations"
         self.description = "Perform advanced CAD operations on objects"
 
-    def extrude_profile(self, profile_name: str, direction: tuple = (0, 0, 1),
-                       distance: float = 10.0, name: str = None) -> Dict[str, Any]:
+    def extrude_profile(
+        self,
+        profile_name: str,
+        direction: tuple = (0, 0, 1),
+        distance: float = 10.0,
+        name: str = None,
+    ) -> Dict[str, Any]:
         """Extrude a 2D profile to create a 3D solid.
 
         Args:
@@ -40,14 +45,14 @@ class AdvancedOperationsTool:
                 return {
                     "success": False,
                     "error": "Distance must be positive",
-                    "message": f"Invalid distance: {distance}"
+                    "message": f"Invalid distance: {distance}",
                 }
 
             if len(direction) != 3:
                 return {
                     "success": False,
                     "error": "Direction must be a 3-element tuple (x, y, z)",
-                    "message": f"Invalid direction: {direction}"
+                    "message": f"Invalid direction: {direction}",
                 }
 
             # Normalize direction vector
@@ -56,7 +61,7 @@ class AdvancedOperationsTool:
                 return {
                     "success": False,
                     "error": "Direction vector cannot be zero",
-                    "message": f"Invalid direction vector: {direction}"
+                    "message": f"Invalid direction vector: {direction}",
                 }
             dir_vector.normalize()
 
@@ -66,7 +71,7 @@ class AdvancedOperationsTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "Please create or open a FreeCAD document"
+                    "message": "Please create or open a FreeCAD document",
                 }
 
             # Find the profile object
@@ -75,17 +80,17 @@ class AdvancedOperationsTool:
                 return {
                     "success": False,
                     "error": f"Profile object '{profile_name}' not found",
-                    "message": f"Available objects: {[obj.Name for obj in doc.Objects]}"
+                    "message": f"Available objects: {[obj.Name for obj in doc.Objects]}",
                 }
 
             # Get the shape from the profile
-            if hasattr(profile_obj, 'Shape'):
+            if hasattr(profile_obj, "Shape"):
                 profile_shape = profile_obj.Shape
             else:
                 return {
                     "success": False,
                     "error": "Profile object has no Shape attribute",
-                    "message": f"Object {profile_name} is not a valid geometric object"
+                    "message": f"Object {profile_name} is not a valid geometric object",
                 }
 
             # Check if profile is 2D (has faces or wires)
@@ -103,13 +108,13 @@ class AdvancedOperationsTool:
                     return {
                         "success": False,
                         "error": "Cannot create face from wire",
-                        "message": "Wire may not be closed or may be invalid"
+                        "message": "Wire may not be closed or may be invalid",
                     }
             else:
                 return {
                     "success": False,
                     "error": "Profile must have faces or closed wires",
-                    "message": f"Profile {profile_name} has no extrudable geometry"
+                    "message": f"Profile {profile_name} has no extrudable geometry",
                 }
 
             # Create FreeCAD object
@@ -133,20 +138,25 @@ class AdvancedOperationsTool:
                     "source_profile": profile_name,
                     "direction": direction,
                     "distance": distance,
-                    "volume": round(volume, 2)
-                }
+                    "volume": round(volume, 2),
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to extrude profile: {str(e)}"
+                "message": f"Failed to extrude profile: {str(e)}",
             }
 
-    def revolve_profile(self, profile_name: str, axis_point: tuple = (0, 0, 0),
-                       axis_direction: tuple = (0, 0, 1), angle: float = 360.0,
-                       name: str = None) -> Dict[str, Any]:
+    def revolve_profile(
+        self,
+        profile_name: str,
+        axis_point: tuple = (0, 0, 0),
+        axis_direction: tuple = (0, 0, 1),
+        angle: float = 360.0,
+        name: str = None,
+    ) -> Dict[str, Any]:
         """Revolve a 2D profile around an axis to create a 3D solid.
 
         Args:
@@ -165,14 +175,14 @@ class AdvancedOperationsTool:
                 return {
                     "success": False,
                     "error": "Angle must be between 0 and 360 degrees",
-                    "message": f"Invalid angle: {angle}"
+                    "message": f"Invalid angle: {angle}",
                 }
 
             if len(axis_point) != 3 or len(axis_direction) != 3:
                 return {
                     "success": False,
                     "error": "Axis point and direction must be 3-element tuples",
-                    "message": f"Invalid axis: point={axis_point}, direction={axis_direction}"
+                    "message": f"Invalid axis: point={axis_point}, direction={axis_direction}",
                 }
 
             # Normalize axis direction
@@ -181,7 +191,7 @@ class AdvancedOperationsTool:
                 return {
                     "success": False,
                     "error": "Axis direction vector cannot be zero",
-                    "message": f"Invalid axis direction: {axis_direction}"
+                    "message": f"Invalid axis direction: {axis_direction}",
                 }
             axis_vec.normalize()
 
@@ -191,7 +201,7 @@ class AdvancedOperationsTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "Please create or open a FreeCAD document"
+                    "message": "Please create or open a FreeCAD document",
                 }
 
             # Find the profile object
@@ -200,41 +210,45 @@ class AdvancedOperationsTool:
                 return {
                     "success": False,
                     "error": f"Profile object '{profile_name}' not found",
-                    "message": f"Available objects: {[obj.Name for obj in doc.Objects]}"
+                    "message": f"Available objects: {[obj.Name for obj in doc.Objects]}",
                 }
 
             # Get the shape from the profile
-            if hasattr(profile_obj, 'Shape'):
+            if hasattr(profile_obj, "Shape"):
                 profile_shape = profile_obj.Shape
             else:
                 return {
                     "success": False,
                     "error": "Profile object has no Shape attribute",
-                    "message": f"Object {profile_name} is not a valid geometric object"
+                    "message": f"Object {profile_name} is not a valid geometric object",
                 }
 
             # Check if profile is 2D (has faces or wires)
             if profile_shape.Faces:
                 # Use the first face for revolution
                 face = profile_shape.Faces[0]
-                revolved_shape = face.revolve(App.Vector(*axis_point), axis_vec, math.radians(angle))
+                revolved_shape = face.revolve(
+                    App.Vector(*axis_point), axis_vec, math.radians(angle)
+                )
             elif profile_shape.Wires:
                 # Create face from wire and revolve
                 wire = profile_shape.Wires[0]
                 try:
                     face = Part.Face(wire)
-                    revolved_shape = face.revolve(App.Vector(*axis_point), axis_vec, math.radians(angle))
+                    revolved_shape = face.revolve(
+                        App.Vector(*axis_point), axis_vec, math.radians(angle)
+                    )
                 except:
                     return {
                         "success": False,
                         "error": "Cannot create face from wire",
-                        "message": "Wire may not be closed or may be invalid"
+                        "message": "Wire may not be closed or may be invalid",
                     }
             else:
                 return {
                     "success": False,
                     "error": "Profile must have faces or closed wires",
-                    "message": f"Profile {profile_name} has no revolvable geometry"
+                    "message": f"Profile {profile_name} has no revolvable geometry",
                 }
 
             # Create FreeCAD object
@@ -259,19 +273,24 @@ class AdvancedOperationsTool:
                     "axis_point": axis_point,
                     "axis_direction": axis_direction,
                     "angle": angle,
-                    "volume": round(volume, 2)
-                }
+                    "volume": round(volume, 2),
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to revolve profile: {str(e)}"
+                "message": f"Failed to revolve profile: {str(e)}",
             }
 
-    def loft_profiles(self, profile_names: List[str], solid: bool = True,
-                     ruled: bool = False, name: str = None) -> Dict[str, Any]:
+    def loft_profiles(
+        self,
+        profile_names: List[str],
+        solid: bool = True,
+        ruled: bool = False,
+        name: str = None,
+    ) -> Dict[str, Any]:
         """Create a loft between multiple 2D profiles.
 
         Args:
@@ -289,7 +308,7 @@ class AdvancedOperationsTool:
                 return {
                     "success": False,
                     "error": "At least 2 profiles required for loft",
-                    "message": f"Only {len(profile_names)} profiles provided"
+                    "message": f"Only {len(profile_names)} profiles provided",
                 }
 
             # Get active document
@@ -298,7 +317,7 @@ class AdvancedOperationsTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "Please create or open a FreeCAD document"
+                    "message": "Please create or open a FreeCAD document",
                 }
 
             # Collect profile shapes
@@ -309,16 +328,16 @@ class AdvancedOperationsTool:
                     return {
                         "success": False,
                         "error": f"Profile object '{profile_name}' not found",
-                        "message": f"Available objects: {[obj.Name for obj in doc.Objects]}"
+                        "message": f"Available objects: {[obj.Name for obj in doc.Objects]}",
                     }
 
-                if hasattr(profile_obj, 'Shape'):
+                if hasattr(profile_obj, "Shape"):
                     profile_shape = profile_obj.Shape
                 else:
                     return {
                         "success": False,
                         "error": f"Profile object '{profile_name}' has no Shape attribute",
-                        "message": f"Object {profile_name} is not a valid geometric object"
+                        "message": f"Object {profile_name} is not a valid geometric object",
                     }
 
                 # Get wire or face from profile
@@ -331,7 +350,7 @@ class AdvancedOperationsTool:
                     return {
                         "success": False,
                         "error": f"Profile '{profile_name}' has no wires or faces",
-                        "message": f"Profile {profile_name} has no loftable geometry"
+                        "message": f"Profile {profile_name} has no loftable geometry",
                     }
 
             # Create loft
@@ -341,7 +360,7 @@ class AdvancedOperationsTool:
                 return {
                     "success": False,
                     "error": f"Loft operation failed: {str(e)}",
-                    "message": "Profiles may be incompatible or incorrectly positioned"
+                    "message": "Profiles may be incompatible or incorrectly positioned",
                 }
 
             # Create FreeCAD object
@@ -365,19 +384,20 @@ class AdvancedOperationsTool:
                     "source_profiles": profile_names,
                     "solid": solid,
                     "ruled": ruled,
-                    "volume": round(volume, 2) if solid else "N/A (surface)"
-                }
+                    "volume": round(volume, 2) if solid else "N/A (surface)",
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to create loft: {str(e)}"
+                "message": f"Failed to create loft: {str(e)}",
             }
 
-    def sweep_profile(self, profile_name: str, path_name: str, frenet: bool = False,
-                     name: str = None) -> Dict[str, Any]:
+    def sweep_profile(
+        self, profile_name: str, path_name: str, frenet: bool = False, name: str = None
+    ) -> Dict[str, Any]:
         """Sweep a 2D profile along a 3D path.
 
         Args:
@@ -396,7 +416,7 @@ class AdvancedOperationsTool:
                 return {
                     "success": False,
                     "error": "No active document",
-                    "message": "Please create or open a FreeCAD document"
+                    "message": "Please create or open a FreeCAD document",
                 }
 
             # Find the profile object
@@ -405,7 +425,7 @@ class AdvancedOperationsTool:
                 return {
                     "success": False,
                     "error": f"Profile object '{profile_name}' not found",
-                    "message": f"Available objects: {[obj.Name for obj in doc.Objects]}"
+                    "message": f"Available objects: {[obj.Name for obj in doc.Objects]}",
                 }
 
             # Find the path object
@@ -414,15 +434,15 @@ class AdvancedOperationsTool:
                 return {
                     "success": False,
                     "error": f"Path object '{path_name}' not found",
-                    "message": f"Available objects: {[obj.Name for obj in doc.Objects]}"
+                    "message": f"Available objects: {[obj.Name for obj in doc.Objects]}",
                 }
 
             # Get shapes
-            if not hasattr(profile_obj, 'Shape') or not hasattr(path_obj, 'Shape'):
+            if not hasattr(profile_obj, "Shape") or not hasattr(path_obj, "Shape"):
                 return {
                     "success": False,
                     "error": "Profile or path object has no Shape attribute",
-                    "message": "Objects must be valid geometric objects"
+                    "message": "Objects must be valid geometric objects",
                 }
 
             profile_shape = profile_obj.Shape
@@ -437,7 +457,7 @@ class AdvancedOperationsTool:
                 return {
                     "success": False,
                     "error": "Profile must have wires or faces",
-                    "message": f"Profile {profile_name} has no sweepable geometry"
+                    "message": f"Profile {profile_name} has no sweepable geometry",
                 }
 
             # Get path wire
@@ -450,20 +470,24 @@ class AdvancedOperationsTool:
                 return {
                     "success": False,
                     "error": "Path must have wires or edges",
-                    "message": f"Path {path_name} has no valid path geometry"
+                    "message": f"Path {path_name} has no valid path geometry",
                 }
 
             # Create sweep
             try:
                 if frenet:
-                    swept_shape = Part.makePipeShell([profile_wire], path_wire, True, True)
+                    swept_shape = Part.makePipeShell(
+                        [profile_wire], path_wire, True, True
+                    )
                 else:
-                    swept_shape = Part.makePipeShell([profile_wire], path_wire, False, False)
+                    swept_shape = Part.makePipeShell(
+                        [profile_wire], path_wire, False, False
+                    )
             except Exception as e:
                 return {
                     "success": False,
                     "error": f"Sweep operation failed: {str(e)}",
-                    "message": "Profile and path may be incompatible"
+                    "message": "Profile and path may be incompatible",
                 }
 
             # Create FreeCAD object
@@ -487,20 +511,26 @@ class AdvancedOperationsTool:
                     "source_profile": profile_name,
                     "path": path_name,
                     "frenet": frenet,
-                    "volume": round(volume, 2)
-                }
+                    "volume": round(volume, 2),
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to create sweep: {str(e)}"
+                "message": f"Failed to create sweep: {str(e)}",
             }
 
-    def create_helix(self, radius: float = 5.0, pitch: float = 2.0, height: float = 20.0,
-                    direction: str = "right", position: tuple = (0, 0, 0),
-                    name: str = None) -> Dict[str, Any]:
+    def create_helix(
+        self,
+        radius: float = 5.0,
+        pitch: float = 2.0,
+        height: float = 20.0,
+        direction: str = "right",
+        position: tuple = (0, 0, 0),
+        name: str = None,
+    ) -> Dict[str, Any]:
         """Create a helical curve.
 
         Args:
@@ -520,28 +550,28 @@ class AdvancedOperationsTool:
                 return {
                     "success": False,
                     "error": "Radius must be positive",
-                    "message": f"Invalid radius: {radius}"
+                    "message": f"Invalid radius: {radius}",
                 }
 
             if pitch <= 0:
                 return {
                     "success": False,
                     "error": "Pitch must be positive",
-                    "message": f"Invalid pitch: {pitch}"
+                    "message": f"Invalid pitch: {pitch}",
                 }
 
             if height <= 0:
                 return {
                     "success": False,
                     "error": "Height must be positive",
-                    "message": f"Invalid height: {height}"
+                    "message": f"Invalid height: {height}",
                 }
 
             if direction not in ["right", "left"]:
                 return {
                     "success": False,
                     "error": "Direction must be 'right' or 'left'",
-                    "message": f"Invalid direction: {direction}"
+                    "message": f"Invalid direction: {direction}",
                 }
 
             # Get or create active document
@@ -554,7 +584,7 @@ class AdvancedOperationsTool:
 
             # Create helix
             # FreeCAD's makeHelix: radius, pitch, height, angle (optional), left_handed (optional)
-            left_handed = (direction == "left")
+            left_handed = direction == "left"
             helix_shape = Part.makeHelix(pitch, height, radius, 0, left_handed)
 
             # Create FreeCAD object
@@ -585,15 +615,15 @@ class AdvancedOperationsTool:
                     "direction": direction,
                     "turns": round(turns, 2),
                     "length": round(length, 2),
-                    "position": position
-                }
+                    "position": position,
+                },
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Failed to create helix: {str(e)}"
+                "message": f"Failed to create helix: {str(e)}",
             }
 
     def get_available_operations(self) -> Dict[str, Any]:
@@ -606,23 +636,36 @@ class AdvancedOperationsTool:
             "advanced_operations": {
                 "extrude": {
                     "description": "Extrude a 2D profile to create a 3D solid",
-                    "parameters": ["profile_name", "direction", "distance", "name"]
+                    "parameters": ["profile_name", "direction", "distance", "name"],
                 },
                 "revolve": {
                     "description": "Revolve a 2D profile around an axis",
-                    "parameters": ["profile_name", "axis_point", "axis_direction", "angle", "name"]
+                    "parameters": [
+                        "profile_name",
+                        "axis_point",
+                        "axis_direction",
+                        "angle",
+                        "name",
+                    ],
                 },
                 "loft": {
                     "description": "Create a loft between multiple 2D profiles",
-                    "parameters": ["profile_names", "solid", "ruled", "name"]
+                    "parameters": ["profile_names", "solid", "ruled", "name"],
                 },
                 "sweep": {
                     "description": "Sweep a 2D profile along a 3D path",
-                    "parameters": ["profile_name", "path_name", "frenet", "name"]
+                    "parameters": ["profile_name", "path_name", "frenet", "name"],
                 },
                 "helix": {
                     "description": "Create a helical curve",
-                    "parameters": ["radius", "pitch", "height", "direction", "position", "name"]
-                }
+                    "parameters": [
+                        "radius",
+                        "pitch",
+                        "height",
+                        "direction",
+                        "position",
+                        "name",
+                    ],
+                },
             }
         }

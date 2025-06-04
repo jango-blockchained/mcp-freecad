@@ -16,10 +16,13 @@ class RenderingToolProvider(ToolProvider):
         if self.app is None:
             try:
                 import FreeCAD
+
                 self.app = FreeCAD
                 logger.info("Connected to FreeCAD")
             except ImportError:
-                logger.warning("Could not import FreeCAD. Make sure it's installed and in your Python path.")
+                logger.warning(
+                    "Could not import FreeCAD. Make sure it's installed and in your Python path."
+                )
                 self.app = None
 
     @property
@@ -32,75 +35,81 @@ class RenderingToolProvider(ToolProvider):
                 "properties": {
                     "action": {
                         "type": "string",
-                        "enum": ["render_image", "set_camera", "apply_material", "setup_lighting", "export_scene"],
-                        "description": "The rendering action to perform"
+                        "enum": [
+                            "render_image",
+                            "set_camera",
+                            "apply_material",
+                            "setup_lighting",
+                            "export_scene",
+                        ],
+                        "description": "The rendering action to perform",
                     },
                     "output_path": {
                         "type": "string",
-                        "description": "Output file path for rendered image"
+                        "description": "Output file path for rendered image",
                     },
                     "width": {
                         "type": "integer",
-                        "description": "Image width in pixels"
+                        "description": "Image width in pixels",
                     },
                     "height": {
                         "type": "integer",
-                        "description": "Image height in pixels"
+                        "description": "Image height in pixels",
                     },
                     "camera_position": {
                         "type": "array",
                         "items": {"type": "number"},
-                        "description": "Camera position [x, y, z]"
+                        "description": "Camera position [x, y, z]",
                     },
                     "camera_target": {
                         "type": "array",
                         "items": {"type": "number"},
-                        "description": "Camera target [x, y, z]"
+                        "description": "Camera target [x, y, z]",
                     },
                     "object_name": {
                         "type": "string",
-                        "description": "Name of object to apply material to"
+                        "description": "Name of object to apply material to",
                     },
                     "material_type": {
                         "type": "string",
                         "enum": ["metal", "plastic", "glass", "wood", "custom"],
-                        "description": "Type of material to apply"
+                        "description": "Type of material to apply",
                     },
                     "color": {
                         "type": "array",
                         "items": {"type": "number"},
-                        "description": "RGB color values [r, g, b] (0-1)"
+                        "description": "RGB color values [r, g, b] (0-1)",
                     },
                     "renderer": {
                         "type": "string",
                         "enum": ["raytracing", "povray", "luxrender", "blender"],
-                        "description": "Rendering engine to use"
-                    }
+                        "description": "Rendering engine to use",
+                    },
                 },
-                "required": ["action"]
+                "required": ["action"],
             },
             returns={
                 "type": "object",
                 "properties": {
                     "status": {"type": "string"},
                     "result": {"type": "object"},
-                    "error": {"type": "string"}
-                }
+                    "error": {"type": "string"},
+                },
             },
             examples=[
                 {
                     "action": "render_image",
                     "output_path": "/tmp/render.png",
                     "width": 1920,
-                    "height": 1080
+                    "height": 1080,
                 },
                 {
                     "action": "apply_material",
                     "object_name": "Box",
                     "material_type": "metal",
-                    "color": [0.8, 0.8, 0.9]
-                }
-            ]
+                    "color": [0.8, 0.8, 0.9],
+                },
+            ],
         )
 
     async def execute_tool(self, tool_id: str, params: Dict[str, Any]) -> ToolResult:
@@ -148,12 +157,16 @@ class RenderingToolProvider(ToolProvider):
                         import Raytracing
 
                         # Create raytracing project
-                        project = self.app.ActiveDocument.addObject("Raytracing::RayProject", "RayProject")
+                        project = self.app.ActiveDocument.addObject(
+                            "Raytracing::RayProject", "RayProject"
+                        )
 
                         # Add all visible objects
                         for obj in self.app.ActiveDocument.Objects:
-                            if hasattr(obj, 'ViewObject') and obj.ViewObject.Visibility:
-                                ray_obj = self.app.ActiveDocument.addObject("Raytracing::RayPartFeature", f"Ray_{obj.Name}")
+                            if hasattr(obj, "ViewObject") and obj.ViewObject.Visibility:
+                                ray_obj = self.app.ActiveDocument.addObject(
+                                    "Raytracing::RayPartFeature", f"Ray_{obj.Name}"
+                                )
                                 ray_obj.Source = obj
                                 project.addObject(ray_obj)
 
@@ -163,17 +176,22 @@ class RenderingToolProvider(ToolProvider):
                         # Execute rendering
                         project.execute()
 
-                        return self.format_result("success", result={
-                            "output_path": output_path,
-                            "width": width,
-                            "height": height,
-                            "renderer": renderer,
-                            "message": "Image rendered successfully using Raytracing workbench"
-                        })
+                        return self.format_result(
+                            "success",
+                            result={
+                                "output_path": output_path,
+                                "width": width,
+                                "height": height,
+                                "renderer": renderer,
+                                "message": "Image rendered successfully using Raytracing workbench",
+                            },
+                        )
 
                     except ImportError:
                         # Fallback to screenshot
-                        return await self._screenshot_fallback(output_path, width, height)
+                        return await self._screenshot_fallback(
+                            output_path, width, height
+                        )
 
                 elif renderer == "povray":
                     return await self._render_povray(params)
@@ -188,7 +206,9 @@ class RenderingToolProvider(ToolProvider):
         except Exception as e:
             return self.format_result("error", error=f"Failed to render image: {e}")
 
-    async def _screenshot_fallback(self, output_path: str, width: int, height: int) -> ToolResult:
+    async def _screenshot_fallback(
+        self, output_path: str, width: int, height: int
+    ) -> ToolResult:
         """Fallback to screenshot if advanced rendering not available."""
         try:
             import FreeCADGui as Gui
@@ -197,13 +217,16 @@ class RenderingToolProvider(ToolProvider):
             view = Gui.ActiveDocument.ActiveView
             view.saveImage(output_path, width, height, "White")
 
-            return self.format_result("success", result={
-                "output_path": output_path,
-                "width": width,
-                "height": height,
-                "renderer": "screenshot",
-                "message": "Screenshot saved (fallback method)"
-            })
+            return self.format_result(
+                "success",
+                result={
+                    "output_path": output_path,
+                    "width": width,
+                    "height": height,
+                    "renderer": "screenshot",
+                    "message": "Screenshot saved (fallback method)",
+                },
+            )
 
         except Exception as e:
             return self.format_result("error", error=f"Screenshot fallback failed: {e}")
@@ -221,19 +244,25 @@ class RenderingToolProvider(ToolProvider):
 
                 # Set camera
                 import FreeCAD
+
                 camera = view.getCameraNode()
                 camera.position.setValue(*camera_position)
 
                 # Set view direction (from position to target)
-                direction = FreeCAD.Vector(*camera_target) - FreeCAD.Vector(*camera_position)
+                direction = FreeCAD.Vector(*camera_target) - FreeCAD.Vector(
+                    *camera_position
+                )
                 direction.normalize()
                 view.setViewDirection(direction)
 
-                return self.format_result("success", result={
-                    "camera_position": camera_position,
-                    "camera_target": camera_target,
-                    "message": "Camera position set successfully"
-                })
+                return self.format_result(
+                    "success",
+                    result={
+                        "camera_position": camera_position,
+                        "camera_target": camera_target,
+                        "message": "Camera position set successfully",
+                    },
+                )
 
             except ImportError:
                 return self.format_result("error", error="FreeCADGui not available")
@@ -252,7 +281,9 @@ class RenderingToolProvider(ToolProvider):
             obj = doc.getObject(object_name)
 
             if not obj:
-                return self.format_result("error", error=f"Object '{object_name}' not found")
+                return self.format_result(
+                    "error", error=f"Object '{object_name}' not found"
+                )
 
             try:
                 import FreeCADGui as Gui
@@ -277,12 +308,15 @@ class RenderingToolProvider(ToolProvider):
 
                 doc.recompute()
 
-                return self.format_result("success", result={
-                    "object_name": object_name,
-                    "material_type": material_type,
-                    "color": color,
-                    "message": f"Material '{material_type}' applied to '{object_name}'"
-                })
+                return self.format_result(
+                    "success",
+                    result={
+                        "object_name": object_name,
+                        "material_type": material_type,
+                        "color": color,
+                        "message": f"Material '{material_type}' applied to '{object_name}'",
+                    },
+                )
 
             except ImportError:
                 return self.format_result("error", error="FreeCADGui not available")
@@ -295,11 +329,14 @@ class RenderingToolProvider(ToolProvider):
         try:
             # This is a simplified lighting setup
             # Real implementation would depend on the rendering engine
-            return self.format_result("success", result={
-                "lighting": "default",
-                "message": "Lighting setup completed (simplified implementation)",
-                "note": "Advanced lighting requires specific rendering workbench"
-            })
+            return self.format_result(
+                "success",
+                result={
+                    "lighting": "default",
+                    "message": "Lighting setup completed (simplified implementation)",
+                    "note": "Advanced lighting requires specific rendering workbench",
+                },
+            )
 
         except Exception as e:
             return self.format_result("error", error=f"Failed to setup lighting: {e}")
@@ -313,7 +350,11 @@ class RenderingToolProvider(ToolProvider):
             doc = self._get_active_document()
 
             # Get all visible objects
-            objects = [obj for obj in doc.Objects if hasattr(obj, 'ViewObject') and obj.ViewObject.Visibility]
+            objects = [
+                obj
+                for obj in doc.Objects
+                if hasattr(obj, "ViewObject") and obj.ViewObject.Visibility
+            ]
 
             if objects:
                 # Export using Mesh module
@@ -323,7 +364,7 @@ class RenderingToolProvider(ToolProvider):
                     # Create mesh from objects
                     meshes = []
                     for obj in objects:
-                        if hasattr(obj, 'Shape'):
+                        if hasattr(obj, "Shape"):
                             mesh = Mesh.Mesh(obj.Shape.tessellate(0.1))
                             meshes.append(mesh)
 
@@ -336,14 +377,19 @@ class RenderingToolProvider(ToolProvider):
                         # Export
                         combined_mesh.write(output_path)
 
-                        return self.format_result("success", result={
-                            "output_path": output_path,
-                            "object_count": len(objects),
-                            "message": f"Scene exported to '{output_path}'"
-                        })
+                        return self.format_result(
+                            "success",
+                            result={
+                                "output_path": output_path,
+                                "object_count": len(objects),
+                                "message": f"Scene exported to '{output_path}'",
+                            },
+                        )
 
                 except ImportError:
-                    return self.format_result("error", error="Mesh module not available")
+                    return self.format_result(
+                        "error", error="Mesh module not available"
+                    )
 
             return self.format_result("error", error="No visible objects to export")
 
@@ -353,20 +399,26 @@ class RenderingToolProvider(ToolProvider):
     async def _render_povray(self, params: Dict[str, Any]) -> ToolResult:
         """Render using POV-Ray."""
         # This would require POV-Ray integration
-        return self.format_result("success", result={
-            "renderer": "povray",
-            "message": "POV-Ray rendering not implemented yet",
-            "note": "Requires POV-Ray workbench or external POV-Ray installation"
-        })
+        return self.format_result(
+            "success",
+            result={
+                "renderer": "povray",
+                "message": "POV-Ray rendering not implemented yet",
+                "note": "Requires POV-Ray workbench or external POV-Ray installation",
+            },
+        )
 
     async def _render_blender(self, params: Dict[str, Any]) -> ToolResult:
         """Render using Blender."""
         # This would require Blender integration
-        return self.format_result("success", result={
-            "renderer": "blender",
-            "message": "Blender rendering not implemented yet",
-            "note": "Requires export to Blender and external rendering"
-        })
+        return self.format_result(
+            "success",
+            result={
+                "renderer": "blender",
+                "message": "Blender rendering not implemented yet",
+                "note": "Requires export to Blender and external rendering",
+            },
+        )
 
     def _get_active_document(self):
         """Get the active document or create a new one if none exists."""

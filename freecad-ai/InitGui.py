@@ -18,6 +18,7 @@ except NameError:
     # __file__ not available in FreeCAD's addon loading context
     # Use inspect to get the current file location
     import inspect
+
     current_file = inspect.getfile(inspect.currentframe())
     addon_dir = os.path.dirname(os.path.abspath(current_file))
 
@@ -37,10 +38,14 @@ try:
     # Check if workbench already exists and handle gracefully
     try:
         FreeCADGui.addWorkbench(workbench)
-        FreeCAD.Console.PrintMessage("FreeCAD AI Addon: Workbench registered successfully\n")
+        FreeCAD.Console.PrintMessage(
+            "FreeCAD AI Addon: Workbench registered successfully\n"
+        )
     except KeyError as ke:
         if "already exists" in str(ke):
-            FreeCAD.Console.PrintWarning(f"FreeCAD AI Addon: Workbench already registered, skipping: {ke}\n")
+            FreeCAD.Console.PrintWarning(
+                f"FreeCAD AI Addon: Workbench already registered, skipping: {ke}\n"
+            )
         else:
             raise ke
 
@@ -50,7 +55,10 @@ except ImportError as e:
 except Exception as e:
     FreeCAD.Console.PrintError(f"FreeCAD AI Addon: Initialization error: {e}\n")
     import traceback
-    FreeCAD.Console.PrintError(f"FreeCAD AI Addon: Traceback: {traceback.format_exc()}\n")
+
+    FreeCAD.Console.PrintError(
+        f"FreeCAD AI Addon: Traceback: {traceback.format_exc()}\n"
+    )
 
 # Addon metadata for FreeCAD
 __version__ = "0.7.11"

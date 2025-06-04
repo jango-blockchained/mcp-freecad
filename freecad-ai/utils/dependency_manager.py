@@ -20,21 +20,21 @@ class DependencyManager:
 
     # Required dependencies for the addon
     REQUIRED_DEPENDENCIES = {
-        'aiohttp': {
-            'version': '>=3.8.0',
-            'description': 'Async HTTP client for AI provider communication',
-            'import_name': 'aiohttp'
+        "aiohttp": {
+            "version": ">=3.8.0",
+            "description": "Async HTTP client for AI provider communication",
+            "import_name": "aiohttp",
         },
-        'requests': {
-            'version': '>=2.28.0',
-            'description': 'HTTP library for API requests',
-            'import_name': 'requests'
+        "requests": {
+            "version": ">=2.28.0",
+            "description": "HTTP library for API requests",
+            "import_name": "requests",
         },
-        'mcp': {
-            'version': '>=1.0.0',
-            'description': 'Model Context Protocol library for Claude Desktop integration',
-            'import_name': 'mcp'
-        }
+        "mcp": {
+            "version": ">=1.0.0",
+            "description": "Model Context Protocol library for Claude Desktop integration",
+            "import_name": "mcp",
+        },
     }
 
     def __init__(self, progress_callback: Optional[Callable[[str], None]] = None):
@@ -65,20 +65,20 @@ class DependencyManager:
         """Detect FreeCAD installation type."""
         try:
             # Check if running from AppImage
-            if os.environ.get('APPIMAGE'):
-                return 'appimage'
+            if os.environ.get("APPIMAGE"):
+                return "appimage"
 
             # Check if running from Snap
-            if os.environ.get('SNAP'):
-                return 'snap'
+            if os.environ.get("SNAP"):
+                return "snap"
 
             # Check if Windows portable
-            if sys.platform == 'win32' and 'FreeCAD' in sys.executable:
-                return 'windows_portable'
+            if sys.platform == "win32" and "FreeCAD" in sys.executable:
+                return "windows_portable"
 
-            return 'standard'
+            return "standard"
         except:
-            return 'standard'
+            return "standard"
 
     def _get_python_exe(self) -> str:
         """Get the Python executable path for the current FreeCAD installation."""
@@ -87,6 +87,7 @@ class DependencyManager:
             if self.freecad_version >= (0, 22):
                 try:
                     from freecad.utils import get_python_exe
+
                     return get_python_exe()
                 except ImportError:
                     pass
@@ -94,16 +95,17 @@ class DependencyManager:
             # Try addon manager utilities (works for 0.21+)
             try:
                 import addonmanager_utilities as utils
-                if hasattr(utils, 'get_python_exe'):
+
+                if hasattr(utils, "get_python_exe"):
                     return utils.get_python_exe()
             except ImportError:
                 pass
 
             # Fallback methods
-            if self.installation_type == 'windows_portable':
+            if self.installation_type == "windows_portable":
                 # For Windows portable, Python is usually in the bin directory
                 freecad_dir = os.path.dirname(sys.executable)
-                python_exe = os.path.join(freecad_dir, 'python.exe')
+                python_exe = os.path.join(freecad_dir, "python.exe")
                 if os.path.exists(python_exe):
                     return python_exe
 
@@ -119,7 +121,8 @@ class DependencyManager:
         try:
             # Try addon manager utilities first
             import addonmanager_utilities as utils
-            if hasattr(utils, 'get_pip_target_directory'):
+
+            if hasattr(utils, "get_pip_target_directory"):
                 return utils.get_pip_target_directory()
         except ImportError:
             pass
@@ -127,11 +130,11 @@ class DependencyManager:
         # Fallback: use FreeCAD user directory
         try:
             user_dir = FreeCAD.getUserAppDataDir()
-            vendor_path = os.path.join(user_dir, 'Mod', 'vendor')
+            vendor_path = os.path.join(user_dir, "Mod", "vendor")
             return vendor_path
         except:
             # Last resort
-            return os.path.join(os.path.expanduser('~'), '.freecad', 'vendor')
+            return os.path.join(os.path.expanduser("~"), ".freecad", "vendor")
 
     def check_dependency(self, package_name: str) -> bool:
         """Check if a dependency is installed and importable.
@@ -143,7 +146,9 @@ class DependencyManager:
             True if the package is available, False otherwise
         """
         try:
-            import_name = self.REQUIRED_DEPENDENCIES.get(package_name, {}).get('import_name', package_name)
+            import_name = self.REQUIRED_DEPENDENCIES.get(package_name, {}).get(
+                "import_name", package_name
+            )
             spec = importlib.util.find_spec(import_name)
             return spec is not None
         except ImportError:
@@ -210,7 +215,7 @@ class DependencyManager:
                 "--disable-pip-version-check",
                 "--target",
                 vendor_path,
-                package_spec
+                package_spec,
             ]
 
             self.progress_callback(f"Running: {' '.join(cmd)}")
@@ -220,13 +225,13 @@ class DependencyManager:
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                universal_newlines=True
+                universal_newlines=True,
             )
 
             # Stream output
             while True:
                 output = process.stdout.readline()
-                if output == '' and process.poll() is not None:
+                if output == "" and process.poll() is not None:
                     break
                 if output:
                     self.progress_callback(f"pip: {output.strip()}")
@@ -235,12 +240,12 @@ class DependencyManager:
             stdout, stderr = process.communicate(timeout=timeout)
 
             if stdout:
-                for line in stdout.split('\n'):
+                for line in stdout.split("\n"):
                     if line.strip():
                         self.progress_callback(f"pip: {line}")
 
             if stderr:
-                for line in stderr.split('\n'):
+                for line in stderr.split("\n"):
                     if line.strip():
                         self.progress_callback(f"pip error: {line}")
 
@@ -249,11 +254,15 @@ class DependencyManager:
                 self.progress_callback(f"✅ Successfully installed {package_name}")
                 return True
             else:
-                self.progress_callback(f"❌ Failed to install {package_name} (exit code: {process.returncode})")
+                self.progress_callback(
+                    f"❌ Failed to install {package_name} (exit code: {process.returncode})"
+                )
                 return False
 
         except subprocess.TimeoutExpired:
-            self.progress_callback(f"❌ Installation of {package_name} timed out after {timeout} seconds")
+            self.progress_callback(
+                f"❌ Installation of {package_name} timed out after {timeout} seconds"
+            )
             return False
         except Exception as e:
             self.progress_callback(f"❌ Error installing {package_name}: {str(e)}")
@@ -274,7 +283,9 @@ class DependencyManager:
             self.progress_callback("✅ All dependencies are already installed")
             return True
 
-        self.progress_callback(f"Found {len(missing)} missing dependencies: {', '.join(missing)}")
+        self.progress_callback(
+            f"Found {len(missing)} missing dependencies: {', '.join(missing)}"
+        )
 
         success_count = 0
         for package_name in missing:
@@ -282,10 +293,14 @@ class DependencyManager:
                 success_count += 1
 
         if success_count == len(missing):
-            self.progress_callback(f"✅ Successfully installed all {len(missing)} missing dependencies")
+            self.progress_callback(
+                f"✅ Successfully installed all {len(missing)} missing dependencies"
+            )
             return True
         else:
-            self.progress_callback(f"⚠️ Installed {success_count}/{len(missing)} dependencies")
+            self.progress_callback(
+                f"⚠️ Installed {success_count}/{len(missing)} dependencies"
+            )
             return False
 
     def get_installation_info(self) -> Dict[str, str]:
@@ -295,11 +310,11 @@ class DependencyManager:
             Dictionary with installation information
         """
         return {
-            'freecad_version': f"{self.freecad_version[0]}.{self.freecad_version[1]}",
-            'installation_type': self.installation_type,
-            'python_executable': self._get_python_exe(),
-            'pip_target_directory': self._get_pip_target_directory(),
-            'platform': sys.platform
+            "freecad_version": f"{self.freecad_version[0]}.{self.freecad_version[1]}",
+            "installation_type": self.installation_type,
+            "python_executable": self._get_python_exe(),
+            "pip_target_directory": self._get_pip_target_directory(),
+            "platform": sys.platform,
         }
 
     def create_install_script(self, package_name: str) -> str:
@@ -317,7 +332,7 @@ class DependencyManager:
         package_info = self.REQUIRED_DEPENDENCIES[package_name]
         package_spec = f"{package_name}{package_info['version']}"
 
-        script = f'''
+        script = f"""
 # Install {package_name} for FreeCAD FreeCAD AI
 # {package_info['description']}
 
@@ -381,7 +396,7 @@ def install_{package_name.replace('-', '_')}():
 
 # Run the installation
 install_{package_name.replace('-', '_')}()
-'''
+"""
         return script
 
 
@@ -392,7 +407,9 @@ def check_dependencies() -> Dict[str, bool]:
     return manager.check_all_dependencies()
 
 
-def install_missing_dependencies(progress_callback: Optional[Callable[[str], None]] = None) -> bool:
+def install_missing_dependencies(
+    progress_callback: Optional[Callable[[str], None]] = None,
+) -> bool:
     """Install all missing dependencies."""
     manager = DependencyManager(progress_callback)
     return manager.install_missing_dependencies()
@@ -401,4 +418,4 @@ def install_missing_dependencies(progress_callback: Optional[Callable[[str], Non
 def get_aiohttp_install_script() -> str:
     """Get a script to install aiohttp."""
     manager = DependencyManager()
-    return manager.create_install_script('aiohttp')
+    return manager.create_install_script("aiohttp")

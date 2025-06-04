@@ -15,10 +15,13 @@ class AssemblyToolProvider(ToolProvider):
         if self.app is None:
             try:
                 import FreeCAD
+
                 self.app = FreeCAD
                 logger.info("Connected to FreeCAD")
             except ImportError:
-                logger.warning("Could not import FreeCAD. Make sure it's installed and in your Python path.")
+                logger.warning(
+                    "Could not import FreeCAD. Make sure it's installed and in your Python path."
+                )
                 self.app = None
 
     @property
@@ -31,55 +34,64 @@ class AssemblyToolProvider(ToolProvider):
                 "properties": {
                     "action": {
                         "type": "string",
-                        "enum": ["create_assembly", "add_part", "create_constraint", "list_parts", "move_part"],
-                        "description": "The assembly action to perform"
+                        "enum": [
+                            "create_assembly",
+                            "add_part",
+                            "create_constraint",
+                            "list_parts",
+                            "move_part",
+                        ],
+                        "description": "The assembly action to perform",
                     },
                     "assembly_name": {
                         "type": "string",
-                        "description": "Name of the assembly"
+                        "description": "Name of the assembly",
                     },
                     "part_name": {
                         "type": "string",
-                        "description": "Name of the part to add or manipulate"
+                        "description": "Name of the part to add or manipulate",
                     },
                     "constraint_type": {
                         "type": "string",
-                        "enum": ["coincident", "distance", "angle", "parallel", "perpendicular"],
-                        "description": "Type of constraint to create"
+                        "enum": [
+                            "coincident",
+                            "distance",
+                            "angle",
+                            "parallel",
+                            "perpendicular",
+                        ],
+                        "description": "Type of constraint to create",
                     },
                     "position": {
                         "type": "array",
                         "items": {"type": "number"},
-                        "description": "Position coordinates [x, y, z]"
+                        "description": "Position coordinates [x, y, z]",
                     },
                     "rotation": {
                         "type": "array",
                         "items": {"type": "number"},
-                        "description": "Rotation angles [rx, ry, rz] in degrees"
-                    }
+                        "description": "Rotation angles [rx, ry, rz] in degrees",
+                    },
                 },
-                "required": ["action"]
+                "required": ["action"],
             },
             returns={
                 "type": "object",
                 "properties": {
                     "status": {"type": "string"},
                     "result": {"type": "object"},
-                    "error": {"type": "string"}
-                }
+                    "error": {"type": "string"},
+                },
             },
             examples=[
-                {
-                    "action": "create_assembly",
-                    "assembly_name": "MyAssembly"
-                },
+                {"action": "create_assembly", "assembly_name": "MyAssembly"},
                 {
                     "action": "add_part",
                     "assembly_name": "MyAssembly",
                     "part_name": "Part1",
-                    "position": [0, 0, 0]
-                }
-            ]
+                    "position": [0, 0, 0],
+                },
+            ],
         )
 
     async def execute_tool(self, tool_id: str, params: Dict[str, Any]) -> ToolResult:
@@ -116,6 +128,7 @@ class AssemblyToolProvider(ToolProvider):
             # Try to use Assembly4 workbench if available
             try:
                 import Assembly4
+
                 assembly = doc.addObject("App::Part", assembly_name)
                 assembly.Label = assembly_name
 
@@ -130,11 +143,14 @@ class AssemblyToolProvider(ToolProvider):
 
             doc.recompute()
 
-            return self.format_result("success", result={
-                "assembly_name": assembly.Name,
-                "label": assembly.Label,
-                "message": f"Assembly '{assembly_name}' created successfully"
-            })
+            return self.format_result(
+                "success",
+                result={
+                    "assembly_name": assembly.Name,
+                    "label": assembly.Label,
+                    "message": f"Assembly '{assembly_name}' created successfully",
+                },
+            )
 
         except Exception as e:
             return self.format_result("error", error=f"Failed to create assembly: {e}")
@@ -152,12 +168,16 @@ class AssemblyToolProvider(ToolProvider):
             # Get assembly
             assembly = doc.getObject(assembly_name)
             if not assembly:
-                return self.format_result("error", error=f"Assembly '{assembly_name}' not found")
+                return self.format_result(
+                    "error", error=f"Assembly '{assembly_name}' not found"
+                )
 
             # Get part
             part = doc.getObject(part_name)
             if not part:
-                return self.format_result("error", error=f"Part '{part_name}' not found")
+                return self.format_result(
+                    "error", error=f"Part '{part_name}' not found"
+                )
 
             # Create link to part in assembly
             link = doc.addObject("App::Link", f"{part_name}_Link")
@@ -166,6 +186,7 @@ class AssemblyToolProvider(ToolProvider):
 
             # Set position and rotation
             import FreeCAD
+
             placement = FreeCAD.Placement()
             placement.Base = FreeCAD.Vector(*position)
             placement.Rotation = FreeCAD.Rotation(*rotation)
@@ -176,14 +197,17 @@ class AssemblyToolProvider(ToolProvider):
 
             doc.recompute()
 
-            return self.format_result("success", result={
-                "link_name": link.Name,
-                "part_name": part_name,
-                "assembly_name": assembly_name,
-                "position": position,
-                "rotation": rotation,
-                "message": f"Part '{part_name}' added to assembly '{assembly_name}'"
-            })
+            return self.format_result(
+                "success",
+                result={
+                    "link_name": link.Name,
+                    "part_name": part_name,
+                    "assembly_name": assembly_name,
+                    "position": position,
+                    "rotation": rotation,
+                    "message": f"Part '{part_name}' added to assembly '{assembly_name}'",
+                },
+            )
 
         except Exception as e:
             return self.format_result("error", error=f"Failed to add part: {e}")
@@ -195,14 +219,19 @@ class AssemblyToolProvider(ToolProvider):
 
             # This is a simplified constraint creation
             # Real implementation would depend on the assembly workbench used
-            return self.format_result("success", result={
-                "constraint_type": constraint_type,
-                "message": f"Constraint '{constraint_type}' created (simplified implementation)",
-                "note": "Full constraint implementation requires specific assembly workbench"
-            })
+            return self.format_result(
+                "success",
+                result={
+                    "constraint_type": constraint_type,
+                    "message": f"Constraint '{constraint_type}' created (simplified implementation)",
+                    "note": "Full constraint implementation requires specific assembly workbench",
+                },
+            )
 
         except Exception as e:
-            return self.format_result("error", error=f"Failed to create constraint: {e}")
+            return self.format_result(
+                "error", error=f"Failed to create constraint: {e}"
+            )
 
     async def _list_parts(self, params: Dict[str, Any]) -> ToolResult:
         """List all parts in an assembly."""
@@ -212,30 +241,46 @@ class AssemblyToolProvider(ToolProvider):
 
             assembly = doc.getObject(assembly_name)
             if not assembly:
-                return self.format_result("error", error=f"Assembly '{assembly_name}' not found")
+                return self.format_result(
+                    "error", error=f"Assembly '{assembly_name}' not found"
+                )
 
             parts = []
             for obj in assembly.Group:
-                if hasattr(obj, 'LinkedObject'):
-                    parts.append({
-                        "name": obj.Name,
-                        "label": obj.Label,
-                        "linked_object": obj.LinkedObject.Name if obj.LinkedObject else None,
-                        "position": [obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z],
-                        "rotation": [obj.Placement.Rotation.Axis.x, obj.Placement.Rotation.Axis.y, obj.Placement.Rotation.Axis.z, obj.Placement.Rotation.Angle]
-                    })
+                if hasattr(obj, "LinkedObject"):
+                    parts.append(
+                        {
+                            "name": obj.Name,
+                            "label": obj.Label,
+                            "linked_object": (
+                                obj.LinkedObject.Name if obj.LinkedObject else None
+                            ),
+                            "position": [
+                                obj.Placement.Base.x,
+                                obj.Placement.Base.y,
+                                obj.Placement.Base.z,
+                            ],
+                            "rotation": [
+                                obj.Placement.Rotation.Axis.x,
+                                obj.Placement.Rotation.Axis.y,
+                                obj.Placement.Rotation.Axis.z,
+                                obj.Placement.Rotation.Angle,
+                            ],
+                        }
+                    )
                 else:
-                    parts.append({
-                        "name": obj.Name,
-                        "label": obj.Label,
-                        "type": obj.TypeId
-                    })
+                    parts.append(
+                        {"name": obj.Name, "label": obj.Label, "type": obj.TypeId}
+                    )
 
-            return self.format_result("success", result={
-                "assembly_name": assembly_name,
-                "parts": parts,
-                "part_count": len(parts)
-            })
+            return self.format_result(
+                "success",
+                result={
+                    "assembly_name": assembly_name,
+                    "parts": parts,
+                    "part_count": len(parts),
+                },
+            )
 
         except Exception as e:
             return self.format_result("error", error=f"Failed to list parts: {e}")
@@ -251,10 +296,13 @@ class AssemblyToolProvider(ToolProvider):
             part = doc.getObject(part_name)
 
             if not part:
-                return self.format_result("error", error=f"Part '{part_name}' not found")
+                return self.format_result(
+                    "error", error=f"Part '{part_name}' not found"
+                )
 
             # Update placement
             import FreeCAD
+
             placement = FreeCAD.Placement()
             placement.Base = FreeCAD.Vector(*position)
             placement.Rotation = FreeCAD.Rotation(*rotation)
@@ -262,12 +310,15 @@ class AssemblyToolProvider(ToolProvider):
 
             doc.recompute()
 
-            return self.format_result("success", result={
-                "part_name": part_name,
-                "new_position": position,
-                "new_rotation": rotation,
-                "message": f"Part '{part_name}' moved successfully"
-            })
+            return self.format_result(
+                "success",
+                result={
+                    "part_name": part_name,
+                    "new_position": position,
+                    "new_rotation": rotation,
+                    "message": f"Part '{part_name}' moved successfully",
+                },
+            )
 
         except Exception as e:
             return self.format_result("error", error=f"Failed to move part: {e}")

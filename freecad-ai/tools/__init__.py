@@ -22,7 +22,7 @@ __all__ = [
     "ExportImportTool",
     "AdvancedPrimitivesTool",
     "AdvancedOperationsTool",
-    "SurfaceModificationTool"
+    "SurfaceModificationTool",
 ]
 
 # Tool registry for easy access
@@ -33,14 +33,16 @@ TOOL_REGISTRY = {
     "export_import": ExportImportTool,
     "advanced_primitives": AdvancedPrimitivesTool,
     "advanced_operations": AdvancedOperationsTool,
-    "surface_modification": SurfaceModificationTool
+    "surface_modification": SurfaceModificationTool,
 }
+
 
 def get_tool(tool_name):
     """Get a tool class by name."""
     if tool_name not in TOOL_REGISTRY:
         raise ValueError(f"Unknown tool: {tool_name}")
     return TOOL_REGISTRY[tool_name]
+
 
 def get_all_tools():
     """Get all available tools."""

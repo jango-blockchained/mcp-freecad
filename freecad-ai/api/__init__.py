@@ -12,15 +12,13 @@ try:
 
     API_AVAILABLE = True
 
-    __all__ = [
-        'ToolsAPI',
-        'ResourcesAPI',
-        'EventsAPI',
-        'API_AVAILABLE'
-    ]
+    __all__ = ["ToolsAPI", "ResourcesAPI", "EventsAPI", "API_AVAILABLE"]
 
 except ImportError as e:
     import FreeCAD
-    FreeCAD.Console.PrintWarning(f"FreeCAD AI: Failed to import some API handlers: {e}\n")
+
+    FreeCAD.Console.PrintWarning(
+        f"FreeCAD AI: Failed to import some API handlers: {e}\n"
+    )
     API_AVAILABLE = False
-    __all__ = ['API_AVAILABLE']
+    __all__ = ["API_AVAILABLE"]

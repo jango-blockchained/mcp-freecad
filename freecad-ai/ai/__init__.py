@@ -16,19 +16,15 @@ from .providers.claude_provider import ClaudeProvider
 from .providers.gemini_provider import GeminiProvider
 from .providers.openrouter_provider import OpenRouterProvider
 
-__all__ = [
-    "BaseAIProvider",
-    "ClaudeProvider",
-    "GeminiProvider",
-    "OpenRouterProvider"
-]
+__all__ = ["BaseAIProvider", "ClaudeProvider", "GeminiProvider", "OpenRouterProvider"]
 
 # Available provider types
 AVAILABLE_PROVIDERS = {
     "claude": ClaudeProvider,
     "gemini": GeminiProvider,
-    "openrouter": OpenRouterProvider
+    "openrouter": OpenRouterProvider,
 }
+
 
 def get_provider(provider_type, **kwargs):
     """Factory function to create AI providers."""
@@ -37,23 +33,20 @@ def get_provider(provider_type, **kwargs):
 
     return AVAILABLE_PROVIDERS[provider_type](**kwargs)
 
+
 # Supported AI models
 CLAUDE_MODELS = [
     "claude-3-5-sonnet-20241022",
     "claude-3-opus-20240229",
-    "claude-3-haiku-20240307"
+    "claude-3-haiku-20240307",
 ]
 
-GEMINI_MODELS = [
-    "gemini-1.5-pro-latest",
-    "gemini-1.5-flash-latest",
-    "gemini-exp-1114"
-]
+GEMINI_MODELS = ["gemini-1.5-pro-latest", "gemini-1.5-flash-latest", "gemini-exp-1114"]
 
 # Configuration defaults
 DEFAULT_CONFIG = {
     "max_tokens": 4096,
     "temperature": 0.7,
     "timeout": 30.0,
-    "retry_attempts": 3
+    "retry_attempts": 3,
 }

@@ -110,7 +110,7 @@ try:
     version_str = ""
     try:
         if isinstance(FreeCAD.Version, (list, tuple)):
-            version_str = '.'.join(str(v) for v in FreeCAD.Version)
+            version_str = ".".join(str(v) for v in FreeCAD.Version)
         else:
             version_str = str(FreeCAD.Version)
     except Exception as e:
@@ -121,6 +121,7 @@ try:
     # Try to import FreeCADGui
     try:
         import FreeCADGui
+
         print("FreeCADGui module available.")
     except ImportError:
         print("FreeCADGui module not available. GUI operations will not be possible.")
@@ -131,6 +132,7 @@ except ImportError as e:
     print("This server requires a valid FreeCAD installation accessible in PYTHONPATH.")
     print("Please install FreeCAD or correct your Python path settings.")
     sys.exit(1)
+
 
 # Server implementation
 class FreeCADServer:
@@ -164,7 +166,9 @@ class FreeCADServer:
             self.running = True
 
             connect_mode = "connect" if args.connect else "standalone"
-            print(f"Starting FreeCAD server on {self.host}:{self.port} in {connect_mode} mode")
+            print(
+                f"Starting FreeCAD server on {self.host}:{self.port} in {connect_mode} mode"
+            )
 
             # Handle clients
             while self.running:
@@ -394,9 +398,11 @@ class FreeCADServer:
                         "name": obj.Name,
                         "label": obj.Label,
                         "type": obj.TypeId,
-                        "visible": obj.ViewObject.Visibility
-                        if hasattr(obj, "ViewObject")
-                        else True,
+                        "visible": (
+                            obj.ViewObject.Visibility
+                            if hasattr(obj, "ViewObject")
+                            else True
+                        ),
                     }
                 )
             return {"objects": objects}
@@ -440,7 +446,9 @@ class FreeCADServer:
                         if shapes:
                             Part.export(shapes, file_path)
                         else:
-                            return {"error": "No valid shapes found in specified objects"}
+                            return {
+                                "error": "No valid shapes found in specified objects"
+                            }
                     else:
                         # Export all objects with shapes
                         shapes = []
@@ -464,7 +472,9 @@ class FreeCADServer:
                                 mesh.write(file_path)
                                 break  # Only export the first one for now
                         else:
-                            return {"error": "No valid shapes found in specified objects"}
+                            return {
+                                "error": "No valid shapes found in specified objects"
+                            }
                     else:
                         # Export all objects with shapes
                         for obj in doc.Objects:
@@ -507,15 +517,12 @@ class FreeCADServer:
                 # Return any values that were stored in _env_values
                 return {
                     "success": True,
-                    "environment": script_env.get("_env_values", {})
+                    "environment": script_env.get("_env_values", {}),
                 }
 
             except Exception as e:
                 traceback_info = traceback.format_exc()
-                return {
-                    "error": str(e),
-                    "traceback": traceback_info
-                }
+                return {"error": str(e), "traceback": traceback_info}
 
         else:
             return {"error": f"Unknown command: {command_type}"}
@@ -534,6 +541,7 @@ def main():
         if args.connect and FreeCADGui:
             print("Running in a GUI context, starting server in a thread...")
             import threading
+
             server_thread = threading.Thread(target=server.start)
             server_thread.daemon = True
             server_thread.start()

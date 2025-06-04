@@ -16,8 +16,7 @@ from typing import Dict, Any, List, Optional, Callable, Tuple
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger("progress_test")
 
@@ -27,11 +26,14 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 try:
     from src.mcp_freecad.server.freecad_mcp_server import ToolContext
 except ImportError:
-    logger.error("Could not import ToolContext. Make sure you're running from the project root.")
+    logger.error(
+        "Could not import ToolContext. Make sure you're running from the project root."
+    )
     sys.exit(1)
 
 # Create a list to store progress updates
 progress_updates = []
+
 
 # Define a progress callback
 async def progress_callback(progress: float, message: Optional[str] = None):
@@ -39,6 +41,7 @@ async def progress_callback(progress: float, message: Optional[str] = None):
     update = {"progress": progress, "message": message}
     progress_updates.append(update)
     logger.info(f"Progress: {progress:.0%} - {message or ''}")
+
 
 @pytest.mark.asyncio
 async def test_progress_reporting():
@@ -65,6 +68,7 @@ async def test_progress_reporting():
     logger.info(f"Received {len(progress_updates)} progress updates:")
     for i, update in enumerate(progress_updates):
         logger.info(f"  {i+1}. {update['progress']:.0%} - {update['message']}")
+
 
 if __name__ == "__main__":
     logger.info("Starting progress reporting test...")

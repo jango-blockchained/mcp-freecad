@@ -12,7 +12,7 @@ try:
     from .mcp_bridge import MCPBridge
     from .dependency_manager import DependencyManager, get_aiohttp_install_script
 
-    __all__ = ['MCPBridge', 'DependencyManager', 'get_aiohttp_install_script']
+    __all__ = ["MCPBridge", "DependencyManager", "get_aiohttp_install_script"]
 
 except ImportError as e:
     print(f"Utility components not fully available: {e}")
@@ -20,4 +20,4 @@ except ImportError as e:
 
 from .cad_context_extractor import CADContextExtractor, get_cad_context_extractor
 
-__all__ = ['CADContextExtractor', 'get_cad_context_extractor']
+__all__ = ["CADContextExtractor", "get_cad_context_extractor"]

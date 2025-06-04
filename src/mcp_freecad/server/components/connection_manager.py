@@ -15,10 +15,12 @@ FC_CONNECTION: Optional[Any] = None
 
 try:
     from src.mcp_freecad.client.freecad_connection_manager import FreeCADConnection
+
     FREECAD_CONNECTION_AVAILABLE = True
 except ImportError:
     try:
         from ...client.freecad_connection_manager import FreeCADConnection
+
         FREECAD_CONNECTION_AVAILABLE = True
     except ImportError:
         logger.warning("FreeCAD connection unavailable")
@@ -42,7 +44,7 @@ async def initialize_connection(config: Dict[str, Any]) -> bool:
             port=freecad_config.get("port", 12345),
             freecad_path=freecad_config.get("freecad_path", "freecad"),
             auto_connect=freecad_config.get("auto_connect", True),
-            prefer_method=freecad_config.get("prefer_method", "bridge")
+            prefer_method=freecad_config.get("prefer_method", "bridge"),
         )
 
         if FC_CONNECTION.connect():
@@ -57,6 +59,8 @@ async def initialize_connection(config: Dict[str, Any]) -> bool:
         logger.error(f"Error initializing FreeCAD connection: {e}")
         FC_CONNECTION = None
         return False
+
+
 async def connection_check_loop(config: Dict[str, Any]):
     """Background task to monitor and maintain FreeCAD connection."""
     global FC_CONNECTION

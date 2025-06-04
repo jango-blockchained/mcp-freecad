@@ -11,14 +11,11 @@ try:
 
     CLIENTS_AVAILABLE = True
 
-    __all__ = [
-        'FreeCADClient',
-        'CursorMCPBridge',
-        'CLIENTS_AVAILABLE'
-    ]
+    __all__ = ["FreeCADClient", "CursorMCPBridge", "CLIENTS_AVAILABLE"]
 
 except ImportError as e:
     import FreeCAD
+
     FreeCAD.Console.PrintWarning(f"FreeCAD AI: Failed to import some clients: {e}\n")
     CLIENTS_AVAILABLE = False
-    __all__ = ['CLIENTS_AVAILABLE']
+    __all__ = ["CLIENTS_AVAILABLE"]

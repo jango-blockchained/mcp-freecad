@@ -36,19 +36,13 @@ MCP_SERVER_ERR_LOG = "freecad_mcp_server_stderr.log"
 def load_config(config_path=DEFAULT_CONFIG_PATH):
     """Load configuration from file"""
     try:
-        with open(config_path, 'r') as f:
+        with open(config_path, "r") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError) as e:
         print(f"Error loading config from {config_path}: {e}")
         return {
-            "freecad": {
-                "host": "localhost",
-                "port": 12345
-            },
-            "server": {
-                "host": "0.0.0.0",
-                "port": 8000
-            }
+            "freecad": {"host": "localhost", "port": 12345},
+            "server": {"host": "0.0.0.0", "port": 8000},
         }
 
 
@@ -68,12 +62,12 @@ def check_port(host, port):
 def find_pid_by_name(name):
     """Find process ID by name"""
     pids = []
-    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+    for proc in psutil.process_iter(["pid", "name", "cmdline"]):
         try:
-            cmdline = proc.info['cmdline']
+            cmdline = proc.info["cmdline"]
             if cmdline:
-                if name in ' '.join(cmdline):
-                    pids.append(proc.info['pid'])
+                if name in " ".join(cmdline):
+                    pids.append(proc.info["pid"])
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
     return pids
@@ -92,11 +86,21 @@ def start_freecad_server(config):
 
     # Start server
     try:
-        with open(FREECAD_SERVER_LOG, 'w') as stdout_log, open(FREECAD_SERVER_ERR_LOG, 'w') as stderr_log:
+        with open(FREECAD_SERVER_LOG, "w") as stdout_log, open(
+            FREECAD_SERVER_ERR_LOG, "w"
+        ) as stderr_log:
             process = subprocess.Popen(
-                [sys.executable, FREECAD_SERVER_SCRIPT, "--host", host, "--port", str(port), "--debug"],
+                [
+                    sys.executable,
+                    FREECAD_SERVER_SCRIPT,
+                    "--host",
+                    host,
+                    "--port",
+                    str(port),
+                    "--debug",
+                ],
                 stdout=stdout_log,
-                stderr=stderr_log
+                stderr=stderr_log,
             )
 
         print(f"Started FreeCAD server (PID: {process.pid}) on {host}:{port}")
@@ -124,11 +128,14 @@ def start_mcp_server(config):
 
     # Start server
     try:
-        with open(MCP_SERVER_LOG, 'w') as stdout_log, open(MCP_SERVER_ERR_LOG, 'w') as stderr_log:
+        with open(MCP_SERVER_LOG, "w") as stdout_log, open(
+            MCP_SERVER_ERR_LOG, "w"
+        ) as stderr_log:
             process = subprocess.Popen(
-                [sys.executable, MCP_SERVER_SCRIPT, "--config", DEFAULT_CONFIG_PATH] + debug_flag,
+                [sys.executable, MCP_SERVER_SCRIPT, "--config", DEFAULT_CONFIG_PATH]
+                + debug_flag,
                 stdout=stdout_log,
-                stderr=stderr_log
+                stderr=stderr_log,
             )
 
         print(f"Started MCP server (PID: {process.pid})")
@@ -219,12 +226,23 @@ def check_status(config):
 def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(description="Manage FreeCAD MCP servers")
-    parser.add_argument("action", choices=["start", "stop", "status", "restart"],
-                        help="Action to perform")
-    parser.add_argument("target", nargs="?", choices=["freecad", "mcp", "all"],
-                        default="all", help="Target server (default: all)")
-    parser.add_argument("--config", default=DEFAULT_CONFIG_PATH,
-                        help=f"Path to config file (default: {DEFAULT_CONFIG_PATH})")
+    parser.add_argument(
+        "action",
+        choices=["start", "stop", "status", "restart"],
+        help="Action to perform",
+    )
+    parser.add_argument(
+        "target",
+        nargs="?",
+        choices=["freecad", "mcp", "all"],
+        default="all",
+        help="Target server (default: all)",
+    )
+    parser.add_argument(
+        "--config",
+        default=DEFAULT_CONFIG_PATH,
+        help=f"Path to config file (default: {DEFAULT_CONFIG_PATH})",
+    )
 
     args = parser.parse_args()
     config = load_config(args.config)

@@ -24,19 +24,19 @@ class ClaudeProvider(BaseAIProvider):
 
     # Supported Claude models
     CLAUDE_MODELS = [
-        "claude-4-opus-20250522",      # Most capable - May 2025
-        "claude-4-sonnet-20250522",    # Best coding - May 2025
+        "claude-4-opus-20250522",  # Most capable - May 2025
+        "claude-4-sonnet-20250522",  # Best coding - May 2025
         "claude-3-7-sonnet-20250224",  # Hybrid reasoning - Feb 2025
         "claude-3-5-sonnet-20241022",  # Reliable baseline - Oct 2024
-        "claude-3-opus-20240229",      # Legacy complex reasoning
-        "claude-3-haiku-20240307"      # Fast and cost-effective
+        "claude-3-opus-20240229",  # Legacy complex reasoning
+        "claude-3-haiku-20240307",  # Fast and cost-effective
     ]
 
     # Models that support thinking mode
     THINKING_MODE_MODELS = [
         "claude-4-opus-20250522",
         "claude-4-sonnet-20250522",
-        "claude-3-7-sonnet-20250224"
+        "claude-3-7-sonnet-20250224",
     ]
 
     def __init__(self, api_key: str, model: str = "claude-4-sonnet-20250522", **kwargs):
@@ -54,15 +54,17 @@ class ClaudeProvider(BaseAIProvider):
             self.model = "claude-4-sonnet-20250522"
 
         # Claude-specific configuration
-        self.max_tokens = kwargs.get('max_tokens', 4000)
-        self.temperature = kwargs.get('temperature', 0.7)
-        self.system_prompt = kwargs.get('system_prompt', self._get_default_system_prompt())
+        self.max_tokens = kwargs.get("max_tokens", 4000)
+        self.temperature = kwargs.get("temperature", 0.7)
+        self.system_prompt = kwargs.get(
+            "system_prompt", self._get_default_system_prompt()
+        )
 
         # Headers for API requests
         self.headers = {
             "x-api-key": self.api_key,
             "Content-Type": "application/json",
-            "anthropic-version": "2024-12-19"
+            "anthropic-version": "2024-12-19",
         }
 
         # Add thinking mode header if supported
@@ -133,12 +135,14 @@ Be precise with measurements and technical details."""
                     f"{self.API_BASE}/messages",
                     headers=self.headers,
                     json=request_data,
-                    timeout=aiohttp.ClientTimeout(total=120)
+                    timeout=aiohttp.ClientTimeout(total=120),
                 ) as response:
 
                     if response.status != 200:
                         error_text = await response.text()
-                        raise Exception(f"Claude API error {response.status}: {error_text}")
+                        raise Exception(
+                            f"Claude API error {response.status}: {error_text}"
+                        )
 
                     result = await response.json()
 
@@ -147,7 +151,7 @@ Be precise with measurements and technical details."""
 
             # Update statistics
             response_time = time.time() - start_time
-            tokens_used = result.get('usage', {}).get('output_tokens', 0)
+            tokens_used = result.get("usage", {}).get("output_tokens", 0)
             self._update_stats(response_time, tokens_used)
 
             # Add to conversation history
@@ -155,7 +159,7 @@ Be precise with measurements and technical details."""
             assistant_msg = AIMessage(
                 MessageRole.ASSISTANT,
                 ai_response.content,
-                thinking_process=ai_response.thinking_process
+                thinking_process=ai_response.thinking_process,
             )
 
             self.add_message_to_history(user_msg)
@@ -176,31 +180,23 @@ Be precise with measurements and technical details."""
 
         # Add conversation history
         for hist_msg in self.conversation_history[-10:]:  # Last 10 messages for context
-            messages.append({
-                "role": hist_msg.role.value,
-                "content": hist_msg.content
-            })
+            messages.append({"role": hist_msg.role.value, "content": hist_msg.content})
 
         # Add current message
-        messages.append({
-            "role": "user",
-            "content": message
-        })
+        messages.append({"role": "user", "content": message})
 
         # Base request data
         request_data = {
             "model": self.model,
-            "max_tokens": kwargs.get('max_tokens', self.max_tokens),
-            "temperature": kwargs.get('temperature', self.temperature),
-            "system": kwargs.get('system_prompt', self.system_prompt),
-            "messages": messages
+            "max_tokens": kwargs.get("max_tokens", self.max_tokens),
+            "temperature": kwargs.get("temperature", self.temperature),
+            "system": kwargs.get("system_prompt", self.system_prompt),
+            "messages": messages,
         }
 
         # Add thinking mode parameters if enabled and supported
         if self.thinking_mode_enabled and self.supports_thinking_mode:
-            request_data["thinking"] = {
-                "max_thinking_tokens": self.thinking_budget
-            }
+            request_data["thinking"] = {"max_thinking_tokens": self.thinking_budget}
 
         return request_data
 
@@ -230,8 +226,10 @@ Be precise with measurements and technical details."""
             metadata={
                 "provider": "claude",
                 "thinking_mode": self.thinking_mode_enabled,
-                "thinking_tokens": usage.get("thinking_tokens", 0) if thinking_process else 0
-            }
+                "thinking_tokens": (
+                    usage.get("thinking_tokens", 0) if thinking_process else 0
+                ),
+            },
         )
 
     async def test_connection(self) -> bool:
@@ -239,7 +237,7 @@ Be precise with measurements and technical details."""
         try:
             test_response = await self.send_message(
                 "Hello! Please respond with just 'Connection successful' to test the API.",
-                max_tokens=50
+                max_tokens=50,
             )
             return "successful" in test_response.content.lower()
         except Exception:
@@ -248,8 +246,10 @@ Be precise with measurements and technical details."""
     def enable_thinking_mode(self, budget: int = 2000):
         """Enable thinking mode for Claude."""
         if not self.supports_thinking_mode:
-            raise ValueError(f"Model {self.model} does not support thinking mode. "
-                           f"Supported models: {self.THINKING_MODE_MODELS}")
+            raise ValueError(
+                f"Model {self.model} does not support thinking mode. "
+                f"Supported models: {self.THINKING_MODE_MODELS}"
+            )
 
         super().enable_thinking_mode(budget)
 
@@ -275,26 +275,26 @@ Be precise with measurements and technical details."""
                 "description": "Most capable model for complex analysis & research",
                 "release_date": "May 2025",
                 "strengths": ["Complex reasoning", "Research", "Analysis"],
-                "thinking_mode": True
+                "thinking_mode": True,
             },
             "claude-4-sonnet-20250522": {
                 "description": "Best coding performance with advanced reasoning",
                 "release_date": "May 2025",
                 "strengths": ["Coding", "Development", "Technical tasks"],
-                "thinking_mode": True
+                "thinking_mode": True,
             },
             "claude-3-7-sonnet-20250224": {
                 "description": "Hybrid reasoning with transparent thought process",
                 "release_date": "February 2025",
                 "strengths": ["Extended reasoning", "Problem solving"],
-                "thinking_mode": True
+                "thinking_mode": True,
             },
             "claude-3-5-sonnet-20241022": {
                 "description": "Reliable baseline with excellent performance",
                 "release_date": "October 2024",
                 "strengths": ["General purpose", "Reliable", "Fast"],
-                "thinking_mode": False
-            }
+                "thinking_mode": False,
+            },
         }
 
         if target_model in model_details:
@@ -309,5 +309,5 @@ Be precise with measurements and technical details."""
             "standard_tasks": 2000,
             "complex_problems": 5000,
             "research_level": 10000,
-            "unlimited": 20000
+            "unlimited": 20000,
         }
