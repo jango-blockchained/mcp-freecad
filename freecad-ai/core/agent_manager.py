@@ -73,17 +73,24 @@ class AgentManager:
     def _initialize_components(self):
         """Initialize agent components"""
         try:
-            # Import components with absolute imports to avoid relative import issues
+            # Import components with relative imports
             try:
-                from core.tool_registry import ToolRegistry
-                from core.tool_selector import ToolSelector
-                from core.execution_pipeline import ExecutionPipeline
-                from core.context_enricher import ContextEnricher
+                from ..core.tool_registry import ToolRegistry
+                from ..core.tool_selector import ToolSelector
+                from ..core.execution_pipeline import ExecutionPipeline
+                from ..core.context_enricher import ContextEnricher
             except ImportError:
-                # Fallback to create dummy classes if components don't exist
-                FreeCAD.Console.PrintMessage("Agent Manager: Core components not available, using fallback\n")
-                self._initialize_fallback_components()
-                return
+                # Try alternative import paths
+                try:
+                    from .tool_registry import ToolRegistry
+                    from .tool_selector import ToolSelector
+                    from .execution_pipeline import ExecutionPipeline
+                    from .context_enricher import ContextEnricher
+                except ImportError:
+                    # Fallback to create dummy classes if components don't exist
+                    FreeCAD.Console.PrintMessage("Agent Manager: Core components not available, using fallback\n")
+                    self._initialize_fallback_components()
+                    return
 
             self.tool_registry = ToolRegistry()
             self.tool_selector = ToolSelector(self.tool_registry)
@@ -97,6 +104,11 @@ class AgentManager:
         except ImportError as e:
             FreeCAD.Console.PrintError(f"Agent Manager: Failed to initialize components: {e}\n")
             # Initialize fallback components
+            self._initialize_fallback_components()
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"Agent Manager: Unexpected error during initialization: {e}\n")
+            import traceback
+            FreeCAD.Console.PrintError(f"Traceback: {traceback.format_exc()}\n")
             self._initialize_fallback_components()
 
     def _initialize_fallback_components(self):
@@ -115,14 +127,21 @@ class AgentManager:
                 self.tools = {}
                 self._load_tools_directly()
 
-                        def _load_tools_directly(self):
+            def _load_tools_directly(self):
                 """Load tools directly from GUI tools widget"""
                 try:
-                    # Import tools directly using absolute imports
-                    from tools.primitives import PrimitivesTool
-                    from tools.operations import OperationsTool
-                    from tools.measurements import MeasurementsTool
-                    from tools.export_import import ExportImportTool
+                    # Import tools directly using relative imports
+                    try:
+                        from ..tools.primitives import PrimitivesTool
+                        from ..tools.operations import OperationsTool
+                        from ..tools.measurements import MeasurementsTool
+                        from ..tools.export_import import ExportImportTool
+                    except ImportError:
+                        # Try alternative import path
+                        from tools.primitives import PrimitivesTool
+                        from tools.operations import OperationsTool
+                        from tools.measurements import MeasurementsTool
+                        from tools.export_import import ExportImportTool
 
                     self.tools = {
                         "primitives": PrimitivesTool(),
@@ -133,9 +152,14 @@ class AgentManager:
 
                     # Try to load advanced tools
                     try:
-                        from tools.advanced_primitives import AdvancedPrimitivesTool
-                        from tools.advanced_operations import AdvancedOperationsTool
-                        from tools.surface_modification import SurfaceModificationTool
+                        try:
+                            from ..tools.advanced_primitives import AdvancedPrimitivesTool
+                            from ..tools.advanced_operations import AdvancedOperationsTool
+                            from ..tools.surface_modification import SurfaceModificationTool
+                        except ImportError:
+                            from tools.advanced_primitives import AdvancedPrimitivesTool
+                            from tools.advanced_operations import AdvancedOperationsTool
+                            from tools.surface_modification import SurfaceModificationTool
 
                         self.tools.update({
                             "advanced_primitives": AdvancedPrimitivesTool(),
