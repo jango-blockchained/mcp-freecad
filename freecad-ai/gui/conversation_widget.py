@@ -98,61 +98,12 @@ class ConversationWidget(QtWidgets.QWidget):
         provider_group = QtWidgets.QGroupBox("Active Provider")
         provider_layout = QtWidgets.QHBoxLayout(provider_group)
 
-        provider_layout.addWidget(QtWidgets.QLabel("Provider:"))
-
-        self.provider_combo = QtWidgets.QComboBox()
-        self.provider_combo.setMinimumWidth(200)
-        self.provider_combo.currentTextChanged.connect(self._on_provider_changed)
-        provider_layout.addWidget(self.provider_combo)
-
-        # Provider status
-        self.provider_status_label = QtWidgets.QLabel("Not Connected")
+        # Show active provider status
+        self.provider_status_label = QtWidgets.QLabel("Checking providers...")
         self.provider_status_label.setStyleSheet(
-            "color: red; font-weight: bold; padding: 5px;"
+            "font-weight: bold; padding: 5px;"
         )
         provider_layout.addWidget(self.provider_status_label)
-
-        # Refresh button for debugging
-        self.refresh_providers_btn = QtWidgets.QPushButton("⟳")
-        self.refresh_providers_btn.setMaximumWidth(35)
-        self.refresh_providers_btn.setToolTip("Refresh providers list")
-        self.refresh_providers_btn.setStyleSheet("""
-            QPushButton {
-                font-size: 16px;
-                font-weight: bold;
-                padding: 2px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                background-color: #f5f5f5;
-            }
-            QPushButton:hover {
-                background-color: #e0e0e0;
-                border-color: #999;
-            }
-        """)
-        self.refresh_providers_btn.clicked.connect(self.refresh_providers)
-        provider_layout.addWidget(self.refresh_providers_btn)
-
-        # Debug button
-        self.debug_providers_btn = QtWidgets.QPushButton("DBG")
-        self.debug_providers_btn.setMaximumWidth(35)
-        self.debug_providers_btn.setToolTip("Debug provider status")
-        self.debug_providers_btn.setStyleSheet("""
-            QPushButton {
-                font-size: 10px;
-                font-weight: bold;
-                padding: 2px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                background-color: #f5f5f5;
-            }
-            QPushButton:hover {
-                background-color: #e0e0e0;
-                border-color: #999;
-            }
-        """)
-        self.debug_providers_btn.clicked.connect(self._debug_providers)
-        provider_layout.addWidget(self.debug_providers_btn)
 
         provider_layout.addStretch()
 
@@ -196,6 +147,32 @@ class ConversationWidget(QtWidgets.QWidget):
         input_group = QtWidgets.QGroupBox("Send Message")
         input_layout = QtWidgets.QVBoxLayout(input_group)
 
+        # Mode indicator
+        mode_layout = QtWidgets.QHBoxLayout()
+        self.mode_label = QtWidgets.QLabel("💬 Chat Mode")
+        self.mode_label.setStyleSheet("font-weight: bold; color: #2196F3; padding: 5px;")
+        mode_layout.addWidget(self.mode_label)
+        
+        mode_layout.addStretch()
+        
+        self.switch_mode_btn = QtWidgets.QPushButton("Switch to Agent Mode")
+        self.switch_mode_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #FF9800;
+                color: white;
+                padding: 5px 10px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #F57C00;
+            }
+        """)
+        self.switch_mode_btn.clicked.connect(self._toggle_mode)
+        mode_layout.addWidget(self.switch_mode_btn)
+        
+        input_layout.addLayout(mode_layout)
+
         # Message input area
         message_layout = QtWidgets.QHBoxLayout()
 
@@ -227,7 +204,48 @@ class ConversationWidget(QtWidgets.QWidget):
 
         input_layout.addLayout(message_layout)
 
-        # Execution controls (visible in agent mode)
+        # Task preview section (visible in agent mode)
+        self.task_preview = QtWidgets.QGroupBox("Task Preview")
+        self.task_preview.setVisible(False)
+        task_layout = QtWidgets.QVBoxLayout(self.task_preview)
+        
+        self.task_text = QtWidgets.QTextEdit()
+        self.task_text.setMaximumHeight(100)
+        self.task_text.setReadOnly(True)
+        self.task_text.setPlaceholderText("Tasks will appear here before execution...")
+        task_layout.addWidget(self.task_text)
+        
+        task_btn_layout = QtWidgets.QHBoxLayout()
+        self.execute_task_btn = QtWidgets.QPushButton("Execute Tasks")
+        self.execute_task_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                font-weight: bold;
+                padding: 6px 12px;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
+        self.execute_task_btn.clicked.connect(self._execute_tasks)
+        task_btn_layout.addWidget(self.execute_task_btn)
+        
+        self.modify_task_btn = QtWidgets.QPushButton("Modify")
+        self.modify_task_btn.clicked.connect(self._modify_tasks)
+        task_btn_layout.addWidget(self.modify_task_btn)
+        
+        self.cancel_task_btn = QtWidgets.QPushButton("Cancel")
+        self.cancel_task_btn.clicked.connect(self._cancel_tasks)
+        task_btn_layout.addWidget(self.cancel_task_btn)
+        
+        task_btn_layout.addStretch()
+        task_layout.addLayout(task_btn_layout)
+        
+        input_layout.addWidget(self.task_preview)
+
+        # Execution controls (visible during execution)
         self.execution_controls = QtWidgets.QWidget()
         exec_layout = QtWidgets.QHBoxLayout(self.execution_controls)
         exec_layout.setContentsMargins(0, 5, 0, 0)
@@ -328,111 +346,61 @@ class ConversationWidget(QtWidgets.QWidget):
 
     def _on_provider_changed(self, provider_name):
         """Handle provider selection change."""
-        if provider_name:
-            self.current_provider = provider_name
-            self._update_provider_status()
-            self._add_system_message(f"Switched to provider: {provider_name}")
+        # Since we removed the combo box, this method is no longer needed
+        pass
 
     def _update_provider_status(self):
         """Update provider status display."""
-        if self.current_provider:
-            # Check if provider is active
-            if self.provider_service:
-                providers = self.provider_service.get_all_providers()
-                provider_info = providers.get(self.current_provider)
-                if provider_info:
-                    status = provider_info.get("status", "unknown")
-                    if status == "connected":
-                        self.provider_status_label.setText("Connected")
-                        self.provider_status_label.setStyleSheet(
-                            "color: green; font-weight: bold; padding: 5px;"
-                        )
-                        self.send_btn.setEnabled(True)
-                    elif status == "initialized":
-                        self.provider_status_label.setText("Ready")
-                        self.provider_status_label.setStyleSheet(
-                            "color: blue; font-weight: bold; padding: 5px;"
-                        )
-                        self.send_btn.setEnabled(True)
-                    elif status == "testing":
-                        self.provider_status_label.setText("Testing...")
-                        self.provider_status_label.setStyleSheet(
-                            "color: orange; font-weight: bold; padding: 5px;"
-                        )
-                        self.send_btn.setEnabled(False)
-                    elif status == "error":
-                        self.provider_status_label.setText("Error")
-                        self.provider_status_label.setStyleSheet(
-                            "color: red; font-weight: bold; padding: 5px;"
-                        )
-                        self.send_btn.setEnabled(False)
-                    else:
-                        self.provider_status_label.setText("Connecting...")
-                        self.provider_status_label.setStyleSheet(
-                            "color: orange; font-weight: bold; padding: 5px;"
-                        )
-                        self.send_btn.setEnabled(False)
-                else:
-                    self.provider_status_label.setText("Not Available")
-                    self.provider_status_label.setStyleSheet(
-                        "color: red; font-weight: bold; padding: 5px;"
-                    )
-                    self.send_btn.setEnabled(False)
-            else:
-                # Fallback if no provider service - check if we have config
-                if self.config_manager:
-                    api_key = self.config_manager.get_api_key(
-                        self.current_provider.lower()
-                    )
-                    if api_key:
-                        self.provider_status_label.setText("Configured")
-                        self.provider_status_label.setStyleSheet(
-                            "color: blue; font-weight: bold; padding: 5px;"
-                        )
-                        self.send_btn.setEnabled(True)
-                    else:
-                        self.provider_status_label.setText("Not Configured")
-                        self.provider_status_label.setStyleSheet(
-                            "color: red; font-weight: bold; padding: 5px;"
-                        )
-                        self.send_btn.setEnabled(False)
-                else:
-                    self.provider_status_label.setText("Service Unavailable")
-                    self.provider_status_label.setStyleSheet(
-                        "color: red; font-weight: bold; padding: 5px;"
-                    )
-                    self.send_btn.setEnabled(False)
-        else:
-            self.provider_status_label.setText("No Provider")
-            self.provider_status_label.setStyleSheet(
-                "color: red; font-weight: bold; padding: 5px;"
-            )
-            self.send_btn.setEnabled(False)
+        # This method is simplified since we don't have a combo box anymore
+        self.refresh_providers()
 
     def _load_providers_fallback(self):
         """Load providers directly from config if service is not available."""
         if not self.config_manager:
+            self.provider_status_label.setText("No config manager")
+            self.provider_status_label.setStyleSheet(
+                "color: red; font-weight: bold; padding: 5px;"
+            )
+            self.send_btn.setEnabled(False)
             return
 
         try:
             # Get configured API keys as a fallback
             api_keys = self.config_manager.list_api_keys()
             if api_keys:
-                for provider_key in api_keys:
-                    # Normalize provider names for display
-                    display_name = self._get_provider_display_name(provider_key)
-                    if self.provider_combo.findText(display_name) == -1:
-                        self.provider_combo.addItem(display_name)
-
-                # Set default provider
+                # Use the default provider or first available
                 default_provider = self.config_manager.get_default_provider()
-                if default_provider:
-                    index = self.provider_combo.findText(default_provider)
-                    if index >= 0:
-                        self.provider_combo.setCurrentIndex(index)
+                if default_provider and default_provider.lower() in [k.lower() for k in api_keys]:
+                    self.current_provider = default_provider
+                    self.provider_status_label.setText(f"📋 {default_provider} (Config)")
+                    self.provider_status_label.setStyleSheet(
+                        "color: blue; font-weight: bold; padding: 5px;"
+                    )
+                    self.send_btn.setEnabled(True)
+                elif api_keys:
+                    # Use first available provider
+                    first_key = api_keys[0]
+                    display_name = self._get_provider_display_name(first_key)
+                    self.current_provider = display_name
+                    self.provider_status_label.setText(f"📋 {display_name} (Config)")
+                    self.provider_status_label.setStyleSheet(
+                        "color: blue; font-weight: bold; padding: 5px;"
+                    )
+                    self.send_btn.setEnabled(True)
+            else:
+                self.provider_status_label.setText("No providers configured")
+                self.provider_status_label.setStyleSheet(
+                    "color: red; font-weight: bold; padding: 5px;"
+                )
+                self.send_btn.setEnabled(False)
 
         except Exception as e:
             print(f"Error loading providers fallback: {e}")
+            self.provider_status_label.setText("Error loading providers")
+            self.provider_status_label.setStyleSheet(
+                "color: red; font-weight: bold; padding: 5px;"
+            )
+            self.send_btn.setEnabled(False)
 
     def _get_provider_display_name(self, provider_key: str) -> str:
         """Get display name for provider."""
@@ -443,144 +411,6 @@ class ConversationWidget(QtWidgets.QWidget):
             "openrouter": "OpenRouter",
         }
         return name_map.get(provider_key.lower(), provider_key.title())
-
-    def _debug_providers(self):
-        """Debug provider status and configuration."""
-        debug_info = []
-        debug_info.append("=== PROVIDER DEBUG INFO ===")
-        debug_info.append(f"Current Provider: {self.current_provider}")
-        debug_info.append(f"Provider Service Available: {self.provider_service is not None}")
-        debug_info.append(f"Config Manager Available: {self.config_manager is not None}")
-        debug_info.append(f"AI Manager Available: {self.ai_manager is not None}")
-        debug_info.append("")
-
-        # Provider combo box contents
-        debug_info.append("Provider Combo Box Contents:")
-        if self.provider_combo.count() == 0:
-            debug_info.append("  (empty - this is the problem!)")
-        else:
-            for i in range(self.provider_combo.count()):
-                debug_info.append(f"  {i}: {self.provider_combo.itemText(i)}")
-        debug_info.append("")
-
-        # Provider service status
-        if self.provider_service:
-            debug_info.append("Provider Service Status:")
-            try:
-                all_providers = self.provider_service.get_all_providers()
-                if not all_providers:
-                    debug_info.append("  (no providers configured)")
-                else:
-                    for name, status in all_providers.items():
-                        debug_info.append(f"  {name}: {status}")
-            except Exception as e:
-                debug_info.append(f"  Error getting providers: {e}")
-            debug_info.append("")
-        else:
-            debug_info.append("Provider Service Status:")
-            debug_info.append("  ❌ Provider service is None - this is the main issue!")
-            debug_info.append("  This means set_provider_service() was never called")
-            debug_info.append("  or was called with None")
-            debug_info.append("")
-
-        # Config manager status
-        if self.config_manager:
-            debug_info.append("Config Manager Status:")
-            try:
-                api_keys = self.config_manager.list_api_keys()
-                debug_info.append(f"  API Keys: {api_keys}")
-                default_provider = self.config_manager.get_default_provider()
-                debug_info.append(f"  Default Provider: {default_provider}")
-            except Exception as e:
-                debug_info.append(f"  Error getting config: {e}")
-            debug_info.append("")
-        else:
-            debug_info.append("Config Manager Status:")
-            debug_info.append("  ❌ Config manager is None")
-            debug_info.append("")
-
-        # AI manager status
-        if self.ai_manager:
-            debug_info.append("AI Manager Status:")
-            try:
-                debug_info.append(f"  Providers: {list(self.ai_manager.providers.keys())}")
-                debug_info.append(f"  Active Provider: {self.ai_manager.active_provider}")
-            except Exception as e:
-                debug_info.append(f"  Error getting AI manager info: {e}")
-            debug_info.append("")
-        else:
-            debug_info.append("AI Manager Status:")
-            debug_info.append("  ❌ AI manager is None")
-            debug_info.append("")
-
-        # Potential solutions
-        debug_info.append("TROUBLESHOOTING:")
-        debug_info.append("1. If Provider Service is None:")
-        debug_info.append("   - The main widget failed to initialize the provider service")
-        debug_info.append("   - Check the console for import errors")
-        debug_info.append("   - Try restarting the FreeCAD addon")
-        debug_info.append("")
-        debug_info.append("2. If Provider Combo is empty:")
-        debug_info.append("   - Go to Providers tab and configure an AI provider")
-        debug_info.append("   - Add API key and test connection")
-        debug_info.append("   - Click the ⟳ Refresh button")
-        debug_info.append("")
-        debug_info.append("3. If providers exist but chat doesn't work:")
-        debug_info.append("   - Check API key is valid")
-        debug_info.append("   - Check internet connection")
-        debug_info.append("   - Try a different provider")
-
-        # Show debug dialog
-        dialog = QtWidgets.QDialog(self)
-        dialog.setWindowTitle("Provider Debug Information")
-        dialog.resize(700, 500)
-
-        layout = QtWidgets.QVBoxLayout(dialog)
-
-        text_edit = QtWidgets.QTextEdit()
-        text_edit.setPlainText("\n".join(debug_info))
-        text_edit.setReadOnly(True)
-        text_edit.setStyleSheet("font-family: monospace; font-size: 10px;")
-        layout.addWidget(text_edit)
-
-        button_layout = QtWidgets.QHBoxLayout()
-
-        refresh_btn = QtWidgets.QPushButton("Refresh Providers")
-        refresh_btn.clicked.connect(lambda: (self.refresh_providers(), dialog.accept()))
-        button_layout.addWidget(refresh_btn)
-
-        # Add button to try to get provider service from parent
-        fix_service_btn = QtWidgets.QPushButton("Try Fix Provider Service")
-        fix_service_btn.clicked.connect(lambda: (self._try_fix_provider_service(), dialog.accept()))
-        button_layout.addWidget(fix_service_btn)
-
-        close_btn = QtWidgets.QPushButton("Close")
-        close_btn.clicked.connect(dialog.accept)
-        button_layout.addWidget(close_btn)
-
-        layout.addLayout(button_layout)
-        dialog.exec_()
-
-    def _try_fix_provider_service(self):
-        """Try to fix the provider service by getting it from parent widget."""
-        try:
-            # Try to get provider service from main widget
-            parent_widget = self.parent()
-            while parent_widget and not hasattr(parent_widget, 'get_provider_service'):
-                parent_widget = parent_widget.parent()
-
-            if parent_widget and hasattr(parent_widget, 'get_provider_service'):
-                provider_service = parent_widget.get_provider_service()
-                if provider_service:
-                    self.set_provider_service(provider_service)
-                    self._add_system_message("✅ Provider service reconnected!")
-                    self.refresh_providers()
-                    return
-
-            self._add_system_message("❌ Could not find provider service in parent widgets")
-
-        except Exception as e:
-            self._add_system_message(f"❌ Error trying to fix provider service: {e}")
 
     def _on_send_message(self):
         """Handle send message button click."""
@@ -607,8 +437,47 @@ class ConversationWidget(QtWidgets.QWidget):
         self._send_message(message)
 
     def _send_message(self, message):
-        """Send message to AI provider or agent."""
-        if not message:
+        """Send message to the AI."""
+        if not message.strip():
+            return
+
+        # Check if agent manager is available for agent mode
+        if self.agent_manager and self.agent_manager.get_mode().value == "agent":
+            # Agent mode - process with agent manager
+            self._process_with_agent(message)
+        else:
+            # Chat mode - use direct AI call
+            self._process_with_chat(message)
+
+    def _process_with_chat(self, message):
+        """Process message in chat mode."""
+        # Clear input
+        self.message_input.clear()
+
+        # Add user message to conversation
+        self._add_conversation_message("You", message)
+
+        # Show thinking indicator
+        self._add_thinking_indicator()
+
+        # Update usage count
+        self.conversation_history.append({
+            "sender": "You",
+            "message": message,
+            "timestamp": QtCore.QDateTime.currentDateTime().toString()
+        })
+        self.usage_label.setText(f"Messages: {len(self.conversation_history)}")
+
+        # Gather context
+        context = self._gather_freecad_context() if self.context_check.isChecked() else {}
+
+        # Send to AI
+        self._send_to_provider(message, context)
+
+    def _process_with_agent(self, message):
+        """Process message in agent mode."""
+        if not self.agent_manager:
+            self._add_system_message("Agent manager not available")
             return
 
         # Clear input
@@ -628,29 +497,22 @@ class ConversationWidget(QtWidgets.QWidget):
         })
         self.usage_label.setText(f"Messages: {len(self.conversation_history)}")
 
-        # Process based on current mode
-        if self.current_mode and str(self.current_mode).endswith("AGENT"):
-            # Agent mode - use agent manager
-            self._process_with_agent(message)
-        else:
-            # Chat mode - direct AI response
-            self._process_with_chat(message)
-
-    def _process_with_chat(self, message):
-        """Process message in chat mode using real AI."""
         try:
-            # Gather context if enabled
-            context = {}
-            if self.context_check.isChecked():
-                context = self._gather_freecad_context()
+            # Gather context
+            context = self._gather_freecad_context() if self.context_check.isChecked() else {}
 
-            # Always use direct provider communication for chat mode
-            # This ensures we get real AI responses instead of templates
-            self._send_to_provider(message, context)
+            # Send to agent manager
+            response = self.agent_manager.process_message(message, context)
+
+            # Handle response
+            self._handle_agent_response(response)
 
         except Exception as e:
             self._remove_thinking_indicator()
-            self._add_system_message(f"Error in chat mode: {str(e)}")
+            self._add_system_message(f"Error processing agent request: {e}")
+            print(f"ConversationWidget: Agent processing error: {e}")
+            import traceback
+            print(traceback.format_exc())
 
     def _send_to_provider(self, message, context):
         """Send message directly to AI provider with FreeCAD context."""
@@ -930,100 +792,52 @@ RESPONSE STYLE:
 
         return '\n'.join(cleaned_lines).strip()
 
-    def _process_with_agent(self, message):
-        """Process message through agent manager."""
-        if not self.agent_manager:
-            self._remove_thinking_indicator()
-            self._add_system_message("Agent manager not available")
-            return
-
-        # Gather context if enabled
-        context = {}
-        if self.context_check.isChecked():
-            context = self._gather_freecad_context()
-
-        # Set AI provider if available
-        if self.provider_service and self.current_provider:
-            try:
-                provider = self.provider_service.get_provider(self.current_provider)
-                if provider:
-                    self.agent_manager.set_ai_provider(provider)
-            except Exception as e:
-                print(f"Warning: Could not set AI provider: {e}")
-
-        # Process message
-        try:
-            response = self.agent_manager.process_message(message, context)
-            self._handle_agent_response(response)
-        except Exception as e:
-            self._remove_thinking_indicator()
-            self._add_system_message(f"Error processing message: {str(e)}")
-
     def _handle_agent_response(self, response):
         """Handle response from agent manager."""
-        mode = response.get("mode", "unknown")
+        self._remove_thinking_indicator()
 
-        if mode == "chat":
-            # Chat mode - display instructions
-            self._remove_thinking_indicator()
-
-            instructions = response.get("instructions", [])
-            if instructions:
-                self._add_conversation_message("AI", "Here's how to do that:")
-                for instruction in instructions:
-                    if instruction.strip():  # Skip empty instructions
-                        self._add_conversation_message("AI", instruction)
-
-            # Show suggested tools
-            suggested_tools = response.get("suggested_tools", [])
-            if suggested_tools:
-                tool_names = [tool.get('name', tool.get('id', 'Unknown')) for tool in suggested_tools]
-                self._add_conversation_message("AI", f"\nSuggested tools: {', '.join(tool_names)}")
-
-                # Add helpful tip about agent mode
-                self._add_conversation_message("AI",
-                    "\n💡 Tip: Switch to Agent mode to have me execute these tools automatically!")
-
-        elif mode == "agent":
-            # Agent mode - show execution plan and progress
-            self._remove_thinking_indicator()
-
-            plan = response.get("plan")
-            if plan:
-                self._display_execution_plan(plan)
-
-            # Check if approval required
-            if response.get("approval_required"):
-                self._show_approval_dialog(plan)
-            else:
-                # Show execution result
-                execution_result = response.get("execution_result")
-                if execution_result:
-                    self._display_execution_result(execution_result)
-
-        # Handle errors
         if response.get("error"):
-            self._add_conversation_message("AI", f"❌ Error: {response['error']}")
+            self._add_system_message(f"Error: {response['error']}")
+            return
 
-    def _display_execution_plan(self, plan):
-        """Display the execution plan."""
-        self._add_conversation_message("AI", f"📋 Execution Plan (ID: {plan['id'][:8]}...)")
+        # Display intent and plan
+        intent = response.get("intent", {})
+        plan = response.get("plan", {})
 
-        # Display plan summary
-        step_count = len(plan.get("steps", []))
-        duration = plan.get("estimated_duration", 0)
-        risk = plan.get("risk_level", "unknown")
+        if plan:
+            # Store current plan for approval/modification
+            self.current_plan = plan
+            
+            # Show task preview
+            self._display_task_preview(plan)
+            
+            # Check if approval is required
+            if response.get("approval_required", False):
+                self._add_system_message("Tasks created. Please review and execute when ready.")
+            else:
+                # Auto-execute if approval not required
+                self._add_system_message("Executing tasks automatically...")
+                execution_result = response.get("execution_result", {})
+                self._display_execution_result(execution_result)
 
-        self._add_conversation_message("AI",
-            f"📊 Plan Summary: {step_count} steps, ~{duration:.1f}s, {risk} risk")
-
-        # Display plan steps
-        for step in plan.get("steps", []):
-            step_text = f"  {step['order']}. {step['description']}"
-            if step.get("parameters"):
-                param_summary = ", ".join([f"{k}={v}" for k, v in step["parameters"].items()])
-                step_text += f" ({param_summary})"
-            self._add_conversation_message("AI", step_text)
+    def _display_task_preview(self, plan):
+        """Display tasks in the preview area."""
+        task_lines = []
+        task_lines.append(f"Intent: {plan['intent']['action']}")
+        task_lines.append(f"Risk Level: {plan['risk_level']}")
+        task_lines.append("")
+        
+        for step in plan["steps"]:
+            task_lines.append(f"Step {step['order']}: {step['description']}")
+            if step.get('parameters'):
+                params_str = ", ".join([f"{k}={v}" for k, v in step['parameters'].items()])
+                task_lines.append(f"  Parameters: {params_str}")
+        
+        self.task_text.setPlainText("\n".join(task_lines))
+        
+        # Show preview if not already visible
+        if not self.task_preview.isVisible():
+            self.task_preview.setVisible(True)
 
     def _display_execution_result(self, result):
         """Display execution result."""
@@ -1098,7 +912,7 @@ RESPONSE STYLE:
         details += "Steps:\n"
 
         for step in plan.get("steps", []):
-            details += f"{step.get('order', '?')}. {step.get('tool', 'Unknown')}: {step.get('description', 'No description')}\n"
+            details += f"{step.get('order', '?')}. {step['description']}\n"
             parameters = step.get("parameters", {})
             if parameters:
                 for param, value in parameters.items():
@@ -1292,78 +1106,59 @@ RESPONSE STYLE:
         dialog.exec_()
 
     def refresh_providers(self):
-        """Refresh the provider list from service and config."""
-        # Clear existing providers
-        current_provider = self.provider_combo.currentText()
-        self.provider_combo.clear()
-
-        providers_found = False
-        added_providers = set()  # Track added providers to avoid duplicates
-
-        # Get providers from service (these use display names like "Google")
+        """Refresh the provider list and status."""
+        print("ConversationWidget: Refreshing providers...")
+        
         if self.provider_service:
-            try:
-                providers = self.provider_service.get_all_providers()
-                if providers:
-                    for provider_name in providers.keys():
-                        display_name = self._get_provider_display_name(provider_name)
-                        normalized_name = display_name.lower()
-                        if normalized_name not in added_providers:
-                            self.provider_combo.addItem(display_name)
-                            added_providers.add(normalized_name)
-                    providers_found = True
-            except Exception as e:
-                print(f"Error getting providers from service: {e}")
-
-        # Get providers from AI manager (these use internal names like "google_main")
-        if self.ai_manager:
-            try:
-                for ai_provider_name in self.ai_manager.providers.keys():
-                    # Convert AI manager internal names back to display names
-                    # e.g., "google_main" -> "Google"
-                    base_name = ai_provider_name.replace("_main", "")
-                    display_name = self._get_provider_display_name(base_name)
-                    normalized_name = display_name.lower()
-                    if normalized_name not in added_providers:
-                        self.provider_combo.addItem(display_name)
-                        added_providers.add(normalized_name)
-                        providers_found = True
-            except Exception as e:
-                print(f"Error getting providers from AI manager: {e}")
-
-        # Fallback: load from config manager
-        if not providers_found:
-            self._load_providers_fallback()
-
-        # If still no providers and we have config_manager, add default providers
-        if self.provider_combo.count() == 0 and self.config_manager:
-            default_providers = ["Anthropic", "OpenAI", "Google", "OpenRouter"]
-            for provider in default_providers:
-                normalized_name = provider.lower()
-                if normalized_name not in added_providers:
-                    self.provider_combo.addItem(provider)
-                    added_providers.add(normalized_name)
-            print("ConversationWidget: Added default providers as fallback")
-
-        # Restore previous selection if available
-        if current_provider:
-            index = self.provider_combo.findText(current_provider)
-            if index >= 0:
-                self.provider_combo.setCurrentIndex(index)
-
-        # Set default provider if no current selection
-        if not current_provider and self.config_manager:
-            try:
-                default_provider = self.config_manager.get_default_provider()
+            print("ConversationWidget: Provider service available, getting active providers...")
+            
+            # Get active providers
+            active_providers = self.provider_service.get_active_providers()
+            print(f"ConversationWidget: Found {len(active_providers)} active providers")
+            
+            if active_providers:
+                # Use the first active provider or the default
+                default_provider = None
+                for name, provider in active_providers.items():
+                    if provider.get("is_default", False):
+                        default_provider = name
+                        break
+                
+                if not default_provider and active_providers:
+                    default_provider = list(active_providers.keys())[0]
+                
                 if default_provider:
-                    index = self.provider_combo.findText(default_provider)
-                    if index >= 0:
-                        self.provider_combo.setCurrentIndex(index)
-            except Exception as e:
-                print(f"Error setting default provider: {e}")
-
-        # Update status after refresh
-        self._update_provider_status()
+                    self.current_provider = default_provider
+                    provider_info = active_providers[default_provider]
+                    status = provider_info.get("status", "unknown")
+                    
+                    if status in ["connected", "initialized"]:
+                        self.provider_status_label.setText(f"✅ {default_provider} Connected")
+                        self.provider_status_label.setStyleSheet(
+                            "color: green; font-weight: bold; padding: 5px;"
+                        )
+                        self.send_btn.setEnabled(True)
+                    else:
+                        self.provider_status_label.setText(f"⚠️ {default_provider} - {status}")
+                        self.provider_status_label.setStyleSheet(
+                            "color: orange; font-weight: bold; padding: 5px;"
+                        )
+                        self.send_btn.setEnabled(False)
+                else:
+                    self.provider_status_label.setText("No active providers")
+                    self.provider_status_label.setStyleSheet(
+                        "color: red; font-weight: bold; padding: 5px;"
+                    )
+                    self.send_btn.setEnabled(False)
+            else:
+                self.provider_status_label.setText("No providers configured")
+                self.provider_status_label.setStyleSheet(
+                    "color: red; font-weight: bold; padding: 5px;"
+                )
+                self.send_btn.setEnabled(False)
+        else:
+            print("ConversationWidget: Provider service not available, using fallback")
+            self._load_providers_fallback()
 
     def set_provider_service(self, provider_service):
         """Set the provider integration service."""
@@ -1752,6 +1547,97 @@ Could you be more specific? For example:
 I'm here to guide you through FreeCAD!"""
 
         self._add_conversation_message("AI", response)
+
+    def _toggle_mode(self):
+        """Toggle between chat and agent mode."""
+        if not self.agent_manager:
+            self._add_system_message("Agent manager not available. Please check configuration.")
+            return
+
+        try:
+            from ..core.agent_manager import AgentMode
+            
+            current_mode = self.agent_manager.get_mode()
+            if current_mode == AgentMode.CHAT:
+                self.agent_manager.set_mode(AgentMode.AGENT)
+                self.mode_label.setText("🤖 Agent Mode")
+                self.mode_label.setStyleSheet("font-weight: bold; color: #FF9800; padding: 5px;")
+                self.switch_mode_btn.setText("Switch to Chat Mode")
+                self.task_preview.setVisible(True)
+                self._add_system_message("Switched to Agent Mode - AI will execute tasks autonomously")
+            else:
+                self.agent_manager.set_mode(AgentMode.CHAT)
+                self.mode_label.setText("💬 Chat Mode")
+                self.mode_label.setStyleSheet("font-weight: bold; color: #2196F3; padding: 5px;")
+                self.switch_mode_btn.setText("Switch to Agent Mode")
+                self.task_preview.setVisible(False)
+                self._add_system_message("Switched to Chat Mode - AI will provide instructions only")
+                
+        except Exception as e:
+            self._add_system_message(f"Error switching mode: {e}")
+
+    def _execute_tasks(self):
+        """Execute the tasks in the preview."""
+        if self.current_plan:
+            self.agent_manager.approve_plan(self.current_plan["id"])
+            self.task_text.clear()
+            self.task_preview.setVisible(False)
+            
+    def _modify_tasks(self):
+        """Allow user to modify tasks before execution."""
+        if self.current_plan:
+            # Create a dialog to edit the plan
+            dialog = QtWidgets.QDialog(self)
+            dialog.setWindowTitle("Modify Execution Plan")
+            dialog.resize(600, 400)
+            
+            layout = QtWidgets.QVBoxLayout(dialog)
+            
+            # Task editor
+            task_editor = QtWidgets.QTextEdit()
+            task_editor.setPlainText(self._format_plan_for_editing(self.current_plan))
+            layout.addWidget(task_editor)
+            
+            # Buttons
+            button_layout = QtWidgets.QHBoxLayout()
+            save_btn = QtWidgets.QPushButton("Save Changes")
+            save_btn.clicked.connect(lambda: self._save_modified_plan(task_editor.toPlainText(), dialog))
+            button_layout.addWidget(save_btn)
+            
+            cancel_btn = QtWidgets.QPushButton("Cancel")
+            cancel_btn.clicked.connect(dialog.reject)
+            button_layout.addWidget(cancel_btn)
+            
+            layout.addLayout(button_layout)
+            dialog.exec_()
+            
+    def _cancel_tasks(self):
+        """Cancel the current task plan."""
+        if self.current_plan:
+            self.agent_manager.reject_plan(self.current_plan["id"])
+            self.current_plan = None
+            self.task_text.clear()
+            self.task_preview.setVisible(False)
+            self._add_system_message("Task plan cancelled")
+            
+    def _format_plan_for_editing(self, plan):
+        """Format plan for editing in text format."""
+        lines = []
+        lines.append(f"Task: {plan['intent']['action']}")
+        lines.append("")
+        for step in plan['steps']:
+            lines.append(f"Step {step['order']}: {step['description']}")
+            lines.append(f"  Tool: {step['tool']}")
+            if step.get('parameters'):
+                lines.append(f"  Parameters: {step['parameters']}")
+            lines.append("")
+        return "\n".join(lines)
+        
+    def _save_modified_plan(self, text, dialog):
+        """Save the modified plan."""
+        # TODO: Parse the modified text and update the plan
+        self._add_system_message("Plan modifications saved (feature in development)")
+        dialog.accept()
 
 
 class ConversationHistoryDialog(QtWidgets.QDialog):

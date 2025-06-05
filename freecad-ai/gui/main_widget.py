@@ -56,30 +56,6 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         header_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         header_layout.addWidget(header_label)
 
-        # Add mode selector
-        self.mode_label = QtWidgets.QLabel("Mode:")
-        self.mode_label.setStyleSheet("font-size: 12px; margin-left: 10px;")
-        header_layout.addWidget(self.mode_label)
-
-        self.mode_selector = QtWidgets.QComboBox()
-        self.mode_selector.addItems(["💬 Chat", "🤖 Agent"])
-        self.mode_selector.setToolTip("Chat: AI provides instructions\nAgent: AI executes autonomously")
-        self.mode_selector.setStyleSheet("""
-            QComboBox {
-                padding: 2px 8px;
-                font-size: 12px;
-                min-width: 100px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                background-color: white;
-            }
-            QComboBox:hover {
-                border-color: #2196F3;
-            }
-        """)
-        self.mode_selector.currentTextChanged.connect(self._on_mode_changed)
-        header_layout.addWidget(self.mode_selector)
-
         header_layout.addStretch()
 
         self.status_label = QtWidgets.QLabel("Ready")
@@ -377,48 +353,10 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             print(f"FreeCAD AI: Full traceback: {traceback.format_exc()}")
             self.agent_manager = None
 
-    def _on_mode_changed(self, mode_text: str):
-        """Handle mode selector change."""
-        if not self.agent_manager:
-            return
-
-        try:
-            from ..core.agent_manager import AgentMode
-
-            if "Chat" in mode_text:
-                self.agent_manager.set_mode(AgentMode.CHAT)
-                self._update_ui_for_chat_mode()
-            elif "Agent" in mode_text:
-                self.agent_manager.set_mode(AgentMode.AGENT)
-                self._update_ui_for_agent_mode()
-
-            # Save mode preference
-            self._save_mode(mode_text)
-
-            # Notify conversation widget of mode change
-            if hasattr(self, 'conversation_widget') and hasattr(self.conversation_widget, 'set_agent_mode'):
-                self.conversation_widget.set_agent_mode(self.agent_manager.get_mode())
-
-            # Update agent control widget if available
-            if hasattr(self, 'agent_control_widget'):
-                # Refresh the agent control widget state
-                if hasattr(self.agent_control_widget, '_update_ui_from_agent_state'):
-                    self.agent_control_widget._update_ui_from_agent_state()
-
-        except Exception as e:
-            print(f"FreeCAD AI: Error changing mode - {e}")
-
     def _on_agent_mode_changed(self, old_mode, new_mode):
         """Handle agent mode change callback."""
         mode_display = "Chat" if new_mode.value == "chat" else "Agent"
         self.status_label.setText(f"Mode: {mode_display}")
-
-        # Update mode selector if it doesn't match
-        current_selector = self.mode_selector.currentText()
-        if new_mode.value == "chat" and "Chat" not in current_selector:
-            self.mode_selector.setCurrentText("💬 Chat")
-        elif new_mode.value == "agent" and "Agent" not in current_selector:
-            self.mode_selector.setCurrentText("🤖 Agent")
 
     def _on_agent_state_changed(self, old_state, new_state):
         """Handle agent state change callback."""
@@ -531,11 +469,13 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             settings = QtCore.QSettings("FreeCAD", "AI_Agent")
             mode = settings.value("agent_mode", "Chat")
 
-            # Find and set the mode in selector
-            for i in range(self.mode_selector.count()):
-                if mode in self.mode_selector.itemText(i):
-                    self.mode_selector.setCurrentIndex(i)
-                    break
+            # Set the agent manager mode directly
+            if self.agent_manager:
+                from ..core.agent_manager import AgentMode
+                if mode == "Agent":
+                    self.agent_manager.set_mode(AgentMode.AGENT)
+                else:
+                    self.agent_manager.set_mode(AgentMode.CHAT)
 
         except Exception as e:
             print(f"FreeCAD AI: Error loading persisted mode - {e}")
