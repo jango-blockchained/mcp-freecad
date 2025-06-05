@@ -31,25 +31,55 @@ class ConversationWidget(QtWidgets.QWidget):
 
     def _setup_services(self):
         """Setup AI manager and config manager."""
+        # Initialize as None first
+        self.ai_manager = None
+        self.config_manager = None
+        
+        # Try to import AI Manager
         try:
-            from ..ai.ai_manager import AIManager
-
-            self.ai_manager = AIManager()
-        except ImportError:
+            # Try relative import first
+            try:
+                from ..ai.ai_manager import AIManager
+                self.ai_manager = AIManager()
+                print("ConversationWidget: AI Manager imported via relative path")
+            except ImportError:
+                # Try direct import
+                from ai.ai_manager import AIManager
+                self.ai_manager = AIManager()
+                print("ConversationWidget: AI Manager imported via direct path")
+        except ImportError as e:
+            print(f"ConversationWidget: Failed to import AI Manager: {e}")
             self.ai_manager = None
 
         # Try multiple import strategies for config manager
         try:
-            from ..config.config_manager import ConfigManager
-
-            self.config_manager = ConfigManager()
-        except ImportError:
+            # Strategy 1: Relative import with double parent
             try:
-                from config.config_manager import ConfigManager
-
+                from ..config.config_manager import ConfigManager
                 self.config_manager = ConfigManager()
+                print("ConversationWidget: Config Manager imported via relative path")
             except ImportError:
-                self.config_manager = None
+                # Strategy 2: Direct import
+                try:
+                    from config.config_manager import ConfigManager
+                    self.config_manager = ConfigManager()
+                    print("ConversationWidget: Config Manager imported via direct path")
+                except ImportError:
+                    # Strategy 3: Add parent to path if needed
+                    import sys
+                    import os
+                    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    if parent_dir not in sys.path:
+                        sys.path.insert(0, parent_dir)
+                    from config.config_manager import ConfigManager
+                    self.config_manager = ConfigManager()
+                    print("ConversationWidget: Config Manager imported after sys.path modification")
+        except ImportError as e:
+            print(f"ConversationWidget: Failed to import Config Manager: {e}")
+            self.config_manager = None
+        except Exception as e:
+            print(f"ConversationWidget: Error setting up Config Manager: {e}")
+            self.config_manager = None
 
     def _setup_ui(self):
         """Setup the user interface."""
@@ -1262,18 +1292,21 @@ RESPONSE STYLE:
         dialog.exec_()
 
     def refresh_providers(self):
-        """Refresh the provider list."""
+        """Refresh the provider list from service and config."""
+        # Clear existing providers
         current_provider = self.provider_combo.currentText()
         self.provider_combo.clear()
 
         providers_found = False
 
-        # Get providers from provider service first
+        # Get providers from service
         if self.provider_service:
             try:
                 providers = self.provider_service.get_all_providers()
-                for provider_name in providers.keys():
-                    self.provider_combo.addItem(provider_name)
+                if providers:
+                    for provider_name in providers.keys():
+                        if self.provider_combo.findText(provider_name) == -1:
+                            self.provider_combo.addItem(provider_name)
                     providers_found = True
             except Exception as e:
                 print(f"Error getting providers from service: {e}")
@@ -1291,6 +1324,13 @@ RESPONSE STYLE:
         # Fallback: load from config manager
         if not providers_found:
             self._load_providers_fallback()
+
+        # If still no providers and we have config_manager, add default providers
+        if self.provider_combo.count() == 0 and self.config_manager:
+            default_providers = ["Anthropic", "OpenAI", "Google", "OpenRouter"]
+            for provider in default_providers:
+                self.provider_combo.addItem(provider)
+            print("ConversationWidget: Added default providers as fallback")
 
         # Restore previous selection if available
         if current_provider:

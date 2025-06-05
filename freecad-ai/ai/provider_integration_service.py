@@ -18,10 +18,24 @@ import asyncio
 import logging
 from typing import Dict, Any, Optional, List, Callable
 from PySide2 import QtCore
-from .ai_manager import AIManager
-from .claude_provider import ClaudeProvider
-from .gemini_provider import GeminiProvider
-from .openrouter_provider import OpenRouterProvider
+
+# Import with error handling
+try:
+    from .ai_manager import AIManager
+    from .providers.claude_provider import ClaudeProvider
+    from .providers.gemini_provider import GeminiProvider
+    from .providers.openrouter_provider import OpenRouterProvider
+except ImportError as e:
+    logging.warning(f"Could not import AI components with relative imports: {e}")
+    # Try direct imports as fallback
+    try:
+        from ai.ai_manager import AIManager
+        from ai.providers.claude_provider import ClaudeProvider
+        from ai.providers.gemini_provider import GeminiProvider
+        from ai.providers.openrouter_provider import OpenRouterProvider
+    except ImportError as e2:
+        logging.error(f"Could not import AI components: {e2}")
+        raise
 
 
 class ProviderIntegrationService(QtCore.QObject):
