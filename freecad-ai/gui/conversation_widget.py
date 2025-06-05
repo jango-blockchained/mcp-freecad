@@ -152,9 +152,9 @@ class ConversationWidget(QtWidgets.QWidget):
         self.mode_label = QtWidgets.QLabel("💬 Chat Mode")
         self.mode_label.setStyleSheet("font-weight: bold; color: #2196F3; padding: 5px;")
         mode_layout.addWidget(self.mode_label)
-        
+
         mode_layout.addStretch()
-        
+
         self.switch_mode_btn = QtWidgets.QPushButton("Switch to Agent Mode")
         self.switch_mode_btn.setStyleSheet("""
             QPushButton {
@@ -170,7 +170,7 @@ class ConversationWidget(QtWidgets.QWidget):
         """)
         self.switch_mode_btn.clicked.connect(self._toggle_mode)
         mode_layout.addWidget(self.switch_mode_btn)
-        
+
         input_layout.addLayout(mode_layout)
 
         # Message input area
@@ -208,13 +208,13 @@ class ConversationWidget(QtWidgets.QWidget):
         self.task_preview = QtWidgets.QGroupBox("Task Preview")
         self.task_preview.setVisible(False)
         task_layout = QtWidgets.QVBoxLayout(self.task_preview)
-        
+
         self.task_text = QtWidgets.QTextEdit()
         self.task_text.setMaximumHeight(100)
         self.task_text.setReadOnly(True)
         self.task_text.setPlaceholderText("Tasks will appear here before execution...")
         task_layout.addWidget(self.task_text)
-        
+
         task_btn_layout = QtWidgets.QHBoxLayout()
         self.execute_task_btn = QtWidgets.QPushButton("Execute Tasks")
         self.execute_task_btn.setStyleSheet("""
@@ -231,18 +231,18 @@ class ConversationWidget(QtWidgets.QWidget):
         """)
         self.execute_task_btn.clicked.connect(self._execute_tasks)
         task_btn_layout.addWidget(self.execute_task_btn)
-        
+
         self.modify_task_btn = QtWidgets.QPushButton("Modify")
         self.modify_task_btn.clicked.connect(self._modify_tasks)
         task_btn_layout.addWidget(self.modify_task_btn)
-        
+
         self.cancel_task_btn = QtWidgets.QPushButton("Cancel")
         self.cancel_task_btn.clicked.connect(self._cancel_tasks)
         task_btn_layout.addWidget(self.cancel_task_btn)
-        
+
         task_btn_layout.addStretch()
         task_layout.addLayout(task_btn_layout)
-        
+
         input_layout.addWidget(self.task_preview)
 
         # Execution controls (visible during execution)
@@ -346,8 +346,16 @@ class ConversationWidget(QtWidgets.QWidget):
 
     def _on_provider_changed(self, provider_name):
         """Handle provider selection change."""
-        # Since we removed the combo box, this method is no longer needed
-        pass
+        self.current_provider = provider_name
+        self._update_provider_status()
+
+        # Save the selected provider to settings
+        try:
+            settings = QtCore.QSettings("FreeCAD", "AI_ConversationWidget")
+            settings.setValue("last_selected_provider", provider_name)
+            settings.sync()
+        except Exception as e:
+            print(f"ConversationWidget: Failed to save provider preference: {e}")
 
     def _update_provider_status(self):
         """Update provider status display."""
@@ -807,10 +815,10 @@ RESPONSE STYLE:
         if plan:
             # Store current plan for approval/modification
             self.current_plan = plan
-            
+
             # Show task preview
             self._display_task_preview(plan)
-            
+
             # Check if approval is required
             if response.get("approval_required", False):
                 self._add_system_message("Tasks created. Please review and execute when ready.")
@@ -826,15 +834,15 @@ RESPONSE STYLE:
         task_lines.append(f"Intent: {plan['intent']['action']}")
         task_lines.append(f"Risk Level: {plan['risk_level']}")
         task_lines.append("")
-        
+
         for step in plan["steps"]:
             task_lines.append(f"Step {step['order']}: {step['description']}")
             if step.get('parameters'):
                 params_str = ", ".join([f"{k}={v}" for k, v in step['parameters'].items()])
                 task_lines.append(f"  Parameters: {params_str}")
-        
+
         self.task_text.setPlainText("\n".join(task_lines))
-        
+
         # Show preview if not already visible
         if not self.task_preview.isVisible():
             self.task_preview.setVisible(True)
@@ -1108,50 +1116,61 @@ RESPONSE STYLE:
     def refresh_providers(self):
         """Refresh the provider list and status."""
         print("ConversationWidget: Refreshing providers...")
-        
+
         if self.provider_service:
             print("ConversationWidget: Provider service available, getting active providers...")
-            
+
             # Get active providers
             active_providers = self.provider_service.get_active_providers()
             print(f"ConversationWidget: Found {len(active_providers)} active providers")
-            
+
             if active_providers:
-                # Use the first active provider or the default
-                default_provider = None
-                for name, provider in active_providers.items():
-                    if provider.get("is_default", False):
-                        default_provider = name
-                        break
-                
-                if not default_provider and active_providers:
-                    default_provider = list(active_providers.keys())[0]
-                
-                if default_provider:
-                    self.current_provider = default_provider
-                    provider_info = active_providers[default_provider]
+                # Try to restore last selected provider
+                last_selected_provider = None
+                try:
+                    settings = QtCore.QSettings("FreeCAD", "AI_ConversationWidget")
+                    saved_provider = settings.value("last_selected_provider", None)
+                    if saved_provider and saved_provider in active_providers:
+                        last_selected_provider = saved_provider
+                        print(f"ConversationWidget: Restored last selected provider: {saved_provider}")
+                except Exception as e:
+                    print(f"ConversationWidget: Failed to restore provider preference: {e}")
+
+                # Use the last selected, default, or first active provider
+                selected_provider = None
+
+                if last_selected_provider:
+                    selected_provider = last_selected_provider
+                else:
+                    # Look for default provider
+                    for name, provider in active_providers.items():
+                        if provider.get("is_default", False):
+                            selected_provider = name
+                            break
+
+                    # Fall back to first provider
+                    if not selected_provider and active_providers:
+                        selected_provider = list(active_providers.keys())[0]
+
+                if selected_provider:
+                    self.current_provider = selected_provider
+                    provider_info = active_providers[selected_provider]
                     status = provider_info.get("status", "unknown")
-                    
+
                     if status in ["connected", "initialized"]:
-                        self.provider_status_label.setText(f"✅ {default_provider} Connected")
+                        self.provider_status_label.setText(f"✅ {selected_provider} Connected")
                         self.provider_status_label.setStyleSheet(
                             "color: green; font-weight: bold; padding: 5px;"
                         )
                         self.send_btn.setEnabled(True)
                     else:
-                        self.provider_status_label.setText(f"⚠️ {default_provider} - {status}")
+                        self.provider_status_label.setText(f"⚠️ {selected_provider} - {status}")
                         self.provider_status_label.setStyleSheet(
                             "color: orange; font-weight: bold; padding: 5px;"
                         )
                         self.send_btn.setEnabled(False)
-                else:
-                    self.provider_status_label.setText("No active providers")
-                    self.provider_status_label.setStyleSheet(
-                        "color: red; font-weight: bold; padding: 5px;"
-                    )
-                    self.send_btn.setEnabled(False)
             else:
-                self.provider_status_label.setText("No providers configured")
+                self.provider_status_label.setText("No active providers")
                 self.provider_status_label.setStyleSheet(
                     "color: red; font-weight: bold; padding: 5px;"
                 )
@@ -1556,7 +1575,7 @@ I'm here to guide you through FreeCAD!"""
 
         try:
             from ..core.agent_manager import AgentMode
-            
+
             current_mode = self.agent_manager.get_mode()
             if current_mode == AgentMode.CHAT:
                 self.agent_manager.set_mode(AgentMode.AGENT)
@@ -1572,7 +1591,7 @@ I'm here to guide you through FreeCAD!"""
                 self.switch_mode_btn.setText("Switch to Agent Mode")
                 self.task_preview.setVisible(False)
                 self._add_system_message("Switched to Chat Mode - AI will provide instructions only")
-                
+
         except Exception as e:
             self._add_system_message(f"Error switching mode: {e}")
 
@@ -1582,7 +1601,7 @@ I'm here to guide you through FreeCAD!"""
             self.agent_manager.approve_plan(self.current_plan["id"])
             self.task_text.clear()
             self.task_preview.setVisible(False)
-            
+
     def _modify_tasks(self):
         """Allow user to modify tasks before execution."""
         if self.current_plan:
@@ -1590,27 +1609,27 @@ I'm here to guide you through FreeCAD!"""
             dialog = QtWidgets.QDialog(self)
             dialog.setWindowTitle("Modify Execution Plan")
             dialog.resize(600, 400)
-            
+
             layout = QtWidgets.QVBoxLayout(dialog)
-            
+
             # Task editor
             task_editor = QtWidgets.QTextEdit()
             task_editor.setPlainText(self._format_plan_for_editing(self.current_plan))
             layout.addWidget(task_editor)
-            
+
             # Buttons
             button_layout = QtWidgets.QHBoxLayout()
             save_btn = QtWidgets.QPushButton("Save Changes")
             save_btn.clicked.connect(lambda: self._save_modified_plan(task_editor.toPlainText(), dialog))
             button_layout.addWidget(save_btn)
-            
+
             cancel_btn = QtWidgets.QPushButton("Cancel")
             cancel_btn.clicked.connect(dialog.reject)
             button_layout.addWidget(cancel_btn)
-            
+
             layout.addLayout(button_layout)
             dialog.exec_()
-            
+
     def _cancel_tasks(self):
         """Cancel the current task plan."""
         if self.current_plan:
@@ -1619,7 +1638,7 @@ I'm here to guide you through FreeCAD!"""
             self.task_text.clear()
             self.task_preview.setVisible(False)
             self._add_system_message("Task plan cancelled")
-            
+
     def _format_plan_for_editing(self, plan):
         """Format plan for editing in text format."""
         lines = []
@@ -1632,7 +1651,7 @@ I'm here to guide you through FreeCAD!"""
                 lines.append(f"  Parameters: {step['parameters']}")
             lines.append("")
         return "\n".join(lines)
-        
+
     def _save_modified_plan(self, text, dialog):
         """Save the modified plan."""
         # TODO: Parse the modified text and update the plan

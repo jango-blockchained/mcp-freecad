@@ -489,13 +489,13 @@ class ProviderIntegrationService(QtCore.QObject):
         """Get status of all providers."""
         return self.provider_status.copy()
 
-    def get_active_providers(self) -> List[str]:
-        """Get list of active (connected) providers."""
-        return [
-            name
-            for name, status in self.provider_status.items()
-            if status.get("status") in ["connected", "initialized"]
-        ]
+    def get_active_providers(self) -> Dict[str, Dict[str, Any]]:
+        """Get dictionary of active (connected) providers with their info."""
+        return {
+            name: status_info
+            for name, status_info in self.provider_status.items()
+            if status_info.get("status") in ["connected", "initialized"]
+        }
 
     def register_status_callback(self, callback: Callable):
         """Register a callback for provider status changes."""

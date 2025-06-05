@@ -75,10 +75,10 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         """Setup the provider integration service."""
         try:
             print("FreeCAD AI: Setting up provider service...")
-            
+
             # Try multiple import strategies
             provider_service_imported = False
-            
+
             # Strategy 1: Relative import
             try:
                 from ..ai.provider_integration_service import get_provider_service
@@ -86,7 +86,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 print("FreeCAD AI: Provider service imported via relative path")
             except ImportError as e:
                 print(f"FreeCAD AI: Relative import failed: {e}")
-                
+
             # Strategy 2: Direct import if addon is in sys.path
             if not provider_service_imported:
                 try:
@@ -95,7 +95,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                     print("FreeCAD AI: Provider service imported via direct path")
                 except ImportError as e:
                     print(f"FreeCAD AI: Direct import failed: {e}")
-                    
+
             # Strategy 3: Add parent to path and import
             if not provider_service_imported:
                 try:
@@ -109,7 +109,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                     print("FreeCAD AI: Provider service imported after adding to sys.path")
                 except ImportError as e:
                     print(f"FreeCAD AI: Import with sys.path modification failed: {e}")
-            
+
             if not provider_service_imported:
                 raise ImportError("Could not import provider_integration_service after all strategies")
 
@@ -262,6 +262,13 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                     self._on_settings_api_key_changed
                 )
 
+            # Connect provider configuration changes to update conversation widget
+            if hasattr(self.providers_widget, "provider_configured"):
+                self.providers_widget.provider_configured.connect(
+                    self._on_provider_configured
+                )
+                print("FreeCAD AI: Provider configured signal connected")
+
             # Connect conversation widget to get provider updates
             if hasattr(self.conversation_widget, "set_provider_service"):
                 self.conversation_widget.set_provider_service(self.provider_service)
@@ -321,6 +328,17 @@ class MCPMainWidget(QtWidgets.QDockWidget):
 
     def _on_settings_api_key_changed(self, provider_name: str):
         """Handle API key changes from settings widget."""
+        if self.provider_service:
+            self.provider_service.update_provider_from_settings(provider_name)
+
+    def _on_provider_configured(self, provider_name: str):
+        """Handle provider configuration changes."""
+        # Refresh conversation widget when provider is configured
+        if hasattr(self.conversation_widget, "refresh_providers"):
+            self.conversation_widget.refresh_providers()
+            print(f"FreeCAD AI: Refreshed conversation widget after {provider_name} configured")
+
+        # Update provider service
         if self.provider_service:
             self.provider_service.update_provider_from_settings(provider_name)
 
