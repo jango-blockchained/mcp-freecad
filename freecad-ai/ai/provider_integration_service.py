@@ -19,6 +19,7 @@ import logging
 from typing import Dict, Any, Optional, List, Callable
 from PySide2 import QtCore
 
+
 # Import using multiple strategies to handle different file locations
 ai_manager_imported = False
 providers_imported = False
@@ -120,6 +121,7 @@ if not providers_imported:
     class OpenRouterProvider:
         def __init__(self, **kwargs): 
             logging.warning("Using dummy OpenRouterProvider")
+
 
 
 class ProviderIntegrationService(QtCore.QObject):
