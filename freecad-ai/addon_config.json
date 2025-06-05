@@ -41,6 +41,10 @@
     "OpenAI": {
       "model": "gpt-4o-mini",
       "enabled": true
+    },
+    "OpenRouter": {
+      "model": "anthropic/claude-3.5-sonnet",
+      "enabled": true
     }
   },
   "ui_settings": {

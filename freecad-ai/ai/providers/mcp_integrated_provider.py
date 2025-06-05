@@ -11,7 +11,7 @@ import json
 import re
 from typing import Dict, List, Optional, Any, Tuple
 
-from .base_provider import BaseAIProvider, AIResponse, AIMessage, MessageRole
+from ai.providers.base_provider import BaseAIProvider, AIResponse, AIMessage, MessageRole
 
 
 class MCPIntegratedProvider(BaseAIProvider):

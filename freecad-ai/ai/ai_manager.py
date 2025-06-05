@@ -3,10 +3,10 @@
 import asyncio
 import logging
 from typing import Dict, List, Any, Optional, Union
-from .base_provider import AIProvider
-from .claude_provider import ClaudeProvider
-from .gemini_provider import GeminiProvider
-from .openrouter_provider import OpenRouterProvider
+from ai.providers.base_provider import BaseAIProvider as AIProvider
+from ai.providers.claude_provider import ClaudeProvider
+from ai.providers.gemini_provider import GeminiProvider
+from ai.providers.openrouter_provider import OpenRouterProvider
 
 
 class AIManager:

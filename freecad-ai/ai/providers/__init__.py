@@ -8,7 +8,7 @@ import FreeCAD
 from typing import Dict, Any, Optional
 
 # Import base classes first
-from .base_provider import BaseAIProvider, AIResponse, AIMessage, MessageRole
+from ai.providers.base_provider import BaseAIProvider, AIResponse, AIMessage, MessageRole
 
 # Lazy loading for providers to handle missing dependencies gracefully
 _providers = {}
@@ -125,7 +125,7 @@ OpenRouterProvider = get_openrouter_provider()
 
 # Import MCP integrated provider directly (it has no external dependencies)
 try:
-    from .mcp_integrated_provider import MCPIntegratedProvider
+    from ai.providers.mcp_integrated_provider import MCPIntegratedProvider
 except ImportError as e:
     FreeCAD.Console.PrintWarning(
         f"FreeCAD AI: Failed to import MCPIntegratedProvider: {e}\n"

@@ -13,7 +13,7 @@ import time
 import aiohttp
 from typing import Dict, List, Optional, Any
 
-from .base_provider import BaseAIProvider, AIResponse, AIMessage, MessageRole
+from ai.providers.base_provider import BaseAIProvider, AIResponse, AIMessage, MessageRole
 
 
 class GeminiProvider(BaseAIProvider):
