@@ -53,7 +53,7 @@ class AgentControlWidget(QtWidgets.QWidget):
 
         # Command input
         input_layout = QtWidgets.QHBoxLayout()
-        
+
         self.command_input = QtWidgets.QLineEdit()
         self.command_input.setPlaceholderText("Type a command for the agent (e.g., 'Create a 20x20x10mm box')")
         self.command_input.returnPressed.connect(self._send_command)
@@ -178,6 +178,12 @@ class AgentControlWidget(QtWidgets.QWidget):
 
         control_layout.addStretch()
 
+        # Diagnostic button
+        self.diagnostic_btn = QtWidgets.QPushButton("🔍 Diagnose")
+        self.diagnostic_btn.setToolTip("Check agent manager connection status")
+        self.diagnostic_btn.clicked.connect(self._show_diagnostic_info)
+        control_layout.addWidget(self.diagnostic_btn)
+
         # Clear queue button
         self.clear_queue_btn = QtWidgets.QPushButton("Clear Queue")
         self.clear_queue_btn.clicked.connect(self._clear_queue)
@@ -268,19 +274,21 @@ class AgentControlWidget(QtWidgets.QWidget):
 
         if not self.agent_manager:
             QtWidgets.QMessageBox.warning(
-                self, 
-                "Agent Not Available", 
-                "Agent manager is not connected. Please restart the FreeCAD AI addon."
+                self,
+                "Agent Not Available",
+                "Agent manager is not connected. This usually means the agent manager failed to initialize.\n\n"
+                "Please check the FreeCAD console for error messages and restart the FreeCAD AI addon.\n\n"
+                "If the problem persists, there may be missing dependencies or import errors."
             )
             return
 
         try:
             # Clear the input
             self.command_input.clear()
-            
+
             # Add command to queue display
             self.queue_list.addItem(f"Command: {command}")
-            
+
             # Update status
             self.operation_label.setText(f"Processing: {command[:50]}...")
             self.state_label.setText("Processing")
@@ -293,15 +301,15 @@ class AgentControlWidget(QtWidgets.QWidget):
                     color: #856404;
                 }
             """)
-            
+
             # Enable execution controls
             self.play_pause_btn.setEnabled(True)
             self.stop_btn.setEnabled(True)
-            
+
             # TODO: Send command to agent manager
             # For now, just simulate processing
             QtCore.QTimer.singleShot(2000, lambda: self._simulate_command_completion(command))
-            
+
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self,
@@ -323,11 +331,11 @@ class AgentControlWidget(QtWidgets.QWidget):
                 color: #155724;
             }
         """)
-        
+
         # Add to history
         timestamp = datetime.now().strftime("%H:%M:%S")
         self.history_list.addItem(f"[{timestamp}] Completed: {command}")
-        
+
         # Clear queue
         self.queue_list.clear()
 
@@ -388,7 +396,7 @@ class AgentControlWidget(QtWidgets.QWidget):
 
             # Load current settings
             self._load_agent_settings()
-            
+
             # Update UI with current state
             self._update_ui_from_agent_state()
 
@@ -396,22 +404,22 @@ class AgentControlWidget(QtWidgets.QWidget):
         """Update UI elements based on current agent state."""
         if not self.agent_manager:
             return
-            
+
         # Update state display
         current_state = self.agent_manager.execution_state
         self._on_state_changed(None, current_state)
-        
+
         # Update mode display
         current_mode = self.agent_manager.current_mode
         mode_text = "Chat Mode" if current_mode.value == "chat" else "Agent Mode"
-        
+
         # Add mode indicator to header
         self.findChild(QtWidgets.QLabel).setText(f"🤖 Agent Control Panel - {mode_text}")
-        
+
         # Show available tools info
         available_tools = self.agent_manager.get_available_tools()
         tool_count = sum(len(methods) for methods in available_tools.values())
-        
+
         if tool_count > 0:
             self.state_label.setToolTip(f"Agent has access to {tool_count} tools across {len(available_tools)} categories")
 
@@ -516,12 +524,12 @@ class AgentControlWidget(QtWidgets.QWidget):
         """Handle execution complete."""
         # Add to history
         timestamp = datetime.now().strftime("%H:%M:%S")
-        
+
         # Handle different result formats
         success = result.get("success", False)
         if hasattr(result.get("status"), 'value'):
             success = result["status"].value == "completed"
-        
+
         status = "✅" if success else "❌"
         step_desc = result.get("output", f"Step {step_num}")
         history_item = f"{timestamp} - {status} {step_desc}"
@@ -545,7 +553,7 @@ class AgentControlWidget(QtWidgets.QWidget):
         steps = plan.get('steps', [])
         duration = plan.get('estimated_duration', 0)
         risk = plan.get('risk_level', 'unknown')
-        
+
         queue_item = f"Plan {plan_id[:8]}... ({len(steps)} steps, {duration:.1f}s, {risk} risk)"
         self.queue_list.addItem(queue_item)
 
@@ -603,7 +611,7 @@ class AgentControlWidget(QtWidgets.QWidget):
                 f"Are you sure you want to clear {len(self.execution_queue)} pending plans?",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
             )
-            
+
             if reply == QtWidgets.QMessageBox.Yes:
                 self.execution_queue.clear()
                 self.queue_list.clear()
@@ -642,14 +650,14 @@ class AgentControlWidget(QtWidgets.QWidget):
             # Get plan info for confirmation
             plan = self.execution_queue[current_row]
             plan_id = plan.get('id', 'unknown')[:8]
-            
+
             reply = QtWidgets.QMessageBox.question(
                 self,
                 "Remove Plan",
                 f"Remove plan {plan_id}... from queue?",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
             )
-            
+
             if reply == QtWidgets.QMessageBox.Yes:
                 self.queue_list.takeItem(current_row)
                 del self.execution_queue[current_row]
@@ -664,45 +672,45 @@ class AgentControlWidget(QtWidgets.QWidget):
         if current_item and self.agent_manager:
             # Show detailed history dialog
             history = self.agent_manager.get_execution_history()
-            
+
             if history:
                 dialog = QtWidgets.QDialog(self)
                 dialog.setWindowTitle("Execution History Details")
                 dialog.resize(600, 400)
-                
+
                 layout = QtWidgets.QVBoxLayout(dialog)
-                
+
                 # Create text view
                 text_view = QtWidgets.QTextEdit()
                 text_view.setReadOnly(True)
-                
+
                 # Format history details
                 details = ""
                 for i, entry in enumerate(reversed(history)):  # Show newest first
                     details += f"=== Execution {len(history) - i} ===\n"
                     details += f"Timestamp: {entry.get('timestamp', 'Unknown')}\n"
-                    
+
                     plan = entry.get('plan', {})
                     details += f"Plan ID: {plan.get('id', 'Unknown')}\n"
                     details += f"Steps: {len(plan.get('steps', []))}\n"
                     details += f"Risk Level: {plan.get('risk_level', 'Unknown')}\n"
-                    
+
                     result = entry.get('result', {})
                     details += f"Success: {result.get('success', False)}\n"
-                    
+
                     if result.get('errors'):
                         details += f"Errors: {', '.join(result['errors'])}\n"
-                        
+
                     details += "\n"
-                
+
                 text_view.setPlainText(details)
                 layout.addWidget(text_view)
-                
+
                 # Close button
                 close_btn = QtWidgets.QPushButton("Close")
                 close_btn.clicked.connect(dialog.accept)
                 layout.addWidget(close_btn)
-                
+
                 dialog.exec_()
 
     def _export_history(self):
@@ -711,7 +719,7 @@ class AgentControlWidget(QtWidgets.QWidget):
             return
 
         history = self.agent_manager.get_execution_history()
-        
+
         if not history:
             QtWidgets.QMessageBox.information(
                 self,
@@ -731,7 +739,7 @@ class AgentControlWidget(QtWidgets.QWidget):
         if filename:
             try:
                 import json
-                
+
                 # Prepare export data
                 export_data = {
                     "export_timestamp": datetime.now().isoformat(),
@@ -740,7 +748,7 @@ class AgentControlWidget(QtWidgets.QWidget):
                     "agent_config": self.agent_manager.config,
                     "history": history
                 }
-                
+
                 if filename.endswith('.json'):
                     with open(filename, 'w') as f:
                         json.dump(export_data, f, indent=2)
@@ -751,22 +759,22 @@ class AgentControlWidget(QtWidgets.QWidget):
                         f.write(f"Export Date: {export_data['export_timestamp']}\n")
                         f.write(f"Total Executions: {export_data['total_executions']}\n")
                         f.write(f"Agent Mode: {export_data['agent_mode']}\n\n")
-                        
+
                         for i, entry in enumerate(history, 1):
                             f.write(f"=== Execution {i} ===\n")
                             f.write(f"Timestamp: {entry.get('timestamp', 'Unknown')}\n")
-                            
+
                             plan = entry.get('plan', {})
                             f.write(f"Plan ID: {plan.get('id', 'Unknown')}\n")
                             f.write(f"Steps: {len(plan.get('steps', []))}\n")
-                            
+
                             result = entry.get('result', {})
                             f.write(f"Success: {result.get('success', False)}\n")
-                            
+
                             if result.get('errors'):
                                 f.write(f"Errors: {', '.join(result['errors'])}\n")
                             f.write("\n")
-                
+
                 QtWidgets.QMessageBox.information(
                     self,
                     "Export Complete",
@@ -792,7 +800,7 @@ class AgentControlWidget(QtWidgets.QWidget):
             self.history_list.clear()
             # Note: This doesn't clear the agent manager's history
             # That would require adding a method to the agent manager
-            
+
     def get_queue_status(self):
         """Get current queue status."""
         return {
@@ -807,3 +815,44 @@ class AgentControlWidget(QtWidgets.QWidget):
                 for plan in self.execution_queue
             ]
         }
+
+    def _show_diagnostic_info(self):
+        """Show diagnostic information about agent manager connection."""
+        # Get main widget to check agent manager status
+        main_widget = None
+        widget = self.parent()
+        while widget:
+            if hasattr(widget, 'get_agent_manager_status'):
+                main_widget = widget
+                break
+            widget = widget.parent()
+
+        if not main_widget:
+            QtWidgets.QMessageBox.information(
+                self,
+                "Diagnostic Info",
+                "Cannot find main widget to check agent manager status."
+            )
+            return
+
+        # Get status
+        status = main_widget.get_agent_manager_status()
+
+        # Format diagnostic message
+        if status["connected"]:
+            message = f"✅ Agent Manager Connected\n\n"
+            message += f"Mode: {status['mode']}\n"
+            message += f"State: {status['state']}\n"
+            message += f"Available Tools: {status['available_tools']}\n\n"
+            message += "The agent manager is working properly."
+        else:
+            message = f"❌ Agent Manager Not Connected\n\n"
+            message += f"Error: {status['error']}\n\n"
+            message += f"Suggestion: {status['suggestion']}\n\n"
+            message += "Please check the FreeCAD console for detailed error messages."
+
+        QtWidgets.QMessageBox.information(
+            self,
+            "Agent Manager Diagnostic",
+            message
+        )

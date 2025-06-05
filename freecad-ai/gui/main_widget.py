@@ -226,10 +226,16 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             # Connect conversation widget to agent manager
             if self.agent_manager and hasattr(self.conversation_widget, "set_agent_manager"):
                 self.conversation_widget.set_agent_manager(self.agent_manager)
+                print("FreeCAD AI: Agent manager connected to conversation widget")
+            elif not self.agent_manager:
+                print("FreeCAD AI: Agent manager is None - cannot connect to conversation widget")
 
             # Connect agent control widget to agent manager
             if self.agent_manager and hasattr(self.agent_control_widget, "set_agent_manager"):
                 self.agent_control_widget.set_agent_manager(self.agent_manager)
+                print("FreeCAD AI: Agent manager connected to agent control widget")
+            elif not self.agent_manager:
+                print("FreeCAD AI: Agent manager is None - cannot connect to agent control widget")
 
             # Connect connection widget to show MCP connection status (no AI provider status)
             if hasattr(self.connection_widget, "set_provider_service"):
@@ -247,7 +253,10 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         """Initialize the agent manager."""
         try:
             from ..core.agent_manager import AgentManager, AgentMode
+            print("FreeCAD AI: AgentManager import successful")
+
             self.agent_manager = AgentManager()
+            print("FreeCAD AI: AgentManager instance created")
 
             # Register callbacks
             self.agent_manager.register_callback(
@@ -259,9 +268,15 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 self._on_agent_state_changed
             )
 
-            print("FreeCAD AI: Agent Manager initialized")
+            print("FreeCAD AI: Agent Manager initialized successfully")
         except ImportError as e:
-            print(f"FreeCAD AI: Agent Manager unavailable - {e}")
+            print(f"FreeCAD AI: Agent Manager import failed - {e}")
+            self.agent_manager = None
+        except Exception as e:
+            print(f"FreeCAD AI: Agent Manager initialization failed - {e}")
+            import traceback
+            print(f"FreeCAD AI: Full traceback: {traceback.format_exc()}")
+            self.agent_manager = None
 
     def _on_mode_changed(self, mode_text: str):
         """Handle mode selector change."""
@@ -284,7 +299,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             # Notify conversation widget of mode change
             if hasattr(self, 'conversation_widget') and hasattr(self.conversation_widget, 'set_agent_mode'):
                 self.conversation_widget.set_agent_mode(self.agent_manager.get_mode())
-                
+
             # Update agent control widget if available
             if hasattr(self, 'agent_control_widget'):
                 # Refresh the agent control widget state
@@ -298,7 +313,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         """Handle agent mode change callback."""
         mode_display = "Chat" if new_mode.value == "chat" else "Agent"
         self.status_label.setText(f"Mode: {mode_display}")
-        
+
         # Update mode selector if it doesn't match
         current_selector = self.mode_selector.currentText()
         if new_mode.value == "chat" and "Chat" not in current_selector:
@@ -318,7 +333,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             "completed": "Completed"
         }
         status_text = state_display.get(new_state.value, new_state.value)
-        
+
         # Show mode and state
         mode_text = "Chat" if self.agent_manager.current_mode.value == "chat" else "Agent"
         self.status_label.setText(f"{mode_text}: {status_text}")
@@ -350,12 +365,12 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         # In chat mode, disable autonomous execution features
         if hasattr(self, 'tools_widget'):
             self.tools_widget.setEnabled(True)  # Manual tool use allowed
-            
+
         # Update tab visibility or highlighting
         chat_tab_index = self._find_tab_index("Chat")
         if chat_tab_index >= 0:
             self.tab_widget.setTabText(chat_tab_index, "💬 Chat (Active)")
-            
+
         agent_tab_index = self._find_tab_index("Agent")
         if agent_tab_index >= 0:
             self.tab_widget.setTabText(agent_tab_index, "🤖 Agent")
@@ -365,12 +380,12 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         # In agent mode, enable autonomous execution features
         if hasattr(self, 'tools_widget'):
             self.tools_widget.setEnabled(True)  # Tools can be executed by agent
-            
+
         # Update tab visibility or highlighting
         chat_tab_index = self._find_tab_index("Chat")
         if chat_tab_index >= 0:
             self.tab_widget.setTabText(chat_tab_index, "💬 Chat")
-            
+
         agent_tab_index = self._find_tab_index("Agent")
         if agent_tab_index >= 0:
             self.tab_widget.setTabText(agent_tab_index, "🤖 Agent (Active)")
@@ -385,6 +400,31 @@ class MCPMainWidget(QtWidgets.QDockWidget):
     def get_agent_manager(self):
         """Get the agent manager instance."""
         return self.agent_manager
+
+    def get_agent_manager_status(self):
+        """Get the status of the agent manager for debugging."""
+        if self.agent_manager is None:
+            return {
+                "connected": False,
+                "error": "Agent manager is None - initialization failed",
+                "suggestion": "Check FreeCAD console for initialization errors"
+            }
+
+        try:
+            status = self.agent_manager.get_status()
+            return {
+                "connected": True,
+                "status": status,
+                "mode": status.get("mode", "unknown"),
+                "state": status.get("state", "unknown"),
+                "available_tools": len(status.get("available_tools", {}))
+            }
+        except Exception as e:
+            return {
+                "connected": False,
+                "error": f"Agent manager exists but is not functional: {e}",
+                "suggestion": "Agent manager may be partially initialized"
+            }
 
     def _load_persisted_mode(self):
         """Load persisted mode from settings."""
