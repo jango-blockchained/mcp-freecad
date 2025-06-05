@@ -22,23 +22,25 @@ class GeminiProvider(BaseAIProvider):
     # Gemini API endpoint
     API_BASE = "https://generativelanguage.googleapis.com/v1beta"
 
-    # Supported Gemini models
+    # Supported Gemini models (updated June 2025)
     GEMINI_MODELS = [
-        "gemini-2.5-pro-latest",
-        "gemini-1.5-pro-latest",
-        "gemini-1.5-flash-latest",
-        "gemini-1.0-pro-latest",
+        "gemini-2.5-pro-preview-06-05",  # Latest preview from June 5, 2025
+        "gemini-2.5-flash-preview-05-20",  # Fast inference model
+        "gemini-2.0-flash",  # Stable 2.0 release
+        "gemini-1.5-pro",  # Previous generation stable
+        "gemini-1.5-flash",  # Previous generation fast
     ]
 
-    # Model context windows
+    # Model context windows (updated June 2025)
     MODEL_CONTEXTS = {
-        "gemini-2.5-pro-latest": 1000000,  # 1M tokens
-        "gemini-1.5-pro-latest": 1000000,  # 1M tokens
-        "gemini-1.5-flash-latest": 1000000,  # 1M tokens
-        "gemini-1.0-pro-latest": 30720,  # 30K tokens
+        "gemini-2.5-pro-preview-06-05": 2000000,  # 2M tokens
+        "gemini-2.5-flash-preview-05-20": 1000000,  # 1M tokens
+        "gemini-2.0-flash": 1000000,  # 1M tokens
+        "gemini-1.5-pro": 1000000,  # 1M tokens
+        "gemini-1.5-flash": 1000000,  # 1M tokens
     }
 
-    def __init__(self, api_key: str, model: str = "gemini-2.5-pro-latest", **kwargs):
+    def __init__(self, api_key: str, model: str = "gemini-2.5-pro-preview-06-05", **kwargs):
         """Initialize Gemini provider.
 
         Args:
@@ -50,7 +52,7 @@ class GeminiProvider(BaseAIProvider):
 
         # Default to Gemini 2.5 Pro for best performance
         if not self.model:
-            self.model = "gemini-2.5-pro-latest"
+            self.model = "gemini-2.5-pro-preview-06-05"
 
         # Gemini-specific configuration
         self.max_tokens = kwargs.get("max_tokens", 8192)
@@ -148,9 +150,8 @@ Be precise with measurements and technical details. When working with visual con
             await self._rate_limit()
 
             # Prepare the request
-            model_name = self.model.replace(
-                "-latest", ""
-            )  # Remove -latest suffix for API
+            # Use model name as-is since we updated to actual API model names
+            model_name = self.model
             url = f"{self.API_BASE}/models/{model_name}:generateContent?key={self.api_key}"
 
             # Build conversation history
@@ -297,41 +298,50 @@ Be precise with measurements and technical details. When working with visual con
 
         base_info = super().get_model_info(target_model)
 
-        # Add Gemini-specific information
+        # Add Gemini-specific information (updated June 2025)
         model_details = {
-            "gemini-2.5-pro-latest": {
-                "description": "Most advanced Gemini model with 1M token context",
-                "release_date": "December 2024",
-                "strengths": ["Multimodal", "Large context", "Complex reasoning"],
-                "context_window": 1000000,
+            "gemini-2.5-pro-preview-06-05": {
+                "description": "Latest Gemini 2.5 Pro preview with 2M token context",
+                "release_date": "June 2025",
+                "strengths": ["Multimodal", "2M context", "Advanced reasoning"],
+                "context_window": 2000000,
                 "supports_images": True,
                 "supports_video": True,
                 "supports_audio": True,
             },
-            "gemini-1.5-pro-latest": {
-                "description": "Previous generation with excellent performance",
-                "release_date": "May 2024",
-                "strengths": ["Multimodal", "Large context", "Stable"],
-                "context_window": 1000000,
-                "supports_images": True,
-                "supports_video": True,
-                "supports_audio": True,
-            },
-            "gemini-1.5-flash-latest": {
-                "description": "Fast and efficient for quick tasks",
-                "release_date": "May 2024",
-                "strengths": ["Speed", "Cost-effective", "Good quality"],
+            "gemini-2.5-flash-preview-05-20": {
+                "description": "Fast Gemini 2.5 Flash with improved efficiency",
+                "release_date": "May 2025",
+                "strengths": ["Speed", "1M context", "Cost-effective"],
                 "context_window": 1000000,
                 "supports_images": True,
                 "supports_video": False,
                 "supports_audio": False,
             },
-            "gemini-1.0-pro-latest": {
-                "description": "Stable model for production use",
-                "release_date": "December 2023",
-                "strengths": ["Reliability", "Well-tested", "Good baseline"],
-                "context_window": 30720,
-                "supports_images": False,
+            "gemini-2.0-flash": {
+                "description": "Stable Gemini 2.0 release",
+                "release_date": "February 2025",
+                "strengths": ["Reliability", "Stable", "Good performance"],
+                "context_window": 1000000,
+                "supports_images": True,
+                "supports_video": False,
+                "supports_audio": False,
+            },
+            "gemini-1.5-pro": {
+                "description": "Previous generation Pro model",
+                "release_date": "May 2024",
+                "strengths": ["Multimodal", "Stable", "Well-tested"],
+                "context_window": 1000000,
+                "supports_images": True,
+                "supports_video": True,
+                "supports_audio": True,
+            },
+            "gemini-1.5-flash": {
+                "description": "Previous generation Flash model",
+                "release_date": "May 2024",
+                "strengths": ["Speed", "Cost-effective", "Reliable"],
+                "context_window": 1000000,
+                "supports_images": True,
                 "supports_video": False,
                 "supports_audio": False,
             },
@@ -362,4 +372,4 @@ Be precise with measurements and technical details. When working with visual con
 
     def get_context_window(self) -> int:
         """Get the context window size for current model."""
-        return self.MODEL_CONTEXTS.get(self.model, 30720)
+        return self.MODEL_CONTEXTS.get(self.model, 1000000)

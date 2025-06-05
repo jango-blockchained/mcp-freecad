@@ -166,14 +166,14 @@ class ConfigManager:
                 },
                 "anthropic": {
                     "enabled": False,
-                    "model": "claude-3-sonnet-20240229",
+                    "model": "claude-3-5-sonnet-20241022",
                     "temperature": 0.7,
                     "timeout": 30,
                     "max_tokens": 4000,
                 },
                 "google": {
                     "enabled": False,
-                    "model": "gemini-pro",
+                    "model": "gemini-2.5-pro-preview",
                     "temperature": 0.7,
                     "timeout": 30,
                     "max_tokens": 4000,

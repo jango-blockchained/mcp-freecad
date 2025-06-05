@@ -64,7 +64,7 @@ class ClaudeProvider(BaseAIProvider):
         self.headers = {
             "x-api-key": self.api_key,
             "Content-Type": "application/json",
-            "anthropic-version": "2024-12-19",
+            "anthropic-version": "2023-06-01",
         }
 
         # Add thinking mode header if supported
