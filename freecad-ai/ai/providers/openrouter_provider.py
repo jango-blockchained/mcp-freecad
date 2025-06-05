@@ -282,6 +282,14 @@ Be precise with measurements and technical details. Adapt your response style ba
         model_info = response_data.get("model", self.model)
 
         # Create response object
+        # Handle provider field - it can be either a string or dict
+        provider_info = response_data.get("provider", {})
+        if isinstance(provider_info, dict):
+            provider_name = provider_info.get("name", "unknown")
+        else:
+            # If provider is a string, use it directly
+            provider_name = str(provider_info) if provider_info else "unknown"
+
         return AIResponse(
             content=content.strip(),
             thinking_process=thinking_process,
@@ -292,9 +300,7 @@ Be precise with measurements and technical details. Adapt your response style ba
                 "id": response_data.get("id"),
                 "created": response_data.get("created"),
                 "model": model_info,
-                "provider_name": response_data.get("provider", {}).get(
-                    "name", "unknown"
-                ),
+                "provider_name": provider_name,
             },
         )
 

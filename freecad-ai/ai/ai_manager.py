@@ -108,8 +108,12 @@ class AIManager:
             return "Error: No AI provider available"
 
         try:
-            response = await provider.send_message(message, context)
-            return response
+            # Pass context as keyword argument to match provider signature
+            if context:
+                response = await provider.send_message(message, **context)
+            else:
+                response = await provider.send_message(message)
+            return response.content if hasattr(response, 'content') else str(response)
         except Exception as e:
             self.logger.error(f"Error sending message: {e}")
             return f"Error: {str(e)}"
