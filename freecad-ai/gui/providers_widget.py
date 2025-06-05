@@ -1131,7 +1131,7 @@ class ProvidersWidget(QtWidgets.QWidget):
                 self._refresh_providers()
 
     def _test_connection(self):
-        """Test connection for selected provider."""
+        """Test connection for selected provider with detailed console output."""
         provider_name = self.selected_provider_label.text()
         if provider_name == "None selected":
             QtWidgets.QMessageBox.warning(
@@ -1139,17 +1139,239 @@ class ProvidersWidget(QtWidgets.QWidget):
             )
             return
 
+        # Check if we have API key
+        api_key = self.api_key_input.text().strip()
+        if not api_key:
+            QtWidgets.QMessageBox.warning(
+                self, "Error", "Please enter an API key first"
+            )
+            return
+
         self.test_connection_btn.setEnabled(False)
         self.test_connection_btn.setText("Testing...")
 
-        # Simulate test (real implementation would test actual connection)
-        QtCore.QTimer.singleShot(2000, self._test_connection_finished)
+        # Show console dialog
+        self._show_connection_test_console(provider_name, api_key)
 
-    def _test_connection_finished(self):
+    def _show_connection_test_console(self, provider_name, api_key):
+        """Show a console-like dialog with real-time test output."""
+        # Create console dialog
+        console_dialog = QtWidgets.QDialog(self)
+        console_dialog.setWindowTitle(f"Connection Test - {provider_name}")
+        console_dialog.setModal(True)
+        console_dialog.resize(600, 400)
+
+        layout = QtWidgets.QVBoxLayout(console_dialog)
+
+        # Console output area
+        console_output = QtWidgets.QTextEdit()
+        console_output.setReadOnly(True)
+        console_output.setStyleSheet("""
+            QTextEdit {
+                background-color: #1e1e1e;
+                color: #ffffff;
+                font-family: 'Courier New', monospace;
+                font-size: 11px;
+                border: 1px solid #555;
+                padding: 10px;
+            }
+        """)
+        layout.addWidget(console_output)
+
+        # Buttons
+        button_layout = QtWidgets.QHBoxLayout()
+        close_btn = QtWidgets.QPushButton("Close")
+        close_btn.clicked.connect(console_dialog.accept)
+        button_layout.addStretch()
+        button_layout.addWidget(close_btn)
+        layout.addLayout(button_layout)
+
+        # Start the test
+        self._perform_real_connection_test(provider_name, api_key, console_output, console_dialog)
+
+        console_dialog.exec_()
+
+    def _perform_real_connection_test(self, provider_name, api_key, console_output, dialog):
+        """Perform the actual connection test with real-time console output."""
+        import time
+        from datetime import datetime
+
+        def log_message(msg, level="INFO"):
+            timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+            color = {
+                "INFO": "#ffffff",
+                "SUCCESS": "#4caf50",
+                "ERROR": "#f44336",
+                "WARNING": "#ff9800",
+                "DEBUG": "#2196f3"
+            }.get(level, "#ffffff")
+
+            console_output.append(f"<span style='color: #888'>[{timestamp}]</span> "
+                                f"<span style='color: {color}'>{level}:</span> {msg}")
+            console_output.ensureCursorVisible()
+            QtWidgets.QApplication.processEvents()
+
+        try:
+            log_message("=" * 60)
+            log_message(f"CONNECTION TEST STARTED: {provider_name}")
+            log_message("=" * 60)
+
+            # Step 1: Validate API key format
+            log_message("Step 1/5: Validating API key format...")
+            if len(api_key) < 10:
+                log_message("API key appears too short", "ERROR")
+                self._test_connection_finished(False, "API key too short")
+                return
+            elif api_key.startswith("sk-") and len(api_key) < 48:
+                log_message("OpenAI-style API key detected but seems short", "WARNING")
+            elif api_key.startswith("sk-ant-") and len(api_key) < 100:
+                log_message("Anthropic API key detected but seems short", "WARNING")
+            else:
+                log_message("API key format looks valid", "SUCCESS")
+
+            # Step 2: Check provider service availability
+            log_message("Step 2/5: Checking provider service...")
+            if self.provider_service:
+                log_message("Provider service is available", "SUCCESS")
+            else:
+                log_message("Provider service not available", "ERROR")
+                self._test_connection_finished(False, "No provider service")
+                return
+
+            # Step 3: Initialize provider
+            log_message("Step 3/5: Initializing provider...")
+            try:
+                # Get provider type
+                provider_info = self._get_default_provider_by_name(provider_name)
+                if provider_info:
+                    provider_type = provider_info["type"]
+                    log_message(f"Provider type: {provider_type}", "DEBUG")
+                else:
+                    provider_type = provider_name.lower()
+                    log_message(f"Assuming provider type: {provider_type}", "WARNING")
+
+                # Try to initialize with provider service
+                config = {
+                    "model": getattr(self, "model_combo", None) and self.model_combo.currentText() or "default"
+                }
+
+                log_message(f"Adding provider to service with config: {config}", "DEBUG")
+                success = self.provider_service._initialize_provider(provider_name, api_key, config)
+
+                if success:
+                    log_message("Provider initialized successfully", "SUCCESS")
+                else:
+                    log_message("Provider initialization failed", "ERROR")
+                    self._test_connection_finished(False, "Provider initialization failed")
+                    return
+
+            except Exception as e:
+                log_message(f"Provider initialization error: {str(e)}", "ERROR")
+                self._test_connection_finished(False, f"Init error: {str(e)}")
+                return
+
+            # Step 4: Test actual connection
+            log_message("Step 4/5: Testing API connection...")
+            try:
+                # Use provider service's test method
+                test_success = False
+                test_message = "Unknown result"
+
+                # Wait a moment for initialization to complete
+                time.sleep(0.5)
+                QtWidgets.QApplication.processEvents()
+
+                # Check if provider was added and test it
+                providers = self.provider_service.get_all_providers()
+                if provider_name in providers:
+                    provider_status = providers[provider_name]
+                    log_message(f"Provider status: {provider_status}", "DEBUG")
+
+                    # Trigger connection test
+                    self.provider_service.test_provider_connection(provider_name)
+
+                    # Wait for test to complete (check status updates)
+                    max_wait = 50  # 5 seconds max
+                    wait_count = 0
+                    while wait_count < max_wait:
+                        time.sleep(0.1)
+                        QtWidgets.QApplication.processEvents()
+
+                        current_status = self.provider_service.get_provider_status(provider_name)
+                        status_text = current_status.get("status", "unknown")
+
+                        if status_text == "testing":
+                            log_message("Test in progress...", "DEBUG")
+                        elif status_text == "connected":
+                            test_success = True
+                            test_message = current_status.get("message", "Connected successfully")
+                            break
+                        elif status_text == "error":
+                            test_success = False
+                            test_message = current_status.get("message", "Connection failed")
+                            break
+
+                        wait_count += 1
+
+                    if wait_count >= max_wait:
+                        log_message("Connection test timed out", "ERROR")
+                        test_success = False
+                        test_message = "Test timed out"
+                else:
+                    log_message("Provider not found in provider service", "ERROR")
+                    test_success = False
+                    test_message = "Provider not registered"
+
+                if test_success:
+                    log_message(f"API connection successful: {test_message}", "SUCCESS")
+                else:
+                    log_message(f"API connection failed: {test_message}", "ERROR")
+                    self._test_connection_finished(False, test_message)
+                    return
+
+            except Exception as e:
+                log_message(f"Connection test error: {str(e)}", "ERROR")
+                import traceback
+                log_message(f"Traceback: {traceback.format_exc()}", "DEBUG")
+                self._test_connection_finished(False, f"Test error: {str(e)}")
+                return
+
+            # Step 5: Final validation
+            log_message("Step 5/5: Final validation...")
+            if test_success:
+                log_message("=" * 60, "SUCCESS")
+                log_message("CONNECTION TEST COMPLETED SUCCESSFULLY!", "SUCCESS")
+                log_message("=" * 60, "SUCCESS")
+                self._test_connection_finished(True, "Connection successful")
+            else:
+                log_message("=" * 60, "ERROR")
+                log_message("CONNECTION TEST FAILED!", "ERROR")
+                log_message("=" * 60, "ERROR")
+                self._test_connection_finished(False, "Test failed")
+
+        except Exception as e:
+            log_message(f"Unexpected error during test: {str(e)}", "ERROR")
+            import traceback
+            log_message(f"Full traceback: {traceback.format_exc()}", "DEBUG")
+            self._test_connection_finished(False, f"Unexpected error: {str(e)}")
+
+    def _test_connection_finished(self, success=True, message=""):
         """Handle test connection completion."""
         self.test_connection_btn.setEnabled(True)
         self.test_connection_btn.setText("Test Connection")
-        QtWidgets.QMessageBox.information(self, "Success", "Connection test completed")
+
+        if success:
+            QtWidgets.QMessageBox.information(
+                self,
+                "Connection Test Successful",
+                f"Connection test completed successfully!\n\n{message}"
+            )
+        else:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Connection Test Failed",
+                f"Connection test failed:\n\n{message}\n\nCheck the console output for more details."
+            )
 
     def _refresh_providers(self):
         """Refresh providers table."""
