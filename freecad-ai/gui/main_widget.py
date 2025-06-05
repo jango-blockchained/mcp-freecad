@@ -284,13 +284,27 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             # Notify conversation widget of mode change
             if hasattr(self, 'conversation_widget') and hasattr(self.conversation_widget, 'set_agent_mode'):
                 self.conversation_widget.set_agent_mode(self.agent_manager.get_mode())
+                
+            # Update agent control widget if available
+            if hasattr(self, 'agent_control_widget'):
+                # Refresh the agent control widget state
+                if hasattr(self.agent_control_widget, '_update_ui_from_agent_state'):
+                    self.agent_control_widget._update_ui_from_agent_state()
 
         except Exception as e:
             print(f"FreeCAD AI: Error changing mode - {e}")
 
     def _on_agent_mode_changed(self, old_mode, new_mode):
         """Handle agent mode change callback."""
-        self.status_label.setText(f"Mode: {new_mode.value}")
+        mode_display = "Chat" if new_mode.value == "chat" else "Agent"
+        self.status_label.setText(f"Mode: {mode_display}")
+        
+        # Update mode selector if it doesn't match
+        current_selector = self.mode_selector.currentText()
+        if new_mode.value == "chat" and "Chat" not in current_selector:
+            self.mode_selector.setCurrentText("💬 Chat")
+        elif new_mode.value == "agent" and "Agent" not in current_selector:
+            self.mode_selector.setCurrentText("🤖 Agent")
 
     def _on_agent_state_changed(self, old_state, new_state):
         """Handle agent state change callback."""
@@ -304,7 +318,10 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             "completed": "Completed"
         }
         status_text = state_display.get(new_state.value, new_state.value)
-        self.status_label.setText(status_text)
+        
+        # Show mode and state
+        mode_text = "Chat" if self.agent_manager.current_mode.value == "chat" else "Agent"
+        self.status_label.setText(f"{mode_text}: {status_text}")
 
         # Update status color
         if new_state.value == "executing":
@@ -319,6 +336,10 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             self.status_label.setStyleSheet(
                 "padding: 2px 8px; background-color: #c8e6c9; color: #2e7d32; border-radius: 10px; font-size: 11px;"
             )
+        elif new_state.value == "planning":
+            self.status_label.setStyleSheet(
+                "padding: 2px 8px; background-color: #e1f5fe; color: #0277bd; border-radius: 10px; font-size: 11px;"
+            )
         else:
             self.status_label.setStyleSheet(
                 "padding: 2px 8px; background-color: #f0f0f0; border-radius: 10px; font-size: 11px;"
@@ -329,12 +350,37 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         # In chat mode, disable autonomous execution features
         if hasattr(self, 'tools_widget'):
             self.tools_widget.setEnabled(True)  # Manual tool use allowed
+            
+        # Update tab visibility or highlighting
+        chat_tab_index = self._find_tab_index("Chat")
+        if chat_tab_index >= 0:
+            self.tab_widget.setTabText(chat_tab_index, "💬 Chat (Active)")
+            
+        agent_tab_index = self._find_tab_index("Agent")
+        if agent_tab_index >= 0:
+            self.tab_widget.setTabText(agent_tab_index, "🤖 Agent")
 
     def _update_ui_for_agent_mode(self):
         """Update UI elements for agent mode."""
         # In agent mode, enable autonomous execution features
         if hasattr(self, 'tools_widget'):
             self.tools_widget.setEnabled(True)  # Tools can be executed by agent
+            
+        # Update tab visibility or highlighting
+        chat_tab_index = self._find_tab_index("Chat")
+        if chat_tab_index >= 0:
+            self.tab_widget.setTabText(chat_tab_index, "💬 Chat")
+            
+        agent_tab_index = self._find_tab_index("Agent")
+        if agent_tab_index >= 0:
+            self.tab_widget.setTabText(agent_tab_index, "🤖 Agent (Active)")
+
+    def _find_tab_index(self, tab_name):
+        """Find tab index by name."""
+        for i in range(self.tab_widget.count()):
+            if tab_name in self.tab_widget.tabText(i):
+                return i
+        return -1
 
     def get_agent_manager(self):
         """Get the agent manager instance."""

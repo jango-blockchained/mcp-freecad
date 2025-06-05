@@ -508,371 +508,359 @@ class ConversationWidget(QtWidgets.QWidget):
         self._send_message(message)
 
     def _send_message(self, message):
-        """Send message to AI provider."""
-        # Add user message to conversation
-        self._add_conversation_message("You", message)
+        """Send message to AI provider or agent."""
+        if not message:
+            return
+
+        # Clear input
         self.message_input.clear()
 
-        # Emit signal for message sent
-        self.message_sent.emit(self.current_provider, message)
+        # Add user message to conversation
+        self._add_conversation_message("You", message)
 
-        # Check if we have agent manager and mode
-        if self.agent_manager and self.current_mode:
-            # Process through agent manager
+        # Show thinking indicator
+        self._add_thinking_indicator()
+
+        # Update usage count
+        self.conversation_history.append({
+            "sender": "You",
+            "message": message,
+            "timestamp": QtCore.QDateTime.currentDateTime().toString()
+        })
+        self.usage_label.setText(f"Messages: {len(self.conversation_history)}")
+
+        # Process based on current mode
+        if self.current_mode and str(self.current_mode).endswith("AGENT"):
+            # Agent mode - use agent manager
             self._process_with_agent(message)
         else:
-            # Show thinking indicator
-            self._add_conversation_message("AI", "Thinking...")
+            # Chat mode - direct AI response
+            self._process_with_chat(message)
 
-            # Try to send via provider service first, then fallback to simulation
-            if self.provider_service:
-                try:
-                    # Use provider service to send message
-                    provider = self.provider_service.get_provider(self.current_provider)
-                    if provider:
-                        # Send to provider
-                        self.provider_service.send_message_async(provider, message, self._on_provider_response)
-                except Exception as e:
-                    # Handle error
-                    self._remove_thinking_indicator()
-                    self._add_system_message(f"Error using provider service: {e}")
-                    QtCore.QTimer.singleShot(
-                        1500, lambda: self._simulate_ai_response(message)
-                    )
+    def _process_with_chat(self, message):
+        """Process message in chat mode."""
+        try:
+            # Gather context if enabled
+            context = {}
+            if self.context_check.isChecked():
+                context = self._gather_freecad_context()
+
+            if self.agent_manager:
+                # Use agent manager for chat mode processing
+                response = self.agent_manager.process_message(message, context)
+                self._handle_agent_response(response)
             else:
-                # Fallback to simulation
-                QtCore.QTimer.singleShot(1500, lambda: self._simulate_ai_response(message))
+                # Fallback to direct provider communication
+                self._send_to_provider(message, context)
+                
+        except Exception as e:
+            self._remove_thinking_indicator()
+            self._add_system_message(f"Error in chat mode: {str(e)}")
 
-        # Update usage statistics
-        current_count = len(self.conversation_history)
-        self.usage_label.setText(f"Messages: {current_count}")
+    def _send_to_provider(self, message, context):
+        """Send message directly to AI provider (fallback method)."""
+        if not self.current_provider:
+            self._remove_thinking_indicator()
+            self._add_system_message("No provider selected")
+            return
 
-    def _on_provider_response(self, response):
-        """Handle response from provider service."""
-        # Remove thinking indicator
-        self._remove_thinking_indicator()
+        try:
+            # Build context message
+            context_text = ""
+            if context and context.get("freecad_state"):
+                freecad_state = context["freecad_state"]
+                if freecad_state.get("has_active_document"):
+                    context_text += f"\nFreeCAD Context:\n"
+                    context_text += f"- Active document: {freecad_state.get('document_name', 'Unknown')}\n"
+                    
+                    if freecad_state.get("selected_objects"):
+                        context_text += f"- Selected objects: {len(freecad_state['selected_objects'])}\n"
+                        for obj in freecad_state["selected_objects"][:3]:  # Show first 3
+                            context_text += f"  * {obj['name']} ({obj['type']})\n"
+                    
+                    if freecad_state.get("document_objects"):
+                        context_text += f"- Total objects in document: {len(freecad_state['document_objects'])}\n"
 
-        # Add AI response
-        self._add_conversation_message("AI", response)
+            full_message = message + context_text
+            
+            # Simulate AI response (in real implementation, this would call the actual provider)
+            self._simulate_ai_response(full_message)
+            
+        except Exception as e:
+            self._remove_thinking_indicator()
+            self._add_system_message(f"Error communicating with provider: {str(e)}")
 
-    def _remove_thinking_indicator(self):
-        """Remove the thinking indicator from conversation."""
-        text = self.conversation_text.toPlainText()
-        if "AI: Thinking..." in text:
-            # Find and remove the last "Thinking..." message
-            lines = text.split("\n")
-            for i in range(len(lines) - 1, -1, -1):
-                if "AI" in lines[i] and "Thinking..." in lines[i]:
-                    lines.pop(i)
-                    if i < len(lines) and lines[i].strip() == "":
-                        lines.pop(i)
-                    break
-            self.conversation_text.setPlainText("\n".join(lines))
+    def _process_with_agent(self, message):
+        """Process message through agent manager."""
+        if not self.agent_manager:
+            self._remove_thinking_indicator()
+            self._add_system_message("Agent manager not available")
+            return
 
-    def _simulate_ai_response(self, user_message):
-        """Simulate AI response with helpful FreeCAD guidance."""
-        # Remove thinking indicator
-        self._remove_thinking_indicator()
+        # Gather context if enabled
+        context = {}
+        if self.context_check.isChecked():
+            context = self._gather_freecad_context()
 
-        # Analyze user message
-        message_lower = user_message.lower()
+        # Set AI provider if available
+        if self.provider_service and self.current_provider:
+            try:
+                provider = self.provider_service.get_provider(self.current_provider)
+                if provider:
+                    self.agent_manager.set_ai_provider(provider)
+            except Exception as e:
+                print(f"Warning: Could not set AI provider: {e}")
 
-        # Generate contextual FreeCAD-specific responses
-        if any(word in message_lower for word in ["car", "vehicle", "automobile"]):
-            if "simple" in message_lower:
-                response = """I'll help you create a simple 3D car model in FreeCAD. Here's a step-by-step approach:
+        # Process message
+        try:
+            response = self.agent_manager.process_message(message, context)
+            self._handle_agent_response(response)
+        except Exception as e:
+            self._remove_thinking_indicator()
+            self._add_system_message(f"Error processing message: {str(e)}")
 
-1. **Create the car body:**
-   - Go to Tools → Basic Shapes → Box (or use the □ icon)
-   - Create a box: Length=100mm, Width=50mm, Height=30mm
-   - This will be your main car body
+    def _handle_agent_response(self, response):
+        """Handle response from agent manager."""
+        mode = response.get("mode", "unknown")
 
-2. **Add the cabin:**
-   - Create another box: Length=50mm, Width=45mm, Height=25mm
-   - Use Tools → Operations → Move (→ icon) to position it on top
-   - Move it back by 15mm to create the cabin shape
+        if mode == "chat":
+            # Chat mode - display instructions
+            self._remove_thinking_indicator()
 
-3. **Combine the parts:**
-   - Select both boxes
-   - Use Tools → Operations → Union (∪ icon) to merge them
+            instructions = response.get("instructions", [])
+            if instructions:
+                self._add_conversation_message("AI", "Here's how to do that:")
+                for instruction in instructions:
+                    if instruction.strip():  # Skip empty instructions
+                        self._add_conversation_message("AI", instruction)
 
-4. **Add wheels:**
-   - Create 4 cylinders using Tools → Basic Shapes → Cylinder (○ icon)
-   - Make them: Radius=10mm, Height=10mm
-   - Use Tools → Operations → Move to position them at the corners
+            # Show suggested tools
+            suggested_tools = response.get("suggested_tools", [])
+            if suggested_tools:
+                tool_names = [tool.get('name', tool.get('id', 'Unknown')) for tool in suggested_tools]
+                self._add_conversation_message("AI", f"\nSuggested tools: {', '.join(tool_names)}")
+                
+                # Add helpful tip about agent mode
+                self._add_conversation_message("AI", 
+                    "\n💡 Tip: Switch to Agent mode to have me execute these tools automatically!")
 
-5. **Round the edges (optional):**
-   - Select the car body
-   - Use Tools → Surface Mods → Fillet (╭ icon) to round edges
+        elif mode == "agent":
+            # Agent mode - show execution plan and progress
+            self._remove_thinking_indicator()
 
-Would you like me to walk you through any specific step in more detail?"""
+            plan = response.get("plan")
+            if plan:
+                self._display_execution_plan(plan)
+
+            # Check if approval required
+            if response.get("approval_required"):
+                self._show_approval_dialog(plan)
             else:
-                response = """I can help you create a detailed car model. What type of car are you looking to model?
+                # Show execution result
+                execution_result = response.get("execution_result")
+                if execution_result:
+                    self._display_execution_result(execution_result)
+                    
+        # Handle errors
+        if response.get("error"):
+            self._add_conversation_message("AI", f"❌ Error: {response['error']}")
 
-Options:
-• Sports car with aerodynamic features
-• Classic sedan with detailed body work
-• SUV with robust design
-• Truck with cargo bed
-• Simple cartoon-style car
+    def _display_execution_plan(self, plan):
+        """Display the execution plan."""
+        self._add_conversation_message("AI", f"📋 Execution Plan (ID: {plan['id'][:8]}...)")
 
-Please specify, and I'll provide detailed instructions for your chosen style."""
+        # Display plan summary
+        step_count = len(plan.get("steps", []))
+        duration = plan.get("estimated_duration", 0)
+        risk = plan.get("risk_level", "unknown")
+        
+        self._add_conversation_message("AI", 
+            f"📊 Plan Summary: {step_count} steps, ~{duration:.1f}s, {risk} risk")
 
-        elif any(word in message_lower for word in ["box", "cube", "rectangular"]):
-            response = """To create a box/cube in FreeCAD:
+        # Display plan steps
+        for step in plan.get("steps", []):
+            step_text = f"  {step['order']}. {step['description']}"
+            if step.get("parameters"):
+                param_summary = ", ".join([f"{k}={v}" for k, v in step["parameters"].items()])
+                step_text += f" ({param_summary})"
+            self._add_conversation_message("AI", step_text)
 
-**Method 1 - Using the Tools Widget:**
-1. Go to the Tools tab
-2. Click the □ (Box) icon under "Basic Shapes"
-3. Enter dimensions:
-   - Length, Width, Height (in mm)
-   - Name (optional)
+    def _display_execution_result(self, result):
+        """Display execution result."""
+        if result.get("success"):
+            self._add_conversation_message("AI", "✅ Execution completed successfully!")
+            
+            # Show executed steps count
+            executed_count = len(result.get("executed_steps", []))
+            if executed_count > 0:
+                self._add_conversation_message("AI", f"✓ Completed {executed_count} steps")
 
-**Method 2 - Using Workbenches:**
-1. Switch to Part Workbench (View → Workbench → Part)
-2. Click Part → Primitives → Box
-3. Set your dimensions in the dialog
-
-**Pro tip:** For a perfect cube, use equal dimensions for all three values.
-
-Need specific dimensions or want to create multiple boxes?"""
-
-        elif any(word in message_lower for word in ["cylinder", "tube", "pipe", "rod"]):
-            response = """To create a cylinder in FreeCAD:
-
-**Basic Cylinder:**
-1. Tools tab → Basic Shapes → ○ (Cylinder) icon
-2. Parameters:
-   - Radius: defines the width
-   - Height: defines the length
-
-**Hollow Cylinder (Tube):**
-1. Tools tab → Advanced Shapes → ◎ (Tube) icon
-2. You'll need:
-   - Outer radius
-   - Inner radius (thickness)
-   - Height
-
-**Tips:**
-• For a pipe, make inner radius = outer radius - wall thickness
-• For a solid rod, use regular cylinder
-• You can create threads on cylinders using Advanced Shapes → Thread
-
-What dimensions do you need?"""
-
-        elif "sphere" in message_lower or "ball" in message_lower:
-            response = """To create a sphere in FreeCAD:
-
-1. **Using Tools Widget:**
-   - Tools tab → Basic Shapes → ● (Sphere) icon
-   - Enter radius (e.g., 25mm for a 50mm diameter ball)
-
-2. **Creating half-sphere or dome:**
-   - Create a full sphere first
-   - Use Tools → Operations → Cut (−) with a box to cut it in half
-
-3. **Ellipsoid (oval sphere):**
-   - Tools → Advanced Shapes → ⬭ (Ellipsoid)
-   - Set different radii for X, Y, Z axes
-
-**Tip:** For a hollow sphere, create two spheres of different sizes and use Boolean Cut operation.
-
-What size sphere do you need?"""
-
-        elif any(word in message_lower for word in ["export", "save", "stl", "step", "print"]):
-            response = """I'll help you export your model. FreeCAD supports multiple formats:
-
-**For 3D Printing (STL):**
-1. Select your model in the tree view
-2. Tools → Import/Export → ▲S (Export STL)
-3. Choose location and filename
-4. STL is best for 3D printing
-
-**For CAD Exchange (STEP):**
-1. Select your model
-2. Tools → Import/Export → ▲P (Export STEP)
-3. STEP preserves more information and is editable
-
-**Other formats:**
-• IGES: Older CAD format, widely compatible
-• OBJ: Good for 3D graphics/rendering
-• FCStd: FreeCAD native format (File → Save)
-
-**Before exporting:**
-• Check Tools → Measure → ³ (Volume) to verify size
-• Ensure all boolean operations are complete
-• Consider using Surface Mods → Simplify if file is too large
-
-Which format do you need?"""
-
-        elif any(word in message_lower for word in ["measure", "dimension", "size", "length"]):
-            response = """FreeCAD offers several measurement tools:
-
-**Available Measurements:**
-• ↔ **Distance**: Measure between two points/edges
-• ∠ **Angle**: Measure angle between edges/faces
-• ³ **Volume**: Total volume of solid objects
-• ² **Area**: Surface area of faces
-• ━ **Length**: Length of edges/curves
-• ⌀ **Radius**: Radius of circular edges
-• ▭ **BBox**: Bounding box dimensions
-• ⊕ **CoG**: Center of gravity location
-
-**How to measure:**
-1. Select the element(s) you want to measure
-2. Go to Tools → Measure section
-3. Click the appropriate measurement tool
-
-**Tips:**
-• Select two points/edges for distance
-• Select two edges/faces for angle
-• Select object for volume/area
-• Results appear in the report view
-
-What would you like to measure?"""
-
-        elif any(word in message_lower for word in ["boolean", "combine", "merge", "cut", "subtract"]):
-            response = """Boolean operations let you combine or modify shapes:
-
-**Union (∪) - Combine/Merge:**
-• Merges multiple objects into one
-• Select all objects → Tools → Operations → Union
-• Result: Single unified object
-
-**Cut/Difference (−) - Subtract:**
-• Removes one shape from another
-• Select base object first, then cutting object
-• Tools → Operations → Cut
-• Example: Create holes or cavities
-
-**Intersection (∩) - Common Volume:**
-• Keeps only overlapping volume
-• Select both objects → Tools → Operations → Intersect
-• Useful for complex joint shapes
-
-**Tips:**
-• Order matters for Cut operation
-• Objects must overlap for operations to work
-• Keep originals: Check "Keep originals" option
-• Use Undo (Ctrl+Z) if result isn't expected
-
-Which operation do you need help with?"""
-
-        elif any(word in message_lower for word in ["help", "start", "begin", "new", "tutorial"]):
-            response = """Welcome to FreeCAD AI Assistant! I'm here to help you with 3D modeling. Here's what I can help you with:
-
-**Getting Started:**
-• Creating basic shapes (box, cylinder, sphere, etc.)
-• Combining shapes with boolean operations
-• Modifying shapes (fillet, chamfer, scale)
-• Measuring and analyzing models
-• Exporting for 3D printing or CAD
-
-**Quick Start Projects:**
-1. 📦 Simple box with rounded edges
-2. 🏠 Basic house shape
-3. ⚙️ Gear or mechanical part
-4. 🚗 Simple vehicle model
-5. 🔧 Tool or hardware design
-
-**Available Tools:**
-• Basic Shapes: Box, Cylinder, Sphere, Cone, etc.
-• Operations: Union, Cut, Mirror, Array
-• Modifications: Fillet, Chamfer, Shell
-• Import/Export: STL, STEP, IGES
-
-What would you like to create today?"""
-
-        elif "array" in message_lower or "pattern" in message_lower or "copy" in message_lower:
-            response = """Creating arrays and patterns in FreeCAD:
-
-**Linear Array (Row of Copies):**
-1. Select your object
-2. Tools → Operations → Array (⋮⋮)
-3. Set:
-   - Direction (X, Y, or Z)
-   - Number of copies
-   - Spacing between copies
-
-**Circular/Polar Array:**
-1. Tools → Advanced Ops → Pattern
-2. Choose circular pattern
-3. Set:
-   - Center point/axis
-   - Number of copies
-   - Total angle (360° for full circle)
-
-**Grid Array (2D/3D):**
-• Create linear array first
-• Select the array
-• Create another array in different direction
-
-**Examples:**
-• Fence posts: Linear array along X
-• Wheel spokes: Circular array around Z
-• Floor tiles: Grid array in X-Y plane
-• Staircase: Linear array with Z offset
-
-What type of pattern do you need?"""
-
-        elif any(word in message_lower for word in ["fillet", "round", "smooth", "chamfer", "bevel"]):
-            response = """Modifying edges and corners in FreeCAD:
-
-**Fillet (╭) - Rounded Edges:**
-1. Select the edges you want to round
-2. Tools → Surface Mods → Fillet
-3. Set radius (e.g., 2mm for subtle, 10mm for pronounced)
-4. Preview and apply
-
-**Chamfer (╱) - Beveled Edges:**
-1. Select edges to bevel
-2. Tools → Surface Mods → Chamfer
-3. Set distance (45° angle by default)
-4. Creates flat angled edge
-
-**Tips:**
-• Start with small radius/distance values
-• Select multiple edges with Ctrl+Click
-• Use Fillet for ergonomic/safe edges
-• Use Chamfer for technical/machined look
-• Box edges: Select all 12 edges for uniform rounding
-
-**Common Issues:**
-• If fillet fails, try smaller radius
-• Complex geometry may need multiple operations
-• Some edges may not fillet if too close together
-
-Which edges need modification?"""
-
+            # Show outputs
+            outputs = result.get("outputs", [])
+            if outputs:
+                for output in outputs:
+                    if output:  # Skip empty outputs
+                        self._add_conversation_message("AI", f"📤 Output: {output}")
         else:
-            # Generic helpful response
-            response = f"""I understand you want to: {user_message}
+            self._add_conversation_message("AI", "❌ Execution failed")
 
-Let me help you with FreeCAD operations. Here are some ways I can assist:
+            # Show errors
+            errors = result.get("errors", [])
+            if errors:
+                for error in errors:
+                    if error:  # Skip empty errors
+                        self._add_conversation_message("AI", f"🚨 Error: {error}")
 
-**Creating Objects:**
-• Basic shapes (box, cylinder, sphere, cone)
-• Advanced shapes (gear, spring, text)
-• Custom profiles with extrude/revolve
+            # Show failed step
+            failed_step = result.get("failed_step")
+            if failed_step:
+                step_desc = failed_step.get("description", "Unknown step")
+                self._add_conversation_message("AI", f"❌ Failed at: {step_desc}")
+                
+            # Suggest troubleshooting
+            self._add_conversation_message("AI", 
+                "💡 Try: Check object selection, verify parameters, or switch to Chat mode for manual steps")
 
-**Modifying Objects:**
-• Boolean operations (combine, cut)
-• Transform (move, rotate, scale, mirror)
-• Edge operations (fillet, chamfer)
+    def _show_approval_dialog(self, plan):
+        """Show approval dialog for execution plan."""
+        dialog = QtWidgets.QMessageBox(self)
+        dialog.setWindowTitle("Approve Execution Plan")
+        dialog.setText(f"The AI has created an execution plan with {len(plan.get('steps', []))} steps.")
+        dialog.setInformativeText("Do you want to proceed with the execution?")
+        dialog.setDetailedText(self._format_plan_details(plan))
+        dialog.setStandardButtons(
+            QtWidgets.QMessageBox.Yes |
+            QtWidgets.QMessageBox.No |
+            QtWidgets.QMessageBox.Cancel
+        )
+        dialog.setDefaultButton(QtWidgets.QMessageBox.Yes)
 
-**Analysis & Export:**
-• Measure dimensions and properties
-• Check for errors
-• Export to various formats
+        result = dialog.exec_()
 
-Could you be more specific about what you'd like to create or which operation you need help with? For example:
-- "Create a box with rounded edges"
-- "How do I make a hole in an object"
-- "Export my model for 3D printing"
+        if result == QtWidgets.QMessageBox.Yes:
+            if self.agent_manager:
+                self.agent_manager.approve_plan(plan["id"])
+                self._add_system_message("✅ Execution approved - starting...")
+                # Show execution controls
+                self.execution_controls.setVisible(True)
+        elif result == QtWidgets.QMessageBox.No:
+            if self.agent_manager:
+                self.agent_manager.reject_plan(plan["id"])
+                self._add_system_message("❌ Execution rejected")
+        else:
+            self._add_system_message("🚫 Execution cancelled")
 
-I'm here to guide you step by step!"""
+    def _format_plan_details(self, plan):
+        """Format plan details for display."""
+        details = f"Plan ID: {plan.get('id', 'Unknown')}\n"
+        details += f"Risk Level: {plan.get('risk_level', 'Unknown')}\n"
+        details += f"Estimated Duration: {plan.get('estimated_duration', 0):.1f}s\n\n"
+        details += "Steps:\n"
 
-        self._add_conversation_message("AI", response)
+        for step in plan.get("steps", []):
+            details += f"{step.get('order', '?')}. {step.get('tool', 'Unknown')}: {step.get('description', 'No description')}\n"
+            parameters = step.get("parameters", {})
+            if parameters:
+                for param, value in parameters.items():
+                    details += f"   - {param}: {value}\n"
+
+        return details
+
+    def set_agent_mode(self, mode):
+        """Set the agent mode."""
+        self.current_mode = mode
+
+        # Update UI based on mode
+        if str(mode).endswith("CHAT"):
+            self._add_system_message("💬 Switched to Chat Mode - AI will provide instructions")
+            if self.context_check:
+                self.context_check.setToolTip("Include current FreeCAD document state in AI queries for better instructions")
+            # Hide execution controls in chat mode
+            self.execution_controls.setVisible(False)
+            # Update send button text
+            self.send_btn.setText("Ask AI")
+        else:
+            self._add_system_message("🤖 Switched to Agent Mode - AI will execute tools autonomously")
+            if self.context_check:
+                self.context_check.setToolTip("Include current FreeCAD document state for autonomous execution")
+            # Show execution controls in agent mode if needed
+            # (will be shown when execution starts)
+            # Update send button text
+            self.send_btn.setText("Execute")
+
+    def _on_execution_start(self, step_num, total_steps, step):
+        """Handle execution start callback."""
+        self._add_system_message(f"▶️ Executing step {step_num}/{total_steps}: {step.get('description', 'Unknown step')}")
+
+        # Enable execution controls
+        if step_num == 1:  # First step
+            self.execution_controls.setVisible(True)
+            self.pause_btn.setEnabled(True)
+            self.cancel_btn.setEnabled(True)
+            self.resume_btn.setEnabled(False)
+
+    def _on_execution_complete(self, step_num, total_steps, result):
+        """Handle execution complete callback."""
+        status = result.get("status")
+        if hasattr(status, 'value'):
+            status_val = status.value
+        else:
+            status_val = str(status)
+            
+        if status_val == "completed" or result.get("success"):
+            self._add_system_message(f"✅ Step {step_num}/{total_steps} completed")
+        else:
+            error_msg = result.get("error", "Unknown error")
+            self._add_system_message(f"❌ Step {step_num}/{total_steps} failed: {error_msg}")
+
+        # Reset controls if this was the last step or execution failed
+        if step_num == total_steps or not result.get("success"):
+            self._reset_execution_controls()
+
+    def _on_plan_created(self, plan):
+        """Handle plan created callback."""
+        step_count = len(plan.get("steps", []))
+        self._add_system_message(f"📋 Created execution plan with {step_count} steps")
+
+    def _pause_execution(self):
+        """Pause the current execution."""
+        if self.agent_manager:
+            self.agent_manager.pause_execution()
+            self._add_system_message("⏸️ Execution paused")
+            self.pause_btn.setEnabled(False)
+            self.resume_btn.setEnabled(True)
+
+    def _resume_execution(self):
+        """Resume the paused execution."""
+        if self.agent_manager:
+            self.agent_manager.resume_execution()
+            self._add_system_message("▶️ Execution resumed")
+            self.pause_btn.setEnabled(True)
+            self.resume_btn.setEnabled(False)
+
+    def _cancel_execution(self):
+        """Cancel the current execution."""
+        if self.agent_manager:
+            reply = QtWidgets.QMessageBox.question(
+                self,
+                "Cancel Execution",
+                "Are you sure you want to cancel the current execution?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+            )
+
+            if reply == QtWidgets.QMessageBox.Yes:
+                self.agent_manager.cancel_execution()
+                self._add_system_message("⏹️ Execution cancelled")
+                self._reset_execution_controls()
+
+    def _reset_execution_controls(self):
+        """Reset execution control buttons."""
+        self.pause_btn.setEnabled(False)
+        self.resume_btn.setEnabled(False)
+        self.cancel_btn.setEnabled(False)
+        # Hide execution controls in chat mode
+        if self.current_mode and str(self.current_mode).endswith("CHAT"):
+            self.execution_controls.setVisible(False)
 
     def _add_conversation_message(self, sender, message):
         """Add message to conversation display."""
@@ -1053,24 +1041,6 @@ I'm here to guide you step by step!"""
         for entry in self.conversation_history:
             self._add_conversation_message(entry["sender"], entry["message"])
 
-    def set_agent_mode(self, mode):
-        """Set the agent mode."""
-        self.current_mode = mode
-
-        # Update UI based on mode
-        if str(mode).endswith("CHAT"):
-            self._add_system_message("Switched to Chat Mode - AI will provide instructions")
-            if self.context_check:
-                self.context_check.setToolTip("Include current FreeCAD document state in AI queries for better instructions")
-            # Hide execution controls in chat mode
-            self.execution_controls.setVisible(False)
-        else:
-            self._add_system_message("Switched to Agent Mode - AI will execute tools autonomously")
-            if self.context_check:
-                self.context_check.setToolTip("Include current FreeCAD document state for autonomous execution")
-            # Show execution controls in agent mode
-            self.execution_controls.setVisible(True)
-
     def set_agent_manager(self, agent_manager):
         """Set the agent manager reference."""
         self.agent_manager = agent_manager
@@ -1089,139 +1059,6 @@ I'm here to guide you step by step!"""
                 "on_plan_created",
                 self._on_plan_created
             )
-
-    def _process_with_agent(self, message):
-        """Process message through agent manager."""
-        if not self.agent_manager:
-            self._add_system_message("Agent manager not available")
-            return
-
-        # Gather context if enabled
-        context = {}
-        if self.context_check.isChecked():
-            context = self._gather_freecad_context()
-
-        # Set AI provider if available
-        if self.provider_service and self.current_provider:
-            provider = self.provider_service.get_provider(self.current_provider)
-            if provider:
-                self.agent_manager.set_ai_provider(provider)
-
-        # Process message
-        try:
-            response = self.agent_manager.process_message(message, context)
-            self._handle_agent_response(response)
-        except Exception as e:
-            self._add_system_message(f"Error processing message: {str(e)}")
-
-    def _handle_agent_response(self, response):
-        """Handle response from agent manager."""
-        mode = response.get("mode", "unknown")
-
-        if mode == "chat":
-            # Chat mode - display instructions
-            self._remove_thinking_indicator()
-
-            instructions = response.get("instructions", [])
-            if instructions:
-                self._add_conversation_message("AI", "Here's how to do that:")
-                for i, instruction in enumerate(instructions, 1):
-                    self._add_conversation_message("AI", f"{i}. {instruction}")
-
-            # Show suggested tools
-            suggested_tools = response.get("suggested_tools", [])
-            if suggested_tools:
-                self._add_conversation_message("AI", f"\nSuggested tools: {', '.join([t['name'] for t in suggested_tools])}")
-
-        elif mode == "agent":
-            # Agent mode - show execution plan and progress
-            self._remove_thinking_indicator()
-
-            plan = response.get("plan")
-            if plan:
-                self._display_execution_plan(plan)
-
-            # Check if approval required
-            if response.get("approval_required"):
-                self._show_approval_dialog(plan)
-            else:
-                # Show execution result
-                execution_result = response.get("execution_result")
-                if execution_result:
-                    self._display_execution_result(execution_result)
-
-    def _display_execution_plan(self, plan):
-        """Display the execution plan."""
-        self._add_conversation_message("AI", f"📋 Execution Plan (ID: {plan['id'][:8]}...)")
-
-        # Display plan steps
-        for step in plan["steps"]:
-            step_text = f"  {step['order']}. {step['description']} ({step['tool']})"
-            self._add_conversation_message("AI", step_text)
-
-        self._add_conversation_message("AI", f"\n⏱️ Estimated duration: {plan['estimated_duration']}s")
-        self._add_conversation_message("AI", f"⚠️ Risk level: {plan['risk_level']}")
-
-    def _display_execution_result(self, result):
-        """Display execution result."""
-        if result["success"]:
-            self._add_conversation_message("AI", "✅ Execution completed successfully!")
-
-            # Show outputs
-            if result.get("outputs"):
-                for output in result["outputs"]:
-                    self._add_conversation_message("AI", f"Output: {output}")
-        else:
-            self._add_conversation_message("AI", "❌ Execution failed")
-
-            # Show errors
-            if result.get("errors"):
-                for error in result["errors"]:
-                    self._add_conversation_message("AI", f"Error: {error}")
-
-            # Show failed step
-            if result.get("failed_step"):
-                self._add_conversation_message("AI", f"Failed at step: {result['failed_step']['description']}")
-
-    def _show_approval_dialog(self, plan):
-        """Show approval dialog for execution plan."""
-        dialog = QtWidgets.QMessageBox(self)
-        dialog.setWindowTitle("Approve Execution Plan")
-        dialog.setText(f"The AI has created an execution plan with {len(plan['steps'])} steps.")
-        dialog.setInformativeText("Do you want to proceed with the execution?")
-        dialog.setDetailedText(self._format_plan_details(plan))
-        dialog.setStandardButtons(
-            QtWidgets.QMessageBox.Yes |
-            QtWidgets.QMessageBox.No |
-            QtWidgets.QMessageBox.Cancel
-        )
-        dialog.setDefaultButton(QtWidgets.QMessageBox.Yes)
-
-        result = dialog.exec_()
-
-        if result == QtWidgets.QMessageBox.Yes:
-            self.agent_manager.approve_plan(plan["id"])
-            self._add_system_message("Execution approved - starting...")
-        elif result == QtWidgets.QMessageBox.No:
-            self.agent_manager.reject_plan(plan["id"])
-            self._add_system_message("Execution rejected")
-        else:
-            self._add_system_message("Execution cancelled")
-
-    def _format_plan_details(self, plan):
-        """Format plan details for display."""
-        details = f"Plan ID: {plan['id']}\n"
-        details += f"Risk Level: {plan['risk_level']}\n"
-        details += f"Estimated Duration: {plan['estimated_duration']}s\n\n"
-        details += "Steps:\n"
-
-        for step in plan["steps"]:
-            details += f"{step['order']}. {step['tool']}: {step['description']}\n"
-            if step.get("parameters"):
-                for param, value in step["parameters"].items():
-                    details += f"   - {param}: {value}\n"
-
-        return details
 
     def _gather_freecad_context(self):
         """Gather current FreeCAD context."""
@@ -1265,66 +1102,239 @@ I'm here to guide you step by step!"""
 
         return context
 
-    def _on_execution_start(self, step_num, total_steps, step):
-        """Handle execution start callback."""
-        self._add_system_message(f"▶️ Executing step {step_num}/{total_steps}: {step['description']}")
+    def _add_thinking_indicator(self):
+        """Add the thinking indicator to conversation."""
+        self.conversation_text.append("AI: Thinking...")
 
-        # Enable execution controls
-        if step_num == 1:  # First step
-            self.pause_btn.setEnabled(True)
-            self.cancel_btn.setEnabled(True)
+    def _remove_thinking_indicator(self):
+        """Remove the thinking indicator from conversation."""
+        text = self.conversation_text.toPlainText()
+        if "AI: Thinking..." in text:
+            # Find and remove the last "Thinking..." message
+            lines = text.split("\n")
+            for i in range(len(lines) - 1, -1, -1):
+                if "AI" in lines[i] and "Thinking..." in lines[i]:
+                    lines.pop(i)
+                    if i < len(lines) and lines[i].strip() == "":
+                        lines.pop(i)
+                    break
+            self.conversation_text.setPlainText("\n".join(lines))
 
-    def _on_execution_complete(self, step_num, total_steps, result):
-        """Handle execution complete callback."""
-        if result["status"].value == "completed":
-            self._add_system_message(f"✅ Step {step_num}/{total_steps} completed")
+    def _simulate_ai_response(self, user_message):
+        """Simulate AI response with helpful FreeCAD guidance when no provider is available."""
+        # Remove thinking indicator
+        self._remove_thinking_indicator()
+
+        # Analyze user message
+        message_lower = user_message.lower()
+
+        # Generate contextual FreeCAD-specific responses
+        if any(word in message_lower for word in ["box", "cube", "rectangular"]):
+            response = """To create a box/cube in FreeCAD:
+
+**Method 1 - Using the Tools Widget:**
+1. Go to the Tools tab
+2. Click the □ (Box) icon under "Basic Shapes"
+3. Enter dimensions:
+   - Length, Width, Height (in mm)
+   - Name (optional)
+
+**Method 2 - Using Workbenches:**
+1. Switch to Part Workbench (View → Workbench → Part)
+2. Click Part → Primitives → Box
+3. Set your dimensions in the dialog
+
+**Pro tip:** For a perfect cube, use equal dimensions for all three values.
+
+💡 Switch to Agent mode to have me create this automatically!"""
+
+        elif any(word in message_lower for word in ["cylinder", "tube", "pipe", "rod"]):
+            response = """To create a cylinder in FreeCAD:
+
+**Basic Cylinder:**
+1. Tools tab → Basic Shapes → ○ (Cylinder) icon
+2. Parameters:
+   - Radius: defines the width
+   - Height: defines the length
+
+**Hollow Cylinder (Tube):**
+1. Tools tab → Advanced Shapes → ◎ (Tube) icon
+2. You'll need:
+   - Outer radius
+   - Inner radius (thickness)
+   - Height
+
+**Tips:**
+• For a pipe, make inner radius = outer radius - wall thickness
+• For a solid rod, use regular cylinder
+• You can create threads on cylinders using Advanced Shapes → Thread
+
+💡 Switch to Agent mode for automatic execution!"""
+
+        elif "sphere" in message_lower or "ball" in message_lower:
+            response = """To create a sphere in FreeCAD:
+
+1. **Using Tools Widget:**
+   - Tools tab → Basic Shapes → ● (Sphere) icon
+   - Enter radius (e.g., 25mm for a 50mm diameter ball)
+
+2. **Creating half-sphere or dome:**
+   - Create a full sphere first
+   - Use Tools → Operations → Cut (−) with a box to cut it in half
+
+3. **Ellipsoid (oval sphere):**
+   - Tools → Advanced Shapes → ⬭ (Ellipsoid)
+   - Set different radii for X, Y, Z axes
+
+**Tip:** For a hollow sphere, create two spheres of different sizes and use Boolean Cut operation.
+
+💡 Agent mode can handle this automatically!"""
+
+        elif any(word in message_lower for word in ["car", "vehicle", "automobile"]):
+            response = """I'll help you create a 3D car model in FreeCAD:
+
+**Simple Car Approach:**
+1. **Create the car body:** Box (100×50×30mm)
+2. **Add the cabin:** Box (50×45×25mm), move on top
+3. **Combine parts:** Union operation
+4. **Add wheels:** 4 cylinders (radius=10mm, height=10mm)
+5. **Position wheels:** Move to corners
+6. **Round edges:** Fillet operation
+
+**For Agent Mode:**
+Just say "Create a simple car" and I'll execute all steps automatically!
+
+Would you like detailed step-by-step instructions or prefer Agent mode execution?"""
+
+        elif any(word in message_lower for word in ["measure", "dimension", "size"]):
+            response = """FreeCAD measurement tools:
+
+**Available Measurements:**
+• ↔ **Distance**: Between points/edges
+• ∠ **Angle**: Between edges/faces  
+• ³ **Volume**: Total volume of objects
+• ² **Area**: Surface area
+• ━ **Length**: Edge/curve length
+• ⌀ **Radius**: Circular edges
+• ▭ **BBox**: Bounding box dimensions
+• ⊕ **CoG**: Center of gravity
+
+**How to measure:**
+1. Select the element(s) to measure
+2. Tools → Measure section → Choose tool
+3. Results appear in report view
+
+💡 Agent mode can measure and analyze automatically!"""
+
+        elif any(word in message_lower for word in ["boolean", "combine", "merge", "cut"]):
+            response = """Boolean operations in FreeCAD:
+
+**Union (∪) - Combine:**
+• Merges multiple objects into one
+• Select objects → Tools → Operations → Union
+
+**Cut (−) - Subtract:**
+• Removes one shape from another
+• Select base object first, then cutting object
+• Creates holes or cavities
+
+**Intersection (∩) - Common Volume:**
+• Keeps only overlapping volume
+• Useful for complex joints
+
+**Tips:**
+• Order matters for Cut operation
+• Objects must overlap
+• Keep originals option available
+• Use Ctrl+Z for undo
+
+💡 Agent mode can handle complex Boolean sequences!"""
+
+        elif any(word in message_lower for word in ["export", "save", "stl", "step"]):
+            response = """Export your FreeCAD model:
+
+**For 3D Printing (STL):**
+1. Select model → Tools → Import/Export → ▲S (Export STL)
+2. Choose location and filename
+
+**For CAD Exchange (STEP):**
+1. Select model → Tools → Import/Export → ▲P (Export STEP)
+2. STEP preserves more information
+
+**Other formats:**
+• IGES: Older CAD format
+• OBJ: 3D graphics/rendering
+• FCStd: FreeCAD native format
+
+**Before exporting:**
+• Check volume with Tools → Measure → ³
+• Complete all Boolean operations
+• Consider simplifying if file too large
+
+💡 Agent mode can prepare and export automatically!"""
+
+        elif any(word in message_lower for word in ["help", "start", "tutorial"]):
+            response = """Welcome to FreeCAD AI Assistant! 🤖
+
+**What I can help with:**
+• Creating shapes (box, cylinder, sphere, etc.)
+• Boolean operations (combine, cut, intersect)
+• Measurements and analysis
+• Modifying shapes (fillet, chamfer)
+• Export for 3D printing or CAD
+
+**Two modes available:**
+💬 **Chat Mode**: I provide step-by-step instructions
+🤖 **Agent Mode**: I execute tools automatically
+
+**Quick start projects:**
+1. Simple shapes with rounded edges
+2. Basic house or building
+3. Mechanical parts (gears, tools)
+4. Vehicle models
+5. Custom designs
+
+**Available tool categories:**
+• Basic & Advanced Shapes
+• Operations & Modifications  
+• Measurements & Analysis
+• Import/Export functions
+
+What would you like to create today?"""
+
         else:
-            self._add_system_message(f"❌ Step {step_num}/{total_steps} failed")
+            # Generic helpful response
+            response = f"""I understand you want to work with: "{user_message}"
 
-        # Reset controls if this was the last step
-        if step_num == total_steps or result["status"].value == "failed":
-            self._reset_execution_controls()
+Here's how I can help with FreeCAD:
 
-    def _on_plan_created(self, plan):
-        """Handle plan created callback."""
-        self._add_system_message(f"📋 Created execution plan with {len(plan['steps'])} steps")
+**Creating Objects:**
+• Basic shapes (box, cylinder, sphere, cone)
+• Advanced shapes (gear, spring, text)
+• Custom profiles with extrude/revolve
 
-    def _pause_execution(self):
-        """Pause the current execution."""
-        if self.agent_manager:
-            self.agent_manager.pause_execution()
-            self._add_system_message("⏸️ Execution paused")
-            self.pause_btn.setEnabled(False)
-            self.resume_btn.setEnabled(True)
+**Modifying Objects:**
+• Boolean operations (combine, cut, intersect)
+• Transform (move, rotate, scale, mirror)
+• Edge operations (fillet, chamfer)
 
-    def _resume_execution(self):
-        """Resume the paused execution."""
-        if self.agent_manager:
-            self.agent_manager.resume_execution()
-            self._add_system_message("▶️ Execution resumed")
-            self.pause_btn.setEnabled(True)
-            self.resume_btn.setEnabled(False)
+**Analysis & Export:**
+• Measure dimensions and properties
+• Export to various formats (STL, STEP, etc.)
 
-    def _cancel_execution(self):
-        """Cancel the current execution."""
-        if self.agent_manager:
-            reply = QtWidgets.QMessageBox.question(
-                self,
-                "Cancel Execution",
-                "Are you sure you want to cancel the current execution?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
-            )
+**Two ways to work:**
+💬 **Chat Mode**: I'll guide you step-by-step
+🤖 **Agent Mode**: I'll execute automatically
 
-            if reply == QtWidgets.QMessageBox.Yes:
-                self.agent_manager.cancel_execution()
-                self._add_system_message("⏹️ Execution cancelled")
-                self._reset_execution_controls()
+Could you be more specific? For example:
+- "Create a box with rounded edges"
+- "How do I make a hole in an object"
+- "Export my model for 3D printing"
+- "Create a simple car"
 
-    def _reset_execution_controls(self):
-        """Reset execution control buttons."""
-        self.pause_btn.setEnabled(False)
-        self.resume_btn.setEnabled(False)
-        self.cancel_btn.setEnabled(False)
+I'm here to guide you through FreeCAD!"""
+
+        self._add_conversation_message("AI", response)
 
 
 class ConversationHistoryDialog(QtWidgets.QDialog):

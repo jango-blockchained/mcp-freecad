@@ -84,9 +84,112 @@ class AgentManager:
             self.execution_pipeline = ExecutionPipeline(self)
             self.context_enricher = ContextEnricher()
 
+            # Register all available tools
+            self._register_all_tools()
+
             FreeCAD.Console.PrintMessage("Agent Manager: All components initialized\n")
         except ImportError as e:
             FreeCAD.Console.PrintError(f"Agent Manager: Failed to initialize components: {e}\n")
+            # Initialize fallback components
+            self._initialize_fallback_components()
+
+    def _initialize_fallback_components(self):
+        """Initialize fallback components when imports fail"""
+        try:
+            # Create a simple tool registry fallback
+            self.tool_registry = self._create_fallback_tool_registry()
+            FreeCAD.Console.PrintMessage("Agent Manager: Using fallback components\n")
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"Agent Manager: Even fallback initialization failed: {e}\n")
+
+    def _create_fallback_tool_registry(self):
+        """Create a fallback tool registry with direct tool access"""
+        class FallbackToolRegistry:
+            def __init__(self):
+                self.tools = {}
+                self._load_tools_directly()
+            
+            def _load_tools_directly(self):
+                """Load tools directly from GUI tools widget"""
+                try:
+                    # Import tools directly
+                    from ..tools.primitives import PrimitivesTool
+                    from ..tools.operations import OperationsTool
+                    from ..tools.measurements import MeasurementsTool
+                    from ..tools.export_import import ExportImportTool
+                    
+                    self.tools = {
+                        "primitives": PrimitivesTool(),
+                        "operations": OperationsTool(),
+                        "measurements": MeasurementsTool(),
+                        "export_import": ExportImportTool(),
+                    }
+                    
+                    # Try to load advanced tools
+                    try:
+                        from ..tools.advanced_primitives import AdvancedPrimitivesTool
+                        from ..tools.advanced_operations import AdvancedOperationsTool
+                        from ..tools.surface_modification import SurfaceModificationTool
+                        
+                        self.tools.update({
+                            "advanced_primitives": AdvancedPrimitivesTool(),
+                            "advanced_operations": AdvancedOperationsTool(),
+                            "surface_modification": SurfaceModificationTool(),
+                        })
+                    except ImportError:
+                        pass
+                        
+                except ImportError as e:
+                    FreeCAD.Console.PrintError(f"Failed to load tools directly: {e}\n")
+            
+            def get_tool(self, tool_id):
+                """Get tool by ID"""
+                # Tool ID format: category.method
+                if '.' in tool_id:
+                    category, method = tool_id.split('.', 1)
+                    if category in self.tools:
+                        tool = self.tools[category]
+                        if hasattr(tool, method):
+                            return tool
+                return None
+            
+            def get_all_tools(self):
+                """Get all available tools"""
+                return self.tools.copy()
+            
+            def get_tool_methods(self, category):
+                """Get all methods for a tool category"""
+                if category in self.tools:
+                    tool = self.tools[category]
+                    methods = [method for method in dir(tool) 
+                             if not method.startswith('_') and callable(getattr(tool, method))]
+                    return methods
+                return []
+                
+        return FallbackToolRegistry()
+
+    def _register_all_tools(self):
+        """Register all available tools from the GUI tools widget"""
+        if not self.tool_registry:
+            return
+            
+        try:
+            # Get tool categories and methods
+            tool_categories = ['primitives', 'operations', 'measurements', 'export_import',
+                             'advanced_primitives', 'advanced_operations', 'surface_modification']
+            
+            for category in tool_categories:
+                if hasattr(self.tool_registry, 'tools') and category in self.tool_registry.tools:
+                    tool = self.tool_registry.tools[category]
+                    methods = [method for method in dir(tool) 
+                             if not method.startswith('_') and callable(getattr(tool, method))]
+                    
+                    for method in methods:
+                        tool_id = f"{category}.{method}"
+                        FreeCAD.Console.PrintMessage(f"Registered tool: {tool_id}\n")
+                        
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"Error registering tools: {e}\n")
 
     def set_mode(self, mode: AgentMode):
         """
@@ -115,6 +218,18 @@ class AgentManager:
     def set_ai_provider(self, provider):
         """Set the AI provider for agent operations"""
         self.ai_provider = provider
+
+    def get_available_tools(self) -> Dict[str, List[str]]:
+        """Get all available tools organized by category"""
+        available_tools = {}
+        
+        if self.tool_registry and hasattr(self.tool_registry, 'tools'):
+            for category, tool in self.tool_registry.tools.items():
+                methods = [method for method in dir(tool) 
+                         if not method.startswith('_') and callable(getattr(tool, method))]
+                available_tools[category] = methods
+                
+        return available_tools
 
     def process_message(self, message: str, context: Optional[Dict] = None) -> Dict[str, Any]:
         """
@@ -147,14 +262,14 @@ class AgentManager:
         try:
             # Analyze intent and suggest tools
             intent = self._analyze_intent(message, context)
-            suggested_tools = self.tool_selector.select_tools(message, context) if self.tool_selector else []
+            suggested_tools = self._select_tools_for_intent(intent, context)
 
             # Generate instruction response
             instructions = self._generate_instructions(intent, suggested_tools, context)
 
             response.update({
                 "intent": intent,
-                "suggested_tools": [tool.get_info() for tool in suggested_tools],
+                "suggested_tools": [self._get_tool_info(tool) for tool in suggested_tools],
                 "instructions": instructions,
                 "can_execute": True  # Indicate this could be executed in agent mode
             })
@@ -182,7 +297,7 @@ class AgentManager:
             intent = self._analyze_intent(message, context)
 
             # Select tools
-            selected_tools = self.tool_selector.select_tools(message, context) if self.tool_selector else []
+            selected_tools = self._select_tools_for_intent(intent, context)
 
             # Create execution plan
             plan = self._create_execution_plan(intent, selected_tools, context)
@@ -194,7 +309,7 @@ class AgentManager:
             response.update({
                 "intent": intent,
                 "plan": plan,
-                "selected_tools": [tool.get_info() for tool in selected_tools]
+                "selected_tools": [self._get_tool_info(tool) for tool in selected_tools]
             })
 
             # Check if approval required
@@ -215,6 +330,61 @@ class AgentManager:
 
         return response
 
+    def _select_tools_for_intent(self, intent: Dict, context: Dict) -> List[str]:
+        """Select appropriate tools based on intent"""
+        tools = []
+        
+        if not self.tool_registry:
+            return tools
+            
+        intent_type = intent.get("type", "unknown")
+        action = intent.get("action", "")
+        
+        # Map intents to tool categories and methods
+        if intent_type == "creation":
+            if any(word in action.lower() for word in ["box", "cube", "rectangle"]):
+                tools.append("primitives.create_box")
+            elif any(word in action.lower() for word in ["cylinder", "tube"]):
+                tools.append("primitives.create_cylinder")
+            elif any(word in action.lower() for word in ["sphere", "ball"]):
+                tools.append("primitives.create_sphere")
+            elif any(word in action.lower() for word in ["cone"]):
+                tools.append("primitives.create_cone")
+            else:
+                # Default creation tools
+                tools.extend(["primitives.create_box", "primitives.create_cylinder"])
+                
+        elif intent_type == "modification":
+            tools.extend([
+                "operations.move_object",
+                "operations.rotate_object",
+                "operations.scale_object"
+            ])
+            
+        elif intent_type == "analysis":
+            tools.extend([
+                "measurements.measure_volume",
+                "measurements.measure_area",
+                "measurements.measure_distance"
+            ])
+            
+        elif intent_type == "boolean":
+            tools.extend([
+                "operations.boolean_union",
+                "operations.boolean_cut",
+                "operations.boolean_intersection"
+            ])
+            
+        return tools
+
+    def _get_tool_info(self, tool_id: str) -> Dict:
+        """Get information about a tool"""
+        return {
+            "id": tool_id,
+            "name": tool_id.split('.')[-1].replace('_', ' ').title(),
+            "category": tool_id.split('.')[0] if '.' in tool_id else "unknown"
+        }
+
     def _enrich_context(self, context: Optional[Dict]) -> Dict:
         """Enrich context with FreeCAD state and history"""
         if not context:
@@ -224,68 +394,126 @@ class AgentManager:
             enriched = self.context_enricher.enrich(context)
             return enriched
 
+        # Fallback context enrichment
+        try:
+            import FreeCAD
+            import FreeCADGui
+            
+            context["freecad_state"] = {
+                "has_active_document": FreeCAD.ActiveDocument is not None,
+                "document_objects": [],
+                "selected_objects": []
+            }
+            
+            if FreeCAD.ActiveDocument:
+                context["freecad_state"]["document_objects"] = [
+                    {"name": obj.Name, "type": obj.TypeId}
+                    for obj in FreeCAD.ActiveDocument.Objects
+                ]
+                
+            if hasattr(FreeCADGui, 'Selection'):
+                context["freecad_state"]["selected_objects"] = [
+                    {"name": obj.Name, "type": obj.TypeId}
+                    for obj in FreeCADGui.Selection.getSelection()
+                ]
+                
+        except Exception as e:
+            context["context_error"] = str(e)
+
         return context
 
     def _analyze_intent(self, message: str, context: Dict) -> Dict:
         """Analyze user intent from message"""
-        # This will be implemented with the intent classifier
         intent = {
             "type": "unknown",
             "confidence": 0.0,
             "entities": [],
-            "action": None
+            "action": message
         }
 
-        # Simple pattern matching for now
+        # Enhanced pattern matching
         message_lower = message.lower()
 
-        if any(word in message_lower for word in ["create", "make", "build", "add"]):
+        # Creation patterns
+        if any(word in message_lower for word in ["create", "make", "build", "add", "new"]):
             intent["type"] = "creation"
             intent["action"] = "create"
-        elif any(word in message_lower for word in ["modify", "change", "edit", "update"]):
+            intent["confidence"] = 0.8
+            
+            # Extract shape type
+            if any(word in message_lower for word in ["box", "cube", "rectangle"]):
+                intent["entities"].append({"type": "shape", "value": "box"})
+            elif any(word in message_lower for word in ["cylinder", "tube"]):
+                intent["entities"].append({"type": "shape", "value": "cylinder"})
+            elif any(word in message_lower for word in ["sphere", "ball"]):
+                intent["entities"].append({"type": "shape", "value": "sphere"})
+                
+        # Boolean operations
+        elif any(word in message_lower for word in ["union", "combine", "merge", "join"]):
+            intent["type"] = "boolean"
+            intent["action"] = "union"
+            intent["confidence"] = 0.9
+        elif any(word in message_lower for word in ["cut", "subtract", "difference"]):
+            intent["type"] = "boolean"
+            intent["action"] = "cut"
+            intent["confidence"] = 0.9
+        elif any(word in message_lower for word in ["intersect", "intersection"]):
+            intent["type"] = "boolean"
+            intent["action"] = "intersection"
+            intent["confidence"] = 0.9
+            
+        # Modification patterns
+        elif any(word in message_lower for word in ["modify", "change", "edit", "update", "move", "rotate", "scale"]):
             intent["type"] = "modification"
             intent["action"] = "modify"
-        elif any(word in message_lower for word in ["delete", "remove", "clear"]):
-            intent["type"] = "deletion"
-            intent["action"] = "delete"
-        elif any(word in message_lower for word in ["measure", "calculate", "analyze"]):
+            intent["confidence"] = 0.7
+            
+        # Analysis patterns
+        elif any(word in message_lower for word in ["measure", "calculate", "analyze", "volume", "area", "distance"]):
             intent["type"] = "analysis"
             intent["action"] = "analyze"
-        elif any(word in message_lower for word in ["export", "save", "output"]):
-            intent["type"] = "export"
-            intent["action"] = "export"
+            intent["confidence"] = 0.8
 
         return intent
 
-    def _generate_instructions(self, intent: Dict, tools: List, context: Dict) -> List[str]:
+    def _generate_instructions(self, intent: Dict, tools: List[str], context: Dict) -> List[str]:
         """Generate step-by-step instructions for chat mode"""
         instructions = []
 
         if intent["type"] == "creation":
             instructions.append("To create the requested object:")
-            for i, tool in enumerate(tools, 1):
-                instructions.append(f"{i}. Use {tool.name} tool with the following parameters:")
-                if hasattr(tool, 'get_parameters'):
-                    for param, desc in tool.get_parameters().items():
-                        instructions.append(f"   - {param}: {desc}")
+            for i, tool_id in enumerate(tools, 1):
+                tool_name = tool_id.split('.')[-1].replace('_', ' ').title()
+                instructions.append(f"{i}. Use the {tool_name} tool from the Tools tab")
+                instructions.append(f"   - Click the appropriate button in the Tools widget")
+                instructions.append(f"   - Configure the parameters as needed")
 
         elif intent["type"] == "modification":
             instructions.append("To modify the object:")
-            instructions.append("1. Select the target object")
-            for i, tool in enumerate(tools, 2):
-                instructions.append(f"{i}. Apply {tool.name} with appropriate parameters")
+            instructions.append("1. Select the target object in the FreeCAD tree")
+            for i, tool_id in enumerate(tools, 2):
+                tool_name = tool_id.split('.')[-1].replace('_', ' ').title()
+                instructions.append(f"{i}. Apply {tool_name} from the Tools tab")
+
+        elif intent["type"] == "analysis":
+            instructions.append("To analyze the object:")
+            instructions.append("1. Select the object(s) you want to measure")
+            for i, tool_id in enumerate(tools, 2):
+                tool_name = tool_id.split('.')[-1].replace('_', ' ').title()
+                instructions.append(f"{i}. Use {tool_name} from the Measurements section")
 
         # Add safety reminders
         instructions.append("\nRemember to:")
         instructions.append("- Save your work before making changes")
         instructions.append("- Use undo (Ctrl+Z) if needed")
+        instructions.append("- Switch to Agent mode for autonomous execution")
 
         return instructions
 
-    def _create_execution_plan(self, intent: Dict, tools: List, context: Dict) -> Dict:
+    def _create_execution_plan(self, intent: Dict, tools: List[str], context: Dict) -> Dict:
         """Create a detailed execution plan"""
         plan = {
-            "id": f"plan_{datetime.now().timestamp()}",
+            "id": f"plan_{int(datetime.now().timestamp() * 1000)}",
             "intent": intent,
             "steps": [],
             "estimated_duration": 0,
@@ -294,20 +522,16 @@ class AgentManager:
         }
 
         # Create execution steps
-        for i, tool in enumerate(tools):
+        for i, tool_id in enumerate(tools):
             step = {
                 "order": i + 1,
-                "tool": tool.name,
-                "tool_id": getattr(tool, 'id', tool.name),
-                "parameters": {},
-                "description": f"Execute {tool.name}",
-                "estimated_duration": 1.0,
+                "tool": tool_id.split('.')[-1],
+                "tool_id": tool_id,
+                "parameters": self._infer_parameters(tool_id, intent, context),
+                "description": f"Execute {tool_id.split('.')[-1].replace('_', ' ')}",
+                "estimated_duration": 2.0,
                 "dependencies": []
             }
-
-            # Add parameters based on tool requirements
-            if hasattr(tool, 'get_required_parameters'):
-                step["parameters"] = self._infer_parameters(tool, context)
 
             plan["steps"].append(step)
             plan["estimated_duration"] += step["estimated_duration"]
@@ -320,19 +544,39 @@ class AgentManager:
 
         return plan
 
-    def _infer_parameters(self, tool, context: Dict) -> Dict:
-        """Infer tool parameters from context"""
-        # This will be enhanced with AI-based parameter inference
+    def _infer_parameters(self, tool_id: str, intent: Dict, context: Dict) -> Dict:
+        """Infer tool parameters from context and intent"""
         params = {}
-
-        # Get default parameters if available
-        if hasattr(tool, 'get_default_parameters'):
-            params = tool.get_default_parameters()
+        
+        # Extract entities from intent
+        entities = {entity["type"]: entity["value"] for entity in intent.get("entities", [])}
+        
+        # Tool-specific parameter inference
+        if "create_box" in tool_id:
+            params = {"length": 10.0, "width": 10.0, "height": 10.0}
+        elif "create_cylinder" in tool_id:
+            params = {"radius": 5.0, "height": 10.0}
+        elif "create_sphere" in tool_id:
+            params = {"radius": 5.0}
+        elif "create_cone" in tool_id:
+            params = {"radius1": 5.0, "radius2": 0.0, "height": 10.0}
+            
+        # Use selected objects for operations
+        if context.get("freecad_state", {}).get("selected_objects"):
+            selected = context["freecad_state"]["selected_objects"]
+            if len(selected) >= 1 and "move_object" in tool_id:
+                params["obj_name"] = selected[0]["name"]
+                params["x"] = 5.0
+                params["y"] = 0.0
+                params["z"] = 0.0
+            elif len(selected) >= 2 and "boolean" in tool_id:
+                params["obj1_name"] = selected[0]["name"]
+                params["obj2_name"] = selected[1]["name"]
 
         return params
 
     def _execute_plan(self, plan: Dict) -> Dict:
-        """Execute the plan using the execution pipeline"""
+        """Execute the plan using the execution pipeline or fallback"""
         self._set_state(ExecutionState.EXECUTING)
 
         result = {
@@ -350,15 +594,27 @@ class AgentManager:
             else:
                 # Fallback execution
                 for step in plan["steps"]:
-                    step_result = self._execute_step(step)
+                    self._trigger_callbacks("on_execution_start", 
+                                           step["order"], 
+                                           len(plan["steps"]), 
+                                           step)
+                    
+                    step_result = self._execute_step_fallback(step)
                     result["executed_steps"].append(step_result)
+                    
+                    self._trigger_callbacks("on_execution_complete",
+                                           step["order"],
+                                           len(plan["steps"]),
+                                           step_result)
+                    
                     if not step_result["success"]:
                         result["failed_step"] = step
+                        result["errors"].append(step_result.get("error", "Unknown error"))
                         break
                 else:
                     result["success"] = True
 
-            self._set_state(ExecutionState.COMPLETED)
+            self._set_state(ExecutionState.COMPLETED if result["success"] else ExecutionState.ERROR)
 
         except Exception as e:
             result["errors"].append(str(e))
@@ -373,15 +629,46 @@ class AgentManager:
 
         return result
 
-    def _execute_step(self, step: Dict) -> Dict:
-        """Execute a single step of the plan"""
-        # This is a placeholder - actual implementation will use tool registry
-        return {
+    def _execute_step_fallback(self, step: Dict) -> Dict:
+        """Execute a single step using fallback method"""
+        step_result = {
             "step": step["order"],
-            "tool": step["tool"],
-            "success": True,
-            "output": f"Executed {step['tool']} successfully"
+            "tool": step["tool_id"],
+            "success": False,
+            "output": None,
+            "error": None
         }
+        
+        try:
+            tool_id = step["tool_id"]
+            parameters = step.get("parameters", {})
+            
+            # Get tool from registry
+            if self.tool_registry:
+                tool = self.tool_registry.get_tool(tool_id)
+                if tool:
+                    # Execute the tool method
+                    category, method = tool_id.split('.', 1)
+                    if hasattr(tool, method):
+                        method_func = getattr(tool, method)
+                        result = method_func(**parameters)
+                        
+                        step_result["success"] = result.get("success", True)
+                        step_result["output"] = result.get("message", f"Executed {tool_id}")
+                        
+                        if not step_result["success"]:
+                            step_result["error"] = result.get("message", "Execution failed")
+                    else:
+                        step_result["error"] = f"Method {method} not found on tool"
+                else:
+                    step_result["error"] = f"Tool {tool_id} not found"
+            else:
+                step_result["error"] = "Tool registry not available"
+                
+        except Exception as e:
+            step_result["error"] = str(e)
+            
+        return step_result
 
     def approve_plan(self, plan_id: str) -> Dict:
         """Approve and execute a pending plan"""
@@ -446,7 +733,8 @@ class AgentManager:
             "has_active_plan": self.current_plan is not None,
             "queue_size": len(self.execution_queue),
             "history_size": len(self.execution_history),
-            "config": self.config.copy()
+            "config": self.config.copy(),
+            "available_tools": self.get_available_tools()
         }
 
     def update_config(self, config: Dict):

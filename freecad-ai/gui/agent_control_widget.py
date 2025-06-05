@@ -251,9 +251,39 @@ class AgentControlWidget(QtWidgets.QWidget):
                 "on_execution_complete",
                 self._on_execution_complete
             )
+            self.agent_manager.register_callback(
+                "on_plan_created",
+                self._on_plan_created
+            )
 
             # Load current settings
             self._load_agent_settings()
+            
+            # Update UI with current state
+            self._update_ui_from_agent_state()
+
+    def _update_ui_from_agent_state(self):
+        """Update UI elements based on current agent state."""
+        if not self.agent_manager:
+            return
+            
+        # Update state display
+        current_state = self.agent_manager.execution_state
+        self._on_state_changed(None, current_state)
+        
+        # Update mode display
+        current_mode = self.agent_manager.current_mode
+        mode_text = "Chat Mode" if current_mode.value == "chat" else "Agent Mode"
+        
+        # Add mode indicator to header
+        self.findChild(QtWidgets.QLabel).setText(f"🤖 Agent Control Panel - {mode_text}")
+        
+        # Show available tools info
+        available_tools = self.agent_manager.get_available_tools()
+        tool_count = sum(len(methods) for methods in available_tools.values())
+        
+        if tool_count > 0:
+            self.state_label.setToolTip(f"Agent has access to {tool_count} tools across {len(available_tools)} categories")
 
     def _load_agent_settings(self):
         """Load current agent settings."""
@@ -314,21 +344,41 @@ class AgentControlWidget(QtWidgets.QWidget):
             self.stop_btn.setEnabled(True)
             self.step_btn.setEnabled(False)
             self.progress_bar.setVisible(True)
+            self.operation_label.setText("Agent is executing...")
         elif new_state.value == "paused":
             self.play_pause_btn.setText("▶️ Resume")
             self.play_pause_btn.setEnabled(True)
             self.stop_btn.setEnabled(True)
             self.step_btn.setEnabled(True)
+            self.operation_label.setText("Execution paused")
+        elif new_state.value == "planning":
+            self.play_pause_btn.setText("⏳ Planning")
+            self.play_pause_btn.setEnabled(False)
+            self.stop_btn.setEnabled(False)
+            self.step_btn.setEnabled(False)
+            self.operation_label.setText("Creating execution plan...")
+        elif new_state.value == "error":
+            self.play_pause_btn.setText("▶️ Start")
+            self.play_pause_btn.setEnabled(len(self.execution_queue) > 0)
+            self.stop_btn.setEnabled(False)
+            self.step_btn.setEnabled(False)
+            self.progress_bar.setVisible(False)
+            self.operation_label.setText("Error occurred")
         else:
             self.play_pause_btn.setText("▶️ Start")
             self.play_pause_btn.setEnabled(len(self.execution_queue) > 0)
             self.stop_btn.setEnabled(False)
             self.step_btn.setEnabled(False)
             self.progress_bar.setVisible(False)
+            if new_state.value == "completed":
+                self.operation_label.setText("Execution completed")
+            else:
+                self.operation_label.setText("Ready")
 
     def _on_execution_start(self, step_num, total_steps, step):
         """Handle execution start."""
-        self.operation_label.setText(f"Step {step_num}/{total_steps}: {step['description']}")
+        step_desc = step.get('description', 'Unknown step')
+        self.operation_label.setText(f"Step {step_num}/{total_steps}: {step_desc}")
         self.progress_bar.setMaximum(total_steps)
         self.progress_bar.setValue(step_num)
 
@@ -336,20 +386,37 @@ class AgentControlWidget(QtWidgets.QWidget):
         """Handle execution complete."""
         # Add to history
         timestamp = datetime.now().strftime("%H:%M:%S")
-        status = "✅" if result["status"].value == "completed" else "❌"
-        history_item = f"{timestamp} - Step {step_num}: {status}"
+        
+        # Handle different result formats
+        success = result.get("success", False)
+        if hasattr(result.get("status"), 'value'):
+            success = result["status"].value == "completed"
+        
+        status = "✅" if success else "❌"
+        step_desc = result.get("output", f"Step {step_num}")
+        history_item = f"{timestamp} - {status} {step_desc}"
         self.history_list.insertItem(0, history_item)
 
         # Keep history limited
         while self.history_list.count() > 50:
             self.history_list.takeItem(self.history_list.count() - 1)
 
+    def _on_plan_created(self, plan):
+        """Handle plan created callback."""
+        # Automatically add plan to queue
+        self.add_to_queue(plan)
+
     def add_to_queue(self, plan):
         """Add a plan to the execution queue."""
         self.execution_queue.append(plan)
 
         # Update queue display
-        queue_item = f"Plan {plan['id'][:8]}... ({len(plan['steps'])} steps)"
+        plan_id = plan.get('id', 'unknown')
+        steps = plan.get('steps', [])
+        duration = plan.get('estimated_duration', 0)
+        risk = plan.get('risk_level', 'unknown')
+        
+        queue_item = f"Plan {plan_id[:8]}... ({len(steps)} steps, {duration:.1f}s, {risk} risk)"
         self.queue_list.addItem(queue_item)
 
         # Enable start button if idle
@@ -367,7 +434,16 @@ class AgentControlWidget(QtWidgets.QWidget):
             # Start execution
             plan = self.execution_queue.pop(0)
             self.queue_list.takeItem(0)
-            self.agent_manager.approve_plan(plan["id"])
+            plan_id = plan.get('id')
+            if plan_id:
+                # Check if approval is required
+                if self.agent_manager.config.get("require_approval", False):
+                    # The approval dialog will be shown by the conversation widget
+                    # Here we just prepare for execution
+                    pass
+                else:
+                    # Auto-approve and execute
+                    self.agent_manager.approve_plan(plan_id)
         elif state == "executing":
             # Pause execution
             self.agent_manager.pause_execution()
@@ -384,13 +460,24 @@ class AgentControlWidget(QtWidgets.QWidget):
         """Execute one step."""
         # This would require modification to the execution pipeline
         # to support single-step execution
-        pass
+        if self.agent_manager and self.agent_manager.execution_state.value == "paused":
+            # For now, just resume (single step execution would need pipeline changes)
+            self.agent_manager.resume_execution()
 
     def _clear_queue(self):
         """Clear the execution queue."""
-        self.execution_queue.clear()
-        self.queue_list.clear()
-        self.play_pause_btn.setEnabled(False)
+        if self.execution_queue:
+            reply = QtWidgets.QMessageBox.question(
+                self,
+                "Clear Queue",
+                f"Are you sure you want to clear {len(self.execution_queue)} pending plans?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+            )
+            
+            if reply == QtWidgets.QMessageBox.Yes:
+                self.execution_queue.clear()
+                self.queue_list.clear()
+                self.play_pause_btn.setEnabled(False)
 
     def _move_queue_item_up(self):
         """Move selected queue item up."""
@@ -422,17 +509,71 @@ class AgentControlWidget(QtWidgets.QWidget):
         """Remove selected queue item."""
         current_row = self.queue_list.currentRow()
         if current_row >= 0:
-            self.queue_list.takeItem(current_row)
-            del self.execution_queue[current_row]
+            # Get plan info for confirmation
+            plan = self.execution_queue[current_row]
+            plan_id = plan.get('id', 'unknown')[:8]
+            
+            reply = QtWidgets.QMessageBox.question(
+                self,
+                "Remove Plan",
+                f"Remove plan {plan_id}... from queue?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+            )
+            
+            if reply == QtWidgets.QMessageBox.Yes:
+                self.queue_list.takeItem(current_row)
+                del self.execution_queue[current_row]
 
-            # Disable start button if queue is empty
-            if not self.execution_queue:
-                self.play_pause_btn.setEnabled(False)
+                # Disable start button if queue is empty
+                if not self.execution_queue:
+                    self.play_pause_btn.setEnabled(False)
 
     def _view_history_details(self):
         """View details of selected history item."""
-        # This would show a dialog with detailed execution information
-        pass
+        current_item = self.history_list.currentItem()
+        if current_item and self.agent_manager:
+            # Show detailed history dialog
+            history = self.agent_manager.get_execution_history()
+            
+            if history:
+                dialog = QtWidgets.QDialog(self)
+                dialog.setWindowTitle("Execution History Details")
+                dialog.resize(600, 400)
+                
+                layout = QtWidgets.QVBoxLayout(dialog)
+                
+                # Create text view
+                text_view = QtWidgets.QTextEdit()
+                text_view.setReadOnly(True)
+                
+                # Format history details
+                details = ""
+                for i, entry in enumerate(reversed(history)):  # Show newest first
+                    details += f"=== Execution {len(history) - i} ===\n"
+                    details += f"Timestamp: {entry.get('timestamp', 'Unknown')}\n"
+                    
+                    plan = entry.get('plan', {})
+                    details += f"Plan ID: {plan.get('id', 'Unknown')}\n"
+                    details += f"Steps: {len(plan.get('steps', []))}\n"
+                    details += f"Risk Level: {plan.get('risk_level', 'Unknown')}\n"
+                    
+                    result = entry.get('result', {})
+                    details += f"Success: {result.get('success', False)}\n"
+                    
+                    if result.get('errors'):
+                        details += f"Errors: {', '.join(result['errors'])}\n"
+                        
+                    details += "\n"
+                
+                text_view.setPlainText(details)
+                layout.addWidget(text_view)
+                
+                # Close button
+                close_btn = QtWidgets.QPushButton("Close")
+                close_btn.clicked.connect(dialog.accept)
+                layout.addWidget(close_btn)
+                
+                dialog.exec_()
 
     def _export_history(self):
         """Export execution history."""
@@ -440,20 +581,62 @@ class AgentControlWidget(QtWidgets.QWidget):
             return
 
         history = self.agent_manager.get_execution_history()
+        
+        if not history:
+            QtWidgets.QMessageBox.information(
+                self,
+                "No History",
+                "No execution history to export."
+            )
+            return
 
         # Show file dialog
         filename, _ = QtWidgets.QFileDialog.getSaveFileName(
             self,
             "Export Execution History",
-            "execution_history.json",
-            "JSON Files (*.json)"
+            f"agent_execution_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+            "JSON Files (*.json);;Text Files (*.txt)"
         )
 
         if filename:
             try:
                 import json
-                with open(filename, 'w') as f:
-                    json.dump(history, f, indent=2)
+                
+                # Prepare export data
+                export_data = {
+                    "export_timestamp": datetime.now().isoformat(),
+                    "agent_mode": self.agent_manager.current_mode.value,
+                    "total_executions": len(history),
+                    "agent_config": self.agent_manager.config,
+                    "history": history
+                }
+                
+                if filename.endswith('.json'):
+                    with open(filename, 'w') as f:
+                        json.dump(export_data, f, indent=2)
+                else:
+                    # Export as text
+                    with open(filename, 'w') as f:
+                        f.write(f"FreeCAD AI Agent Execution History\n")
+                        f.write(f"Export Date: {export_data['export_timestamp']}\n")
+                        f.write(f"Total Executions: {export_data['total_executions']}\n")
+                        f.write(f"Agent Mode: {export_data['agent_mode']}\n\n")
+                        
+                        for i, entry in enumerate(history, 1):
+                            f.write(f"=== Execution {i} ===\n")
+                            f.write(f"Timestamp: {entry.get('timestamp', 'Unknown')}\n")
+                            
+                            plan = entry.get('plan', {})
+                            f.write(f"Plan ID: {plan.get('id', 'Unknown')}\n")
+                            f.write(f"Steps: {len(plan.get('steps', []))}\n")
+                            
+                            result = entry.get('result', {})
+                            f.write(f"Success: {result.get('success', False)}\n")
+                            
+                            if result.get('errors'):
+                                f.write(f"Errors: {', '.join(result['errors'])}\n")
+                            f.write("\n")
+                
                 QtWidgets.QMessageBox.information(
                     self,
                     "Export Complete",
@@ -471,7 +654,7 @@ class AgentControlWidget(QtWidgets.QWidget):
         reply = QtWidgets.QMessageBox.question(
             self,
             "Clear History",
-            "Are you sure you want to clear the execution history?",
+            "Are you sure you want to clear the execution history?\n\nThis will clear the visual history list but not the agent's internal history.",
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
         )
 
@@ -479,3 +662,18 @@ class AgentControlWidget(QtWidgets.QWidget):
             self.history_list.clear()
             # Note: This doesn't clear the agent manager's history
             # That would require adding a method to the agent manager
+            
+    def get_queue_status(self):
+        """Get current queue status."""
+        return {
+            "queue_length": len(self.execution_queue),
+            "queue_items": [
+                {
+                    "plan_id": plan.get('id', 'unknown')[:8],
+                    "steps": len(plan.get('steps', [])),
+                    "risk_level": plan.get('risk_level', 'unknown'),
+                    "estimated_duration": plan.get('estimated_duration', 0)
+                }
+                for plan in self.execution_queue
+            ]
+        }
