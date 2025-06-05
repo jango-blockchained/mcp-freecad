@@ -57,6 +57,16 @@ CONNECTION_METHODS = ["launcher", "wrapper", "server", "bridge", "mock"]
 def test_connection_method(method: str, connection_config: Dict[str, Any]):
     """Test a specific connection method."""
     logger.info(f"Testing connection method: {method}")
+
+    # Check if FreeCAD is available for real connection methods
+    freecad_path = connection_config.get("path")
+    if method != "mock" and freecad_path and not os.path.exists(freecad_path):
+        pytest.skip(f"Skipping {method} test: FreeCAD not found at {freecad_path}")
+
+    # For non-mock methods, skip if we're in a test environment without FreeCAD
+    if method != "mock" and os.getenv("CI") or not freecad_path:
+        pytest.skip(f"Skipping {method} test: Not available in test environment")
+
     success = False
 
     # Ensure required config keys are present

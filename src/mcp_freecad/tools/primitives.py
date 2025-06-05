@@ -115,12 +115,21 @@ class PrimitiveToolProvider(ToolProvider):
         length = params.get("length", 10.0)
         width = params.get("width", 10.0)
         height = params.get("height", 10.0)
+        name = params.get("name", "Box")
+
+        # Validate dimensions are positive
+        if length <= 0:
+            raise ValueError(f"Length must be positive, got {length}")
+        if width <= 0:
+            raise ValueError(f"Width must be positive, got {width}")
+        if height <= 0:
+            raise ValueError(f"Height must be positive, got {height}")
 
         # Get or create document
         doc = self._get_active_document()
 
         # Create the box
-        box = doc.addObject("Part::Box", "Box")
+        box = doc.addObject("Part::Box", name)
         box.Length = length
         box.Width = width
         box.Height = height
@@ -129,6 +138,8 @@ class PrimitiveToolProvider(ToolProvider):
         doc.recompute()
 
         return {
+            "message": f"Box created successfully with dimensions {length}x{width}x{height}",
+            "object_name": box.Name,
             "object_id": box.Name,
             "object_type": "Part::Box",
             "properties": {"Length": length, "Width": width, "Height": height},
@@ -139,12 +150,19 @@ class PrimitiveToolProvider(ToolProvider):
         # Get parameters with default values
         radius = params.get("radius", 5.0)
         height = params.get("height", 10.0)
+        name = params.get("name", "Cylinder")
+
+        # Validate dimensions are positive
+        if radius <= 0:
+            raise ValueError(f"Radius must be positive, got {radius}")
+        if height <= 0:
+            raise ValueError(f"Height must be positive, got {height}")
 
         # Get or create document
         doc = self._get_active_document()
 
         # Create the cylinder
-        cylinder = doc.addObject("Part::Cylinder", "Cylinder")
+        cylinder = doc.addObject("Part::Cylinder", name)
         cylinder.Radius = radius
         cylinder.Height = height
 
@@ -152,6 +170,8 @@ class PrimitiveToolProvider(ToolProvider):
         doc.recompute()
 
         return {
+            "message": f"Cylinder created successfully with radius {radius} and height {height}",
+            "object_name": cylinder.Name,
             "object_id": cylinder.Name,
             "object_type": "Part::Cylinder",
             "properties": {"Radius": radius, "Height": height},
@@ -161,18 +181,25 @@ class PrimitiveToolProvider(ToolProvider):
         """Create a sphere primitive."""
         # Get parameters with default values
         radius = params.get("radius", 5.0)
+        name = params.get("name", "Sphere")
+
+        # Validate dimensions are positive
+        if radius <= 0:
+            raise ValueError(f"Radius must be positive, got {radius}")
 
         # Get or create document
         doc = self._get_active_document()
 
         # Create the sphere
-        sphere = doc.addObject("Part::Sphere", "Sphere")
+        sphere = doc.addObject("Part::Sphere", name)
         sphere.Radius = radius
 
         # Recompute document
         doc.recompute()
 
         return {
+            "message": f"Sphere created successfully with radius {radius}",
+            "object_name": sphere.Name,
             "object_id": sphere.Name,
             "object_type": "Part::Sphere",
             "properties": {"Radius": radius},
@@ -184,12 +211,21 @@ class PrimitiveToolProvider(ToolProvider):
         radius1 = params.get("radius1", 5.0)
         radius2 = params.get("radius2", 0.0)
         height = params.get("height", 10.0)
+        name = params.get("name", "Cone")
+
+        # Validate dimensions are positive (radius2 can be 0)
+        if radius1 <= 0:
+            raise ValueError(f"Radius1 must be positive, got {radius1}")
+        if radius2 < 0:
+            raise ValueError(f"Radius2 must be non-negative, got {radius2}")
+        if height <= 0:
+            raise ValueError(f"Height must be positive, got {height}")
 
         # Get or create document
         doc = self._get_active_document()
 
         # Create the cone
-        cone = doc.addObject("Part::Cone", "Cone")
+        cone = doc.addObject("Part::Cone", name)
         cone.Radius1 = radius1
         cone.Radius2 = radius2
         cone.Height = height
@@ -198,6 +234,8 @@ class PrimitiveToolProvider(ToolProvider):
         doc.recompute()
 
         return {
+            "message": f"Cone created successfully with radius1 {radius1}, radius2 {radius2}, and height {height}",
+            "object_name": cone.Name,
             "object_id": cone.Name,
             "object_type": "Part::Cone",
             "properties": {"Radius1": radius1, "Radius2": radius2, "Height": height},

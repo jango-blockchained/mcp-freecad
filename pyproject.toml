@@ -33,9 +33,13 @@ requires-python = ">=3.8"
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.20.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "pytest-xdist>=3.0.0",
     "black>=23.0",
     "isort>=5.12.0",
     "flake8>=6.0.0",
+    "coverage>=7.0.0",
 ]
 
 [project.urls]
@@ -73,5 +77,9 @@ addopts = [
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests"
+    "integration: marks tests as integration tests",
+    "performance: marks tests as performance tests",
+    "house_scenario: marks tests as house modeling scenario tests",
+    "unit: marks tests as unit tests",
+    "mock: marks tests that use mocks"
 ]

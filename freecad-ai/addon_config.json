@@ -23,7 +23,7 @@
       "max_tokens": 4000
     },
     "Anthropic": {
-      "model": "claude-3-opus-20240229",
+      "model": "claude-4-20241120",
       "enabled": true
     },
     "Google": {

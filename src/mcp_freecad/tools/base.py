@@ -77,7 +77,7 @@ class ToolProvider(ABC):
         try:
             ToolParams(**params)
         except ValidationError as e:
-            raise ValidationError(f"Invalid parameters: {str(e)}")
+            raise ValueError(f"Invalid parameters: {str(e)}")
 
     def format_result(
         self,

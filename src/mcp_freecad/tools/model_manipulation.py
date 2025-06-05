@@ -158,6 +158,20 @@ class ModelManipulationToolProvider(ToolProvider):
             if not object_name:
                 raise ValueError("No object specified for transformation")
 
+            # Early validation of transformation parameters
+            translation = params.get("translation")
+            rotation = params.get("rotation")
+
+            # Validate translation format if provided
+            if translation is not None:
+                if not isinstance(translation, list) or len(translation) != 3:
+                    raise ValueError("Invalid translation format. Expected [x, y, z]")
+
+            # Validate rotation format if provided
+            if rotation is not None:
+                if not isinstance(rotation, list) or len(rotation) not in [3, 4]:
+                    raise ValueError("Invalid rotation format. Expected [x, y, z] or [x, y, z, angle]")
+
             # Get the active document
             doc = self.app.ActiveDocument
             if not doc:
@@ -285,6 +299,11 @@ class ModelManipulationToolProvider(ToolProvider):
             operation_type = params.get("operation")
             if not operation_type:
                 raise ValueError("No operation type specified")
+
+            # Validate operation type early
+            valid_operations = ["union", "difference", "cut", "intersection", "common"]
+            if operation_type.lower() not in valid_operations:
+                raise ValueError(f"Unknown operation type: {operation_type}")
 
             object1 = params.get("object1")
             object2 = params.get("object2")
