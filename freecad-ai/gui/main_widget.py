@@ -99,7 +99,43 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         """Setup the provider integration service."""
         try:
             print("FreeCAD AI: Setting up provider service...")
-            from ..ai.provider_integration_service import get_provider_service
+            
+            # Try multiple import strategies
+            provider_service_imported = False
+            
+            # Strategy 1: Relative import
+            try:
+                from ..ai.provider_integration_service import get_provider_service
+                provider_service_imported = True
+                print("FreeCAD AI: Provider service imported via relative path")
+            except ImportError as e:
+                print(f"FreeCAD AI: Relative import failed: {e}")
+                
+            # Strategy 2: Direct import if addon is in sys.path
+            if not provider_service_imported:
+                try:
+                    from ai.provider_integration_service import get_provider_service
+                    provider_service_imported = True
+                    print("FreeCAD AI: Provider service imported via direct path")
+                except ImportError as e:
+                    print(f"FreeCAD AI: Direct import failed: {e}")
+                    
+            # Strategy 3: Add parent to path and import
+            if not provider_service_imported:
+                try:
+                    import sys
+                    import os
+                    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    if parent_dir not in sys.path:
+                        sys.path.insert(0, parent_dir)
+                    from ai.provider_integration_service import get_provider_service
+                    provider_service_imported = True
+                    print("FreeCAD AI: Provider service imported after adding to sys.path")
+                except ImportError as e:
+                    print(f"FreeCAD AI: Import with sys.path modification failed: {e}")
+            
+            if not provider_service_imported:
+                raise ImportError("Could not import provider_integration_service after all strategies")
 
             self.provider_service = get_provider_service()
             print(f"FreeCAD AI: Provider service created: {self.provider_service is not None}")

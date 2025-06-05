@@ -19,39 +19,109 @@ import logging
 from typing import Dict, Any, Optional, List, Callable
 from PySide2 import QtCore
 
-# Import using absolute imports to avoid relative import issues
+
+# Import using multiple strategies to handle different file locations
+ai_manager_imported = False
+providers_imported = False
+
+# Strategy 1: Try providers subdirectory first (preferred structure)
 try:
-    from ai.ai_manager import AIManager
-    from ai.claude_provider import ClaudeProvider
-    from ai.gemini_provider import GeminiProvider
-    from ai.openrouter_provider import OpenRouterProvider
-except ImportError:
-    # Fallback imports in case of path issues
+    from .ai_manager import AIManager
+    from .providers.claude_provider import ClaudeProvider
+    from .providers.gemini_provider import GeminiProvider
+    from .providers.openrouter_provider import OpenRouterProvider
+    ai_manager_imported = True
+    providers_imported = True
+    logging.info("Imported AI components from providers subdirectory")
+except ImportError as e:
+    logging.warning(f"Could not import from providers subdirectory: {e}")
+
+# Strategy 2: Try direct imports from ai directory (legacy structure)
+if not providers_imported:
+    try:
+        from ai.ai_manager import AIManager
+        from ai.claude_provider import ClaudeProvider
+        from ai.gemini_provider import GeminiProvider
+        from ai.openrouter_provider import OpenRouterProvider
+        ai_manager_imported = True
+        providers_imported = True
+        logging.info("Imported AI components from ai directory (legacy)")
+    except ImportError as e:
+        logging.warning(f"Could not import from ai directory: {e}")
+
+# Strategy 3: Try absolute imports with providers subdirectory
+if not providers_imported:
+    try:
+        from ai.ai_manager import AIManager
+        from ai.providers.claude_provider import ClaudeProvider
+        from ai.providers.gemini_provider import GeminiProvider
+        from ai.providers.openrouter_provider import OpenRouterProvider
+        ai_manager_imported = True
+        providers_imported = True
+        logging.info("Imported AI components using absolute imports with providers subdirectory")
+    except ImportError as e:
+        logging.warning(f"Could not import with absolute paths: {e}")
+
+# Strategy 4: Fallback imports with module references
+if not providers_imported:
     try:
         import ai.ai_manager
-        import ai.claude_provider
-        import ai.gemini_provider
-        import ai.openrouter_provider
+        import ai.providers.claude_provider
+        import ai.providers.gemini_provider
+        import ai.providers.openrouter_provider
         AIManager = ai.ai_manager.AIManager
-        ClaudeProvider = ai.claude_provider.ClaudeProvider
-        GeminiProvider = ai.gemini_provider.GeminiProvider
-        OpenRouterProvider = ai.openrouter_provider.OpenRouterProvider
+        ClaudeProvider = ai.providers.claude_provider.ClaudeProvider
+        GeminiProvider = ai.providers.gemini_provider.GeminiProvider
+        OpenRouterProvider = ai.providers.openrouter_provider.OpenRouterProvider
+        ai_manager_imported = True
+        providers_imported = True
+        logging.info("Imported AI components using module references")
     except ImportError:
-        # If all else fails, create dummy classes
-        class AIManager:
-            def __init__(self): pass
-            def add_provider(self, **kwargs): return False
-            def remove_provider(self, name): return False
-            def get_providers(self): return {}
+        # Try legacy locations
+        try:
+            import ai.ai_manager
+            import ai.claude_provider
+            import ai.gemini_provider
+            import ai.openrouter_provider
+            AIManager = ai.ai_manager.AIManager
+            ClaudeProvider = ai.claude_provider.ClaudeProvider
+            GeminiProvider = ai.gemini_provider.GeminiProvider
+            OpenRouterProvider = ai.openrouter_provider.OpenRouterProvider
+            ai_manager_imported = True
+            providers_imported = True
+            logging.info("Imported AI components from legacy locations")
+        except ImportError as e:
+            logging.error(f"All import strategies failed: {e}")
 
-        class ClaudeProvider:
-            def __init__(self, **kwargs): pass
+# Final fallback: Create dummy classes if all imports fail
+if not providers_imported:
+    logging.error("Creating dummy AI classes as fallback")
+    
+    class AIManager:
+        def __init__(self): 
+            self.providers = {}
+            logging.warning("Using dummy AIManager - no real functionality")
+        def add_provider(self, **kwargs): 
+            logging.warning("Dummy AIManager: add_provider called")
+            return False
+        def remove_provider(self, name): 
+            logging.warning("Dummy AIManager: remove_provider called")
+            return False
+        def get_providers(self): 
+            return {}
 
-        class GeminiProvider:
-            def __init__(self, **kwargs): pass
+    class ClaudeProvider:
+        def __init__(self, **kwargs): 
+            logging.warning("Using dummy ClaudeProvider")
 
-        class OpenRouterProvider:
-            def __init__(self, **kwargs): pass
+    class GeminiProvider:
+        def __init__(self, **kwargs): 
+            logging.warning("Using dummy GeminiProvider")
+
+    class OpenRouterProvider:
+        def __init__(self, **kwargs): 
+            logging.warning("Using dummy OpenRouterProvider")
+
 
 
 class ProviderIntegrationService(QtCore.QObject):
