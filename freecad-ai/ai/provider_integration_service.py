@@ -18,10 +18,40 @@ import asyncio
 import logging
 from typing import Dict, Any, Optional, List, Callable
 from PySide2 import QtCore
-from .ai_manager import AIManager
-from .claude_provider import ClaudeProvider
-from .gemini_provider import GeminiProvider
-from .openrouter_provider import OpenRouterProvider
+
+# Import using absolute imports to avoid relative import issues
+try:
+    from ai.ai_manager import AIManager
+    from ai.claude_provider import ClaudeProvider
+    from ai.gemini_provider import GeminiProvider
+    from ai.openrouter_provider import OpenRouterProvider
+except ImportError:
+    # Fallback imports in case of path issues
+    try:
+        import ai.ai_manager
+        import ai.claude_provider
+        import ai.gemini_provider
+        import ai.openrouter_provider
+        AIManager = ai.ai_manager.AIManager
+        ClaudeProvider = ai.claude_provider.ClaudeProvider
+        GeminiProvider = ai.gemini_provider.GeminiProvider
+        OpenRouterProvider = ai.openrouter_provider.OpenRouterProvider
+    except ImportError:
+        # If all else fails, create dummy classes
+        class AIManager:
+            def __init__(self): pass
+            def add_provider(self, **kwargs): return False
+            def remove_provider(self, name): return False
+            def get_providers(self): return {}
+
+        class ClaudeProvider:
+            def __init__(self, **kwargs): pass
+
+        class GeminiProvider:
+            def __init__(self, **kwargs): pass
+
+        class OpenRouterProvider:
+            def __init__(self, **kwargs): pass
 
 
 class ProviderIntegrationService(QtCore.QObject):
