@@ -16,7 +16,7 @@ print("Starting FreeCAD server in connect mode...")
 
 # Get the path to the server script
 script_dir = os.path.dirname(os.path.realpath(__file__))
-server_script = os.path.join(script_dir, "freecad_socket_server.py")
+server_script = os.path.join(script_dir, "..", "src", "mcp_freecad", "connections", "freecad_socket_server.py")
 
 if not os.path.exists(server_script):
     print(f"Error: Server script not found at {server_script}")
