@@ -419,48 +419,91 @@ class ConversationWidget(QtWidgets.QWidget):
         debug_info = []
         debug_info.append("=== PROVIDER DEBUG INFO ===")
         debug_info.append(f"Current Provider: {self.current_provider}")
-        debug_info.append(
-            f"Provider Service Available: {self.provider_service is not None}"
-        )
-        debug_info.append(
-            f"Config Manager Available: {self.config_manager is not None}"
-        )
+        debug_info.append(f"Provider Service Available: {self.provider_service is not None}")
+        debug_info.append(f"Config Manager Available: {self.config_manager is not None}")
         debug_info.append(f"AI Manager Available: {self.ai_manager is not None}")
         debug_info.append("")
 
         # Provider combo box contents
         debug_info.append("Provider Combo Box Contents:")
-        for i in range(self.provider_combo.count()):
-            debug_info.append(f"  {i}: {self.provider_combo.itemText(i)}")
+        if self.provider_combo.count() == 0:
+            debug_info.append("  (empty - this is the problem!)")
+        else:
+            for i in range(self.provider_combo.count()):
+                debug_info.append(f"  {i}: {self.provider_combo.itemText(i)}")
         debug_info.append("")
 
         # Provider service status
         if self.provider_service:
             debug_info.append("Provider Service Status:")
-            all_providers = self.provider_service.get_all_providers()
-            for name, status in all_providers.items():
-                debug_info.append(f"  {name}: {status}")
+            try:
+                all_providers = self.provider_service.get_all_providers()
+                if not all_providers:
+                    debug_info.append("  (no providers configured)")
+                else:
+                    for name, status in all_providers.items():
+                        debug_info.append(f"  {name}: {status}")
+            except Exception as e:
+                debug_info.append(f"  Error getting providers: {e}")
+            debug_info.append("")
+        else:
+            debug_info.append("Provider Service Status:")
+            debug_info.append("  ❌ Provider service is None - this is the main issue!")
+            debug_info.append("  This means set_provider_service() was never called")
+            debug_info.append("  or was called with None")
             debug_info.append("")
 
         # Config manager status
         if self.config_manager:
             debug_info.append("Config Manager Status:")
-            api_keys = self.config_manager.list_api_keys()
-            debug_info.append(f"  API Keys: {api_keys}")
-            default_provider = self.config_manager.get_default_provider()
-            debug_info.append(f"  Default Provider: {default_provider}")
+            try:
+                api_keys = self.config_manager.list_api_keys()
+                debug_info.append(f"  API Keys: {api_keys}")
+                default_provider = self.config_manager.get_default_provider()
+                debug_info.append(f"  Default Provider: {default_provider}")
+            except Exception as e:
+                debug_info.append(f"  Error getting config: {e}")
+            debug_info.append("")
+        else:
+            debug_info.append("Config Manager Status:")
+            debug_info.append("  ❌ Config manager is None")
             debug_info.append("")
 
         # AI manager status
         if self.ai_manager:
             debug_info.append("AI Manager Status:")
-            debug_info.append(f"  Providers: {list(self.ai_manager.providers.keys())}")
-            debug_info.append(f"  Active Provider: {self.ai_manager.active_provider}")
+            try:
+                debug_info.append(f"  Providers: {list(self.ai_manager.providers.keys())}")
+                debug_info.append(f"  Active Provider: {self.ai_manager.active_provider}")
+            except Exception as e:
+                debug_info.append(f"  Error getting AI manager info: {e}")
+            debug_info.append("")
+        else:
+            debug_info.append("AI Manager Status:")
+            debug_info.append("  ❌ AI manager is None")
+            debug_info.append("")
+
+        # Potential solutions
+        debug_info.append("TROUBLESHOOTING:")
+        debug_info.append("1. If Provider Service is None:")
+        debug_info.append("   - The main widget failed to initialize the provider service")
+        debug_info.append("   - Check the console for import errors")
+        debug_info.append("   - Try restarting the FreeCAD addon")
+        debug_info.append("")
+        debug_info.append("2. If Provider Combo is empty:")
+        debug_info.append("   - Go to Providers tab and configure an AI provider")
+        debug_info.append("   - Add API key and test connection")
+        debug_info.append("   - Click the ⟳ Refresh button")
+        debug_info.append("")
+        debug_info.append("3. If providers exist but chat doesn't work:")
+        debug_info.append("   - Check API key is valid")
+        debug_info.append("   - Check internet connection")
+        debug_info.append("   - Try a different provider")
 
         # Show debug dialog
         dialog = QtWidgets.QDialog(self)
         dialog.setWindowTitle("Provider Debug Information")
-        dialog.resize(600, 400)
+        dialog.resize(700, 500)
 
         layout = QtWidgets.QVBoxLayout(dialog)
 
@@ -476,12 +519,38 @@ class ConversationWidget(QtWidgets.QWidget):
         refresh_btn.clicked.connect(lambda: (self.refresh_providers(), dialog.accept()))
         button_layout.addWidget(refresh_btn)
 
+        # Add button to try to get provider service from parent
+        fix_service_btn = QtWidgets.QPushButton("Try Fix Provider Service")
+        fix_service_btn.clicked.connect(lambda: (self._try_fix_provider_service(), dialog.accept()))
+        button_layout.addWidget(fix_service_btn)
+
         close_btn = QtWidgets.QPushButton("Close")
         close_btn.clicked.connect(dialog.accept)
         button_layout.addWidget(close_btn)
 
         layout.addLayout(button_layout)
         dialog.exec_()
+
+    def _try_fix_provider_service(self):
+        """Try to fix the provider service by getting it from parent widget."""
+        try:
+            # Try to get provider service from main widget
+            parent_widget = self.parent()
+            while parent_widget and not hasattr(parent_widget, 'get_provider_service'):
+                parent_widget = parent_widget.parent()
+
+            if parent_widget and hasattr(parent_widget, 'get_provider_service'):
+                provider_service = parent_widget.get_provider_service()
+                if provider_service:
+                    self.set_provider_service(provider_service)
+                    self._add_system_message("✅ Provider service reconnected!")
+                    self.refresh_providers()
+                    return
+
+            self._add_system_message("❌ Could not find provider service in parent widgets")
+
+        except Exception as e:
+            self._add_system_message(f"❌ Error trying to fix provider service: {e}")
 
     def _on_send_message(self):
         """Handle send message button click."""
@@ -538,57 +607,298 @@ class ConversationWidget(QtWidgets.QWidget):
             self._process_with_chat(message)
 
     def _process_with_chat(self, message):
-        """Process message in chat mode."""
+        """Process message in chat mode using real AI."""
         try:
             # Gather context if enabled
             context = {}
             if self.context_check.isChecked():
                 context = self._gather_freecad_context()
 
-            if self.agent_manager:
-                # Use agent manager for chat mode processing
-                response = self.agent_manager.process_message(message, context)
-                self._handle_agent_response(response)
-            else:
-                # Fallback to direct provider communication
-                self._send_to_provider(message, context)
-                
+            # Always use direct provider communication for chat mode
+            # This ensures we get real AI responses instead of templates
+            self._send_to_provider(message, context)
+
         except Exception as e:
             self._remove_thinking_indicator()
             self._add_system_message(f"Error in chat mode: {str(e)}")
 
     def _send_to_provider(self, message, context):
-        """Send message directly to AI provider (fallback method)."""
+        """Send message directly to AI provider with FreeCAD context."""
         if not self.current_provider:
             self._remove_thinking_indicator()
             self._add_system_message("No provider selected")
+            self._add_conversation_message("AI",
+                "Please select an AI provider from the dropdown above. "
+                "If no providers are shown, go to the Providers tab to configure one.")
+            return
+
+        if not self.provider_service:
+            self._remove_thinking_indicator()
+            self._add_system_message("Provider service not available")
+            self._add_conversation_message("AI",
+                "The provider service is not initialized. This is likely a configuration issue.\n\n"
+                "**Troubleshooting steps:**\n"
+                "1. Go to the **Providers** tab\n"
+                "2. Configure an AI provider (like OpenRouter, Claude, etc.)\n"
+                "3. Add your API key\n"
+                "4. Click **Test Connection**\n"
+                "5. Come back to this Chat tab\n\n"
+                "If the issue persists, try clicking the **⟳ Refresh** button next to the provider dropdown.")
             return
 
         try:
-            # Build context message
-            context_text = ""
+            # Create FreeCAD system prompt for AI
+            system_prompt = self._create_freecad_system_prompt(context)
+
+            # Build full message with system context
+            full_message = f"{system_prompt}\n\nUser: {message}"
+
+            # Add FreeCAD context as additional info
             if context and context.get("freecad_state"):
                 freecad_state = context["freecad_state"]
-                if freecad_state.get("has_active_document"):
-                    context_text += f"\nFreeCAD Context:\n"
-                    context_text += f"- Active document: {freecad_state.get('document_name', 'Unknown')}\n"
-                    
-                    if freecad_state.get("selected_objects"):
-                        context_text += f"- Selected objects: {len(freecad_state['selected_objects'])}\n"
-                        for obj in freecad_state["selected_objects"][:3]:  # Show first 3
-                            context_text += f"  * {obj['name']} ({obj['type']})\n"
-                    
-                    if freecad_state.get("document_objects"):
-                        context_text += f"- Total objects in document: {len(freecad_state['document_objects'])}\n"
+                context_info = self._format_freecad_context(freecad_state)
+                if context_info:
+                    full_message += f"\n\nCurrent FreeCAD State:\n{context_info}"
 
-            full_message = message + context_text
-            
-            # Simulate AI response (in real implementation, this would call the actual provider)
-            self._simulate_ai_response(full_message)
-            
+            # Use a timer to make the AI call asynchronous and non-blocking
+            QtCore.QTimer.singleShot(10, lambda: self._make_ai_call(full_message, context))
+
         except Exception as e:
             self._remove_thinking_indicator()
-            self._add_system_message(f"Error communicating with provider: {str(e)}")
+            self._add_system_message(f"Error preparing AI request: {str(e)}")
+
+    def _create_freecad_system_prompt(self, context):
+        """Create system prompt that explains FreeCAD context to the AI."""
+        prompt = """You are an AI assistant running inside FreeCAD, a powerful open-source 3D CAD application.
+
+IMPORTANT: You are currently in CHAT MODE
+- Provide helpful guidance, explanations, and step-by-step instructions
+- Do NOT execute tools automatically
+- Be conversational and contextually aware
+- When appropriate, suggest switching to Agent mode for automatic execution
+- Reference specific FreeCAD interface elements (menus, toolbars, workbenches)
+
+FREECAD KNOWLEDGE BASE:
+
+WORKBENCHES (Major FreeCAD modules):
+• Part: Basic 3D modeling with primitives and Boolean operations
+• PartDesign: Feature-based parametric modeling with sketches
+• Draft: 2D drafting and annotation tools
+• Sketcher: Constraint-based 2D sketching
+• Mesh: Working with triangular meshes and STL files
+• FEM: Finite Element Analysis for structural simulation
+• Assembly: Managing multi-part assemblies
+• TechDraw: Creating technical drawings and documentation
+
+AVAILABLE TOOL CATEGORIES:
+• Basic Shapes: Box, Cylinder, Sphere, Cone, Torus, Wedge
+• Advanced Shapes: Gear, Spring, Text, Thread, Pipe, Helix
+• Operations: Move, Rotate, Scale, Mirror, Array
+• Boolean Operations: Union (fuse), Cut (subtract), Intersection (common)
+• Measurements: Volume, Area, Distance, Angle, Radius, Bounding Box
+• Modifications: Fillet (round edges), Chamfer (cut edges), Draft (taper)
+• Sketch Tools: Line, Rectangle, Circle, Arc, Constraints
+• PartDesign: Pad (extrude), Pocket (cut), Revolve, Loft, Sweep
+• Import/Export: STL, STEP, IGES, OBJ, DXF, SVG formats
+
+FREECAD INTERFACE GUIDANCE:
+• Tree View: Shows document structure and object hierarchy
+• 3D View: Main modeling viewport with mouse navigation
+• Property Editor: Modify object parameters and constraints
+• Report View: Shows messages, errors, and command output
+• Python Console: Direct scripting access to FreeCAD API
+• Toolbars: Context-sensitive based on active workbench
+
+WORKFLOW PRINCIPLES:
+• Start with sketches for complex shapes (Sketcher workbench)
+• Use PartDesign for feature-based modeling
+• Apply Boolean operations for combining shapes
+• Measure and validate before finalizing
+• Export appropriate formats for intended use
+
+CONTEXT AWARENESS:
+- You have access to current document state and selected objects
+- Provide specific guidance based on what's currently selected and active workbench
+- Reference available tools and their locations in the interface
+- Give practical, actionable advice for FreeCAD workflows
+- Suggest appropriate workbenches for different tasks
+
+RESPONSE STYLE:
+- Be helpful and knowledgeable about 3D modeling and CAD workflows
+- Explain both the "how" and "why" of operations
+- Suggest best practices and common workflows
+- Offer alternatives when appropriate
+- Use clear, step-by-step instructions
+- Reference specific FreeCAD terminology and interface elements"""
+
+        # Add current workbench context
+        if context and context.get("freecad_state", {}).get("active_workbench"):
+            wb_info = context["freecad_state"]["active_workbench"]
+            prompt += f"\n\nCURRENT WORKBENCH: {wb_info.get('menu_text', 'Unknown')} ({wb_info.get('name', 'Unknown')})"
+            prompt += "\n- Tailor suggestions to be relevant for this workbench"
+            prompt += "\n- Mention workbench-specific tools and workflows"
+
+        # Add tool registry information if available
+        if hasattr(self, 'agent_manager') and self.agent_manager and hasattr(self.agent_manager, 'tool_registry'):
+            try:
+                available_tools = self.agent_manager.get_available_tools()
+                if available_tools:
+                    tool_info = "\n\nDETAILED TOOLS CURRENTLY AVAILABLE:\n"
+                    for category, tools in available_tools.items():
+                        tool_info += f"• {category.title()}: {', '.join(tools)}\n"
+                    prompt += tool_info
+            except:
+                pass  # Fallback gracefully if tool info not available
+
+        return prompt
+
+    def _format_freecad_context(self, freecad_state):
+        """Format FreeCAD state information for the AI."""
+        context_parts = []
+
+        # Document information
+        if freecad_state.get("has_active_document"):
+            doc_name = freecad_state.get('document_name', 'Unnamed')
+            doc_label = freecad_state.get('document_label', doc_name)
+            context_parts.append(f"- Active document: {doc_label} ({doc_name})")
+
+            # Object counts by type
+            type_counts = freecad_state.get("object_type_counts", {})
+            if type_counts:
+                obj_summary = []
+                for obj_type, count in sorted(type_counts.items()):
+                    obj_summary.append(f"{count} {obj_type}{'s' if count > 1 else ''}")
+                context_parts.append(f"- Objects in document: {', '.join(obj_summary)}")
+                context_parts.append(f"- Total objects: {sum(type_counts.values())}")
+
+            # Document objects (show first few)
+            if freecad_state.get("document_objects"):
+                doc_objects = freecad_state["document_objects"]
+                if len(doc_objects) <= 5:
+                    context_parts.append("- All objects:")
+                    for obj in doc_objects:
+                        visibility = "visible" if obj.get("visible", True) else "hidden"
+                        obj_type = obj["type"].split("::")[-1]  # Simplified type
+                        context_parts.append(f"  • {obj['label']} ({obj_type}, {visibility})")
+                else:
+                    context_parts.append("- Recent objects:")
+                    for obj in doc_objects[:3]:
+                        visibility = "visible" if obj.get("visible", True) else "hidden"
+                        obj_type = obj["type"].split("::")[-1]
+                        context_parts.append(f"  • {obj['label']} ({obj_type}, {visibility})")
+                    context_parts.append(f"  • ... and {len(doc_objects) - 3} more")
+        else:
+            context_parts.append("- No active document")
+
+        # Current workbench
+        workbench_info = freecad_state.get("active_workbench")
+        if workbench_info:
+            wb_name = workbench_info.get("menu_text", "Unknown")
+            context_parts.append(f"- Current workbench: {wb_name}")
+
+        # Selection information
+        selection_count = freecad_state.get("selection_count", 0)
+        if selection_count > 0:
+            context_parts.append(f"- Selected objects: {selection_count}")
+
+            # Show selected objects
+            selected_objects = freecad_state.get("selected_objects", [])
+            for obj in selected_objects[:3]:  # Show first 3
+                obj_type = obj["type"].split("::")[-1]
+                context_parts.append(f"  • {obj['label']} ({obj_type})")
+
+            if len(selected_objects) > 3:
+                context_parts.append(f"  • ... and {len(selected_objects) - 3} more")
+
+            # Primary selection
+            primary = freecad_state.get("primary_selection")
+            if primary:
+                primary_type = primary["type"].split("::")[-1]
+                context_parts.append(f"- Primary selection: {primary['name']} ({primary_type})")
+        else:
+            context_parts.append("- No objects selected")
+
+        # FreeCAD version
+        version_info = freecad_state.get("version_info")
+        if version_info:
+            version = ".".join(str(v) for v in version_info.get("version", []))
+            if version:
+                context_parts.append(f"- FreeCAD version: {version}")
+
+        # View information (if available)
+        view_info = freecad_state.get("view_info")
+        if view_info:
+            vp_count = view_info.get("view_provider_count", 0)
+            if vp_count > 0:
+                context_parts.append(f"- View providers: {vp_count}")
+
+        return "\n".join(context_parts) if context_parts else "No context available"
+
+    def _make_ai_call(self, message, context):
+        """Make the actual AI API call asynchronously."""
+        try:
+            # Call the provider service to send message to AI
+            response = self.provider_service.send_message_to_provider(
+                self.current_provider, message, context
+            )
+
+            # Handle the response
+            self._handle_ai_response(response)
+
+        except Exception as e:
+            self._remove_thinking_indicator()
+            error_msg = str(e)
+
+            # Check if this is a provider availability issue
+            if "not found" in error_msg.lower() or "not initialized" in error_msg.lower():
+                self._add_system_message("❌ AI provider not available")
+                self._add_conversation_message("AI",
+                    "I'm sorry, but the AI provider is not currently available. "
+                    "Please check the Providers tab to configure an AI service (OpenRouter, Claude, etc.) "
+                    "or try again later.")
+            elif "api key" in error_msg.lower():
+                self._add_system_message("❌ AI provider authentication error")
+                self._add_conversation_message("AI",
+                    "There's an issue with the AI provider authentication. "
+                    "Please check your API key in the Providers tab.")
+            elif "timeout" in error_msg.lower() or "connection" in error_msg.lower():
+                self._add_system_message("❌ AI provider connection error")
+                self._add_conversation_message("AI",
+                    "I couldn't connect to the AI service. Please check your internet connection "
+                    "and try again.")
+            else:
+                self._add_system_message(f"❌ Error communicating with AI: {error_msg}")
+                self._add_conversation_message("AI",
+                    "I encountered an error while processing your request. "
+                    "Please try again or check the Providers tab for configuration issues.")
+
+    def _handle_ai_response(self, response):
+        """Handle the AI provider response."""
+        self._remove_thinking_indicator()
+
+        if response and isinstance(response, str):
+            # Clean up the response if it contains system prompt echoes
+            cleaned_response = self._clean_ai_response(response)
+            self._add_conversation_message("AI", cleaned_response)
+        else:
+            self._add_system_message("Received empty or invalid response from AI")
+
+    def _clean_ai_response(self, response):
+        """Clean up AI response to remove system prompt echoes."""
+        # Remove any system prompt repetition that might occur
+        lines = response.split('\n')
+        cleaned_lines = []
+
+        for line in lines:
+            # Skip lines that look like system prompt echoes
+            if not (line.startswith("You are an AI assistant") or
+                   line.startswith("IMPORTANT:") or
+                   line.startswith("AVAILABLE TOOL") or
+                   line.startswith("CONTEXT AWARENESS:") or
+                   line.startswith("RESPONSE STYLE:")):
+                cleaned_lines.append(line)
+
+        return '\n'.join(cleaned_lines).strip()
 
     def _process_with_agent(self, message):
         """Process message through agent manager."""
@@ -639,9 +949,9 @@ class ConversationWidget(QtWidgets.QWidget):
             if suggested_tools:
                 tool_names = [tool.get('name', tool.get('id', 'Unknown')) for tool in suggested_tools]
                 self._add_conversation_message("AI", f"\nSuggested tools: {', '.join(tool_names)}")
-                
+
                 # Add helpful tip about agent mode
-                self._add_conversation_message("AI", 
+                self._add_conversation_message("AI",
                     "\n💡 Tip: Switch to Agent mode to have me execute these tools automatically!")
 
         elif mode == "agent":
@@ -660,7 +970,7 @@ class ConversationWidget(QtWidgets.QWidget):
                 execution_result = response.get("execution_result")
                 if execution_result:
                     self._display_execution_result(execution_result)
-                    
+
         # Handle errors
         if response.get("error"):
             self._add_conversation_message("AI", f"❌ Error: {response['error']}")
@@ -673,8 +983,8 @@ class ConversationWidget(QtWidgets.QWidget):
         step_count = len(plan.get("steps", []))
         duration = plan.get("estimated_duration", 0)
         risk = plan.get("risk_level", "unknown")
-        
-        self._add_conversation_message("AI", 
+
+        self._add_conversation_message("AI",
             f"📊 Plan Summary: {step_count} steps, ~{duration:.1f}s, {risk} risk")
 
         # Display plan steps
@@ -689,7 +999,7 @@ class ConversationWidget(QtWidgets.QWidget):
         """Display execution result."""
         if result.get("success"):
             self._add_conversation_message("AI", "✅ Execution completed successfully!")
-            
+
             # Show executed steps count
             executed_count = len(result.get("executed_steps", []))
             if executed_count > 0:
@@ -716,9 +1026,9 @@ class ConversationWidget(QtWidgets.QWidget):
             if failed_step:
                 step_desc = failed_step.get("description", "Unknown step")
                 self._add_conversation_message("AI", f"❌ Failed at: {step_desc}")
-                
+
             # Suggest troubleshooting
-            self._add_conversation_message("AI", 
+            self._add_conversation_message("AI",
                 "💡 Try: Check object selection, verify parameters, or switch to Chat mode for manual steps")
 
     def _show_approval_dialog(self, plan):
@@ -806,7 +1116,7 @@ class ConversationWidget(QtWidgets.QWidget):
             status_val = status.value
         else:
             status_val = str(status)
-            
+
         if status_val == "completed" or result.get("success"):
             self._add_system_message(f"✅ Step {step_num}/{total_steps} completed")
         else:
@@ -1061,44 +1371,90 @@ class ConversationWidget(QtWidgets.QWidget):
             )
 
     def _gather_freecad_context(self):
-        """Gather current FreeCAD context."""
-        context = {
-            "timestamp": QtCore.QDateTime.currentDateTime().toString(),
-            "has_active_document": False,
-            "selected_objects": [],
-            "document_objects": []
-        }
+        """Gather FreeCAD context information for the AI."""
+        context = {"freecad_state": {}}
 
         try:
             import FreeCAD
             import FreeCADGui
 
-            # Check for active document
+            # Basic document information
+            context["freecad_state"]["has_active_document"] = FreeCAD.ActiveDocument is not None
+
             if FreeCAD.ActiveDocument:
-                context["has_active_document"] = True
-                context["document_name"] = FreeCAD.ActiveDocument.Name
-                context["document_label"] = FreeCAD.ActiveDocument.Label
+                doc = FreeCAD.ActiveDocument
+                context["freecad_state"]["document_name"] = doc.Name
+                context["freecad_state"]["document_label"] = getattr(doc, 'Label', doc.Name)
 
-                # Get all objects
-                for obj in FreeCAD.ActiveDocument.Objects:
-                    context["document_objects"].append({
+                # Document objects
+                context["freecad_state"]["document_objects"] = [
+                    {
                         "name": obj.Name,
-                        "label": obj.Label,
-                        "type": obj.TypeId
-                    })
+                        "label": getattr(obj, 'Label', obj.Name),
+                        "type": obj.TypeId,
+                        "visible": getattr(obj, 'Visibility', True)
+                    }
+                    for obj in doc.Objects
+                ]
 
-            # Get selected objects
-            if FreeCADGui:
+                # Object count by type
+                type_counts = {}
+                for obj in doc.Objects:
+                    obj_type = obj.TypeId.split("::")[-1]  # Get simplified type name
+                    type_counts[obj_type] = type_counts.get(obj_type, 0) + 1
+                context["freecad_state"]["object_type_counts"] = type_counts
+
+            # Selected objects
+            if hasattr(FreeCADGui, 'Selection'):
                 selection = FreeCADGui.Selection.getSelection()
-                for obj in selection:
-                    context["selected_objects"].append({
+                context["freecad_state"]["selected_objects"] = [
+                    {
                         "name": obj.Name,
-                        "label": obj.Label,
+                        "label": getattr(obj, 'Label', obj.Name),
                         "type": obj.TypeId
-                    })
+                    }
+                    for obj in selection
+                ]
+
+                # Selection info
+                context["freecad_state"]["selection_count"] = len(selection)
+                if selection:
+                    context["freecad_state"]["primary_selection"] = {
+                        "name": selection[0].Name,
+                        "type": selection[0].TypeId
+                    }
+
+            # Current workbench
+            try:
+                wb = FreeCADGui.activeWorkbench()
+                if wb:
+                    context["freecad_state"]["active_workbench"] = {
+                        "name": wb.name() if hasattr(wb, 'name') else "Unknown",
+                        "menu_text": wb.MenuText if hasattr(wb, 'MenuText') else "Unknown"
+                    }
+            except:
+                context["freecad_state"]["active_workbench"] = {"name": "Unknown", "menu_text": "Unknown"}
+
+            # View information
+            try:
+                view = FreeCADGui.ActiveDocument.ActiveView if FreeCADGui.ActiveDocument else None
+                if view:
+                    context["freecad_state"]["view_info"] = {
+                        "camera_position": str(view.getCameraNode().position.getValue()) if hasattr(view, 'getCameraNode') else "Unknown",
+                        "view_provider_count": len(view.getViewProviders()) if hasattr(view, 'getViewProviders') else 0
+                    }
+            except:
+                pass  # View info is optional
+
+            # FreeCAD version info
+            context["freecad_state"]["version_info"] = {
+                "version": FreeCAD.Version()[0:3],  # Major, minor, micro
+                "build_info": FreeCAD.Version()[3] if len(FreeCAD.Version()) > 3 else "Unknown"
+            }
 
         except Exception as e:
-            context["error"] = str(e)
+            context["context_error"] = str(e)
+            context["freecad_state"]["error"] = "Could not gather FreeCAD context"
 
         return context
 
@@ -1211,7 +1567,7 @@ Would you like detailed step-by-step instructions or prefer Agent mode execution
 
 **Available Measurements:**
 • ↔ **Distance**: Between points/edges
-• ∠ **Angle**: Between edges/faces  
+• ∠ **Angle**: Between edges/faces
 • ³ **Volume**: Total volume of objects
 • ² **Area**: Surface area
 • ━ **Length**: Edge/curve length
@@ -1296,7 +1652,7 @@ Would you like detailed step-by-step instructions or prefer Agent mode execution
 
 **Available tool categories:**
 • Basic & Advanced Shapes
-• Operations & Modifications  
+• Operations & Modifications
 • Measurements & Analysis
 • Import/Export functions
 

@@ -22,9 +22,12 @@ class AgentControlWidget(QtWidgets.QWidget):
         layout.setSpacing(10)
 
         # Header
-        header = QtWidgets.QLabel("🤖 Agent Control Panel")
+        header = QtWidgets.QLabel("🤖 Agent Control Panel - Agent Mode")
         header.setStyleSheet("font-size: 16px; font-weight: bold; margin: 10px;")
         layout.addWidget(header)
+
+        # Command Input Section
+        self._create_command_section(layout)
 
         # Execution Status
         self._create_status_section(layout)
@@ -42,6 +45,62 @@ class AgentControlWidget(QtWidgets.QWidget):
         self._create_history_section(layout)
 
         layout.addStretch()
+
+    def _create_command_section(self, layout):
+        """Create command input section."""
+        command_group = QtWidgets.QGroupBox("Agent Commands")
+        command_layout = QtWidgets.QVBoxLayout(command_group)
+
+        # Command input
+        input_layout = QtWidgets.QHBoxLayout()
+        
+        self.command_input = QtWidgets.QLineEdit()
+        self.command_input.setPlaceholderText("Type a command for the agent (e.g., 'Create a 20x20x10mm box')")
+        self.command_input.returnPressed.connect(self._send_command)
+        self.command_input.setStyleSheet("""
+            QLineEdit {
+                padding: 8px;
+                font-size: 14px;
+                border: 2px solid #ddd;
+                border-radius: 6px;
+            }
+            QLineEdit:focus {
+                border-color: #007acc;
+            }
+        """)
+        input_layout.addWidget(self.command_input)
+
+        # Send button
+        self.send_btn = QtWidgets.QPushButton("Send")
+        self.send_btn.clicked.connect(self._send_command)
+        self.send_btn.setStyleSheet("""
+            QPushButton {
+                padding: 8px 15px;
+                font-size: 14px;
+                font-weight: bold;
+                background-color: #007acc;
+                color: white;
+                border: none;
+                border-radius: 6px;
+            }
+            QPushButton:hover {
+                background-color: #005a9e;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+            }
+        """)
+        input_layout.addWidget(self.send_btn)
+
+        command_layout.addLayout(input_layout)
+
+        # Command examples
+        examples_label = QtWidgets.QLabel("Examples: 'Create a cylinder 20mm radius, 40mm height' • 'Make a gear with 24 teeth' • 'Design a house foundation 12x8x1.5m'")
+        examples_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic; margin-top: 5px;")
+        examples_label.setWordWrap(True)
+        command_layout.addWidget(examples_label)
+
+        layout.addWidget(command_group)
 
     def _create_status_section(self, layout):
         """Create execution status section."""
@@ -86,7 +145,7 @@ class AgentControlWidget(QtWidgets.QWidget):
         control_layout = QtWidgets.QHBoxLayout(control_group)
 
         # Play/Pause button
-        self.play_pause_btn = QtWidgets.QPushButton("▶️ Start")
+        self.play_pause_btn = QtWidgets.QPushButton("▶ Start")
         self.play_pause_btn.setEnabled(False)
         self.play_pause_btn.clicked.connect(self._toggle_execution)
         self.play_pause_btn.setStyleSheet("""
@@ -99,7 +158,7 @@ class AgentControlWidget(QtWidgets.QWidget):
         control_layout.addWidget(self.play_pause_btn)
 
         # Stop button
-        self.stop_btn = QtWidgets.QPushButton("⏹️ Stop")
+        self.stop_btn = QtWidgets.QPushButton("⏹ Stop")
         self.stop_btn.setEnabled(False)
         self.stop_btn.clicked.connect(self._stop_execution)
         self.stop_btn.setStyleSheet("""
@@ -111,7 +170,7 @@ class AgentControlWidget(QtWidgets.QWidget):
         control_layout.addWidget(self.stop_btn)
 
         # Step button
-        self.step_btn = QtWidgets.QPushButton("⏭️ Step")
+        self.step_btn = QtWidgets.QPushButton("⏭ Step")
         self.step_btn.setEnabled(False)
         self.step_btn.setToolTip("Execute one step at a time")
         self.step_btn.clicked.connect(self._step_execution)
@@ -120,7 +179,7 @@ class AgentControlWidget(QtWidgets.QWidget):
         control_layout.addStretch()
 
         # Clear queue button
-        self.clear_queue_btn = QtWidgets.QPushButton("🗑️ Clear Queue")
+        self.clear_queue_btn = QtWidgets.QPushButton("Clear Queue")
         self.clear_queue_btn.clicked.connect(self._clear_queue)
         control_layout.addWidget(self.clear_queue_btn)
 
@@ -140,17 +199,17 @@ class AgentControlWidget(QtWidgets.QWidget):
         # Queue controls
         queue_controls = QtWidgets.QHBoxLayout()
 
-        self.move_up_btn = QtWidgets.QPushButton("⬆️")
+        self.move_up_btn = QtWidgets.QPushButton("↑")
         self.move_up_btn.setToolTip("Move selected item up")
         self.move_up_btn.clicked.connect(self._move_queue_item_up)
         queue_controls.addWidget(self.move_up_btn)
 
-        self.move_down_btn = QtWidgets.QPushButton("⬇️")
+        self.move_down_btn = QtWidgets.QPushButton("↓")
         self.move_down_btn.setToolTip("Move selected item down")
         self.move_down_btn.clicked.connect(self._move_queue_item_down)
         queue_controls.addWidget(self.move_down_btn)
 
-        self.remove_item_btn = QtWidgets.QPushButton("❌")
+        self.remove_item_btn = QtWidgets.QPushButton("×")
         self.remove_item_btn.setToolTip("Remove selected item")
         self.remove_item_btn.clicked.connect(self._remove_queue_item)
         queue_controls.addWidget(self.remove_item_btn)
@@ -200,6 +259,77 @@ class AgentControlWidget(QtWidgets.QWidget):
         safety_layout.addRow("Max Retries:", self.retries_spin)
 
         layout.addWidget(safety_group)
+
+    def _send_command(self):
+        """Send command to agent."""
+        command = self.command_input.text().strip()
+        if not command:
+            return
+
+        if not self.agent_manager:
+            QtWidgets.QMessageBox.warning(
+                self, 
+                "Agent Not Available", 
+                "Agent manager is not connected. Please restart the FreeCAD AI addon."
+            )
+            return
+
+        try:
+            # Clear the input
+            self.command_input.clear()
+            
+            # Add command to queue display
+            self.queue_list.addItem(f"Command: {command}")
+            
+            # Update status
+            self.operation_label.setText(f"Processing: {command[:50]}...")
+            self.state_label.setText("Processing")
+            self.state_label.setStyleSheet("""
+                QLabel {
+                    font-weight: bold;
+                    padding: 5px 10px;
+                    background-color: #fff3cd;
+                    border-radius: 4px;
+                    color: #856404;
+                }
+            """)
+            
+            # Enable execution controls
+            self.play_pause_btn.setEnabled(True)
+            self.stop_btn.setEnabled(True)
+            
+            # TODO: Send command to agent manager
+            # For now, just simulate processing
+            QtCore.QTimer.singleShot(2000, lambda: self._simulate_command_completion(command))
+            
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Command Error",
+                f"Failed to send command to agent:\n{str(e)}"
+            )
+
+    def _simulate_command_completion(self, command):
+        """Simulate command completion (temporary until agent integration is complete)."""
+        # Update status to completed
+        self.operation_label.setText("Ready")
+        self.state_label.setText("Idle")
+        self.state_label.setStyleSheet("""
+            QLabel {
+                font-weight: bold;
+                padding: 5px 10px;
+                background-color: #d4edda;
+                border-radius: 4px;
+                color: #155724;
+            }
+        """)
+        
+        # Add to history
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        self.history_list.addItem(f"[{timestamp}] Completed: {command}")
+        
+        # Clear queue
+        self.queue_list.clear()
 
     def _create_history_section(self, layout):
         """Create execution history section."""

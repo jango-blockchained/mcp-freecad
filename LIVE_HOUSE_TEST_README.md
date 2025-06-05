@@ -1,137 +1,137 @@
 # Live House Modeling Test Runners 🏠
 
-This directory contains two test runners that demonstrate the MCP-FreeCAD house modeling capabilities on a **real FreeCAD instance with GUI**, allowing you to watch the 3D house being built step by step in real-time!
+This directory contains multiple approaches to demonstrate the MCP-FreeCAD house modeling capabilities on a **real FreeCAD instance with GUI**, allowing you to watch the 3D house being built step by step in real-time!
 
-## What These Tests Do
+## ⚠️ Important: Original Scripts Had Issues
 
-These runners execute the same house modeling test that runs in the test suite, but instead of using mock FreeCAD, they:
+The original `run_live_house_test.py` and `run_live_house_test_mcp.py` scripts had problems trying to import FreeCAD modules directly from outside FreeCAD. I've created **fixed versions** that work properly!
 
-1. **Start FreeCAD with GUI** using the AppImage
-2. **Connect to the real FreeCAD instance** 
-3. **Create a 3D house model step by step:**
-   - 🏗️ Foundation (10m × 8m × 0.3m concrete slab)
-   - 🧱 Four walls (3m high, 0.3m thick brick walls)
-   - 🪟 Two front windows (1.2m × 1.5m)
-   - 🚪 One front door (0.9m × 2.1m)
-4. **Keep FreeCAD open** for you to inspect the model
+## 🛠️ Working Solutions
 
-## Available Test Runners
+### **🎯 Option 1: Simple Macro Approach (RECOMMENDED)** 
 
-### 1. `run_live_house_test.py` - Direct Tool Approach
-Uses the primitive and model manipulation tool providers directly.
+**File:** `run_house_macro.py` + `house_modeling_macro.FCMacro`
 
-### 2. `run_live_house_test_mcp.py` - Full MCP Architecture  
-Uses the complete MCP-FreeCAD server architecture with connection manager.
+This is the **most reliable method** - it runs FreeCAD with a macro that executes inside FreeCAD's environment where all modules are available.
 
-## Usage
-
-### Basic Usage (2-second delay between steps):
 ```bash
-# Direct tool approach
-python run_live_house_test.py
+# Simple and reliable!
+python run_house_macro.py
+```
 
-# Full MCP architecture approach  
-python run_live_house_test_mcp.py
+**What happens:**
+1. 🚀 Starts FreeCAD with GUI automatically
+2. 📜 Runs the house modeling macro inside FreeCAD
+3. 🏗️ Builds the house step-by-step with 2-second delays
+4. 🔍 Leaves FreeCAD open for inspection
+
+### **🎯 Option 2: Fixed MCP Connection Approach**
+
+**File:** `run_live_house_test_fixed.py`
+
+This uses the proper MCP-FreeCAD connection architecture without trying to import FreeCAD directly.
+
+```bash
+# Fixed MCP approach
+python run_live_house_test_fixed.py
+```
+
+**What happens:**
+1. 🚀 Starts FreeCAD as separate process
+2. 🔗 Establishes MCP connection to FreeCAD
+3. 📡 Sends commands to FreeCAD via connection manager
+4. 🏗️ Builds house using proper MCP workflow
+
+## 🏠 What These Tests Build
+
+Both approaches create the same house model:
+
+1. **🏗️ Foundation** - 10m × 8m × 0.3m concrete slab (brown)
+2. **🧱 Four Walls** - 3m high, 0.3m thick brick walls (red)
+3. **🪟 Two Windows** - 1.2m × 1.5m front windows (blue transparent)
+4. **🚪 One Door** - 0.9m × 2.1m front door (blue transparent)
+
+## 🚀 Usage Examples
+
+### Basic Usage:
+```bash
+# Recommended - simple and reliable
+python run_house_macro.py
+
+# Fixed MCP approach (more complex)
+python run_live_house_test_fixed.py
 ```
 
 ### Custom Timing:
 ```bash
-# Fast demo (1 second between steps)
-python run_live_house_test.py --delay 1.0
+# For macro approach - edit STEP_DELAY in house_modeling_macro.FCMacro
+# Then run:
+python run_house_macro.py
 
-# Slow demo (5 seconds between steps for detailed viewing)
-python run_live_house_test.py --delay 5.0
-
-# Very slow demo (10 seconds - great for presentations)
-python run_live_house_test_mcp.py --delay 10.0
+# For MCP approach - use delay parameter
+python run_live_house_test_fixed.py --delay 1.0   # Fast (1s steps)
+python run_live_house_test_fixed.py --delay 5.0   # Slow (5s steps)
 ```
 
-### With Virtual Environment:
+### Direct FreeCAD Macro:
 ```bash
-# Activate the virtual environment first
-source venv/bin/activate
-
-# Then run the test
-python run_live_house_test.py --delay 3.0
+# Run macro directly in FreeCAD
+./FreeCAD_1.0.0-conda-Linux-x86_64-py311.AppImage --run-macro house_modeling_macro.FCMacro
 ```
 
-## What You'll See
+## 🔧 Requirements
 
-1. **FreeCAD GUI opens** with the startup screen
-2. **Foundation appears** as a flat rectangular slab
-3. **Walls are created one by one:**
-   - Front wall appears and moves into position
-   - Back wall appears and moves into position  
-   - Left wall appears and moves into position
-   - Right wall appears and moves into position
-4. **Window and door openings** are created (they appear as cut-out boxes)
-5. **Test completes** - FreeCAD remains open for inspection
+- **FreeCAD AppImage** must be in project root: `FreeCAD_1.0.0-conda-Linux-x86_64-py311.AppImage`
+- **Python environment** with MCP-FreeCAD dependencies (for MCP approach)
+- **GUI environment** (X11/Wayland) for visual display
 
-## Interactive Features
+## 🎬 What You'll See
 
-- **Rotate the view** in FreeCAD to see the house from different angles
-- **Zoom in/out** to inspect details
-- **Use the tree view** to see all created objects
-- **Modify objects** if you want to experiment
-- **Press Ctrl+C** in the terminal to exit and close FreeCAD
+When running either test, you'll watch:
 
-## Troubleshooting
+1. **🚀 FreeCAD starting** with splash screen
+2. **📄 New document creation** 
+3. **🏗️ Foundation appearing** (brown rectangular base)
+4. **🧱 Walls rising** one by one (red brick walls)
+5. **🪟 Windows appearing** (blue transparent openings)
+6. **🚪 Door being cut** (blue transparent opening)
+7. **🎨 Final view adjustment** (isometric view, fit all)
 
-### FreeCAD doesn't start:
-- Ensure the AppImage exists: `ls -la FreeCAD_1.0.0-conda-Linux-x86_64-py311.AppImage`
-- Make sure it's executable: `chmod +x FreeCAD_1.0.0-conda-Linux-x86_64-py311.AppImage`
+Each step has a delay (default 2 seconds) so you can follow the construction process!
 
-### Connection issues:
-- Try the alternative runner if one doesn't work
-- Check that no other FreeCAD instance is running
-- Wait a bit longer for FreeCAD to fully start
+## 🐛 Troubleshooting
 
-### Import errors:
-- Activate the virtual environment: `source venv/bin/activate`
-- Install dependencies: `pip install -r requirements.txt`
+### Error: "No module named 'FreeCAD'"
+- **Solution:** Use `run_house_macro.py` (recommended) or the fixed MCP version
+- **Cause:** Original scripts tried to import FreeCAD from outside FreeCAD
 
-## Technical Details
+### Error: "FreeCAD AppImage not found"
+- **Solution:** Ensure `FreeCAD_1.0.0-conda-Linux-x86_64-py311.AppImage` is in project root
+- **Check:** `ls -la FreeCAD_*.AppImage`
 
-### House Specifications:
-- **Foundation:** 10m × 8m × 0.3m concrete slab
-- **Walls:** 3m high, 0.3m thick brick construction
-- **Windows:** 2 front windows, 1.2m × 1.5m each
-- **Door:** 1 front door, 0.9m × 2.1m
-- **Total objects created:** ~8 objects (foundation + 4 walls + 2 windows + 1 door)
+### Error: Connection issues (MCP approach)
+- **Solution:** Try the macro approach instead: `python run_house_macro.py`
+- **Alternative:** Check FreeCAD is properly started before connection attempts
 
-### Architecture Differences:
-- **Direct approach:** Uses tool providers directly, simpler but less realistic
-- **MCP approach:** Uses full server architecture, more realistic to actual MCP usage
+### FreeCAD doesn't show GUI
+- **Solution:** Ensure you're in a GUI environment (not headless SSH)
+- **Check:** Try `echo $DISPLAY` - should show something like `:0`
 
-### Performance:
-- **Startup time:** ~8-10 seconds (FreeCAD loading)
-- **Modeling time:** ~15-30 seconds (depending on delay setting)
-- **Total time:** ~30-45 seconds for complete demo
+## 📊 Comparison
 
-## Educational Value
+| Approach | Reliability | Setup Complexity | MCP Demo Value |
+|----------|-------------|------------------|----------------|
+| **Macro** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
+| **Fixed MCP** | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
 
-These tests demonstrate:
-- ✅ **Real-world MCP-FreeCAD integration**
-- ✅ **Step-by-step 3D modeling workflow**
-- ✅ **Tool chaining and sequencing**
-- ✅ **GUI interaction with programmatic control**
-- ✅ **Error handling in live environment**
-- ✅ **Performance characteristics**
+**Recommendation:** Start with the **macro approach** for reliability, then try the **MCP approach** to see the full connection architecture in action!
 
-Perfect for:
-- 🎯 **Demonstrations and presentations**
-- 🎯 **Learning the MCP-FreeCAD workflow**
-- 🎯 **Testing tool integration**
-- 🎯 **Debugging modeling sequences**
-- 🎯 **Validating real-world performance**
+## 🎯 Next Steps
 
-## Next Steps
+After running the live house test:
 
-After running these tests, you can:
-- Modify the house specifications in the code
-- Add more complex features (roof, stairs, etc.)
-- Experiment with different materials and textures
-- Use the created model as a starting point for your own designs
-- Integrate these patterns into your own MCP-FreeCAD applications
-
-Enjoy watching your house come to life! 🏠✨ 
+1. **🔍 Inspect the model** - Rotate, zoom, explore the 3D house
+2. **✏️ Modify objects** - Try changing dimensions in the tree view
+3. **💾 Export the model** - Save as STL, STEP, or other formats
+4. **🔧 Modify the code** - Customize house dimensions, add rooms, etc.
+5. **🚀 Build your own tests** - Use this as a template for other models!

@@ -1,6 +1,6 @@
 """Tool Registry - Centralized tool registration and management"""
 
-from typing import Dict, List, Optional, Any, Callable
+from typing import Dict, List, Optional, Any, Callable, Tuple
 from dataclasses import dataclass, field
 import json
 import FreeCAD
