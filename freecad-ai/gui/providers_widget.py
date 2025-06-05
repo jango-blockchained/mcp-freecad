@@ -439,6 +439,15 @@ class ProvidersWidget(QtWidgets.QWidget):
         self.test_connection_btn.clicked.connect(self._test_connection)
         actions_layout.addWidget(self.test_connection_btn)
 
+        # Retry service connection button for debugging
+        self.retry_service_btn = QtWidgets.QPushButton("Retry Service")
+        self.retry_service_btn.setStyleSheet(
+            "QPushButton { background-color: #FF9800; color: white; padding: 8px; }"
+        )
+        self.retry_service_btn.setToolTip("Try to reconnect to provider service")
+        self.retry_service_btn.clicked.connect(self._retry_provider_service)
+        actions_layout.addWidget(self.retry_service_btn)
+
         actions_layout.addStretch()
         config_layout.addLayout(actions_layout)
 
@@ -1235,7 +1244,10 @@ class ProvidersWidget(QtWidgets.QWidget):
                 log_message("Provider service is available", "SUCCESS")
             else:
                 log_message("Provider service not available", "ERROR")
-                self._test_connection_finished(False, "No provider service")
+                log_message("This means set_provider_service() was never called", "DEBUG")
+                log_message("or the provider service failed to initialize", "DEBUG")
+                log_message("Check FreeCAD console for 'Setting up provider service' messages", "DEBUG")
+                self._test_connection_finished(False, "No provider service - check console for details")
                 return
 
             # Step 3: Initialize provider
@@ -1586,6 +1598,40 @@ class ProvidersWidget(QtWidgets.QWidget):
                     else:
                         status_item.setForeground(QtGui.QColor("#FF9800"))
                 break
+
+    def _retry_provider_service(self):
+        """Try to reconnect to the provider service."""
+        try:
+            # Try to get provider service from parent widget
+            parent_widget = self.parent()
+            while parent_widget and not hasattr(parent_widget, 'get_provider_service'):
+                parent_widget = parent_widget.parent()
+
+            if parent_widget and hasattr(parent_widget, 'get_provider_service'):
+                provider_service = parent_widget.get_provider_service()
+                if provider_service:
+                    self.set_provider_service(provider_service)
+                    QtWidgets.QMessageBox.information(
+                        self,
+                        "Success",
+                        "Provider service reconnected successfully!"
+                    )
+                    return
+
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Error",
+                "Could not find provider service in parent widgets.\n\n"
+                "The provider service may have failed to initialize.\n"
+                "Check the FreeCAD console for error messages."
+            )
+
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Error",
+                f"Error trying to reconnect provider service:\n\n{str(e)}"
+            )
 
     def get_active_providers(self):
         """Get list of active providers."""

@@ -27,8 +27,14 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         self.agent_manager = None
         self._init_agent_manager()
 
-        self._setup_ui()
+        # Setup provider service BEFORE UI
         self._setup_provider_service()
+
+        # Setup UI
+        self._setup_ui()
+
+        # Connect widgets to services after both are initialized
+        self._connect_widgets_to_service()
 
         # Set flexible sizing
         self.setMinimumWidth(350)
@@ -91,27 +97,38 @@ class MCPMainWidget(QtWidgets.QDockWidget):
     def _setup_provider_service(self):
         """Setup the provider integration service."""
         try:
+            print("FreeCAD AI: Setting up provider service...")
             from ..ai.provider_integration_service import get_provider_service
 
             self.provider_service = get_provider_service()
+            print(f"FreeCAD AI: Provider service created: {self.provider_service is not None}")
 
-            # Connect provider service signals to update status
-            self.provider_service.provider_status_changed.connect(
-                self._on_provider_status_changed
-            )
-            self.provider_service.providers_updated.connect(self._on_providers_updated)
+            if self.provider_service:
+                # Connect provider service signals to update status
+                self.provider_service.provider_status_changed.connect(
+                    self._on_provider_status_changed
+                )
+                self.provider_service.providers_updated.connect(self._on_providers_updated)
+                print("FreeCAD AI: Provider service signals connected")
 
-            # Initialize providers from configuration with multiple attempts
-            QtCore.QTimer.singleShot(
-                1000, self.provider_service.initialize_providers_from_config
-            )
-            # Retry after 3 seconds if first attempt fails
-            QtCore.QTimer.singleShot(3000, self._retry_provider_initialization)
+                # Initialize providers from configuration with multiple attempts
+                QtCore.QTimer.singleShot(
+                    1000, self.provider_service.initialize_providers_from_config
+                )
+                # Retry after 3 seconds if first attempt fails
+                QtCore.QTimer.singleShot(3000, self._retry_provider_initialization)
+                print("FreeCAD AI: Provider service initialization scheduled")
+            else:
+                print("FreeCAD AI: Warning - provider service is None")
 
         except ImportError as e:
             if hasattr(self, "status_label"):
                 self.status_label.setText(f"Warning: {e}")
             print(f"FreeCAD AI: Provider service unavailable - {e}")
+        except Exception as e:
+            print(f"FreeCAD AI: Error setting up provider service - {e}")
+            import traceback
+            print(f"FreeCAD AI: Traceback: {traceback.format_exc()}")
 
     def _on_provider_status_changed(
         self, provider_name: str, status: str, message: str
@@ -171,17 +188,13 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             from .settings_widget import SettingsWidget
             from .agent_control_widget import AgentControlWidget
 
-            # Create widgets with provider service integration
+            # Create widgets
             self.connection_widget = ConnectionWidget()
             self.providers_widget = ProvidersWidget()
             self.conversation_widget = ConversationWidget()
             self.settings_widget = SettingsWidget()
             self.tools_widget = ToolsWidget()  # Use compact tools widget
             self.agent_control_widget = AgentControlWidget()
-
-            # Connect widgets to provider service if available
-            if self.provider_service:
-                self._connect_widgets_to_service()
 
             # Add tabs in logical order (removed Logs)
             self.tab_widget.addTab(self.providers_widget, "Providers")
@@ -209,9 +222,16 @@ class MCPMainWidget(QtWidgets.QDockWidget):
     def _connect_widgets_to_service(self):
         """Connect GUI widgets to the provider service."""
         try:
+            print(f"FreeCAD AI: Connecting widgets to services...")
+            print(f"FreeCAD AI: Provider service available: {self.provider_service is not None}")
+            print(f"FreeCAD AI: Agent manager available: {self.agent_manager is not None}")
+
             # Connect providers widget to manage providers and API keys
             if hasattr(self.providers_widget, "set_provider_service"):
                 self.providers_widget.set_provider_service(self.provider_service)
+                print("FreeCAD AI: Provider service connected to providers widget")
+            else:
+                print("FreeCAD AI: Warning - providers widget has no set_provider_service method")
 
             # Connect providers widget API key changes to service
             if hasattr(self.providers_widget, "api_key_changed"):
@@ -222,6 +242,9 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             # Connect conversation widget to get provider updates
             if hasattr(self.conversation_widget, "set_provider_service"):
                 self.conversation_widget.set_provider_service(self.provider_service)
+                print("FreeCAD AI: Provider service connected to conversation widget")
+            else:
+                print("FreeCAD AI: Warning - conversation widget has no set_provider_service method")
 
             # Connect conversation widget to agent manager
             if self.agent_manager and hasattr(self.conversation_widget, "set_agent_manager"):
