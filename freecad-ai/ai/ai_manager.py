@@ -27,12 +27,28 @@ class AIManager:
     ) -> bool:
         """Add an AI provider."""
         try:
+            # Extract model from config if provided
+            model = None
+            provider_kwargs = {}
+            if config:
+                model = config.get("model")
+                provider_kwargs = {k: v for k, v in config.items() if k != "model"}
+
             if provider_type.lower() == "claude":
-                provider = ClaudeProvider(api_key, config)
+                if model:
+                    provider = ClaudeProvider(api_key, model, **provider_kwargs)
+                else:
+                    provider = ClaudeProvider(api_key, **provider_kwargs)
             elif provider_type.lower() == "gemini":
-                provider = GeminiProvider(api_key, config)
+                if model:
+                    provider = GeminiProvider(api_key, model, **provider_kwargs)
+                else:
+                    provider = GeminiProvider(api_key, **provider_kwargs)
             elif provider_type.lower() == "openrouter":
-                provider = OpenRouterProvider(api_key, config)
+                if model:
+                    provider = OpenRouterProvider(api_key, model, **provider_kwargs)
+                else:
+                    provider = OpenRouterProvider(api_key, **provider_kwargs)
             else:
                 self.logger.error(f"Unknown provider type: {provider_type}")
                 return False

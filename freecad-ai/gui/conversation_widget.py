@@ -34,7 +34,7 @@ class ConversationWidget(QtWidgets.QWidget):
         # Initialize as None first
         self.ai_manager = None
         self.config_manager = None
-        
+
         # Try to import AI Manager
         try:
             # Try relative import first
@@ -1298,25 +1298,35 @@ RESPONSE STYLE:
         self.provider_combo.clear()
 
         providers_found = False
+        added_providers = set()  # Track added providers to avoid duplicates
 
-        # Get providers from service
+        # Get providers from service (these use display names like "Google")
         if self.provider_service:
             try:
                 providers = self.provider_service.get_all_providers()
                 if providers:
                     for provider_name in providers.keys():
-                        if self.provider_combo.findText(provider_name) == -1:
-                            self.provider_combo.addItem(provider_name)
+                        display_name = self._get_provider_display_name(provider_name)
+                        normalized_name = display_name.lower()
+                        if normalized_name not in added_providers:
+                            self.provider_combo.addItem(display_name)
+                            added_providers.add(normalized_name)
                     providers_found = True
             except Exception as e:
                 print(f"Error getting providers from service: {e}")
 
-        # Get providers from AI manager
+        # Get providers from AI manager (these use internal names like "google_main")
         if self.ai_manager:
             try:
-                for provider_name in self.ai_manager.providers.keys():
-                    if self.provider_combo.findText(provider_name) == -1:
-                        self.provider_combo.addItem(provider_name)
+                for ai_provider_name in self.ai_manager.providers.keys():
+                    # Convert AI manager internal names back to display names
+                    # e.g., "google_main" -> "Google"
+                    base_name = ai_provider_name.replace("_main", "")
+                    display_name = self._get_provider_display_name(base_name)
+                    normalized_name = display_name.lower()
+                    if normalized_name not in added_providers:
+                        self.provider_combo.addItem(display_name)
+                        added_providers.add(normalized_name)
                         providers_found = True
             except Exception as e:
                 print(f"Error getting providers from AI manager: {e}")
@@ -1329,7 +1339,10 @@ RESPONSE STYLE:
         if self.provider_combo.count() == 0 and self.config_manager:
             default_providers = ["Anthropic", "OpenAI", "Google", "OpenRouter"]
             for provider in default_providers:
-                self.provider_combo.addItem(provider)
+                normalized_name = provider.lower()
+                if normalized_name not in added_providers:
+                    self.provider_combo.addItem(provider)
+                    added_providers.add(normalized_name)
             print("ConversationWidget: Added default providers as fallback")
 
         # Restore previous selection if available
@@ -1357,10 +1370,18 @@ RESPONSE STYLE:
         self.provider_service = provider_service
 
         if provider_service:
+            # Connect to provider service signals
             provider_service.provider_status_changed.connect(
                 self._on_provider_status_changed
             )
             provider_service.providers_updated.connect(self.refresh_providers)
+
+            # Get the AI manager from provider service instead of creating our own
+            if hasattr(provider_service, 'get_ai_manager'):
+                self.ai_manager = provider_service.get_ai_manager()
+                print("ConversationWidget: Using AI manager from provider service")
+            else:
+                print("ConversationWidget: Provider service has no AI manager - using local one")
 
             # Initial refresh
             self.refresh_providers()

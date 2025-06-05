@@ -96,30 +96,30 @@ if not providers_imported:
 # Final fallback: Create dummy classes if all imports fail
 if not providers_imported:
     logging.error("Creating dummy AI classes as fallback")
-    
+
     class AIManager:
-        def __init__(self): 
+        def __init__(self):
             self.providers = {}
             logging.warning("Using dummy AIManager - no real functionality")
-        def add_provider(self, **kwargs): 
+        def add_provider(self, **kwargs):
             logging.warning("Dummy AIManager: add_provider called")
             return False
-        def remove_provider(self, name): 
+        def remove_provider(self, name):
             logging.warning("Dummy AIManager: remove_provider called")
             return False
-        def get_providers(self): 
+        def get_providers(self):
             return {}
 
     class ClaudeProvider:
-        def __init__(self, **kwargs): 
+        def __init__(self, **kwargs):
             logging.warning("Using dummy ClaudeProvider")
 
     class GeminiProvider:
-        def __init__(self, **kwargs): 
+        def __init__(self, **kwargs):
             logging.warning("Using dummy GeminiProvider")
 
     class OpenRouterProvider:
-        def __init__(self, **kwargs): 
+        def __init__(self, **kwargs):
             logging.warning("Using dummy OpenRouterProvider")
 
 
@@ -529,6 +529,10 @@ class ProviderIntegrationService(QtCore.QObject):
             self.logger.error(
                 f"Error updating provider {provider_name} from settings: {e}"
             )
+
+    def get_ai_manager(self):
+        """Get the AI manager instance."""
+        return self.ai_manager
 
     def send_message_to_provider(
         self, provider_name: str, message: str, context: Optional[Dict] = None
