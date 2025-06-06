@@ -1,48 +1,132 @@
 """Main Widget for FreeCAD AI FreeCAD Addon"""
 
-from PySide2 import QtCore, QtWidgets
+import FreeCAD
+
+# Safe Qt imports with comprehensive fallback to prevent crashes
+try:
+    from PySide2 import QtCore, QtWidgets
+    HAS_PYSIDE2 = True
+    FreeCAD.Console.PrintMessage("FreeCAD AI: Using PySide2\n")
+except ImportError:
+    try:
+        from PySide import QtCore
+        from PySide import QtGui as QtWidgets
+        HAS_PYSIDE2 = False
+        FreeCAD.Console.PrintMessage("FreeCAD AI: Using PySide (fallback)\n")
+    except ImportError:
+        FreeCAD.Console.PrintError("FreeCAD AI: No Qt bindings available - minimal functionality\n")
+        HAS_PYSIDE2 = False
+        # Create minimal dummy classes to prevent crashes
+        class QtWidgets:
+            class QDockWidget:
+                def __init__(self, *args, **kwargs): pass
+                def setAllowedAreas(self, *args): pass
+                def setFeatures(self, *args): pass
+                def setWidget(self, widget): pass
+                def setMinimumWidth(self, width): pass
+                def resize(self, width, height): pass
+            class QWidget:
+                def __init__(self, *args, **kwargs): pass
+            class QVBoxLayout:
+                def __init__(self, *args, **kwargs): pass
+                def addWidget(self, widget): pass
+                def addLayout(self, layout): pass
+                def setSpacing(self, spacing): pass
+                def setContentsMargins(self, *args): pass
+            class QHBoxLayout:
+                def __init__(self, *args, **kwargs): pass
+                def addWidget(self, widget): pass
+                def addStretch(self): pass
+            class QLabel:
+                def __init__(self, *args, **kwargs): pass
+                def setStyleSheet(self, style): pass
+                def setText(self, text): pass
+            class QTabWidget:
+                def __init__(self, *args, **kwargs): pass
+                def setUsesScrollButtons(self, value): pass
+                def setElideMode(self, mode): pass
+        class QtCore:
+            class Qt:
+                RightDockWidgetArea = None
+                LeftDockWidgetArea = None
+                ElideRight = None
+            class QTimer:
+                @staticmethod
+                def singleShot(interval, callback): pass
+            class QObject:
+                def __init__(self): pass
 
 
 class MCPMainWidget(QtWidgets.QDockWidget):
     """Main widget for FreeCAD AI addon."""
 
     def __init__(self, parent=None):
-        super(MCPMainWidget, self).__init__("FreeCAD AI", parent)
+        try:
+            FreeCAD.Console.PrintMessage("FreeCAD AI: Initializing main widget...\n")
 
-        self.setAllowedAreas(
-            QtCore.Qt.LeftDockWidgetArea | QtCore.Qt.RightDockWidgetArea
-        )
-        self.setFeatures(
-            QtWidgets.QDockWidget.DockWidgetMovable
-            | QtWidgets.QDockWidget.DockWidgetFloatable
-        )
+            super(MCPMainWidget, self).__init__("FreeCAD AI", parent)
 
-        self.main_widget = QtWidgets.QWidget()
-        self.setWidget(self.main_widget)
+            # Set dock properties with error handling
+            try:
+                if hasattr(QtCore.Qt, 'LeftDockWidgetArea') and hasattr(QtCore.Qt, 'RightDockWidgetArea'):
+                    self.setAllowedAreas(
+                        QtCore.Qt.LeftDockWidgetArea | QtCore.Qt.RightDockWidgetArea
+                    )
 
-        # Initialize provider service
-        self.provider_service = None
+                if hasattr(QtWidgets.QDockWidget, 'DockWidgetMovable') and hasattr(QtWidgets.QDockWidget, 'DockWidgetFloatable'):
+                    self.setFeatures(
+                        QtWidgets.QDockWidget.DockWidgetMovable
+                        | QtWidgets.QDockWidget.DockWidgetFloatable
+                    )
+            except Exception as e:
+                FreeCAD.Console.PrintWarning(f"FreeCAD AI: Could not set dock properties: {e}\n")
 
-        # Initialize agent manager
-        self.agent_manager = None
-        self._init_agent_manager()
+            self.main_widget = QtWidgets.QWidget()
+            self.setWidget(self.main_widget)
 
-        # Setup provider service BEFORE UI
-        self._setup_provider_service()
+            # Initialize services safely
+            self.provider_service = None
+            self.agent_manager = None
 
-        # Setup UI
-        self._setup_ui()
+            # Setup components with error handling
+            try:
+                self._init_agent_manager()
+            except Exception as e:
+                FreeCAD.Console.PrintWarning(f"FreeCAD AI: Agent manager init failed: {e}\n")
 
-        # Connect widgets to services AFTER provider service is set up
-        # Use a delayed connection to ensure provider service is ready
-        QtCore.QTimer.singleShot(500, self._connect_widgets_to_service)
+            try:
+                self._setup_provider_service()
+            except Exception as e:
+                FreeCAD.Console.PrintWarning(f"FreeCAD AI: Provider service init failed: {e}\n")
 
-        # Set flexible sizing
-        self.setMinimumWidth(350)
-        self.resize(450, 700)
+            try:
+                self._setup_ui()
+            except Exception as e:
+                FreeCAD.Console.PrintError(f"FreeCAD AI: UI setup failed: {e}\n")
 
-        # Load persisted mode
-        self._load_persisted_mode()
+            # Connect widgets with delay and error handling
+            if HAS_PYSIDE2 and hasattr(QtCore, 'QTimer'):
+                QtCore.QTimer.singleShot(500, self._connect_widgets_to_service_safe)
+
+            # Set sizing safely
+            try:
+                self.setMinimumWidth(350)
+                self.resize(450, 700)
+            except Exception as e:
+                FreeCAD.Console.PrintWarning(f"FreeCAD AI: Could not set widget size: {e}\n")
+
+            # Load persisted mode safely
+            try:
+                self._load_persisted_mode()
+            except Exception as e:
+                FreeCAD.Console.PrintWarning(f"FreeCAD AI: Could not load persisted mode: {e}\n")
+
+            FreeCAD.Console.PrintMessage("FreeCAD AI: Main widget initialization complete\n")
+
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"FreeCAD AI: Critical initialization error: {e}\n")
+            import traceback
+            FreeCAD.Console.PrintError(f"FreeCAD AI: Traceback: {traceback.format_exc()}\n")
 
     def _setup_ui(self):
         """Setup the user interface."""
@@ -245,6 +329,13 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 tab_layout = QtWidgets.QVBoxLayout(tab)
                 tab_layout.addWidget(QtWidgets.QLabel(f"{name} - Loading..."))
                 self.tab_widget.addTab(tab, name)
+
+    def _connect_widgets_to_service_safe(self):
+        """Safely connect widgets to services with error handling."""
+        try:
+            self._connect_widgets_to_service()
+        except Exception as e:
+            FreeCAD.Console.PrintWarning(f"FreeCAD AI: Widget connection failed: {e}\n")
 
     def _connect_widgets_to_service(self):
         """Connect GUI widgets to the provider service."""

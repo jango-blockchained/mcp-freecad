@@ -136,14 +136,6 @@ if not providers_imported:
 class ProviderIntegrationService(QtCore.QObject):
     """Service that coordinates AI provider integration across the addon."""
 
-    # Signals for provider status changes
-    provider_added = QtCore.Signal(str, str)  # provider_name, provider_type
-    provider_removed = QtCore.Signal(str)  # provider_name
-    provider_status_changed = QtCore.Signal(
-        str, str, str
-    )  # provider_name, status, message
-    providers_updated = QtCore.Signal()  # general providers list updated
-
     _instance = None
 
     def __new__(cls):
@@ -152,12 +144,42 @@ class ProviderIntegrationService(QtCore.QObject):
             cls._instance = super(ProviderIntegrationService, cls).__new__(cls)
         return cls._instance
 
+    # Signals for provider status changes - with defensive initialization
     def __init__(self):
         """Initialize the provider integration service."""
+        # Check if already initialized (singleton)
         if hasattr(self, "_initialized"):
             return
 
-        super(ProviderIntegrationService, self).__init__()
+        # Initialize Qt base class with error handling
+        try:
+            super(ProviderIntegrationService, self).__init__()
+        except Exception as e:
+            logging.error(f"Failed to initialize QtCore.QObject: {e}")
+            # Continue without Qt inheritance as fallback
+
+        # Initialize signals with error handling
+        try:
+            self.provider_added = QtCore.Signal(str, str)  # provider_name, provider_type
+            self.provider_removed = QtCore.Signal(str)  # provider_name
+            self.provider_status_changed = QtCore.Signal(
+                str, str, str
+            )  # provider_name, status, message
+            self.providers_updated = QtCore.Signal()  # general providers list updated
+        except Exception as e:
+            logging.error(f"Failed to create Qt signals: {e}")
+            # Create dummy signals as fallback
+            class DummySignal:
+                def emit(self, *args):
+                    logging.debug(f"DummySignal.emit called with args: {args}")
+                def connect(self, callback):
+                    logging.debug(f"DummySignal.connect called with callback: {callback}")
+
+            self.provider_added = DummySignal()
+            self.provider_removed = DummySignal()
+            self.provider_status_changed = DummySignal()
+            self.providers_updated = DummySignal()
+
         self.logger = logging.getLogger(__name__)
 
         # Core components
@@ -326,10 +348,18 @@ class ProviderIntegrationService(QtCore.QObject):
                     provider_name, "initialized", "Provider ready"
                 )
 
-                # Automatically test connection
-                QtCore.QTimer.singleShot(
-                    500, lambda: self.test_provider_connection(provider_name)
-                )
+                # Automatically test connection with error handling
+                try:
+                    QtCore.QTimer.singleShot(
+                        500, lambda: self.test_provider_connection(provider_name)
+                    )
+                except Exception as e:
+                    self.logger.error(f"Failed to schedule connection test: {e}")
+                    # Fallback: test immediately without timer
+                    try:
+                        self.test_provider_connection(provider_name)
+                    except Exception as e2:
+                        self.logger.error(f"Immediate connection test also failed: {e2}")
 
                 return True
             else:
@@ -412,10 +442,19 @@ class ProviderIntegrationService(QtCore.QObject):
         # Update status to testing
         self._update_provider_status(provider_name, "testing", "Testing connection...")
 
-        # Perform async test
-        QtCore.QTimer.singleShot(
-            100, lambda: self._perform_connection_test(provider_name)
-        )
+        # Perform async test with error handling
+        try:
+            QtCore.QTimer.singleShot(
+                100, lambda: self._perform_connection_test(provider_name)
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to schedule connection test: {e}")
+            # Fallback: test immediately
+            try:
+                self._perform_connection_test(provider_name)
+            except Exception as e2:
+                self.logger.error(f"Immediate connection test failed: {e2}")
+                self._update_provider_status(provider_name, "error", f"Test failed: {str(e2)}")
 
     def _perform_connection_test(self, provider_name: str):
         """Perform the actual connection test."""
@@ -470,11 +509,19 @@ class ProviderIntegrationService(QtCore.QObject):
         if provider_name not in self.provider_status:
             self.provider_status[provider_name] = {}
 
+        # Update status with safe datetime handling
+        try:
+            timestamp = QtCore.QDateTime.currentDateTime().toString()
+        except Exception as e:
+            self.logger.error(f"Failed to get Qt timestamp: {e}")
+            import datetime
+            timestamp = datetime.datetime.now().isoformat()
+
         self.provider_status[provider_name].update(
             {
                 "status": status,
                 "message": message,
-                "last_test": QtCore.QDateTime.currentDateTime().toString(),
+                "last_test": timestamp,
             }
         )
 

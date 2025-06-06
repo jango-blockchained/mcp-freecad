@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 from .semantic_matcher import SemanticMatcher
-from .tool_capabilities import get_capability_registry
+from ..tools.tool_capabilities import get_capability_registry
 
 
 @dataclass

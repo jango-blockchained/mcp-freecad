@@ -17,7 +17,7 @@
         "args": [
           "-y",
           "@modelcontextprotocol/server-filesystem",
-          "/home/jango/Git/mcp-freecad/*"
+          "/home/jango/Git/mcp-freecad"
         ]
       }
     }

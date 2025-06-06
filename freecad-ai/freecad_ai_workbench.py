@@ -303,12 +303,12 @@ class MCPWorkbench(FreeCADGui.Workbench):
                 )
                 return
 
-            # Import and create the correct main widget with proper initialization
+            # Import and create the main widget with crash protection fixes applied
             try:
                 from gui.main_widget import MCPMainWidget
 
                 FreeCAD.Console.PrintMessage(
-                    "FreeCAD AI: Using new MCPMainWidget from gui.main_widget\n"
+                    "FreeCAD AI: Using crash-protected MCPMainWidget\n"
                 )
 
                 # Create main widget - this is a QDockWidget itself
@@ -320,7 +320,7 @@ class MCPWorkbench(FreeCADGui.Workbench):
                     QtCore.Qt.RightDockWidgetArea, dock_widget
                 )
                 FreeCAD.Console.PrintMessage(
-                    "FreeCAD AI: New main widget dock created successfully with proper provider service\n"
+                    "FreeCAD AI: Main widget dock created successfully with crash protection\n"
                 )
 
             except ImportError as e:
