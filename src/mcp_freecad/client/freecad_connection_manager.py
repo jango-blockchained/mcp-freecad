@@ -73,6 +73,7 @@ class FreeCADConnection:
     CONNECTION_SERVER = "server"
     CONNECTION_BRIDGE = "bridge"
     CONNECTION_RPC = "rpc"
+    CONNECTION_MOCK = "mock"
 
     def __init__(
         self,
@@ -128,6 +129,8 @@ class FreeCADConnection:
                 success = self._connect_bridge()
             elif method == self.CONNECTION_RPC:
                 success = self._connect_rpc()
+            elif method == self.CONNECTION_MOCK:
+                success = self._connect_mock()
 
             if success:
                 self.connection_type = method
@@ -167,6 +170,9 @@ class FreeCADConnection:
                     self.CONNECTION_RPC,
                     self.CONNECTION_SERVER,
                 ]
+            elif prefer_method == self.CONNECTION_MOCK:
+                # Mock connection should be tried exclusively when preferred
+                return [self.CONNECTION_MOCK]
 
         # Default order: RPC first (higher performance), then Server, then Bridge
         return [self.CONNECTION_RPC, self.CONNECTION_SERVER, self.CONNECTION_BRIDGE]
@@ -231,6 +237,16 @@ class FreeCADConnection:
             logger.debug(f"Failed to connect to FreeCAD XML-RPC server: {e}")
             self._rpc = None
             return False
+
+    def _connect_mock(self) -> bool:
+        """
+        Connect using mock connection
+
+        Returns:
+            bool: True if successful
+        """
+        # Implementation of _connect_mock method
+        return True
 
     def is_connected(self) -> bool:
         """
@@ -340,6 +356,8 @@ class FreeCADConnection:
             if not self._rpc:
                 return {"error": "RPC client not initialized correctly"}
             return self._execute_rpc_command(command_type, params)
+        elif self.connection_type == self.CONNECTION_MOCK:
+            return self._execute_mock_command(command_type, params)
         else:
             return {"error": f"Unknown connection type: {self.connection_type}"}
 
@@ -509,6 +527,48 @@ class FreeCADConnection:
 
         except Exception as e:
             return {"error": str(e)}
+
+    def _execute_mock_command(
+        self, command_type: str, params: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Execute a command using the mock connection
+
+        Args:
+            command_type: Command type
+            params: Command parameters
+
+        Returns:
+            dict: Command response
+        """
+        # Provide simple in-memory mock behavior for testing
+        if command_type == "ping":
+            return {"pong": True, "mock": True}
+
+        elif command_type == "get_version":
+            return {"success": True, "version": "Mock 0.0.1"}
+
+        elif command_type == "create_document":
+            doc_name = params.get("name", "Unnamed")
+            # Pretend document creation succeeds
+            return {
+                "success": True,
+                "document": {"name": doc_name, "label": doc_name},
+            }
+
+        elif command_type == "create_object":
+            obj_type = params.get("type", "object")
+            return {
+                "success": True,
+                "object": {"name": f"Mock{obj_type.title()}", "type": obj_type},
+            }
+
+        elif command_type == "export_document":
+            file_path = params.get("path", "mock_output.stl")
+            return {"success": True, "path": file_path}
+
+        else:
+            return {"error": f"Unsupported mock command: {command_type}"}
 
     # Convenience methods for common operations
 

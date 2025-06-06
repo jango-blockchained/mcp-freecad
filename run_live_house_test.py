@@ -106,8 +106,8 @@ class LiveHouseTestRunner:
             # Start FreeCAD in the background
             self.freecad_process = subprocess.Popen(
                 [str(freecad_path)],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                                                                                                                                stdout=subprocess.PIPE,
+                                                                                                                                stderr=subprocess.PIPE
             )
 
             # Give FreeCAD time to start

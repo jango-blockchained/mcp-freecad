@@ -226,15 +226,9 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 )
                 print("FreeCAD AI: Provider service signals connected")
 
-                # Defer provider initialization to avoid crashes during workbench activation
-                # Initialize providers directly without timers to avoid crashes
-                try:
-                    print("FreeCAD AI: Initializing providers directly (no timers to avoid crashes)")
-                    self.provider_service.initialize_providers_from_config()
-                except Exception as e:
-                    print(f"FreeCAD AI: Provider initialization failed: {e}")
-                    import traceback
-                    print(f"FreeCAD AI: Traceback: {traceback.format_exc()}")
+                # Don't initialize providers here - let them be initialized later
+                # when the UI is fully ready to avoid crashes during workbench activation
+                print("FreeCAD AI: Deferring provider initialization until UI is ready")
             else:
                 print("FreeCAD AI: Warning - provider service is None")
 
@@ -252,6 +246,10 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         self, provider_name: str, status: str, message: str
     ):
         """Handle provider status changes."""
+        # Check if status_label exists before using it
+        if not hasattr(self, "status_label"):
+            return
+
         if status == "connected":
             self.status_label.setText(f"✅ {provider_name}")
             self.status_label.setStyleSheet(
@@ -270,6 +268,10 @@ class MCPMainWidget(QtWidgets.QDockWidget):
 
     def _on_providers_updated(self):
         """Handle providers list update."""
+        # Check if status_label exists before using it
+        if not hasattr(self, "status_label"):
+            return
+
         if self.provider_service:
             active_count = len(self.provider_service.get_active_providers())
             total_count = len(self.provider_service.get_all_providers())
@@ -438,7 +440,8 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 print(f"FreeCAD AI: Error in final connection check: {e}")
 
         except Exception as e:
-            self.status_label.setText(f"⚠️ {e}")
+            if hasattr(self, "status_label"):
+                self.status_label.setText(f"⚠️ {e}")
             import traceback
 
             print(f"FreeCAD AI: Error connecting widgets: {e}")
@@ -449,12 +452,23 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         try:
             print("FreeCAD AI: Performing final connection check...")
 
-            # Force provider service to initialize providers if not done yet
-            if self.provider_service and hasattr(
-                self.provider_service, "initialize_providers_from_config"
-            ):
-                self.provider_service.initialize_providers_from_config()
-                print("FreeCAD AI: Forced provider service initialization")
+            # Enable signals and initialize providers now that UI is ready
+            if self.provider_service:
+                try:
+                    # Enable signal emission first
+                    if hasattr(self.provider_service, "enable_signals"):
+                        self.provider_service.enable_signals()
+                        print("FreeCAD AI: Provider service signals enabled")
+
+                    # Now initialize providers
+                    if hasattr(self.provider_service, "initialize_providers_from_config"):
+                        print("FreeCAD AI: Initializing providers now that UI is ready...")
+                        self.provider_service.initialize_providers_from_config()
+                        print("FreeCAD AI: Provider service initialization complete")
+                except Exception as e:
+                    print(f"FreeCAD AI: Provider initialization failed: {e}")
+                    import traceback
+                    print(f"FreeCAD AI: Traceback: {traceback.format_exc()}")
 
             # Refresh conversation widget if available
             if hasattr(self.conversation_widget, "refresh_providers"):
@@ -554,11 +568,19 @@ class MCPMainWidget(QtWidgets.QDockWidget):
 
     def _on_agent_mode_changed(self, old_mode, new_mode):
         """Handle agent mode change callback."""
+        # Check if status_label exists before using it
+        if not hasattr(self, "status_label"):
+            return
+
         mode_display = "Chat" if new_mode.value == "chat" else "Agent"
         self.status_label.setText(f"Mode: {mode_display}")
 
     def _on_agent_state_changed(self, old_state, new_state):
         """Handle agent state change callback."""
+        # Check if status_label exists before using it
+        if not hasattr(self, "status_label"):
+            return
+
         # Update status based on execution state
         state_display = {
             "idle": "Ready",

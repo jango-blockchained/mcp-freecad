@@ -17,8 +17,7 @@ if addon_dir not in sys.path:
 import asyncio
 import logging
 from typing import Any, Callable, Dict, List, Optional
-
-from PySide2 import QtCore
+import datetime
 
 # Import using multiple strategies to handle different file locations
 ai_manager_imported = False
@@ -133,16 +132,13 @@ if not providers_imported:
             logging.warning("Using dummy OpenRouterProvider")
 
 
-class ProviderIntegrationService(QtCore.QObject):
+# SignalHolder class removed - Qt signals will be created dynamically when needed
+
+
+class ProviderIntegrationService:
     """Service that coordinates AI provider integration across the addon."""
 
     _instance = None
-
-    # Signals MUST be defined as class attributes in PySide2
-    provider_added = QtCore.Signal(str, str)  # provider_name, provider_type
-    provider_removed = QtCore.Signal(str)  # provider_name
-    provider_status_changed = QtCore.Signal(str, str, str)  # provider_name, status, message
-    providers_updated = QtCore.Signal()  # general providers list updated
 
     def __new__(cls):
         """Singleton pattern to ensure only one service instance."""
@@ -156,23 +152,6 @@ class ProviderIntegrationService(QtCore.QObject):
         if hasattr(self, "_initialized"):
             return
 
-        # Initialize Qt base class with error handling
-        try:
-            super(ProviderIntegrationService, self).__init__()
-        except Exception as e:
-            logging.error(f"Failed to initialize QtCore.QObject: {e}")
-            # Create dummy signals as fallback if Qt init fails
-            class DummySignal:
-                def emit(self, *args):
-                    logging.debug(f"DummySignal.emit called with args: {args}")
-                def connect(self, callback):
-                    logging.debug(f"DummySignal.connect called with callback: {callback}")
-
-            self.provider_added = DummySignal()
-            self.provider_removed = DummySignal()
-            self.provider_status_changed = DummySignal()
-            self.providers_updated = DummySignal()
-
         self.logger = logging.getLogger(__name__)
 
         # Core components
@@ -184,10 +163,90 @@ class ProviderIntegrationService(QtCore.QObject):
 
         # Connection callbacks
         self.status_callbacks: List[Callable] = []
+        self.provider_added_callbacks: List[Callable] = []
+        self.provider_removed_callbacks: List[Callable] = []
+        self.provider_status_changed_callbacks: List[Callable] = []
+        self.providers_updated_callbacks: List[Callable] = []
+
+        # Flag to prevent callback calls during early initialization
+        self._callbacks_enabled = False
 
         # Initialize service
         self._setup_config_manager()
         self._initialized = True
+
+    # Signal-like callback interface
+    @property
+    def provider_added(self):
+        """Signal-like interface for provider_added callbacks."""
+        class CallbackSignal:
+            def __init__(self, callbacks):
+                self.callbacks = callbacks
+            def connect(self, callback):
+                if callback not in self.callbacks:
+                    self.callbacks.append(callback)
+                logging.debug(f"Connected callback to provider_added: {callback}")
+            def emit(self, *args):
+                for callback in self.callbacks:
+                    try:
+                        callback(*args)
+                    except Exception as e:
+                        logging.error(f"Error in provider_added callback: {e}")
+        return CallbackSignal(self.provider_added_callbacks)
+
+    @property
+    def provider_removed(self):
+        """Signal-like interface for provider_removed callbacks."""
+        class CallbackSignal:
+            def __init__(self, callbacks):
+                self.callbacks = callbacks
+            def connect(self, callback):
+                if callback not in self.callbacks:
+                    self.callbacks.append(callback)
+                logging.debug(f"Connected callback to provider_removed: {callback}")
+            def emit(self, *args):
+                for callback in self.callbacks:
+                    try:
+                        callback(*args)
+                    except Exception as e:
+                        logging.error(f"Error in provider_removed callback: {e}")
+        return CallbackSignal(self.provider_removed_callbacks)
+
+    @property
+    def provider_status_changed(self):
+        """Signal-like interface for provider_status_changed callbacks."""
+        class CallbackSignal:
+            def __init__(self, callbacks):
+                self.callbacks = callbacks
+            def connect(self, callback):
+                if callback not in self.callbacks:
+                    self.callbacks.append(callback)
+                logging.debug(f"Connected callback to provider_status_changed: {callback}")
+            def emit(self, *args):
+                for callback in self.callbacks:
+                    try:
+                        callback(*args)
+                    except Exception as e:
+                        logging.error(f"Error in provider_status_changed callback: {e}")
+        return CallbackSignal(self.provider_status_changed_callbacks)
+
+    @property
+    def providers_updated(self):
+        """Signal-like interface for providers_updated callbacks."""
+        class CallbackSignal:
+            def __init__(self, callbacks):
+                self.callbacks = callbacks
+            def connect(self, callback):
+                if callback not in self.callbacks:
+                    self.callbacks.append(callback)
+                logging.debug(f"Connected callback to providers_updated: {callback}")
+            def emit(self, *args):
+                for callback in self.callbacks:
+                    try:
+                        callback(*args)
+                    except Exception as e:
+                        logging.error(f"Error in providers_updated callback: {e}")
+        return CallbackSignal(self.providers_updated_callbacks)
 
     def _setup_config_manager(self):
         """Setup configuration manager integration."""
@@ -277,7 +336,8 @@ class ProviderIntegrationService(QtCore.QObject):
             self.logger.info(
                 f"Initialized {initialized_count} providers from configuration"
             )
-            self.providers_updated.emit()
+            if self._callbacks_enabled:
+                self.providers_updated.emit()
             return initialized_count > 0
 
         except Exception as e:
@@ -335,11 +395,12 @@ class ProviderIntegrationService(QtCore.QObject):
                     "config": config,
                 }
 
-                # Emit signals
-                self.provider_added.emit(provider_name, provider_type)
-                self.provider_status_changed.emit(
-                    provider_name, "initialized", "Provider ready"
-                )
+                # Emit callbacks only if UI is ready
+                if self._callbacks_enabled:
+                    self.provider_added.emit(provider_name, provider_type)
+                    self.provider_status_changed.emit(
+                        provider_name, "initialized", "Provider ready"
+                    )
 
                 # Test connection directly without timer to avoid crashes
                 try:
@@ -407,9 +468,10 @@ class ProviderIntegrationService(QtCore.QObject):
             if provider_name in self.provider_status:
                 del self.provider_status[provider_name]
 
-            # Emit signals
-            self.provider_removed.emit(provider_name)
-            self.providers_updated.emit()
+            # Emit callbacks only if UI is ready
+            if self._callbacks_enabled:
+                self.provider_removed.emit(provider_name)
+                self.providers_updated.emit()
 
             return True
 
@@ -488,13 +550,8 @@ class ProviderIntegrationService(QtCore.QObject):
         if provider_name not in self.provider_status:
             self.provider_status[provider_name] = {}
 
-        # Update status with safe datetime handling
-        try:
-            timestamp = QtCore.QDateTime.currentDateTime().toString()
-        except Exception as e:
-            self.logger.error(f"Failed to get Qt timestamp: {e}")
-            import datetime
-            timestamp = datetime.datetime.now().isoformat()
+        # Update status with datetime handling
+        timestamp = datetime.datetime.now().isoformat()
 
         self.provider_status[provider_name].update(
             {
@@ -504,8 +561,9 @@ class ProviderIntegrationService(QtCore.QObject):
             }
         )
 
-        # Emit signal
-        self.provider_status_changed.emit(provider_name, status, message)
+        # Emit callbacks only if UI is ready
+        if self._callbacks_enabled:
+            self.provider_status_changed.emit(provider_name, status, message)
 
         # Call registered callbacks
         for callback in self.status_callbacks:
@@ -592,6 +650,13 @@ class ProviderIntegrationService(QtCore.QObject):
         except Exception as e:
             self.logger.error(f"Error sending message to provider {provider_name}: {e}")
             return f"Error: {str(e)}"
+
+    def enable_signals(self):
+        """Enable callback emission after UI is ready."""
+        self._callbacks_enabled = True
+        self.logger.info("Callbacks enabled")
+        # Emit an update callback to refresh any UI components
+        self.providers_updated.emit()
 
 
 # Global service instance
