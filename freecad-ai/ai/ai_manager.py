@@ -34,17 +34,21 @@ class AIManager:
                 model = config.get("model")
                 provider_kwargs = {k: v for k, v in config.items() if k != "model"}
 
-            if provider_type.lower() == "claude":
+            # Normalize provider type for consistent handling
+            normalized_type = provider_type.lower()
+            
+            # Handle both 'claude' and 'anthropic' as Claude provider
+            if normalized_type in ["claude", "anthropic"]:
                 if model:
                     provider = ClaudeProvider(api_key, model, **provider_kwargs)
                 else:
                     provider = ClaudeProvider(api_key, **provider_kwargs)
-            elif provider_type.lower() == "gemini":
+            elif normalized_type == "gemini":
                 if model:
                     provider = GeminiProvider(api_key, model, **provider_kwargs)
                 else:
                     provider = GeminiProvider(api_key, **provider_kwargs)
-            elif provider_type.lower() == "openrouter":
+            elif normalized_type == "openrouter":
                 if model:
                     provider = OpenRouterProvider(api_key, model, **provider_kwargs)
                 else:

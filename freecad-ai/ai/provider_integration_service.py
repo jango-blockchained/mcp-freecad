@@ -280,10 +280,11 @@ class ProviderIntegrationService(QtCore.QObject):
         try:
             normalized_name = self._normalize_provider_name(provider_name)
 
-            # Map provider names to types
+            # Map provider names to types - using 'anthropic' consistently
             provider_type_map = {
                 "openai": "openrouter",  # Using OpenRouter for OpenAI compatibility
-                "anthropic": "claude",
+                "anthropic": "anthropic",  # Use 'anthropic' consistently
+                "claude": "anthropic",     # Map 'claude' to 'anthropic' for backward compatibility
                 "google": "gemini",
                 "openrouter": "openrouter",
             }
@@ -291,7 +292,7 @@ class ProviderIntegrationService(QtCore.QObject):
             provider_type = provider_type_map.get(normalized_name, normalized_name)
             self.logger.info(f"Initializing {provider_name} as type {provider_type}")
 
-            # Add provider to AI manager with unique name
+            # Add provider to AI manager with consistent naming
             ai_manager_name = f"{normalized_name}_main"
             success = self.ai_manager.add_provider(
                 name=ai_manager_name,
