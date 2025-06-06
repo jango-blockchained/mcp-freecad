@@ -224,7 +224,7 @@ class MCPWorkbench(FreeCADGui.Workbench):
             # Create toolbar with available commands
             self._create_toolbar()
 
-            # Create dock widget for the interface
+            # Create dock widget immediately to avoid timer issues
             self._create_dock_widget()
 
             FreeCAD.Console.PrintMessage(

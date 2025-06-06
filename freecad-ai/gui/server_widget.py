@@ -442,7 +442,8 @@ class ServerWidget(QtWidgets.QWidget):
         """Handle restart server button click."""
         self._add_log("Restarting server...")
         self._on_stop_server()
-        QtCore.QTimer.singleShot(1000, self._on_start_server)
+        # Start server immediately to avoid QTimer crashes
+        self._on_start_server()
 
     def _update_status(self, status, is_running):
         """Update server status display."""

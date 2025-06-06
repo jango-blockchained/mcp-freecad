@@ -658,10 +658,7 @@ class ProvidersWidget(QtWidgets.QWidget):
                 )
                 # Refresh providers to update status
                 self._refresh_providers()
-                # Clear status after 2 seconds
-                QtCore.QTimer.singleShot(
-                    2000, lambda: self.api_key_status_label.setText("")
-                )
+                # Don't clear status - keep it visible for user reference
             else:
                 self.api_key_status_label.setText("❌ Save failed")
                 self.api_key_status_label.setStyleSheet(
@@ -1043,10 +1040,7 @@ class ProvidersWidget(QtWidgets.QWidget):
                     self.config_status_label.setStyleSheet(
                         "color: #4CAF50; font-size: 10px; padding: 2px;"
                     )
-                    # Clear status after 3 seconds
-                    QtCore.QTimer.singleShot(
-                        3000, lambda: self.config_status_label.setText("")
-                    )
+                    # Don't clear status - keep it visible for user reference
             except Exception as e:
                 self.config_status_label.setText(f"❌ Error: {str(e)[:30]}...")
                 self.config_status_label.setStyleSheet(
@@ -1114,10 +1108,7 @@ class ProvidersWidget(QtWidgets.QWidget):
                     self.config_status_label.setStyleSheet(
                         "color: #4CAF50; font-size: 10px; padding: 2px;"
                     )
-                    # Clear status after 3 seconds
-                    QtCore.QTimer.singleShot(
-                        3000, lambda: self.config_status_label.setText("")
-                    )
+                    # Don't clear status - keep it visible for user reference
             except Exception as e:
                 self.config_status_label.setText(f"❌ Error: {str(e)[:30]}...")
                 self.config_status_label.setStyleSheet(
@@ -1557,10 +1548,7 @@ class ProvidersWidget(QtWidgets.QWidget):
                     self.config_status_label.setStyleSheet(
                         "color: #4CAF50; font-size: 10px; padding: 2px;"
                     )
-                    # Clear status after 3 seconds
-                    QtCore.QTimer.singleShot(
-                        3000, lambda: self.config_status_label.setText("")
-                    )
+                    # Don't clear status - keep it visible for user reference
                 else:
                     QtWidgets.QMessageBox.warning(
                         self, "Error", "Failed to save configuration"

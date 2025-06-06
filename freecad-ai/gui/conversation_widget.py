@@ -634,10 +634,8 @@ class ConversationWidget(QtWidgets.QWidget):
                 if context_info:
                     full_message += f"\n\nCurrent FreeCAD State:\n{context_info}"
 
-            # Use a timer to make the AI call asynchronous and non-blocking
-            QtCore.QTimer.singleShot(
-                10, lambda: self._make_ai_call(full_message, context)
-            )
+            # Make the AI call directly to avoid QTimer crashes
+            self._make_ai_call(full_message, context)
 
         except Exception as e:
             self._remove_thinking_indicator()

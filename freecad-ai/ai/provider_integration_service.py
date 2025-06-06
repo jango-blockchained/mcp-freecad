@@ -138,13 +138,18 @@ class ProviderIntegrationService(QtCore.QObject):
 
     _instance = None
 
+    # Signals MUST be defined as class attributes in PySide2
+    provider_added = QtCore.Signal(str, str)  # provider_name, provider_type
+    provider_removed = QtCore.Signal(str)  # provider_name
+    provider_status_changed = QtCore.Signal(str, str, str)  # provider_name, status, message
+    providers_updated = QtCore.Signal()  # general providers list updated
+
     def __new__(cls):
         """Singleton pattern to ensure only one service instance."""
         if cls._instance is None:
             cls._instance = super(ProviderIntegrationService, cls).__new__(cls)
         return cls._instance
 
-    # Signals for provider status changes - with defensive initialization
     def __init__(self):
         """Initialize the provider integration service."""
         # Check if already initialized (singleton)
@@ -156,19 +161,7 @@ class ProviderIntegrationService(QtCore.QObject):
             super(ProviderIntegrationService, self).__init__()
         except Exception as e:
             logging.error(f"Failed to initialize QtCore.QObject: {e}")
-            # Continue without Qt inheritance as fallback
-
-        # Initialize signals with error handling
-        try:
-            self.provider_added = QtCore.Signal(str, str)  # provider_name, provider_type
-            self.provider_removed = QtCore.Signal(str)  # provider_name
-            self.provider_status_changed = QtCore.Signal(
-                str, str, str
-            )  # provider_name, status, message
-            self.providers_updated = QtCore.Signal()  # general providers list updated
-        except Exception as e:
-            logging.error(f"Failed to create Qt signals: {e}")
-            # Create dummy signals as fallback
+            # Create dummy signals as fallback if Qt init fails
             class DummySignal:
                 def emit(self, *args):
                     logging.debug(f"DummySignal.emit called with args: {args}")
@@ -348,18 +341,11 @@ class ProviderIntegrationService(QtCore.QObject):
                     provider_name, "initialized", "Provider ready"
                 )
 
-                # Automatically test connection with error handling
+                # Test connection directly without timer to avoid crashes
                 try:
-                    QtCore.QTimer.singleShot(
-                        500, lambda: self.test_provider_connection(provider_name)
-                    )
+                    self.test_provider_connection(provider_name)
                 except Exception as e:
-                    self.logger.error(f"Failed to schedule connection test: {e}")
-                    # Fallback: test immediately without timer
-                    try:
-                        self.test_provider_connection(provider_name)
-                    except Exception as e2:
-                        self.logger.error(f"Immediate connection test also failed: {e2}")
+                    self.logger.error(f"Connection test failed: {e}")
 
                 return True
             else:
@@ -442,19 +428,12 @@ class ProviderIntegrationService(QtCore.QObject):
         # Update status to testing
         self._update_provider_status(provider_name, "testing", "Testing connection...")
 
-        # Perform async test with error handling
+        # Perform test directly without timer to avoid crashes
         try:
-            QtCore.QTimer.singleShot(
-                100, lambda: self._perform_connection_test(provider_name)
-            )
+            self._perform_connection_test(provider_name)
         except Exception as e:
-            self.logger.error(f"Failed to schedule connection test: {e}")
-            # Fallback: test immediately
-            try:
-                self._perform_connection_test(provider_name)
-            except Exception as e2:
-                self.logger.error(f"Immediate connection test failed: {e2}")
-                self._update_provider_status(provider_name, "error", f"Test failed: {str(e2)}")
+            self.logger.error(f"Connection test failed: {e}")
+            self._update_provider_status(provider_name, "error", f"Test failed: {str(e)}")
 
     def _perform_connection_test(self, provider_name: str):
         """Perform the actual connection test."""

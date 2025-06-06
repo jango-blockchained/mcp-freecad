@@ -326,10 +326,8 @@ class AgentControlWidget(QtWidgets.QWidget):
             self.stop_btn.setEnabled(True)
 
             # TODO: Send command to agent manager
-            # For now, just simulate processing
-            QtCore.QTimer.singleShot(
-                2000, lambda: self._simulate_command_completion(command)
-            )
+            # Simulate processing immediately to avoid QTimer crashes
+            self._simulate_command_completion(command)
 
         except Exception as e:
             QtWidgets.QMessageBox.critical(

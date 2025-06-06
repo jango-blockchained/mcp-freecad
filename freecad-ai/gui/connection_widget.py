@@ -370,10 +370,8 @@ class ConnectionWidget(QtWidgets.QWidget):
             card = self.connection_cards.get(conn_name)
             if card:
                 card.set_status("connecting", f"Establishing {conn_name} connection...")
-                # Simulate delayed connection
-                QtCore.QTimer.singleShot(
-                    500 * (i + 1), lambda c=conn_name: self._simulate_connection(c)
-                )
+                # Direct connection simulation to avoid QTimer crashes
+                self._simulate_connection(conn_name)
 
         self.disconnect_all_btn.setEnabled(True)
 
@@ -420,10 +418,8 @@ class ConnectionWidget(QtWidgets.QWidget):
             current_status = card.status_text.text()
             if current_status == "Connected":
                 self._add_activity(f"🔍 Testing {conn_name}...")
-                # Show test result after delay
-                QtCore.QTimer.singleShot(
-                    1000, lambda c=conn_name: self._add_activity(f"✅ {c} test passed")
-                )
+                # Show test result immediately to avoid QTimer crashes
+                self._add_activity(f"✅ {conn_name} test passed")
 
     def _update_connection_status(self):
         """Update real-time connection status."""

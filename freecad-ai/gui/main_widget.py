@@ -104,9 +104,11 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             except Exception as e:
                 FreeCAD.Console.PrintError(f"FreeCAD AI: UI setup failed: {e}\n")
 
-            # Connect widgets with delay and error handling
-            if HAS_PYSIDE2 and hasattr(QtCore, 'QTimer'):
-                QtCore.QTimer.singleShot(500, self._connect_widgets_to_service_safe)
+            # Connect widgets directly without timers to avoid crashes
+            try:
+                self._connect_widgets_to_service_safe()
+            except Exception as e:
+                FreeCAD.Console.PrintWarning(f"FreeCAD AI: Error setting up widget connections: {e}\n")
 
             # Set sizing safely
             try:
@@ -224,13 +226,15 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 )
                 print("FreeCAD AI: Provider service signals connected")
 
-                # Initialize providers from configuration with multiple attempts
-                QtCore.QTimer.singleShot(
-                    1000, self.provider_service.initialize_providers_from_config
-                )
-                # Retry after 3 seconds if first attempt fails
-                QtCore.QTimer.singleShot(3000, self._retry_provider_initialization)
-                print("FreeCAD AI: Provider service initialization scheduled")
+                # Defer provider initialization to avoid crashes during workbench activation
+                # Initialize providers directly without timers to avoid crashes
+                try:
+                    print("FreeCAD AI: Initializing providers directly (no timers to avoid crashes)")
+                    self.provider_service.initialize_providers_from_config()
+                except Exception as e:
+                    print(f"FreeCAD AI: Provider initialization failed: {e}")
+                    import traceback
+                    print(f"FreeCAD AI: Traceback: {traceback.format_exc()}")
             else:
                 print("FreeCAD AI: Warning - provider service is None")
 
@@ -427,8 +431,11 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                     self.provider_service
                 )
 
-            # Schedule a second connection attempt to be sure
-            QtCore.QTimer.singleShot(2000, self._final_connection_check)
+            # Perform final connection check directly
+            try:
+                self._final_connection_check()
+            except Exception as e:
+                print(f"FreeCAD AI: Error in final connection check: {e}")
 
         except Exception as e:
             self.status_label.setText(f"⚠️ {e}")
