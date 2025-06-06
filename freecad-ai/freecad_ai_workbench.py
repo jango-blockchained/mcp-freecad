@@ -31,18 +31,31 @@ except ImportError:
 TOOLS_AVAILABLE = False
 try:
     # Try absolute imports first
-    pass
+    from tools import (
+        PrimitivesTool,
+        OperationsTool,
+        MeasurementsTool,
+        ExportImportTool,
+        TOOLS_AVAILABLE as TOOLS_LOADED,
+    )
 
-    TOOLS_AVAILABLE = True
+    TOOLS_AVAILABLE = TOOLS_LOADED
 except ImportError as e:
     FreeCAD.Console.PrintWarning(
         f"FreeCAD AI: Failed to import tools with absolute imports: {e}\n"
     )
     try:
         # Try importing from the current directory structure
-        pass
+        sys.path.insert(0, addon_dir)
+        from tools import (
+            PrimitivesTool,
+            OperationsTool,
+            MeasurementsTool,
+            ExportImportTool,
+            TOOLS_AVAILABLE as TOOLS_LOADED,
+        )
 
-        TOOLS_AVAILABLE = True
+        TOOLS_AVAILABLE = TOOLS_LOADED
         FreeCAD.Console.PrintMessage(
             "FreeCAD AI: Successfully imported tools using alternative method\n"
         )
@@ -112,7 +125,9 @@ except ImportError as e:
 AI_PROVIDERS_AVAILABLE = False
 try:
     # Try absolute imports first
-    pass
+    from ai.providers.claude_provider import ClaudeProvider
+    from ai.providers.gemini_provider import GeminiProvider
+    from ai.providers.openrouter_provider import OpenRouterProvider
 
     AI_PROVIDERS_AVAILABLE = True
 except ImportError as e:
@@ -121,7 +136,10 @@ except ImportError as e:
     )
     try:
         # Try importing from the current directory structure
-        pass
+        sys.path.insert(0, addon_dir)
+        from ai.providers.claude_provider import ClaudeProvider
+        from ai.providers.gemini_provider import GeminiProvider
+        from ai.providers.openrouter_provider import OpenRouterProvider
 
         AI_PROVIDERS_AVAILABLE = True
         FreeCAD.Console.PrintMessage(
