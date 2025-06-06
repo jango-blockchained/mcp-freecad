@@ -2,7 +2,7 @@
 
 import time
 
-from PySide2 import QtCore, QtGui, QtWidgets
+from PySide2 import QtCore, QtWidgets
 
 
 class ConnectionStatusCard(QtWidgets.QFrame):

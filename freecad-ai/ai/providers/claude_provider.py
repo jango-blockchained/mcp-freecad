@@ -7,10 +7,8 @@ Provides advanced reasoning capabilities for complex CAD operations.
 Author: jango-blockchained
 """
 
-import asyncio
-import json
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import aiohttp
 from ai.providers.base_provider import (

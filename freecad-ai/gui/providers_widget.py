@@ -1,7 +1,6 @@
 """Providers Widget - Consolidated AI Provider and API Key Management"""
 
 import json
-import os
 from pathlib import Path
 
 from PySide2 import QtCore, QtGui, QtWidgets

@@ -13,7 +13,6 @@ __author__ = "jango-blockchained"
 
 # Import with error handling
 try:
-    from .providers.base_provider import BaseAIProvider
     from .providers.claude_provider import ClaudeProvider
     from .providers.gemini_provider import GeminiProvider
     from .providers.openrouter_provider import OpenRouterProvider

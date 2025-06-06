@@ -1,6 +1,5 @@
 import logging
-import math
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from ..base import ToolProvider, ToolResult, ToolSchema
 

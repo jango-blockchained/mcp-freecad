@@ -1,11 +1,10 @@
 """Semantic Matcher - Advanced semantic similarity for tool matching"""
 
-import json
 import math
 import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set
 
 
 @dataclass

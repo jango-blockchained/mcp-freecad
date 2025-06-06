@@ -1,11 +1,7 @@
 """FreeCAD AI Workbench - Main workbench implementation"""
 
-import asyncio
-import json
 import os
 import sys
-import threading
-from datetime import datetime
 
 import FreeCAD
 import FreeCADGui
@@ -17,13 +13,12 @@ if addon_dir not in sys.path:
 
 # Try to import PySide2, fall back gracefully if not available
 try:
-    from PySide2 import QtCore, QtGui, QtWidgets
+    from PySide2 import QtCore, QtWidgets
 
     HAS_PYSIDE2 = True
 except ImportError:
     try:
         from PySide import QtCore
-        from PySide import QtGui
         from PySide import QtGui as QtWidgets
 
         HAS_PYSIDE2 = False
@@ -36,10 +31,7 @@ except ImportError:
 TOOLS_AVAILABLE = False
 try:
     # Try absolute imports first
-    from tools.export_import import ExportImportTool
-    from tools.measurements import MeasurementsTool
-    from tools.operations import OperationsTool
-    from tools.primitives import PrimitivesTool
+    pass
 
     TOOLS_AVAILABLE = True
 except ImportError as e:
@@ -48,13 +40,7 @@ except ImportError as e:
     )
     try:
         # Try importing from the current directory structure
-        import tools
-        from tools import (
-            ExportImportTool,
-            MeasurementsTool,
-            OperationsTool,
-            PrimitivesTool,
-        )
+        pass
 
         TOOLS_AVAILABLE = True
         FreeCAD.Console.PrintMessage(
@@ -69,10 +55,6 @@ ADVANCED_TOOLS_AVAILABLE = False
 try:
     from tools.advanced import (
         ADVANCED_TOOLS_AVAILABLE,
-        AssemblyToolProvider,
-        CAMToolProvider,
-        RenderingToolProvider,
-        SmitheryToolProvider,
     )
 
     FreeCAD.Console.PrintMessage("FreeCAD AI: Advanced tools loaded successfully\n")
@@ -85,10 +67,6 @@ RESOURCES_AVAILABLE = False
 try:
     from resources import (
         RESOURCES_AVAILABLE,
-        CADModelResourceProvider,
-        ConstraintResourceProvider,
-        MaterialResourceProvider,
-        MeasurementResourceProvider,
     )
 
     FreeCAD.Console.PrintMessage("FreeCAD AI: Resources loaded successfully\n")
@@ -101,9 +79,6 @@ EVENTS_AVAILABLE = False
 try:
     from events import (
         EVENTS_AVAILABLE,
-        CommandEventHandler,
-        DocumentEventHandler,
-        ErrorEventHandler,
     )
 
     FreeCAD.Console.PrintMessage("FreeCAD AI: Event handlers loaded successfully\n")
@@ -116,9 +91,6 @@ API_AVAILABLE = False
 try:
     from api import (
         API_AVAILABLE,
-        create_event_router,
-        create_resource_router,
-        create_tool_router,
     )
 
     FreeCAD.Console.PrintMessage("FreeCAD AI: API loaded successfully\n")
@@ -129,7 +101,7 @@ except ImportError as e:
 # Import clients
 CLIENTS_AVAILABLE = False
 try:
-    from clients import CLIENTS_AVAILABLE, CursorMCPBridge, FreeCADClient
+    from clients import CLIENTS_AVAILABLE
 
     FreeCAD.Console.PrintMessage("FreeCAD AI: Clients loaded successfully\n")
 except ImportError as e:
@@ -140,14 +112,7 @@ except ImportError as e:
 AI_PROVIDERS_AVAILABLE = False
 try:
     # Try absolute imports first
-    from ai.providers import (
-        check_dependencies,
-        get_available_providers,
-        get_claude_provider,
-        get_gemini_provider,
-        get_openrouter_provider,
-        get_provider_errors,
-    )
+    pass
 
     AI_PROVIDERS_AVAILABLE = True
 except ImportError as e:
@@ -156,15 +121,7 @@ except ImportError as e:
     )
     try:
         # Try importing from the current directory structure
-        import ai.providers
-        from ai.providers import (
-            check_dependencies,
-            get_available_providers,
-            get_claude_provider,
-            get_gemini_provider,
-            get_openrouter_provider,
-            get_provider_errors,
-        )
+        pass
 
         AI_PROVIDERS_AVAILABLE = True
         FreeCAD.Console.PrintMessage(

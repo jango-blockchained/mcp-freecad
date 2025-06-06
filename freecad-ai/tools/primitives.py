@@ -7,7 +7,7 @@ boxes, cylinders, spheres, cones, and other fundamental shapes.
 Author: jango-blockchained
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import FreeCAD as App
 import Part

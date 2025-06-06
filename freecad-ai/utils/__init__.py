@@ -9,8 +9,7 @@ __version__ = "1.0.0"
 
 # Import utility classes
 try:
-    from .dependency_manager import DependencyManager, get_aiohttp_install_script
-    from .mcp_bridge import MCPBridge
+    pass
 
     __all__ = ["MCPBridge", "DependencyManager", "get_aiohttp_install_script"]
 

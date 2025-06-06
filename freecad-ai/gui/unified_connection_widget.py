@@ -6,7 +6,7 @@ import subprocess
 import sys
 import time
 
-from PySide2 import QtCore, QtGui, QtWidgets
+from PySide2 import QtCore, QtWidgets
 
 # Try to import psutil if available
 HAS_PSUTIL = False

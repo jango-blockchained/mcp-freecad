@@ -1,6 +1,5 @@
 import logging
-import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from ..base import ToolProvider, ToolResult, ToolSchema
 
@@ -154,7 +153,7 @@ class RenderingToolProvider(ToolProvider):
                 if renderer == "raytracing":
                     # Use built-in raytracing
                     try:
-                        import Raytracing
+                        pass
 
                         # Create raytracing project
                         project = self.app.ActiveDocument.addObject(
@@ -286,7 +285,7 @@ class RenderingToolProvider(ToolProvider):
                 )
 
             try:
-                import FreeCADGui as Gui
+                pass
 
                 # Get view object
                 view_obj = obj.ViewObject

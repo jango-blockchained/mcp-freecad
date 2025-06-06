@@ -11,17 +11,11 @@ __author__ = "MCP-FreeCAD Development Team"
 
 # Import main components
 try:
-    from .connection_widget import ConnectionWidget
-    from .conversation_widget import ConversationWidget
-    from .main_widget import MCPMainWidget
-    from .providers_widget import ProvidersWidget
-    from .server_widget import ServerWidget
-    from .settings_widget import SettingsWidget
-    from .tools_widget import ToolsWidget
+    pass
 
     # Try to import compact tools widget
     try:
-        from .tools_widget_compact import ToolsWidget as CompactToolsWidget
+        pass
 
         __all__ = [
             "MCPMainWidget",

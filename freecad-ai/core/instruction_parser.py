@@ -1,12 +1,10 @@
 """Instruction Parser - Parses structured instructions from natural language"""
 
-import json
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
-import FreeCAD
 
 
 class InstructionType(Enum):

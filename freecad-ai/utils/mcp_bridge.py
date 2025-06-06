@@ -6,10 +6,9 @@ and the existing MCP server and tools.
 """
 
 import logging
-import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 
 class MCPBridge:

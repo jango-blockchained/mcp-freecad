@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field, ValidationError
 
@@ -44,7 +44,6 @@ class ToolProvider(ABC):
         Returns:
             ToolSchema containing the tool's schema definition
         """
-        pass
 
     @abstractmethod
     async def execute_tool(self, tool_id: str, params: Dict[str, Any]) -> ToolResult:
@@ -62,7 +61,6 @@ class ToolProvider(ABC):
             ValidationError: If the parameters are invalid
             ToolExecutionError: If the tool execution fails
         """
-        pass
 
     def validate_params(self, params: Dict[str, Any]) -> None:
         """

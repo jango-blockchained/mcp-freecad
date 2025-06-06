@@ -11,7 +11,6 @@ import math
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import FreeCAD as App
-import Part
 
 
 class MeasurementsTool:

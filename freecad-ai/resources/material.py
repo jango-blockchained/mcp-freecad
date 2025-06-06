@@ -1,7 +1,7 @@
 import logging
 import os
-from typing import Any, Dict, List, Optional
-from urllib.parse import parse_qs, urlparse
+from typing import Any, Dict, Optional
+from urllib.parse import urlparse
 
 from .base import ResourceProvider
 

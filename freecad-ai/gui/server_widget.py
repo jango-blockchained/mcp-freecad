@@ -1,6 +1,5 @@
 """Server Widget - Functional GUI for managing MCP servers"""
 
-import json
 import os
 import subprocess
 import sys

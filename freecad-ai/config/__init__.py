@@ -9,9 +9,7 @@ __version__ = "1.0.0"
 
 # Import configuration classes
 try:
-    from .config_manager import ConfigManager
-    from .settings import AddonSettings
-    from .validators import ConfigValidator
+    pass
 
     __all__ = ["ConfigManager", "AddonSettings", "ConfigValidator"]
 

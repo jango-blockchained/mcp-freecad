@@ -9,8 +9,7 @@ Author: jango-blockchained
 import inspect
 import pdb
 import sys
-import traceback
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict
 
 import FreeCAD as App
 

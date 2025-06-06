@@ -49,4 +49,3 @@ class EventProvider(ABC):
             event_type: The type of event
             event_data: The event data
         """
-        pass

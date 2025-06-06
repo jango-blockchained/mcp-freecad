@@ -13,7 +13,7 @@ import json
 import logging
 import os
 import sys
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List
 
 # Add the addon directory to Python path
 addon_dir = os.path.dirname(os.path.abspath(__file__))
@@ -25,16 +25,6 @@ try:
     from mcp.server.models import InitializationOptions
     from mcp.server.stdio import stdio_server
     from mcp.types import (
-        CallToolRequest,
-        CallToolResult,
-        EmbeddedResource,
-        ImageContent,
-        ListResourcesRequest,
-        ListResourcesResult,
-        ListToolsRequest,
-        ListToolsResult,
-        ReadResourceRequest,
-        ReadResourceResult,
         Resource,
         TextContent,
         Tool,
@@ -68,8 +58,7 @@ class FreeCADMCPServer:
         """Initialize FreeCAD and tools."""
         try:
             # Try to import FreeCAD
-            import FreeCAD
-            import FreeCADGui
+            pass
 
             self.freecad_available = True
             logger.info("FreeCAD imported successfully")

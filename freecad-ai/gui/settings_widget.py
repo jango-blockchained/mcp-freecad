@@ -10,10 +10,10 @@ if addon_dir not in sys.path:
 
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Dict
 
 from config.config_manager import ConfigManager
-from PySide2 import QtCore, QtGui, QtWidgets
+from PySide2 import QtCore, QtWidgets
 from utils.cad_context_extractor import get_cad_context_extractor
 
 

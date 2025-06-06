@@ -1,6 +1,5 @@
 """Tool Registry - Centralized tool registration and management"""
 
-import json
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -51,22 +50,19 @@ class ToolRegistry:
         """Register built-in FreeCAD tools"""
         try:
             # Import and register primitive tools
-            from ..tools.primitives import PrimitivesTool
+            pass
 
             self._register_primitives_tool()
 
             # Import and register operation tools
-            from ..tools.operations import OperationsTool
 
             self._register_operations_tool()
 
             # Import and register measurement tools
-            from ..tools.measurements import MeasurementsTool
 
             self._register_measurements_tool()
 
             # Import and register export/import tools
-            from ..tools.export_import import ExportImportTool
 
             self._register_export_import_tool()
 
@@ -559,7 +555,6 @@ class ToolRegistry:
     def import_tools(self, tools_config: Dict[str, Any]):
         """Import tools from a configuration dictionary"""
         # This would be used to load external tool definitions
-        pass
 
     def get_tool_dependencies(self, tool_id: str) -> List[str]:
         """Get dependencies for a tool"""

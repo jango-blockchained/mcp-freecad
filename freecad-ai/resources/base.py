@@ -19,4 +19,3 @@ class ResourceProvider(ABC):
         Returns:
             The resource data
         """
-        pass

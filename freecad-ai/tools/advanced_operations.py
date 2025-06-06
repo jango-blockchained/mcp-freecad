@@ -8,7 +8,7 @@ Author: AI Assistant
 """
 
 import math
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List
 
 import FreeCAD as App
 import Part

@@ -12,7 +12,7 @@ import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 
 class MessageRole(Enum):
@@ -92,13 +92,11 @@ class BaseAIProvider(ABC):
     @abstractmethod
     def name(self) -> str:
         """Return the provider name."""
-        pass
 
     @property
     @abstractmethod
     def supported_models(self) -> List[str]:
         """Return list of supported models."""
-        pass
 
     @property
     def supports_thinking_mode(self) -> bool:
@@ -116,7 +114,6 @@ class BaseAIProvider(ABC):
         Returns:
             AIResponse with the provider's response
         """
-        pass
 
     @abstractmethod
     async def test_connection(self) -> bool:
@@ -125,7 +122,6 @@ class BaseAIProvider(ABC):
         Returns:
             True if connection is successful, False otherwise
         """
-        pass
 
     def add_message_to_history(self, message: AIMessage):
         """Add a message to the conversation history.

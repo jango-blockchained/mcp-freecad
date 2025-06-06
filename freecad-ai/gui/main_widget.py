@@ -1,6 +1,6 @@
 """Main Widget for FreeCAD AI FreeCAD Addon"""
 
-from PySide2 import QtCore, QtGui, QtWidgets
+from PySide2 import QtCore, QtWidgets
 
 
 class MCPMainWidget(QtWidgets.QDockWidget):
@@ -392,7 +392,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
 
             # Strategy 1: Relative import
             try:
-                from ..core.agent_manager import AgentManager, AgentMode
+                from ..core.agent_manager import AgentManager
 
                 agent_manager_imported = True
                 print("FreeCAD AI: AgentManager imported via relative path")
@@ -402,7 +402,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             # Strategy 2: Direct import
             if not agent_manager_imported:
                 try:
-                    from core.agent_manager import AgentManager, AgentMode
+                    from core.agent_manager import AgentManager
 
                     agent_manager_imported = True
                     print("FreeCAD AI: AgentManager imported via direct path")
@@ -420,7 +420,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                     )
                     if parent_dir not in sys.path:
                         sys.path.insert(0, parent_dir)
-                    from core.agent_manager import AgentManager, AgentMode
+                    from core.agent_manager import AgentManager
 
                     agent_manager_imported = True
                     print("FreeCAD AI: AgentManager imported after adding to sys.path")

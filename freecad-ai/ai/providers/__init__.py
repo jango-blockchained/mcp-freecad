@@ -4,7 +4,7 @@ AI Providers Package
 Provides AI provider implementations with lazy loading and dependency management.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import FreeCAD
 
@@ -107,14 +107,14 @@ def check_dependencies() -> Dict[str, bool]:
         # Fallback manual check
         dependencies = {}
         try:
-            import aiohttp
+            pass
 
             dependencies["aiohttp"] = True
         except ImportError:
             dependencies["aiohttp"] = False
 
         try:
-            import requests
+            pass
 
             dependencies["requests"] = True
         except ImportError:

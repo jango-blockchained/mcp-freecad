@@ -9,10 +9,9 @@ if addon_dir not in sys.path:
     sys.path.insert(0, addon_dir)
 
 import logging
-from typing import Any, Dict, List, Optional
 
 import FreeCAD
-from PySide2 import QtCore, QtGui, QtWidgets
+from PySide2 import QtCore, QtWidgets
 
 
 class CompactToolButton(QtWidgets.QPushButton):

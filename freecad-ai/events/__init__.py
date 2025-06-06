@@ -19,7 +19,7 @@ handlers_to_import = [
 for module_name, class_name in handlers_to_import:
     try:
         if module_name == "base":
-            from .base import EventHandler
+            pass
 
             available_handlers.append("EventHandler")
         elif module_name == "document_events":

@@ -1,8 +1,6 @@
 """Agent Manager - Core orchestration for FreeCAD AI Agent System"""
 
-import asyncio
 import enum
-import json
 import threading
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional

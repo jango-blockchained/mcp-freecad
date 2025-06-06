@@ -6,11 +6,7 @@ This module contains resource providers for materials, constraints, measurements
 
 # Import resource providers
 try:
-    from .base import ResourceProvider
-    from .cad_model import CADModelResourceProvider
-    from .constraint import ConstraintResourceProvider
-    from .material import MaterialResourceProvider
-    from .measurement import MeasurementResourceProvider
+    pass
 
     RESOURCES_AVAILABLE = True
 

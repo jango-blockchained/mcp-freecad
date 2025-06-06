@@ -1,6 +1,5 @@
 """Context Enricher - Enhances conversation context with FreeCAD state and history"""
 
-import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 

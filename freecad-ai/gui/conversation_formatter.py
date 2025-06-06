@@ -3,7 +3,7 @@
 import re
 from enum import Enum
 
-from PySide2 import QtCore, QtGui, QtWidgets
+from PySide2 import QtCore, QtWidgets
 
 
 class ConversationFormat(Enum):

@@ -3,7 +3,7 @@ import logging
 import sys
 import time
 import traceback
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
 try:
     from .base import EventProvider

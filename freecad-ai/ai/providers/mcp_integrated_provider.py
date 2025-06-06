@@ -9,13 +9,11 @@ Author: jango-blockchained
 
 import json
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 from ai.providers.base_provider import (
-    AIMessage,
     AIResponse,
     BaseAIProvider,
-    MessageRole,
 )
 
 
@@ -134,8 +132,6 @@ class MCPIntegratedProvider(BaseAIProvider):
                 from tools.advanced import (
                     AssemblyToolProvider,
                     CAMToolProvider,
-                    RenderingToolProvider,
-                    SmitheryToolProvider,
                 )
 
                 assembly = AssemblyToolProvider()

@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import time
-from typing import Any, Dict, Set
+from typing import Any, Dict
 
 try:
     from .base import EventProvider

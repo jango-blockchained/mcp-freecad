@@ -1,8 +1,7 @@
 """AI Manager - Manages AI model providers and interactions"""
 
-import asyncio
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 from ai.providers.base_provider import BaseAIProvider as AIProvider
 from ai.providers.claude_provider import ClaudeProvider

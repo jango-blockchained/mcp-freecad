@@ -4,8 +4,8 @@ import re
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
-from .semantic_matcher import Match, SemanticMatcher
-from .tool_capabilities import CapabilityType, get_capability_registry
+from .semantic_matcher import SemanticMatcher
+from .tool_capabilities import get_capability_registry
 
 
 @dataclass

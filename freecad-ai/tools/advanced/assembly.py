@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from ..base import ToolProvider, ToolResult, ToolSchema
 
@@ -127,7 +127,7 @@ class AssemblyToolProvider(ToolProvider):
 
             # Try to use Assembly4 workbench if available
             try:
-                import Assembly4
+                pass
 
                 assembly = doc.addObject("App::Part", assembly_name)
                 assembly.Label = assembly_name

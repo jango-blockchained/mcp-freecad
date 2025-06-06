@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from ..base import ToolProvider, ToolResult, ToolSchema
 
@@ -139,7 +139,6 @@ class CAMToolProvider(ToolProvider):
 
             # Try to import Path workbench
             try:
-                import Path
                 import PathScripts.PathJob as PathJob
 
                 # Create job
@@ -189,7 +188,6 @@ class CAMToolProvider(ToolProvider):
                 )
 
             try:
-                import Path
                 import PathScripts.PathToolController as PathToolController
 
                 # Create tool controller
@@ -239,7 +237,7 @@ class CAMToolProvider(ToolProvider):
                 )
 
             try:
-                import Path
+                pass
 
                 # Create operation based on type
                 if operation_type == "profile":
@@ -299,7 +297,7 @@ class CAMToolProvider(ToolProvider):
                 )
 
             try:
-                import Path
+                pass
 
                 # Generate G-code
                 gcode_lines = []

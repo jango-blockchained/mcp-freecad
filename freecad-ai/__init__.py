@@ -33,7 +33,6 @@ ADDON_LICENSE = __license__
 # Import main components when the addon is loaded
 try:
     import FreeCAD
-    import FreeCADGui
 
     # Check if we're in GUI mode
     if FreeCAD.GuiUp:
