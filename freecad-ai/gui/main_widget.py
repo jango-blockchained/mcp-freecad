@@ -193,8 +193,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
     def _create_tabs(self):
         """Create the tab interface."""
         try:
-            from .connection_widget import ConnectionWidget
-            from .server_widget import ServerWidget
+            from .unified_connection_widget import UnifiedConnectionWidget
             from .providers_widget import ProvidersWidget
             from .conversation_widget import ConversationWidget
             from .tools_widget_compact import ToolsWidget  # Use compact version
@@ -202,20 +201,19 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             from .agent_control_widget import AgentControlWidget
 
             # Create widgets
-            self.connection_widget = ConnectionWidget()
+            self.unified_connection_widget = UnifiedConnectionWidget()
             self.providers_widget = ProvidersWidget()
             self.conversation_widget = ConversationWidget()
             self.settings_widget = SettingsWidget()
             self.tools_widget = ToolsWidget()  # Use compact tools widget
             self.agent_control_widget = AgentControlWidget()
 
-            # Add tabs in logical order (removed Logs)
+            # Add tabs in logical order (merged Server/Connection)
             self.tab_widget.addTab(self.providers_widget, "Providers")
             self.tab_widget.addTab(self.conversation_widget, "Chat")
             self.tab_widget.addTab(self.agent_control_widget, "Agent")
             self.tab_widget.addTab(self.tools_widget, "Tools")
-            self.tab_widget.addTab(self.connection_widget, "Connections")
-            self.tab_widget.addTab(ServerWidget(), "Servers")
+            self.tab_widget.addTab(self.unified_connection_widget, "Connections")
             self.tab_widget.addTab(self.settings_widget, "Settings")
 
         except ImportError:
@@ -224,7 +222,6 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 "Chat",
                 "Tools",
                 "Connections",
-                "Servers",
                 "Settings",
             ]:
                 tab = QtWidgets.QWidget()
@@ -296,8 +293,8 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 print("FreeCAD AI: Agent manager is None - cannot connect to agent control widget")
 
             # Connect connection widget to show MCP connection status (no AI provider status)
-            if hasattr(self.connection_widget, "set_provider_service"):
-                self.connection_widget.set_provider_service(self.provider_service)
+            if hasattr(self.unified_connection_widget, "set_provider_service"):
+                self.unified_connection_widget.set_provider_service(self.provider_service)
 
             # Schedule a second connection attempt to be sure
             QtCore.QTimer.singleShot(2000, self._final_connection_check)
@@ -345,11 +342,47 @@ class MCPMainWidget(QtWidgets.QDockWidget):
     def _init_agent_manager(self):
         """Initialize the agent manager."""
         try:
-            from ..core.agent_manager import AgentManager, AgentMode
-            print("FreeCAD AI: AgentManager import successful")
+            # Try multiple import strategies for agent manager
+            agent_manager_imported = False
+            
+            # Strategy 1: Relative import
+            try:
+                from ..core.agent_manager import AgentManager, AgentMode
+                agent_manager_imported = True
+                print("FreeCAD AI: AgentManager imported via relative path")
+            except ImportError as e:
+                print(f"FreeCAD AI: Relative import failed: {e}")
+            
+            # Strategy 2: Direct import
+            if not agent_manager_imported:
+                try:
+                    from core.agent_manager import AgentManager, AgentMode
+                    agent_manager_imported = True
+                    print("FreeCAD AI: AgentManager imported via direct path")
+                except ImportError as e:
+                    print(f"FreeCAD AI: Direct import failed: {e}")
+            
+            # Strategy 3: Add parent to path
+            if not agent_manager_imported:
+                try:
+                    import sys
+                    import os
+                    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    if parent_dir not in sys.path:
+                        sys.path.insert(0, parent_dir)
+                    from core.agent_manager import AgentManager, AgentMode
+                    agent_manager_imported = True
+                    print("FreeCAD AI: AgentManager imported after adding to sys.path")
+                except ImportError as e:
+                    print(f"FreeCAD AI: Import with sys.path modification failed: {e}")
+            
+            if not agent_manager_imported:
+                print("FreeCAD AI: ERROR - Could not import AgentManager after all strategies")
+                self.agent_manager = None
+                return
 
             self.agent_manager = AgentManager()
-            print("FreeCAD AI: AgentManager instance created")
+            print("FreeCAD AI: AgentManager instance created successfully")
 
             # Register callbacks
             self.agent_manager.register_callback(
@@ -361,10 +394,8 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 self._on_agent_state_changed
             )
 
-            print("FreeCAD AI: Agent Manager initialized successfully")
-        except ImportError as e:
-            print(f"FreeCAD AI: Agent Manager import failed - {e}")
-            self.agent_manager = None
+            print("FreeCAD AI: Agent Manager initialized and callbacks registered")
+            
         except Exception as e:
             print(f"FreeCAD AI: Agent Manager initialization failed - {e}")
             import traceback

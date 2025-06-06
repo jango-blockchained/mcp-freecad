@@ -1,6 +1,7 @@
 """Conversation Widget - Clean AI Conversation Interface"""
 
 from PySide2 import QtCore, QtGui, QtWidgets
+from .conversation_formatter import ConversationFormatter, ConversationFormat, FormatSelectionWidget
 
 
 class ConversationWidget(QtWidgets.QWidget):
@@ -24,6 +25,9 @@ class ConversationWidget(QtWidgets.QWidget):
         # Execution tracking
         self.current_execution = None
         self.execution_widget = None
+        
+        # Conversation formatter
+        self.formatter = ConversationFormatter()
 
         self._setup_services()
         self._setup_ui()
@@ -121,24 +125,58 @@ class ConversationWidget(QtWidgets.QWidget):
         """Create conversation display section."""
         conversation_group = QtWidgets.QGroupBox("Conversation")
         conversation_layout = QtWidgets.QVBoxLayout(conversation_group)
+        
+        # Format selection header
+        format_header = QtWidgets.QHBoxLayout()
+        
+        # Format selector
+        self.format_selector = FormatSelectionWidget()
+        self.format_selector.format_changed.connect(self._on_format_changed)
+        format_header.addWidget(self.format_selector)
+        
+        format_header.addStretch()
+        
+        # Export button
+        self.export_btn = QtWidgets.QPushButton("📥 Export")
+        self.export_btn.setMaximumWidth(80)
+        self.export_btn.clicked.connect(self._export_conversation)
+        format_header.addWidget(self.export_btn)
+        
+        # Clear button
+        self.clear_btn = QtWidgets.QPushButton("🗑️ Clear")
+        self.clear_btn.setMaximumWidth(70)
+        self.clear_btn.setStyleSheet(
+            "QPushButton { background-color: #ff4444; color: white; }"
+        )
+        self.clear_btn.clicked.connect(self._clear_conversation)
+        format_header.addWidget(self.clear_btn)
+        
+        conversation_layout.addLayout(format_header)
 
-        # Conversation display
-        self.conversation_text = QtWidgets.QTextEdit()
-        self.conversation_text.setMinimumHeight(300)
-        self.conversation_text.setReadOnly(True)
+        # Conversation text display
+        self.conversation_text = QtWidgets.QTextBrowser()
+        self.conversation_text.setMinimumHeight(200)
+        self.conversation_text.setOpenExternalLinks(True)
         self.conversation_text.setStyleSheet(
             """
-            QTextEdit {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                font-size: 12px;
-                background-color: #fafafa;
+            QTextBrowser {
+                background-color: #ffffff;
                 border: 1px solid #ddd;
                 border-radius: 4px;
-                padding: 8px;
+                padding: 10px;
+                font-family: Arial, sans-serif;
             }
         """
         )
         conversation_layout.addWidget(self.conversation_text)
+
+        # Usage info bar
+        usage_layout = QtWidgets.QHBoxLayout()
+        usage_layout.addWidget(QtWidgets.QLabel("💬"))
+        self.usage_label = QtWidgets.QLabel("Messages: 0")
+        usage_layout.addWidget(self.usage_label)
+        usage_layout.addStretch()
+        conversation_layout.addLayout(usage_layout)
 
         layout.addWidget(conversation_group)
 
@@ -1025,38 +1063,39 @@ RESPONSE STYLE:
             self.execution_controls.setVisible(False)
 
     def _add_conversation_message(self, sender, message):
-        """Add message to conversation display."""
-        from datetime import datetime
-
-        timestamp = datetime.now().strftime("%H:%M")
-
+        """Add a message to the conversation display with formatting."""
+        timestamp = QtCore.QDateTime.currentDateTime().toString("hh:mm:ss")
+        
         # Add to history
-        self.conversation_history.append(
-            {"sender": sender, "message": message, "timestamp": timestamp}
-        )
-
-        # Add message with formatting
+        self.conversation_history.append({
+            "sender": sender,
+            "message": message,
+            "timestamp": timestamp
+        })
+        
+        # Format and display message
+        formatted_message = self.formatter.format_message(sender, message, timestamp)
+        
+        # Move cursor to end and insert formatted message
         cursor = self.conversation_text.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)
-
-        # Add sender with styling
-        format_sender = QtGui.QTextCharFormat()
-        if sender == "You":
-            format_sender.setForeground(QtGui.QColor("#2196F3"))
-        elif sender == "AI":
-            format_sender.setForeground(QtGui.QColor("#4CAF50"))
-        else:  # System
-            format_sender.setForeground(QtGui.QColor("#FF9800"))
-        format_sender.setFontWeight(QtGui.QFont.Bold)
-
-        cursor.insertText(f"{sender} ({timestamp}): ", format_sender)
-        cursor.insertText(f"{message}\n\n")
-
-        # Auto-scroll to bottom
-        self.conversation_text.moveCursor(QtGui.QTextCursor.End)
+        
+        # Insert based on format type
+        if self.formatter.format_type in [ConversationFormat.RICH_TEXT, ConversationFormat.MARKDOWN, ConversationFormat.HTML]:
+            cursor.insertHtml(formatted_message)
+        else:
+            cursor.insertText(formatted_message)
+        
+        # Scroll to bottom
+        self.conversation_text.verticalScrollBar().setValue(
+            self.conversation_text.verticalScrollBar().maximum()
+        )
+        
+        # Update usage counter
+        self.usage_label.setText(f"Messages: {len(self.conversation_history)}")
 
     def _add_system_message(self, message):
-        """Add system message to conversation."""
+        """Add a system message to the conversation."""
         self._add_conversation_message("System", message)
 
     def _clear_conversation(self):
@@ -1221,10 +1260,24 @@ RESPONSE STYLE:
         self._rebuild_conversation_display()
 
     def _rebuild_conversation_display(self):
-        """Rebuild conversation display from history."""
+        """Rebuild conversation display from history with current format."""
         self.conversation_text.clear()
+        
         for entry in self.conversation_history:
-            self._add_conversation_message(entry["sender"], entry["message"])
+            formatted_message = self.formatter.format_message(
+                entry["sender"], 
+                entry["message"], 
+                entry["timestamp"]
+            )
+            
+            # Insert based on format type
+            cursor = self.conversation_text.textCursor()
+            cursor.movePosition(QtGui.QTextCursor.End)
+            
+            if self.formatter.format_type in [ConversationFormat.RICH_TEXT, ConversationFormat.MARKDOWN, ConversationFormat.HTML]:
+                cursor.insertHtml(formatted_message)
+            else:
+                cursor.insertText(formatted_message)
 
     def set_agent_manager(self, agent_manager):
         """Set the agent manager reference."""
@@ -1334,22 +1387,19 @@ RESPONSE STYLE:
         return context
 
     def _add_thinking_indicator(self):
-        """Add the thinking indicator to conversation."""
-        self.conversation_text.append("AI: Thinking...")
+        """Add a thinking indicator to show AI is processing."""
+        self.thinking_message = "🤔 AI is thinking..."
+        self._add_conversation_message("AI", self.thinking_message)
 
     def _remove_thinking_indicator(self):
-        """Remove the thinking indicator from conversation."""
-        text = self.conversation_text.toPlainText()
-        if "AI: Thinking..." in text:
-            # Find and remove the last "Thinking..." message
-            lines = text.split("\n")
-            for i in range(len(lines) - 1, -1, -1):
-                if "AI" in lines[i] and "Thinking..." in lines[i]:
-                    lines.pop(i)
-                    if i < len(lines) and lines[i].strip() == "":
-                        lines.pop(i)
-                    break
-            self.conversation_text.setPlainText("\n".join(lines))
+        """Remove the thinking indicator."""
+        # Remove the thinking message from display
+        text = self.conversation_text.toHtml()
+        if self.thinking_message in text:
+            text = text.replace(
+                f"<p>{self.thinking_message}</p>", ""
+            ).replace(self.thinking_message, "")
+            self.conversation_text.setHtml(text)
 
     def _simulate_ai_response(self, user_message):
         """Simulate AI response with helpful FreeCAD guidance when no provider is available."""
@@ -1657,6 +1707,62 @@ I'm here to guide you through FreeCAD!"""
         # TODO: Parse the modified text and update the plan
         self._add_system_message("Plan modifications saved (feature in development)")
         dialog.accept()
+
+    def _on_format_changed(self, new_format: ConversationFormat):
+        """Handle format change."""
+        self.formatter.format_type = new_format
+        self._rebuild_conversation_display()
+        
+    def _export_conversation(self):
+        """Export conversation in selected format."""
+        if not self.conversation_history:
+            QtWidgets.QMessageBox.information(
+                self, "Export", "No conversation to export"
+            )
+            return
+            
+        # Get export format
+        format_type = self.format_selector.get_current_format()
+        
+        # Get file extension based on format
+        extensions = {
+            ConversationFormat.PLAIN_TEXT: "txt",
+            ConversationFormat.MARKDOWN: "md",
+            ConversationFormat.HTML: "html",
+            ConversationFormat.RICH_TEXT: "html"
+        }
+        
+        ext = extensions.get(format_type, "txt")
+        
+        # Get save file path
+        file_path, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self,
+            "Export Conversation",
+            f"conversation.{ext}",
+            f"{format_type.value.title()} Files (*.{ext});;All Files (*.*)"
+        )
+        
+        if file_path:
+            try:
+                # Export conversation
+                exported_content = self.formatter.export_conversation(
+                    self.conversation_history, format_type
+                )
+                
+                # Write to file
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(exported_content)
+                    
+                QtWidgets.QMessageBox.information(
+                    self, "Export Complete",
+                    f"Conversation exported to:\n{file_path}"
+                )
+                
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(
+                    self, "Export Error",
+                    f"Failed to export conversation:\n{str(e)}"
+                )
 
 
 class ConversationHistoryDialog(QtWidgets.QDialog):
