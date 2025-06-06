@@ -7,9 +7,10 @@ other geometric operations on FreeCAD objects.
 Author: jango-blockchained
 """
 
+from typing import Any, Dict, List, Optional, Union
+
 import FreeCAD as App
 import Part
-from typing import Dict, Any, List, Optional, Union
 
 
 class OperationsTool:

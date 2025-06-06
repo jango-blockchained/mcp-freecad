@@ -7,9 +7,9 @@ to ensure they work correctly.
 Author: jango-blockchained
 """
 
-import unittest
-import sys
 import os
+import sys
+import unittest
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -112,11 +112,12 @@ sys.modules["FreeCAD"] = MockApp
 sys.modules["Part"] = MockPart
 sys.modules["Mesh"] = type("Mesh", (), {"Mesh": lambda: None})()
 
+from tools.export_import import ExportImportTool
+from tools.measurements import MeasurementsTool
+from tools.operations import OperationsTool
+
 # Now import tools after mocking
 from tools.primitives import PrimitivesTool
-from tools.operations import OperationsTool
-from tools.measurements import MeasurementsTool
-from tools.export_import import ExportImportTool
 
 
 class TestPrimitivesTool(unittest.TestCase):

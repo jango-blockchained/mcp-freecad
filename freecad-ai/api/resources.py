@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 
 try:
     from fastapi import APIRouter, HTTPException
+
     FASTAPI_AVAILABLE = True
 except ImportError:
     # FastAPI not available, create minimal stubs
@@ -14,8 +15,9 @@ try:
     from ..core.server import MCPServer
 except ImportError:
     # Fallback for when module is loaded by FreeCAD
-    import sys
     import os
+    import sys
+
     addon_dir = os.path.dirname(os.path.dirname(__file__))
     if addon_dir not in sys.path:
         sys.path.insert(0, addon_dir)

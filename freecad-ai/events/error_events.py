@@ -10,6 +10,7 @@ try:
 except ImportError:
     # Fallback for when module is loaded by FreeCAD
     import os
+
     addon_dir = os.path.dirname(os.path.dirname(__file__))
     if addon_dir not in sys.path:
         sys.path.insert(0, addon_dir)

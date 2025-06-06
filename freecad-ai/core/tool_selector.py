@@ -1,15 +1,17 @@
 """Tool Selector - Selects appropriate tools based on natural language input"""
 
-from typing import List, Dict, Optional, Tuple, Any
 import re
 from dataclasses import dataclass
-from .semantic_matcher import SemanticMatcher, Match
-from .tool_capabilities import get_capability_registry, CapabilityType
+from typing import Any, Dict, List, Optional, Tuple
+
+from .semantic_matcher import Match, SemanticMatcher
+from .tool_capabilities import CapabilityType, get_capability_registry
 
 
 @dataclass
 class ToolMatch:
     """Represents a tool match result"""
+
     tool_name: str
     tool_id: str
     confidence: float
@@ -47,49 +49,61 @@ class ToolSelector:
         """Build regex patterns for tool detection"""
         return {
             "primitives.create_box": [
-                re.compile(r'\b(create|make|add|build)\s+(a\s+)?(box|cube|rectangular)', re.I),
-                re.compile(r'\bbox\s+(with|of)\s+dimensions?', re.I),
+                re.compile(
+                    r"\b(create|make|add|build)\s+(a\s+)?(box|cube|rectangular)", re.I
+                ),
+                re.compile(r"\bbox\s+(with|of)\s+dimensions?", re.I),
             ],
             "primitives.create_cylinder": [
-                re.compile(r'\b(create|make|add|build)\s+(a\s+)?(cylinder|pipe|tube)', re.I),
-                re.compile(r'\bcylinder\s+(with|of)\s+(radius|diameter)', re.I),
+                re.compile(
+                    r"\b(create|make|add|build)\s+(a\s+)?(cylinder|pipe|tube)", re.I
+                ),
+                re.compile(r"\bcylinder\s+(with|of)\s+(radius|diameter)", re.I),
             ],
             "primitives.create_sphere": [
-                re.compile(r'\b(create|make|add|build)\s+(a\s+)?(sphere|ball|globe)', re.I),
-                re.compile(r'\bsphere\s+(with|of)\s+radius', re.I),
+                re.compile(
+                    r"\b(create|make|add|build)\s+(a\s+)?(sphere|ball|globe)", re.I
+                ),
+                re.compile(r"\bsphere\s+(with|of)\s+radius", re.I),
             ],
             "operations.move": [
-                re.compile(r'\b(move|translate|shift|position)\s+(the\s+)?(\w+)?', re.I),
-                re.compile(r'\b(place|put)\s+(it|the\s+\w+)\s+at', re.I),
+                re.compile(
+                    r"\b(move|translate|shift|position)\s+(the\s+)?(\w+)?", re.I
+                ),
+                re.compile(r"\b(place|put)\s+(it|the\s+\w+)\s+at", re.I),
             ],
             "operations.rotate": [
-                re.compile(r'\b(rotate|turn|spin)\s+(the\s+)?(\w+)?', re.I),
-                re.compile(r'\b(rotation|angle)\s+of\s+\d+', re.I),
+                re.compile(r"\b(rotate|turn|spin)\s+(the\s+)?(\w+)?", re.I),
+                re.compile(r"\b(rotation|angle)\s+of\s+\d+", re.I),
             ],
             "operations.scale": [
-                re.compile(r'\b(scale|resize|size|enlarge|shrink)\s+(the\s+)?(\w+)?', re.I),
-                re.compile(r'\b(make|scale)\s+(it|the\s+\w+)\s+(larger|smaller|bigger)', re.I),
+                re.compile(
+                    r"\b(scale|resize|size|enlarge|shrink)\s+(the\s+)?(\w+)?", re.I
+                ),
+                re.compile(
+                    r"\b(make|scale)\s+(it|the\s+\w+)\s+(larger|smaller|bigger)", re.I
+                ),
             ],
             "operations.delete": [
-                re.compile(r'\b(delete|remove|erase|clear)\s+(the\s+)?(\w+)?', re.I),
-                re.compile(r'\bget\s+rid\s+of\s+(the\s+)?(\w+)?', re.I),
+                re.compile(r"\b(delete|remove|erase|clear)\s+(the\s+)?(\w+)?", re.I),
+                re.compile(r"\bget\s+rid\s+of\s+(the\s+)?(\w+)?", re.I),
             ],
             "measurements.distance": [
-                re.compile(r'\b(measure|calculate|find)\s+(the\s+)?distance', re.I),
-                re.compile(r'\bhow\s+far\s+(is|between)', re.I),
+                re.compile(r"\b(measure|calculate|find)\s+(the\s+)?distance", re.I),
+                re.compile(r"\bhow\s+far\s+(is|between)", re.I),
             ],
             "measurements.area": [
-                re.compile(r'\b(measure|calculate|find)\s+(the\s+)?area', re.I),
-                re.compile(r'\bsurface\s+area\s+of', re.I),
+                re.compile(r"\b(measure|calculate|find)\s+(the\s+)?area", re.I),
+                re.compile(r"\bsurface\s+area\s+of", re.I),
             ],
             "selection.select_all": [
-                re.compile(r'\bselect\s+all', re.I),
-                re.compile(r'\b(pick|choose|highlight)\s+everything', re.I),
+                re.compile(r"\bselect\s+all", re.I),
+                re.compile(r"\b(pick|choose|highlight)\s+everything", re.I),
             ],
             "selection.select_by_type": [
-                re.compile(r'\bselect\s+all\s+(\w+)s?', re.I),
-                re.compile(r'\b(pick|choose)\s+(?:all\s+)?(?:the\s+)?(\w+)s?', re.I),
-            ]
+                re.compile(r"\bselect\s+all\s+(\w+)s?", re.I),
+                re.compile(r"\b(pick|choose)\s+(?:all\s+)?(?:the\s+)?(\w+)s?", re.I),
+            ],
         }
 
     def _build_tool_aliases(self) -> Dict[str, List[str]]:
@@ -108,21 +122,30 @@ class ToolSelector:
             "operations.extrude": ["extrude", "extend", "pull", "push"],
             "operations.revolve": ["revolve", "lathe", "spin", "rotate around"],
             "operations.fillet": ["fillet", "round", "smooth", "blend"],
-            "operations.chamfer": ["chamfer", "bevel", "angle", "slope"]
+            "operations.chamfer": ["chamfer", "bevel", "angle", "slope"],
         }
 
     def _build_param_patterns(self) -> Dict[str, re.Pattern]:
         """Build patterns for parameter extraction"""
         return {
-            "dimension": re.compile(r'(\d+(?:\.\d+)?)\s*(mm|cm|m|inch|inches)?', re.I),
-            "position": re.compile(r'at\s*\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)?', re.I),
-            "angle": re.compile(r'(\d+(?:\.\d+)?)\s*(degrees?|deg|radians?|rad|°)', re.I),
-            "radius": re.compile(r'radius\s*(?:of\s*)?(\d+(?:\.\d+)?)', re.I),
-            "diameter": re.compile(r'diameter\s*(?:of\s*)?(\d+(?:\.\d+)?)', re.I),
-            "count": re.compile(r'(\d+)\s+(?:times?|copies|instances?)', re.I),
-            "axis": re.compile(r'(?:along|around)\s+(?:the\s+)?(x|y|z)[\s-]?axis', re.I),
-            "color": re.compile(r'\b(red|green|blue|yellow|orange|purple|black|white|gray|grey)\b', re.I),
-            "percentage": re.compile(r'(\d+(?:\.\d+)?)\s*%', re.I)
+            "dimension": re.compile(r"(\d+(?:\.\d+)?)\s*(mm|cm|m|inch|inches)?", re.I),
+            "position": re.compile(
+                r"at\s*\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)?",
+                re.I,
+            ),
+            "angle": re.compile(
+                r"(\d+(?:\.\d+)?)\s*(degrees?|deg|radians?|rad|°)", re.I
+            ),
+            "radius": re.compile(r"radius\s*(?:of\s*)?(\d+(?:\.\d+)?)", re.I),
+            "diameter": re.compile(r"diameter\s*(?:of\s*)?(\d+(?:\.\d+)?)", re.I),
+            "count": re.compile(r"(\d+)\s+(?:times?|copies|instances?)", re.I),
+            "axis": re.compile(
+                r"(?:along|around)\s+(?:the\s+)?(x|y|z)[\s-]?axis", re.I
+            ),
+            "color": re.compile(
+                r"\b(red|green|blue|yellow|orange|purple|black|white|gray|grey)\b", re.I
+            ),
+            "percentage": re.compile(r"(\d+(?:\.\d+)?)\s*%", re.I),
         }
 
     def _initialize_semantic_matcher(self):
@@ -150,7 +173,7 @@ class ToolSelector:
                 tool_id=tool_id,
                 description=description,
                 keywords=keywords,
-                examples=examples
+                examples=examples,
             )
 
         # Finalize embeddings for TF-IDF
@@ -189,7 +212,9 @@ class ToolSelector:
 
         # 6. Apply context-based adjustments
         if context:
-            combined_matches = self._apply_context_adjustments(combined_matches, context)
+            combined_matches = self._apply_context_adjustments(
+                combined_matches, context
+            )
 
         # 7. Sort by confidence
         combined_matches.sort(key=lambda x: x.confidence, reverse=True)
@@ -214,13 +239,15 @@ class ToolSelector:
                                 confidence = 0.9
                                 break
 
-                    matches.append(ToolMatch(
-                        tool_name=self._get_tool_name(tool_id),
-                        tool_id=tool_id,
-                        confidence=confidence,
-                        parameters={},
-                        reason="Pattern match"
-                    ))
+                    matches.append(
+                        ToolMatch(
+                            tool_name=self._get_tool_name(tool_id),
+                            tool_id=tool_id,
+                            confidence=confidence,
+                            parameters={},
+                            reason="Pattern match",
+                        )
+                    )
                     break  # Only one match per tool
 
         return matches
@@ -238,14 +265,15 @@ class ToolSelector:
                 confidence=result.similarity_score * 0.9,  # Slightly lower than pattern
                 parameters={},
                 reason=f"Semantic match: {result.explanation}",
-                semantic_score=result.similarity_score
+                semantic_score=result.similarity_score,
             )
             matches.append(match)
 
         return matches
 
-    def _capability_based_matching(self, text: str,
-                                  context: Optional[Dict]) -> List[ToolMatch]:
+    def _capability_based_matching(
+        self, text: str, context: Optional[Dict]
+    ) -> List[ToolMatch]:
         """Match based on tool capabilities"""
         matches = []
 
@@ -257,18 +285,22 @@ class ToolSelector:
 
         for capability in capabilities:
             # Check if requirements are met
-            reqs_met, _ = self.capability_registry.check_requirements(capability.tool_id)
+            reqs_met, _ = self.capability_registry.check_requirements(
+                capability.tool_id
+            )
 
             confidence = 0.7 if reqs_met else 0.4
 
-            matches.append(ToolMatch(
-                tool_name=capability.name,
-                tool_id=capability.tool_id,
-                confidence=confidence,
-                parameters={},
-                reason="Capability match",
-                capability_match=True
-            ))
+            matches.append(
+                ToolMatch(
+                    tool_name=capability.name,
+                    tool_id=capability.tool_id,
+                    confidence=confidence,
+                    parameters={},
+                    reason="Capability match",
+                    capability_match=True,
+                )
+            )
 
         return matches
 
@@ -308,8 +340,9 @@ class ToolSelector:
         if dim_matches and capability:
             # Map to appropriate parameter names
             param_names = ["length", "width", "height", "radius", "diameter"]
-            expected_params = [p.name for p in capability.parameters
-                             if p.name in param_names]
+            expected_params = [
+                p.name for p in capability.parameters if p.name in param_names
+            ]
 
             for i, (value, unit) in enumerate(dim_matches):
                 if i < len(expected_params):
@@ -323,7 +356,7 @@ class ToolSelector:
             params["position"] = [
                 float(pos_match.group(1)),
                 float(pos_match.group(2)),
-                float(pos_match.group(3))
+                float(pos_match.group(3)),
             ]
 
         # Extract angle
@@ -362,8 +395,9 @@ class ToolSelector:
 
         return params
 
-    def _apply_context_adjustments(self, matches: List[ToolMatch],
-                                  context: Dict) -> List[ToolMatch]:
+    def _apply_context_adjustments(
+        self, matches: List[ToolMatch], context: Dict
+    ) -> List[ToolMatch]:
         """Apply context-based adjustments to matches"""
         # Boost confidence for tools that match current state
         if "selection" in context and context["selection"]["has_selection"]:
@@ -419,7 +453,7 @@ class ToolSelector:
                     "description": p.description,
                     "required": p.required,
                     "default": p.default,
-                    "constraints": p.constraints
+                    "constraints": p.constraints,
                 }
                 for p in capability.parameters
             ]
@@ -432,8 +466,9 @@ class ToolSelector:
 
         return []
 
-    def validate_parameters(self, tool_id: str,
-                          parameters: Dict[str, Any]) -> Tuple[bool, List[str]]:
+    def validate_parameters(
+        self, tool_id: str, parameters: Dict[str, Any]
+    ) -> Tuple[bool, List[str]]:
         """Validate parameters for a tool"""
         return self.capability_registry.validate_parameters(tool_id, parameters)
 
@@ -446,8 +481,9 @@ class ToolSelector:
 
         return []
 
-    def learn_from_execution(self, text: str, tool_id: str,
-                           success: bool, feedback: Optional[str] = None):
+    def learn_from_execution(
+        self, text: str, tool_id: str, success: bool, feedback: Optional[str] = None
+    ):
         """Learn from execution results"""
         # Update semantic matcher
         self.semantic_matcher.record_match_result(text, tool_id, success, feedback)

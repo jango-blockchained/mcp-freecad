@@ -8,10 +8,11 @@ addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if addon_dir not in sys.path:
     sys.path.insert(0, addon_dir)
 
-from PySide2 import QtCore, QtGui, QtWidgets
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
+
 import FreeCAD
+from PySide2 import QtCore, QtGui, QtWidgets
 
 
 class CompactToolButton(QtWidgets.QPushButton):
@@ -85,21 +86,21 @@ class ToolsWidget(QtWidgets.QWidget):
         try:
             # Try absolute imports first
             try:
-                from tools.primitives import PrimitivesTool
-                from tools.operations import OperationsTool
-                from tools.measurements import MeasurementsTool
-                from tools.export_import import ExportImportTool
-                from tools.advanced_primitives import AdvancedPrimitivesTool
                 from tools.advanced_operations import AdvancedOperationsTool
+                from tools.advanced_primitives import AdvancedPrimitivesTool
+                from tools.export_import import ExportImportTool
+                from tools.measurements import MeasurementsTool
+                from tools.operations import OperationsTool
+                from tools.primitives import PrimitivesTool
                 from tools.surface_modification import SurfaceModificationTool
             except ImportError:
                 # Try relative imports
-                from ..tools.primitives import PrimitivesTool
-                from ..tools.operations import OperationsTool
-                from ..tools.measurements import MeasurementsTool
-                from ..tools.export_import import ExportImportTool
-                from ..tools.advanced_primitives import AdvancedPrimitivesTool
                 from ..tools.advanced_operations import AdvancedOperationsTool
+                from ..tools.advanced_primitives import AdvancedPrimitivesTool
+                from ..tools.export_import import ExportImportTool
+                from ..tools.measurements import MeasurementsTool
+                from ..tools.operations import OperationsTool
+                from ..tools.primitives import PrimitivesTool
                 from ..tools.surface_modification import SurfaceModificationTool
 
             self.tools = {
@@ -117,15 +118,15 @@ class ToolsWidget(QtWidgets.QWidget):
             # Try to load basic tools only
             try:
                 try:
-                    from tools.primitives import PrimitivesTool
-                    from tools.operations import OperationsTool
-                    from tools.measurements import MeasurementsTool
                     from tools.export_import import ExportImportTool
+                    from tools.measurements import MeasurementsTool
+                    from tools.operations import OperationsTool
+                    from tools.primitives import PrimitivesTool
                 except ImportError:
-                    from ..tools.primitives import PrimitivesTool
-                    from ..tools.operations import OperationsTool
-                    from ..tools.measurements import MeasurementsTool
                     from ..tools.export_import import ExportImportTool
+                    from ..tools.measurements import MeasurementsTool
+                    from ..tools.operations import OperationsTool
+                    from ..tools.primitives import PrimitivesTool
 
                 self.tools = {
                     "primitives": PrimitivesTool(),

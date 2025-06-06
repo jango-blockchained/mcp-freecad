@@ -5,11 +5,11 @@ This module provides the bridge between the FreeCAD addon
 and the existing MCP server and tools.
 """
 
+import logging
 import os
 import sys
-import logging
-from typing import Dict, Any, Optional, List
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 
 class MCPBridge:
@@ -43,9 +43,13 @@ class MCPBridge:
         """Import existing MCP components."""
         try:
             # Import existing MCP tools
-            from mcp_freecad.tools import primitives, model_manipulation
-            from mcp_freecad.tools import export_import, measurement
             from mcp_freecad.server import freecad_mcp_server
+            from mcp_freecad.tools import (
+                export_import,
+                measurement,
+                model_manipulation,
+                primitives,
+            )
 
             self.mcp_tools = {
                 "primitives": primitives,

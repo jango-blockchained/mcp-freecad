@@ -1,10 +1,11 @@
 """Context Enricher - Enhances conversation context with FreeCAD state and history"""
 
+import json
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 import FreeCAD
 import FreeCADGui
-from typing import Dict, List, Optional, Any
-from datetime import datetime
-import json
 
 
 class ContextEnricher:
@@ -29,7 +30,7 @@ class ContextEnricher:
             "include_view_info": True,
             "include_recent_commands": True,
             "max_objects_detail": 50,
-            "summarize_large_documents": True
+            "summarize_large_documents": True,
         }
 
     def enrich(self, base_context: Optional[Dict] = None) -> Dict[str, Any]:
@@ -88,7 +89,7 @@ class ContextEnricher:
             "modified": False,
             "object_count": 0,
             "undo_count": 0,
-            "redo_count": 0
+            "redo_count": 0,
         }
 
         try:
@@ -97,11 +98,19 @@ class ContextEnricher:
                 doc_info["has_active_document"] = True
                 doc_info["name"] = doc.Name
                 doc_info["label"] = doc.Label
-                doc_info["filename"] = doc.FileName if hasattr(doc, 'FileName') else None
-                doc_info["modified"] = doc.Modified if hasattr(doc, 'Modified') else False
+                doc_info["filename"] = (
+                    doc.FileName if hasattr(doc, "FileName") else None
+                )
+                doc_info["modified"] = (
+                    doc.Modified if hasattr(doc, "Modified") else False
+                )
                 doc_info["object_count"] = len(doc.Objects)
-                doc_info["undo_count"] = doc.UndoCount if hasattr(doc, 'UndoCount') else 0
-                doc_info["redo_count"] = doc.RedoCount if hasattr(doc, 'RedoCount') else 0
+                doc_info["undo_count"] = (
+                    doc.UndoCount if hasattr(doc, "UndoCount") else 0
+                )
+                doc_info["redo_count"] = (
+                    doc.RedoCount if hasattr(doc, "RedoCount") else 0
+                )
 
                 # Document properties
                 doc_info["properties"] = self._extract_properties(doc)
@@ -117,7 +126,7 @@ class ContextEnricher:
             "count": 0,
             "objects": [],
             "sub_objects": [],
-            "has_selection": False
+            "has_selection": False,
         }
 
         try:
@@ -131,18 +140,36 @@ class ContextEnricher:
                         "name": obj.Name,
                         "label": obj.Label,
                         "type": obj.TypeId,
-                        "properties": self._extract_properties(obj, detailed=False)
+                        "properties": self._extract_properties(obj, detailed=False),
                     }
 
                     # Check for shape
-                    if hasattr(obj, 'Shape'):
-                        obj_info["shape_type"] = obj.Shape.ShapeType if obj.Shape else None
+                    if hasattr(obj, "Shape"):
+                        obj_info["shape_type"] = (
+                            obj.Shape.ShapeType if obj.Shape else None
+                        )
                         if obj.Shape:
                             obj_info["shape_info"] = {
-                                "volume": obj.Shape.Volume if hasattr(obj.Shape, 'Volume') else None,
-                                "area": obj.Shape.Area if hasattr(obj.Shape, 'Area') else None,
-                                "length": obj.Shape.Length if hasattr(obj.Shape, 'Length') else None,
-                                "is_valid": obj.Shape.isValid() if hasattr(obj.Shape, 'isValid') else None
+                                "volume": (
+                                    obj.Shape.Volume
+                                    if hasattr(obj.Shape, "Volume")
+                                    else None
+                                ),
+                                "area": (
+                                    obj.Shape.Area
+                                    if hasattr(obj.Shape, "Area")
+                                    else None
+                                ),
+                                "length": (
+                                    obj.Shape.Length
+                                    if hasattr(obj.Shape, "Length")
+                                    else None
+                                ),
+                                "is_valid": (
+                                    obj.Shape.isValid()
+                                    if hasattr(obj.Shape, "isValid")
+                                    else None
+                                ),
                             }
 
                     selection_info["objects"].append(obj_info)
@@ -151,10 +178,12 @@ class ContextEnricher:
                 sel_ex = FreeCADGui.Selection.getSelectionEx()
                 for sel in sel_ex:
                     if sel.SubElementNames:
-                        selection_info["sub_objects"].append({
-                            "object": sel.ObjectName,
-                            "sub_elements": sel.SubElementNames
-                        })
+                        selection_info["sub_objects"].append(
+                            {
+                                "object": sel.ObjectName,
+                                "sub_elements": sel.SubElementNames,
+                            }
+                        )
 
         except Exception as e:
             selection_info["error"] = str(e)
@@ -167,7 +196,7 @@ class ContextEnricher:
             "total_count": 0,
             "by_type": {},
             "object_tree": [],
-            "details": []
+            "details": [],
         }
 
         try:
@@ -185,18 +214,29 @@ class ContextEnricher:
                 objects_info["by_type"][type_id] += 1
 
             # Build object tree (limited)
-            root_objects = [obj for obj in doc.Objects if not hasattr(obj, 'InList') or not obj.InList]
+            root_objects = [
+                obj
+                for obj in doc.Objects
+                if not hasattr(obj, "InList") or not obj.InList
+            ]
             for obj in root_objects[:10]:  # Limit root objects
-                objects_info["object_tree"].append(self._build_object_tree(obj, max_depth=3))
+                objects_info["object_tree"].append(
+                    self._build_object_tree(obj, max_depth=3)
+                )
 
             # Detailed info for recent/important objects
-            if self.config["summarize_large_documents"] and len(doc.Objects) > self.config["max_objects_detail"]:
+            if (
+                self.config["summarize_large_documents"]
+                and len(doc.Objects) > self.config["max_objects_detail"]
+            ):
                 # Just get the most recent objects
-                recent_objects = sorted(doc.Objects,
-                                      key=lambda x: x.ID if hasattr(x, 'ID') else 0,
-                                      reverse=True)[:10]
+                recent_objects = sorted(
+                    doc.Objects,
+                    key=lambda x: x.ID if hasattr(x, "ID") else 0,
+                    reverse=True,
+                )[:10]
             else:
-                recent_objects = doc.Objects[:self.config["max_objects_detail"]]
+                recent_objects = doc.Objects[: self.config["max_objects_detail"]]
 
             for obj in recent_objects:
                 obj_detail = self._extract_object_detail(obj)
@@ -215,30 +255,34 @@ class ContextEnricher:
                 "name": obj.Name,
                 "label": obj.Label,
                 "type": obj.TypeId,
-                "id": obj.ID if hasattr(obj, 'ID') else None,
-                "visibility": obj.Visibility if hasattr(obj, 'Visibility') else None
+                "id": obj.ID if hasattr(obj, "ID") else None,
+                "visibility": obj.Visibility if hasattr(obj, "Visibility") else None,
             }
 
             # Shape information
-            if hasattr(obj, 'Shape') and obj.Shape:
+            if hasattr(obj, "Shape") and obj.Shape:
                 shape = obj.Shape
                 detail["shape"] = {
                     "type": shape.ShapeType,
-                    "faces": len(shape.Faces) if hasattr(shape, 'Faces') else 0,
-                    "edges": len(shape.Edges) if hasattr(shape, 'Edges') else 0,
-                    "vertices": len(shape.Vertexes) if hasattr(shape, 'Vertexes') else 0,
-                    "is_solid": shape.isClosed() if hasattr(shape, 'isClosed') else None
+                    "faces": len(shape.Faces) if hasattr(shape, "Faces") else 0,
+                    "edges": len(shape.Edges) if hasattr(shape, "Edges") else 0,
+                    "vertices": (
+                        len(shape.Vertexes) if hasattr(shape, "Vertexes") else 0
+                    ),
+                    "is_solid": (
+                        shape.isClosed() if hasattr(shape, "isClosed") else None
+                    ),
                 }
 
             # Placement
-            if hasattr(obj, 'Placement'):
+            if hasattr(obj, "Placement"):
                 placement = obj.Placement
                 detail["placement"] = {
                     "position": list(placement.Base),
                     "rotation": {
                         "axis": list(placement.Rotation.Axis),
-                        "angle": placement.Rotation.Angle
-                    }
+                        "angle": placement.Rotation.Angle,
+                    },
                 }
 
             # Key properties
@@ -255,12 +299,14 @@ class ContextEnricher:
             "name": obj.Name,
             "label": obj.Label,
             "type": obj.TypeId,
-            "children": []
+            "children": [],
         }
 
-        if current_depth < max_depth and hasattr(obj, 'OutList'):
+        if current_depth < max_depth and hasattr(obj, "OutList"):
             for child in obj.OutList[:5]:  # Limit children
-                tree["children"].append(self._build_object_tree(child, current_depth + 1, max_depth))
+                tree["children"].append(
+                    self._build_object_tree(child, current_depth + 1, max_depth)
+                )
 
         return tree
 
@@ -270,15 +316,28 @@ class ContextEnricher:
 
         try:
             # Get property list
-            if hasattr(obj, 'PropertiesList'):
+            if hasattr(obj, "PropertiesList"):
                 prop_list = obj.PropertiesList
 
                 # Filter important properties
                 important_props = [
-                    'Length', 'Width', 'Height', 'Radius', 'Radius1', 'Radius2',
-                    'Angle', 'Angle1', 'Angle2', 'Angle3',
-                    'Base', 'Axis', 'Center', 'Position',
-                    'Label', 'Expression', 'Constrained'
+                    "Length",
+                    "Width",
+                    "Height",
+                    "Radius",
+                    "Radius1",
+                    "Radius2",
+                    "Angle",
+                    "Angle1",
+                    "Angle2",
+                    "Angle3",
+                    "Base",
+                    "Axis",
+                    "Center",
+                    "Position",
+                    "Label",
+                    "Expression",
+                    "Constrained",
                 ]
 
                 for prop_name in prop_list:
@@ -289,12 +348,12 @@ class ContextEnricher:
                         value = getattr(obj, prop_name)
 
                         # Convert complex types
-                        if hasattr(value, '__dict__'):
+                        if hasattr(value, "__dict__"):
                             # Skip complex objects in non-detailed mode
                             if not detailed:
                                 continue
                             value = str(value)
-                        elif hasattr(value, '__iter__') and not isinstance(value, str):
+                        elif hasattr(value, "__iter__") and not isinstance(value, str):
                             value = list(value)
 
                         properties[prop_name] = value
@@ -309,11 +368,7 @@ class ContextEnricher:
 
     def _extract_constraints_info(self) -> Dict[str, Any]:
         """Extract constraint information from sketches"""
-        constraints_info = {
-            "total_count": 0,
-            "by_type": {},
-            "sketches": []
-        }
+        constraints_info = {"total_count": 0, "by_type": {}, "sketches": []}
 
         try:
             doc = FreeCAD.ActiveDocument
@@ -321,23 +376,37 @@ class ContextEnricher:
                 return constraints_info
 
             # Find all sketches
-            sketches = [obj for obj in doc.Objects if obj.TypeId == 'Sketcher::SketchObject']
+            sketches = [
+                obj for obj in doc.Objects if obj.TypeId == "Sketcher::SketchObject"
+            ]
 
             for sketch in sketches[:10]:  # Limit sketches
                 sketch_info = {
                     "name": sketch.Name,
                     "label": sketch.Label,
-                    "constraint_count": sketch.ConstraintCount if hasattr(sketch, 'ConstraintCount') else 0,
-                    "constraints": []
+                    "constraint_count": (
+                        sketch.ConstraintCount
+                        if hasattr(sketch, "ConstraintCount")
+                        else 0
+                    ),
+                    "constraints": [],
                 }
 
                 # Get constraints
-                if hasattr(sketch, 'Constraints'):
-                    for i, constraint in enumerate(sketch.Constraints[:20]):  # Limit constraints
+                if hasattr(sketch, "Constraints"):
+                    for i, constraint in enumerate(
+                        sketch.Constraints[:20]
+                    ):  # Limit constraints
                         cons_info = {
                             "index": i,
-                            "type": constraint.Type if hasattr(constraint, 'Type') else None,
-                            "value": constraint.Value if hasattr(constraint, 'Value') else None
+                            "type": (
+                                constraint.Type if hasattr(constraint, "Type") else None
+                            ),
+                            "value": (
+                                constraint.Value
+                                if hasattr(constraint, "Value")
+                                else None
+                            ),
                         }
                         sketch_info["constraints"].append(cons_info)
 
@@ -358,10 +427,7 @@ class ContextEnricher:
 
     def _extract_materials_info(self) -> Dict[str, Any]:
         """Extract material information"""
-        materials_info = {
-            "assigned_materials": [],
-            "available_materials": []
-        }
+        materials_info = {"assigned_materials": [], "available_materials": []}
 
         try:
             doc = FreeCAD.ActiveDocument
@@ -370,11 +436,8 @@ class ContextEnricher:
 
             # Find objects with materials
             for obj in doc.Objects:
-                if hasattr(obj, 'Material') and obj.Material:
-                    mat_info = {
-                        "object": obj.Name,
-                        "material": str(obj.Material)
-                    }
+                if hasattr(obj, "Material") and obj.Material:
+                    mat_info = {"object": obj.Name, "material": str(obj.Material)}
                     materials_info["assigned_materials"].append(mat_info)
 
         except Exception as e:
@@ -384,25 +447,34 @@ class ContextEnricher:
 
     def _extract_view_info(self) -> Dict[str, Any]:
         """Extract 3D view information"""
-        view_info = {
-            "active_view": None,
-            "camera": {}
-        }
+        view_info = {"active_view": None, "camera": {}}
 
         try:
             if FreeCADGui:
-                view = FreeCADGui.ActiveDocument.ActiveView if FreeCADGui.ActiveDocument else None
+                view = (
+                    FreeCADGui.ActiveDocument.ActiveView
+                    if FreeCADGui.ActiveDocument
+                    else None
+                )
                 if view:
                     view_info["active_view"] = True
 
                     # Camera info
-                    if hasattr(view, 'getCameraNode'):
+                    if hasattr(view, "getCameraNode"):
                         camera = view.getCameraNode()
                         if camera:
                             view_info["camera"] = {
                                 "type": camera.getTypeId().getName(),
-                                "position": list(camera.position.getValue()) if hasattr(camera, 'position') else None,
-                                "orientation": str(camera.orientation.getValue()) if hasattr(camera, 'orientation') else None
+                                "position": (
+                                    list(camera.position.getValue())
+                                    if hasattr(camera, "position")
+                                    else None
+                                ),
+                                "orientation": (
+                                    str(camera.orientation.getValue())
+                                    if hasattr(camera, "orientation")
+                                    else None
+                                ),
                             }
 
         except Exception as e:
@@ -422,7 +494,9 @@ class ContextEnricher:
         # Document summary
         if "document" in context and context["document"]["has_active_document"]:
             doc = context["document"]
-            summary_parts.append(f"Active document: {doc['label']} with {doc['object_count']} objects")
+            summary_parts.append(
+                f"Active document: {doc['label']} with {doc['object_count']} objects"
+            )
 
         # Selection summary
         if "selection" in context and context["selection"]["has_selection"]:
@@ -440,10 +514,9 @@ class ContextEnricher:
 
     def _add_to_history(self, context: Dict):
         """Add context to history"""
-        self.context_history.append({
-            "timestamp": context["timestamp"],
-            "summary": context.get("summary", "")
-        })
+        self.context_history.append(
+            {"timestamp": context["timestamp"], "summary": context.get("summary", "")}
+        )
 
         # Limit history size
         if len(self.context_history) > self.max_history_items:

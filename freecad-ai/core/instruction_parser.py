@@ -1,15 +1,17 @@
 """Instruction Parser - Parses structured instructions from natural language"""
 
+import json
 import re
-from typing import Dict, List, Tuple, Optional, Any, Union
 from dataclasses import dataclass
 from enum import Enum
-import json
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import FreeCAD
 
 
 class InstructionType(Enum):
     """Types of instructions"""
+
     SINGLE_STEP = "single_step"
     MULTI_STEP = "multi_step"
     CONDITIONAL = "conditional"
@@ -20,6 +22,7 @@ class InstructionType(Enum):
 @dataclass
 class Parameter:
     """Represents a parameter in an instruction"""
+
     name: str
     value: Any
     type: str
@@ -31,6 +34,7 @@ class Parameter:
 @dataclass
 class Condition:
     """Represents a condition for conditional instructions"""
+
     type: str  # "if", "unless", "while", "until"
     expression: str
     parameters: List[Parameter]
@@ -39,12 +43,13 @@ class Condition:
 @dataclass
 class Instruction:
     """Represents a parsed instruction"""
+
     type: InstructionType
     action: str
     target: Optional[str]
     parameters: List[Parameter]
     conditions: List[Condition]
-    sub_instructions: List['Instruction']
+    sub_instructions: List["Instruction"]
     raw_text: str
     confidence: float
 
@@ -75,7 +80,7 @@ class InstructionParser:
             "scale": ["scale", "resize", "enlarge", "shrink"],
             "copy": ["copy", "duplicate", "clone", "replicate"],
             "measure": ["measure", "calculate", "compute", "find"],
-            "select": ["select", "pick", "choose", "highlight"]
+            "select": ["select", "pick", "choose", "highlight"],
         }
 
         # Parameter type mappings
@@ -85,7 +90,7 @@ class InstructionParser:
             "vector": ["direction", "axis", "normal"],
             "boolean": ["visible", "enabled", "active"],
             "string": ["name", "label", "description"],
-            "reference": ["object", "target", "source"]
+            "reference": ["object", "target", "source"],
         }
 
     def parse(self, text: str, context: Optional[Dict] = None) -> List[Instruction]:
@@ -124,28 +129,22 @@ class InstructionParser:
         return {
             # Single action pattern: "create a box"
             "single_action": re.compile(
-                r'^(\w+)\s+(?:a\s+|an\s+|the\s+)?(.+?)(?:\s+with\s+(.+))?$', re.I
+                r"^(\w+)\s+(?:a\s+|an\s+|the\s+)?(.+?)(?:\s+with\s+(.+))?$", re.I
             ),
-
             # Multi-step pattern: "first create a box, then move it"
             "multi_step": re.compile(
-                r'(?:first\s+|then\s+|next\s+|finally\s+)(.+?)(?:,|and|$)', re.I
+                r"(?:first\s+|then\s+|next\s+|finally\s+)(.+?)(?:,|and|$)", re.I
             ),
-
             # Conditional pattern: "if selected, rotate 45 degrees"
             "conditional": re.compile(
-                r'(?:if|when|unless)\s+(.+?),\s*(?:then\s+)?(.+)', re.I
+                r"(?:if|when|unless)\s+(.+?),\s*(?:then\s+)?(.+)", re.I
             ),
-
             # Iterative pattern: "repeat 5 times: create a box"
             "iterative": re.compile(
-                r'(?:repeat|iterate)\s+(\d+)\s+times?:\s*(.+)', re.I
+                r"(?:repeat|iterate)\s+(\d+)\s+times?:\s*(.+)", re.I
             ),
-
             # For each pattern: "for each selected object, scale by 2"
-            "for_each": re.compile(
-                r'for\s+each\s+(.+?),\s*(.+)', re.I
-            )
+            "for_each": re.compile(r"for\s+each\s+(.+?),\s*(.+)", re.I),
         }
 
     def _build_parameter_patterns(self) -> Dict[str, re.Pattern]:
@@ -153,52 +152,42 @@ class InstructionParser:
         return {
             # Dimension: "10mm", "5.5 inches"
             "dimension": re.compile(
-                r'(\d+(?:\.\d+)?)\s*(mm|cm|m|inch|inches|in|ft|feet)?', re.I
+                r"(\d+(?:\.\d+)?)\s*(mm|cm|m|inch|inches|in|ft|feet)?", re.I
             ),
-
             # Position: "at (10, 20, 30)" or "at position 10, 20, 30"
             "position": re.compile(
-                r'(?:at|to)\s*(?:position\s*)?\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)?', re.I
+                r"(?:at|to)\s*(?:position\s*)?\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)?",
+                re.I,
             ),
-
             # Angle: "45 degrees", "90°", "1.57 radians"
             "angle": re.compile(
-                r'(\d+(?:\.\d+)?)\s*(degrees?|deg|radians?|rad|°)', re.I
+                r"(\d+(?:\.\d+)?)\s*(degrees?|deg|radians?|rad|°)", re.I
             ),
-
             # Count: "5 times", "3 copies"
-            "count": re.compile(
-                r'(\d+)\s+(?:times?|copies|instances?)', re.I
-            ),
-
+            "count": re.compile(r"(\d+)\s+(?:times?|copies|instances?)", re.I),
             # Percentage: "50%", "200 percent"
-            "percentage": re.compile(
-                r'(\d+(?:\.\d+)?)\s*(?:%|percent)', re.I
-            ),
-
+            "percentage": re.compile(r"(\d+(?:\.\d+)?)\s*(?:%|percent)", re.I),
             # Named parameter: "with radius = 10"
-            "named": re.compile(
-                r'(\w+)\s*=\s*([^,\s]+)', re.I
-            ),
-
+            "named": re.compile(r"(\w+)\s*=\s*([^,\s]+)", re.I),
             # Color: "red", "blue", "#FF0000"
             "color": re.compile(
-                r'\b(red|green|blue|yellow|orange|purple|black|white|gray|grey|#[0-9A-Fa-f]{6})\b', re.I
+                r"\b(red|green|blue|yellow|orange|purple|black|white|gray|grey|#[0-9A-Fa-f]{6})\b",
+                re.I,
             ),
-
             # Reference: "the selected object", "all boxes"
             "reference": re.compile(
-                r'\b(?:the\s+)?(selected|current|active|all|last|previous)\s*(\w+)?\b', re.I
-            )
+                r"\b(?:the\s+)?(selected|current|active|all|last|previous)\s*(\w+)?\b",
+                re.I,
+            ),
         }
 
     def _build_condition_patterns(self) -> Dict[str, re.Pattern]:
         """Build patterns for condition extraction"""
         return {
-            "if_condition": re.compile(r'if\s+(.+?)(?:,|then)', re.I),
-            "unless_condition": re.compile(r'unless\s+(.+?)(?:,|then)', re.I),
-            "while_condition": re.compile(r'while\s+(.+?)(?:,|do)', re.I),
-            "until_condition": re.compile(r'until\s+(.+?)(?:,|do)', re.I)
+            "if_condition": re.compile(r"if\s+(.+?)(?:,|then)", re.I),
+            "unless_condition": re.compile(r"unless\s+(.+?)(?:,|then)", re.I),
+            "while_condition": re.compile(r"while\s+(.+?)(?:,|do)", re.I),
+            "until_condition": re.compile(r"until\s+(.+?)(?:,|do)", re.I),
         }
 
     def _load_instruction_templates(self) -> Dict[str, Dict]:
@@ -208,31 +197,31 @@ class InstructionParser:
                 "action": "create",
                 "target": "box",
                 "required_params": ["length", "width", "height"],
-                "optional_params": ["position", "name"]
+                "optional_params": ["position", "name"],
             },
             "move_object": {
                 "action": "move",
                 "target": "object",
                 "required_params": ["vector"],
-                "optional_params": ["relative", "copy"]
+                "optional_params": ["relative", "copy"],
             },
             "rotate_object": {
                 "action": "rotate",
                 "target": "object",
                 "required_params": ["angle", "axis"],
-                "optional_params": ["center", "copy"]
-            }
+                "optional_params": ["center", "copy"],
+            },
         }
 
     def _normalize_text(self, text: str) -> str:
         """Normalize instruction text"""
         # Remove extra whitespace
-        text = ' '.join(text.split())
+        text = " ".join(text.split())
 
         # Standardize punctuation
         text = text.strip()
-        if not text.endswith('.'):
-            text += '.'
+        if not text.endswith("."):
+            text += "."
 
         return text
 
@@ -242,7 +231,7 @@ class InstructionParser:
 
         # Split by common delimiters
         # First split by periods that aren't part of numbers
-        parts = re.split(r'\.(?!\d)', text)
+        parts = re.split(r"\.(?!\d)", text)
 
         for part in parts:
             part = part.strip()
@@ -250,15 +239,22 @@ class InstructionParser:
                 continue
 
             # Further split by instruction keywords
-            if any(keyword in part.lower() for keyword in ['then', 'next', 'after that', 'finally']):
-                sub_parts = re.split(r'\b(?:then|next|after that|finally)\b', part, flags=re.I)
+            if any(
+                keyword in part.lower()
+                for keyword in ["then", "next", "after that", "finally"]
+            ):
+                sub_parts = re.split(
+                    r"\b(?:then|next|after that|finally)\b", part, flags=re.I
+                )
                 segments.extend([p.strip() for p in sub_parts if p.strip()])
             else:
                 segments.append(part)
 
         return segments
 
-    def _parse_segment(self, segment: str, context: Optional[Dict]) -> Optional[Instruction]:
+    def _parse_segment(
+        self, segment: str, context: Optional[Dict]
+    ) -> Optional[Instruction]:
         """Parse a single instruction segment"""
         # Check for different instruction types
 
@@ -280,7 +276,9 @@ class InstructionParser:
         # Default to single action
         return self._parse_single_action(segment, context)
 
-    def _parse_single_action(self, segment: str, context: Optional[Dict]) -> Optional[Instruction]:
+    def _parse_single_action(
+        self, segment: str, context: Optional[Dict]
+    ) -> Optional[Instruction]:
         """Parse a single action instruction"""
         # Extract action verb
         action = None
@@ -319,10 +317,12 @@ class InstructionParser:
             conditions=conditions,
             sub_instructions=[],
             raw_text=segment,
-            confidence=0.8
+            confidence=0.8,
         )
 
-    def _parse_iterative_instruction(self, match: re.Match, segment: str) -> Instruction:
+    def _parse_iterative_instruction(
+        self, match: re.Match, segment: str
+    ) -> Instruction:
         """Parse an iterative instruction"""
         count = int(match.group(1))
         action_text = match.group(2)
@@ -331,11 +331,7 @@ class InstructionParser:
         sub_instruction = self._parse_single_action(action_text, None)
 
         # Create count parameter
-        count_param = Parameter(
-            name="iterations",
-            value=count,
-            type="numeric"
-        )
+        count_param = Parameter(name="iterations", value=count, type="numeric")
 
         return Instruction(
             type=InstructionType.LOOP,
@@ -345,10 +341,12 @@ class InstructionParser:
             conditions=[],
             sub_instructions=[sub_instruction] if sub_instruction else [],
             raw_text=segment,
-            confidence=0.9
+            confidence=0.9,
         )
 
-    def _parse_conditional_instruction(self, match: re.Match, segment: str) -> Instruction:
+    def _parse_conditional_instruction(
+        self, match: re.Match, segment: str
+    ) -> Instruction:
         """Parse a conditional instruction"""
         condition_text = match.group(1)
         action_text = match.group(2)
@@ -357,7 +355,7 @@ class InstructionParser:
         condition = Condition(
             type="if",
             expression=condition_text,
-            parameters=self._extract_parameters(condition_text)
+            parameters=self._extract_parameters(condition_text),
         )
 
         # Parse action
@@ -371,7 +369,7 @@ class InstructionParser:
             conditions=[condition],
             sub_instructions=[sub_instruction] if sub_instruction else [],
             raw_text=segment,
-            confidence=0.85
+            confidence=0.85,
         )
 
     def _parse_for_each_instruction(self, match: re.Match, segment: str) -> Instruction:
@@ -390,7 +388,7 @@ class InstructionParser:
             conditions=[],
             sub_instructions=[sub_instruction] if sub_instruction else [],
             raw_text=segment,
-            confidence=0.85
+            confidence=0.85,
         )
 
     def _extract_parameters(self, text: str) -> List[Parameter]:
@@ -405,25 +403,24 @@ class InstructionParser:
             # Determine parameter name based on context
             param_name = self._infer_dimension_name(text, len(parameters))
 
-            parameters.append(Parameter(
-                name=param_name,
-                value=value,
-                type="numeric",
-                unit=unit
-            ))
+            parameters.append(
+                Parameter(name=param_name, value=value, type="numeric", unit=unit)
+            )
 
         # Extract position
         pos_match = self.parameter_patterns["position"].search(text)
         if pos_match:
-            parameters.append(Parameter(
-                name="position",
-                value={
-                    "x": float(pos_match.group(1)),
-                    "y": float(pos_match.group(2)),
-                    "z": float(pos_match.group(3))
-                },
-                type="position"
-            ))
+            parameters.append(
+                Parameter(
+                    name="position",
+                    value={
+                        "x": float(pos_match.group(1)),
+                        "y": float(pos_match.group(2)),
+                        "z": float(pos_match.group(3)),
+                    },
+                    type="position",
+                )
+            )
 
         # Extract angles
         for match in self.parameter_patterns["angle"].finditer(text):
@@ -436,12 +433,9 @@ class InstructionParser:
             else:
                 value_rad = value
 
-            parameters.append(Parameter(
-                name="angle",
-                value=value_rad,
-                type="numeric",
-                unit="radians"
-            ))
+            parameters.append(
+                Parameter(name="angle", value=value_rad, type="numeric", unit="radians")
+            )
 
         # Extract named parameters
         for match in self.parameter_patterns["named"].finditer(text):
@@ -457,11 +451,9 @@ class InstructionParser:
                 # Keep as string
                 param_type = "string"
 
-            parameters.append(Parameter(
-                name=param_name,
-                value=param_value,
-                type=param_type
-            ))
+            parameters.append(
+                Parameter(name=param_name, value=param_value, type=param_type)
+            )
 
         return parameters
 
@@ -473,11 +465,13 @@ class InstructionParser:
             match = pattern.search(text)
             if match:
                 condition_text = match.group(1)
-                conditions.append(Condition(
-                    type=cond_type.replace("_condition", ""),
-                    expression=condition_text,
-                    parameters=self._extract_parameters(condition_text)
-                ))
+                conditions.append(
+                    Condition(
+                        type=cond_type.replace("_condition", ""),
+                        expression=condition_text,
+                        parameters=self._extract_parameters(condition_text),
+                    )
+                )
 
         return conditions
 
@@ -531,7 +525,7 @@ class InstructionParser:
                         conditions=[],
                         sub_instructions=[current, next_inst],
                         raw_text=f"{current.raw_text} {next_inst.raw_text}",
-                        confidence=min(current.confidence, next_inst.confidence)
+                        confidence=min(current.confidence, next_inst.confidence),
                     )
                     linked.append(composite)
                     i += 2
@@ -555,7 +549,9 @@ class InstructionParser:
 
         return False
 
-    def _optimize_instructions(self, instructions: List[Instruction]) -> List[Instruction]:
+    def _optimize_instructions(
+        self, instructions: List[Instruction]
+    ) -> List[Instruction]:
         """Optimize instruction sequence for efficient execution"""
         # This is a placeholder for optimization logic
         # Could include:
@@ -576,12 +572,9 @@ class InstructionParser:
                 "parameters": self._convert_parameters(instruction.parameters),
                 "description": self._generate_description(instruction),
                 "conditions": [
-                    {
-                        "type": cond.type,
-                        "expression": cond.expression
-                    }
+                    {"type": cond.type, "expression": cond.expression}
                     for cond in instruction.conditions
-                ]
+                ],
             }
 
             # Add sub-steps for composite instructions
@@ -594,7 +587,7 @@ class InstructionParser:
         return {
             "steps": steps,
             "estimated_duration": len(steps) * 2.0,  # Rough estimate
-            "complexity": self._calculate_complexity(instructions)
+            "complexity": self._calculate_complexity(instructions),
         }
 
     def _map_action_to_tool(self, action: str) -> str:
@@ -607,7 +600,7 @@ class InstructionParser:
             "rotate": "operations",
             "scale": "operations",
             "measure": "measurements",
-            "select": "selection"
+            "select": "selection",
         }
         return action_tool_map.get(action, "unknown")
 
@@ -638,7 +631,9 @@ class InstructionParser:
             param_strs = []
             for param in instruction.parameters[:3]:  # Limit to first 3
                 if param.name == "position":
-                    param_strs.append(f"at ({param.value['x']}, {param.value['y']}, {param.value['z']})")
+                    param_strs.append(
+                        f"at ({param.value['x']}, {param.value['y']}, {param.value['z']})"
+                    )
                 else:
                     param_strs.append(f"{param.name}: {param.value}")
 

@@ -1,9 +1,10 @@
 """Providers Widget - Consolidated AI Provider and API Key Management"""
 
-from PySide2 import QtCore, QtGui, QtWidgets
 import json
 import os
 from pathlib import Path
+
+from PySide2 import QtCore, QtGui, QtWidgets
 
 
 class FallbackConfigManager:
@@ -159,8 +160,8 @@ class ProvidersWidget(QtWidgets.QWidget):
         # Strategy 3: Direct path import
         if self.config_manager is None:
             try:
-                import sys
                 import os
+                import sys
 
                 # Get the addon directory
                 addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -1175,7 +1176,8 @@ class ProvidersWidget(QtWidgets.QWidget):
         # Console output area
         console_output = QtWidgets.QTextEdit()
         console_output.setReadOnly(True)
-        console_output.setStyleSheet("""
+        console_output.setStyleSheet(
+            """
             QTextEdit {
                 background-color: #1e1e1e;
                 color: #ffffff;
@@ -1184,7 +1186,8 @@ class ProvidersWidget(QtWidgets.QWidget):
                 border: 1px solid #555;
                 padding: 10px;
             }
-        """)
+        """
+        )
         layout.addWidget(console_output)
 
         # Buttons
@@ -1196,11 +1199,15 @@ class ProvidersWidget(QtWidgets.QWidget):
         layout.addLayout(button_layout)
 
         # Start the test
-        self._perform_real_connection_test(provider_name, api_key, console_output, console_dialog)
+        self._perform_real_connection_test(
+            provider_name, api_key, console_output, console_dialog
+        )
 
         console_dialog.exec_()
 
-    def _perform_real_connection_test(self, provider_name, api_key, console_output, dialog):
+    def _perform_real_connection_test(
+        self, provider_name, api_key, console_output, dialog
+    ):
         """Perform the actual connection test with real-time console output."""
         import time
         from datetime import datetime
@@ -1212,11 +1219,13 @@ class ProvidersWidget(QtWidgets.QWidget):
                 "SUCCESS": "#4caf50",
                 "ERROR": "#f44336",
                 "WARNING": "#ff9800",
-                "DEBUG": "#2196f3"
+                "DEBUG": "#2196f3",
             }.get(level, "#ffffff")
 
-            console_output.append(f"<span style='color: #888'>[{timestamp}]</span> "
-                                f"<span style='color: {color}'>{level}:</span> {msg}")
+            console_output.append(
+                f"<span style='color: #888'>[{timestamp}]</span> "
+                f"<span style='color: {color}'>{level}:</span> {msg}"
+            )
             console_output.ensureCursorVisible()
             QtWidgets.QApplication.processEvents()
 
@@ -1244,10 +1253,17 @@ class ProvidersWidget(QtWidgets.QWidget):
                 log_message("Provider service is available", "SUCCESS")
             else:
                 log_message("Provider service not available", "ERROR")
-                log_message("This means set_provider_service() was never called", "DEBUG")
+                log_message(
+                    "This means set_provider_service() was never called", "DEBUG"
+                )
                 log_message("or the provider service failed to initialize", "DEBUG")
-                log_message("Check FreeCAD console for 'Setting up provider service' messages", "DEBUG")
-                self._test_connection_finished(False, "No provider service - check console for details")
+                log_message(
+                    "Check FreeCAD console for 'Setting up provider service' messages",
+                    "DEBUG",
+                )
+                self._test_connection_finished(
+                    False, "No provider service - check console for details"
+                )
                 return
 
             # Step 3: Initialize provider
@@ -1264,17 +1280,25 @@ class ProvidersWidget(QtWidgets.QWidget):
 
                 # Try to initialize with provider service
                 config = {
-                    "model": getattr(self, "model_combo", None) and self.model_combo.currentText() or "default"
+                    "model": getattr(self, "model_combo", None)
+                    and self.model_combo.currentText()
+                    or "default"
                 }
 
-                log_message(f"Adding provider to service with config: {config}", "DEBUG")
-                success = self.provider_service._initialize_provider(provider_name, api_key, config)
+                log_message(
+                    f"Adding provider to service with config: {config}", "DEBUG"
+                )
+                success = self.provider_service._initialize_provider(
+                    provider_name, api_key, config
+                )
 
                 if success:
                     log_message("Provider initialized successfully", "SUCCESS")
                 else:
                     log_message("Provider initialization failed", "ERROR")
-                    self._test_connection_finished(False, "Provider initialization failed")
+                    self._test_connection_finished(
+                        False, "Provider initialization failed"
+                    )
                     return
 
             except Exception as e:
@@ -1309,18 +1333,24 @@ class ProvidersWidget(QtWidgets.QWidget):
                         time.sleep(0.1)
                         QtWidgets.QApplication.processEvents()
 
-                        current_status = self.provider_service.get_provider_status(provider_name)
+                        current_status = self.provider_service.get_provider_status(
+                            provider_name
+                        )
                         status_text = current_status.get("status", "unknown")
 
                         if status_text == "testing":
                             log_message("Test in progress...", "DEBUG")
                         elif status_text == "connected":
                             test_success = True
-                            test_message = current_status.get("message", "Connected successfully")
+                            test_message = current_status.get(
+                                "message", "Connected successfully"
+                            )
                             break
                         elif status_text == "error":
                             test_success = False
-                            test_message = current_status.get("message", "Connection failed")
+                            test_message = current_status.get(
+                                "message", "Connection failed"
+                            )
                             break
 
                         wait_count += 1
@@ -1344,6 +1374,7 @@ class ProvidersWidget(QtWidgets.QWidget):
             except Exception as e:
                 log_message(f"Connection test error: {str(e)}", "ERROR")
                 import traceback
+
                 log_message(f"Traceback: {traceback.format_exc()}", "DEBUG")
                 self._test_connection_finished(False, f"Test error: {str(e)}")
                 return
@@ -1364,6 +1395,7 @@ class ProvidersWidget(QtWidgets.QWidget):
         except Exception as e:
             log_message(f"Unexpected error during test: {str(e)}", "ERROR")
             import traceback
+
             log_message(f"Full traceback: {traceback.format_exc()}", "DEBUG")
             self._test_connection_finished(False, f"Unexpected error: {str(e)}")
 
@@ -1376,13 +1408,13 @@ class ProvidersWidget(QtWidgets.QWidget):
             QtWidgets.QMessageBox.information(
                 self,
                 "Connection Test Successful",
-                f"Connection test completed successfully!\n\n{message}"
+                f"Connection test completed successfully!\n\n{message}",
             )
         else:
             QtWidgets.QMessageBox.warning(
                 self,
                 "Connection Test Failed",
-                f"Connection test failed:\n\n{message}\n\nCheck the console output for more details."
+                f"Connection test failed:\n\n{message}\n\nCheck the console output for more details.",
             )
 
     def _refresh_providers(self):
@@ -1604,17 +1636,15 @@ class ProvidersWidget(QtWidgets.QWidget):
         try:
             # Try to get provider service from parent widget
             parent_widget = self.parent()
-            while parent_widget and not hasattr(parent_widget, 'get_provider_service'):
+            while parent_widget and not hasattr(parent_widget, "get_provider_service"):
                 parent_widget = parent_widget.parent()
 
-            if parent_widget and hasattr(parent_widget, 'get_provider_service'):
+            if parent_widget and hasattr(parent_widget, "get_provider_service"):
                 provider_service = parent_widget.get_provider_service()
                 if provider_service:
                     self.set_provider_service(provider_service)
                     QtWidgets.QMessageBox.information(
-                        self,
-                        "Success",
-                        "Provider service reconnected successfully!"
+                        self, "Success", "Provider service reconnected successfully!"
                     )
                     return
 
@@ -1623,14 +1653,14 @@ class ProvidersWidget(QtWidgets.QWidget):
                 "Error",
                 "Could not find provider service in parent widgets.\n\n"
                 "The provider service may have failed to initialize.\n"
-                "Check the FreeCAD console for error messages."
+                "Check the FreeCAD console for error messages.",
             )
 
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self,
                 "Error",
-                f"Error trying to reconnect provider service:\n\n{str(e)}"
+                f"Error trying to reconnect provider service:\n\n{str(e)}",
             )
 
     def get_active_providers(self):

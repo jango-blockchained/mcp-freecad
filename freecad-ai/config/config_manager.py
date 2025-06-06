@@ -4,12 +4,12 @@ Configuration Manager for MCP FreeCAD Addon
 Handles loading, saving, and managing configuration settings for the addon.
 """
 
-import os
+import base64
 import json
 import logging
-import base64
-from typing import Dict, Any, Optional, List
+import os
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # Try to import cryptography for secure storage
 try:
@@ -117,8 +117,8 @@ class ConfigManager:
                     return f.read().strip()
             else:
                 # Fallback to hostname + user
-                import socket
                 import getpass
+                import socket
 
                 return f"{socket.gethostname()}-{getpass.getuser()}"
         except:

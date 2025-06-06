@@ -8,6 +8,7 @@ try:
     from fastapi import APIRouter, Header, HTTPException, Query, Request
     from fastapi.responses import StreamingResponse
     from pydantic import BaseModel
+
     FASTAPI_AVAILABLE = True
 except ImportError:
     # FastAPI not available, create minimal stubs

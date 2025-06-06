@@ -1,14 +1,15 @@
 """Server Widget - Functional GUI for managing MCP servers"""
 
-import os
-import sys
-import subprocess
 import json
+import os
+import subprocess
+import sys
 from datetime import datetime
 
 # Try to import psutil, but handle gracefully if not available
 try:
     import psutil
+
     HAS_PSUTIL = True
 except ImportError:
     HAS_PSUTIL = False
@@ -47,6 +48,7 @@ class ServerWidget(QtWidgets.QWidget):
         """Setup MCP bridge for server management."""
         try:
             from ..utils.mcp_bridge import MCPBridge
+
             self.mcp_bridge = MCPBridge()
         except ImportError:
             self.mcp_bridge = None
@@ -90,14 +92,16 @@ class ServerWidget(QtWidgets.QWidget):
         """Create server status card."""
         status_card = QtWidgets.QFrame()
         status_card.setFrameStyle(QtWidgets.QFrame.Box)
-        status_card.setStyleSheet("""
+        status_card.setStyleSheet(
+            """
             QFrame {
                 border: 2px solid #ddd;
                 border-radius: 8px;
                 background-color: #f8f9fa;
                 padding: 10px;
             }
-        """)
+        """
+        )
 
         card_layout = QtWidgets.QVBoxLayout(status_card)
 
@@ -148,7 +152,8 @@ class ServerWidget(QtWidgets.QWidget):
         controls_layout = QtWidgets.QHBoxLayout()
 
         self.start_btn = QtWidgets.QPushButton("▶ Start")
-        self.start_btn.setStyleSheet("""
+        self.start_btn.setStyleSheet(
+            """
             QPushButton {
                 background-color: #4CAF50;
                 color: white;
@@ -164,10 +169,12 @@ class ServerWidget(QtWidgets.QWidget):
             QPushButton:disabled {
                 background-color: #ccc;
             }
-        """)
+        """
+        )
 
         self.stop_btn = QtWidgets.QPushButton("■ Stop")
-        self.stop_btn.setStyleSheet("""
+        self.stop_btn.setStyleSheet(
+            """
             QPushButton {
                 background-color: #f44336;
                 color: white;
@@ -183,11 +190,13 @@ class ServerWidget(QtWidgets.QWidget):
             QPushButton:disabled {
                 background-color: #ccc;
             }
-        """)
+        """
+        )
         self.stop_btn.setEnabled(False)
 
         self.restart_btn = QtWidgets.QPushButton("⟳ Restart")
-        self.restart_btn.setStyleSheet("""
+        self.restart_btn.setStyleSheet(
+            """
             QPushButton {
                 background-color: #FF9800;
                 color: white;
@@ -203,7 +212,8 @@ class ServerWidget(QtWidgets.QWidget):
             QPushButton:disabled {
                 background-color: #ccc;
             }
-        """)
+        """
+        )
         self.restart_btn.setEnabled(False)
 
         controls_layout.addWidget(self.start_btn)
@@ -221,13 +231,15 @@ class ServerWidget(QtWidgets.QWidget):
     def _create_performance_section(self, layout):
         """Create performance monitoring section."""
         perf_frame = QtWidgets.QFrame()
-        perf_frame.setStyleSheet("""
+        perf_frame.setStyleSheet(
+            """
             QFrame {
                 background-color: #f5f5f5;
                 border-radius: 4px;
                 padding: 8px;
             }
-        """)
+        """
+        )
 
         perf_layout = QtWidgets.QHBoxLayout(perf_frame)
         perf_layout.setSpacing(15)
@@ -243,7 +255,9 @@ class ServerWidget(QtWidgets.QWidget):
         cpu_layout.addWidget(cpu_title, alignment=QtCore.Qt.AlignCenter)
 
         self.cpu_label = QtWidgets.QLabel("0%")
-        self.cpu_label.setStyleSheet("font-weight: bold; color: #2196F3; font-size: 14px;")
+        self.cpu_label.setStyleSheet(
+            "font-weight: bold; color: #2196F3; font-size: 14px;"
+        )
         cpu_layout.addWidget(self.cpu_label, alignment=QtCore.Qt.AlignCenter)
 
         perf_layout.addWidget(cpu_widget)
@@ -259,7 +273,9 @@ class ServerWidget(QtWidgets.QWidget):
         mem_layout.addWidget(mem_title, alignment=QtCore.Qt.AlignCenter)
 
         self.memory_label = QtWidgets.QLabel("0 MB")
-        self.memory_label.setStyleSheet("font-weight: bold; color: #4CAF50; font-size: 14px;")
+        self.memory_label.setStyleSheet(
+            "font-weight: bold; color: #4CAF50; font-size: 14px;"
+        )
         mem_layout.addWidget(self.memory_label, alignment=QtCore.Qt.AlignCenter)
 
         perf_layout.addWidget(mem_widget)
@@ -275,7 +291,9 @@ class ServerWidget(QtWidgets.QWidget):
         req_layout.addWidget(req_title, alignment=QtCore.Qt.AlignCenter)
 
         self.request_rate_label = QtWidgets.QLabel("0")
-        self.request_rate_label.setStyleSheet("font-weight: bold; color: #FF9800; font-size: 14px;")
+        self.request_rate_label.setStyleSheet(
+            "font-weight: bold; color: #FF9800; font-size: 14px;"
+        )
         req_layout.addWidget(self.request_rate_label, alignment=QtCore.Qt.AlignCenter)
 
         perf_layout.addWidget(req_widget)
@@ -287,13 +305,15 @@ class ServerWidget(QtWidgets.QWidget):
     def _create_logs_section(self, layout):
         """Create compact logs display section."""
         logs_frame = QtWidgets.QFrame()
-        logs_frame.setStyleSheet("""
+        logs_frame.setStyleSheet(
+            """
             QFrame {
                 background-color: #1e1e1e;
                 border-radius: 4px;
                 padding: 5px;
             }
-        """)
+        """
+        )
 
         logs_layout = QtWidgets.QVBoxLayout(logs_frame)
         logs_layout.setSpacing(2)
@@ -309,7 +329,8 @@ class ServerWidget(QtWidgets.QWidget):
 
         self.clear_logs_btn = QtWidgets.QPushButton("Clear")
         self.clear_logs_btn.setMaximumHeight(20)
-        self.clear_logs_btn.setStyleSheet("""
+        self.clear_logs_btn.setStyleSheet(
+            """
             QPushButton {
                 color: #ccc;
                 background-color: #333;
@@ -321,7 +342,8 @@ class ServerWidget(QtWidgets.QWidget):
             QPushButton:hover {
                 background-color: #444;
             }
-        """)
+        """
+        )
         self.clear_logs_btn.clicked.connect(lambda: self.logs_text.clear())
         logs_header.addWidget(self.clear_logs_btn)
 
@@ -330,7 +352,8 @@ class ServerWidget(QtWidgets.QWidget):
         self.logs_text = QtWidgets.QTextEdit()
         self.logs_text.setMaximumHeight(80)
         self.logs_text.setReadOnly(True)
-        self.logs_text.setStyleSheet("""
+        self.logs_text.setStyleSheet(
+            """
             QTextEdit {
                 background-color: #1e1e1e;
                 color: #ccc;
@@ -338,7 +361,8 @@ class ServerWidget(QtWidgets.QWidget):
                 font-size: 10px;
                 border: none;
             }
-        """)
+        """
+        )
         logs_layout.addWidget(self.logs_text)
 
         layout.addWidget(logs_frame)
@@ -353,11 +377,11 @@ class ServerWidget(QtWidgets.QWidget):
         """Check if MCP server is running."""
         if HAS_PSUTIL:
             # Check for running MCP server process
-            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+            for proc in psutil.process_iter(["pid", "name", "cmdline"]):
                 try:
-                    cmdline = ' '.join(proc.info.get('cmdline', []))
-                    if 'mcp' in cmdline.lower() and 'freecad' in cmdline.lower():
-                        self.server_pid = proc.info['pid']
+                    cmdline = " ".join(proc.info.get("cmdline", []))
+                    if "mcp" in cmdline.lower() and "freecad" in cmdline.lower():
+                        self.server_pid = proc.info["pid"]
                         self._update_status("Running", True)
                         return True
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
@@ -375,7 +399,9 @@ class ServerWidget(QtWidgets.QWidget):
             # Get the workspace root - resolve symlinks to find the actual development directory
             current_file = os.path.realpath(__file__)  # Resolve symlinks
             # Go up from gui/server_widget.py -> gui -> freecad-ai -> mcp-freecad
-            workspace_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
+            workspace_root = os.path.dirname(
+                os.path.dirname(os.path.dirname(current_file))
+            )
             start_script = os.path.join(workspace_root, "start_mcp.py")
 
             if os.path.exists(start_script):
@@ -384,7 +410,7 @@ class ServerWidget(QtWidgets.QWidget):
                     [sys.executable, start_script],
                     cwd=workspace_root,
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE
+                    stderr=subprocess.PIPE,
                 )
                 self.server_pid = process.pid
                 self._add_log(f"Server started with PID: {self.server_pid}")
@@ -472,7 +498,9 @@ class ServerWidget(QtWidgets.QWidget):
                 uptime = datetime.now() - create_time
                 hours, remainder = divmod(int(uptime.total_seconds()), 3600)
                 minutes, seconds = divmod(remainder, 60)
-                self.uptime_label.setText(f"Uptime: {hours:02d}:{minutes:02d}:{seconds:02d}")
+                self.uptime_label.setText(
+                    f"Uptime: {hours:02d}:{minutes:02d}:{seconds:02d}"
+                )
 
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 self.server_pid = None

@@ -7,9 +7,10 @@ boxes, cylinders, spheres, cones, and other fundamental shapes.
 Author: jango-blockchained
 """
 
+from typing import Any, Dict, Optional
+
 import FreeCAD as App
 import Part
-from typing import Dict, Any, Optional
 
 
 class PrimitivesTool:

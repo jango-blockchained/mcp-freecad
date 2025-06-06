@@ -7,9 +7,9 @@ wedges, and ellipsoids.
 Author: AI Assistant
 """
 
-import unittest
-import sys
 import os
+import sys
+import unittest
 
 # Add the parent directory to the path to import the tool
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

@@ -7,11 +7,12 @@ including STL, STEP, IGES, OBJ, and others.
 Author: jango-blockchained
 """
 
-import FreeCAD as App
-import Part
-import Mesh
 import os
-from typing import Dict, Any, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+
+import FreeCAD as App
+import Mesh
+import Part
 
 
 class ExportImportTool:

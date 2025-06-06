@@ -8,10 +8,11 @@ addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if addon_dir not in sys.path:
     sys.path.insert(0, addon_dir)
 
-from PySide2 import QtCore, QtGui, QtWidgets
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
+
 import FreeCAD
+from PySide2 import QtCore, QtGui, QtWidgets
 
 
 class CompactToolButton(QtWidgets.QPushButton):
@@ -57,7 +58,8 @@ class CollapsibleCategory(QtWidgets.QWidget):
         self.header_btn = QtWidgets.QPushButton(f"{icon} {title} ▼")
         self.header_btn.setCheckable(True)
         self.header_btn.setChecked(True)
-        self.header_btn.setStyleSheet("""
+        self.header_btn.setStyleSheet(
+            """
             QPushButton {
                 text-align: left;
                 padding: 5px 10px;
@@ -72,7 +74,8 @@ class CollapsibleCategory(QtWidgets.QWidget):
             QPushButton:checked {
                 background-color: #e3f2fd;
             }
-        """)
+        """
+        )
         self.header_btn.clicked.connect(self._toggle_collapse)
         layout.addWidget(self.header_btn)
 
@@ -116,21 +119,21 @@ class ToolsWidget(QtWidgets.QWidget):
         try:
             # Try absolute imports first
             try:
-                from tools.primitives import PrimitivesTool
-                from tools.operations import OperationsTool
-                from tools.measurements import MeasurementsTool
-                from tools.export_import import ExportImportTool
-                from tools.advanced_primitives import AdvancedPrimitivesTool
                 from tools.advanced_operations import AdvancedOperationsTool
+                from tools.advanced_primitives import AdvancedPrimitivesTool
+                from tools.export_import import ExportImportTool
+                from tools.measurements import MeasurementsTool
+                from tools.operations import OperationsTool
+                from tools.primitives import PrimitivesTool
                 from tools.surface_modification import SurfaceModificationTool
             except ImportError:
                 # Try relative imports
-                from ..tools.primitives import PrimitivesTool
-                from ..tools.operations import OperationsTool
-                from ..tools.measurements import MeasurementsTool
-                from ..tools.export_import import ExportImportTool
-                from ..tools.advanced_primitives import AdvancedPrimitivesTool
                 from ..tools.advanced_operations import AdvancedOperationsTool
+                from ..tools.advanced_primitives import AdvancedPrimitivesTool
+                from ..tools.export_import import ExportImportTool
+                from ..tools.measurements import MeasurementsTool
+                from ..tools.operations import OperationsTool
+                from ..tools.primitives import PrimitivesTool
                 from ..tools.surface_modification import SurfaceModificationTool
 
             self.tools = {
@@ -148,15 +151,15 @@ class ToolsWidget(QtWidgets.QWidget):
             # Try to load basic tools only
             try:
                 try:
-                    from tools.primitives import PrimitivesTool
-                    from tools.operations import OperationsTool
-                    from tools.measurements import MeasurementsTool
                     from tools.export_import import ExportImportTool
+                    from tools.measurements import MeasurementsTool
+                    from tools.operations import OperationsTool
+                    from tools.primitives import PrimitivesTool
                 except ImportError:
-                    from ..tools.primitives import PrimitivesTool
-                    from ..tools.operations import OperationsTool
-                    from ..tools.measurements import MeasurementsTool
                     from ..tools.export_import import ExportImportTool
+                    from ..tools.measurements import MeasurementsTool
+                    from ..tools.operations import OperationsTool
+                    from ..tools.primitives import PrimitivesTool
 
                 self.tools = {
                     "primitives": PrimitivesTool(),
@@ -185,14 +188,16 @@ class ToolsWidget(QtWidgets.QWidget):
         self.search_box = QtWidgets.QLineEdit()
         self.search_box.setPlaceholderText("Search tools...")
         self.search_box.setMaximumWidth(150)
-        self.search_box.setStyleSheet("""
+        self.search_box.setStyleSheet(
+            """
             QLineEdit {
                 padding: 3px 8px;
                 border: 1px solid #ddd;
                 border-radius: 12px;
                 font-size: 11px;
             }
-        """)
+        """
+        )
         header_layout.addStretch()
         header_layout.addWidget(self.search_box)
 
@@ -348,7 +353,9 @@ class ToolsWidget(QtWidgets.QWidget):
         ]
 
         def create_handler(method_name):
-            return lambda checked: self._execute_tool("advanced_primitives", method_name)
+            return lambda checked: self._execute_tool(
+                "advanced_primitives", method_name
+            )
 
         for i, (icon, name, tooltip, method) in enumerate(tools):
             btn = CompactToolButton(icon, name, tooltip)
@@ -373,7 +380,9 @@ class ToolsWidget(QtWidgets.QWidget):
         ]
 
         def create_handler(method_name):
-            return lambda checked: self._execute_tool("advanced_operations", method_name)
+            return lambda checked: self._execute_tool(
+                "advanced_operations", method_name
+            )
 
         for i, (icon, name, tooltip, method) in enumerate(tools):
             btn = CompactToolButton(icon, name, tooltip)
@@ -398,7 +407,9 @@ class ToolsWidget(QtWidgets.QWidget):
         ]
 
         def create_handler(method_name):
-            return lambda checked: self._execute_tool("surface_modification", method_name)
+            return lambda checked: self._execute_tool(
+                "surface_modification", method_name
+            )
 
         for i, (icon, name, tooltip, method) in enumerate(tools):
             btn = CompactToolButton(icon, name, tooltip)

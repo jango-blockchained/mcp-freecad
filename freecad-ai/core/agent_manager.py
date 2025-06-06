@@ -1,26 +1,32 @@
 """Agent Manager - Core orchestration for FreeCAD AI Agent System"""
 
+import asyncio
 import enum
 import json
-import asyncio
 import threading
-from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime
+from typing import Any, Callable, Dict, List, Optional
+
 import FreeCAD
+
 
 class AgentMode(enum.Enum):
     """Agent operation modes"""
-    CHAT = "chat"      # AI provides instructions only
-    AGENT = "agent"    # AI executes tools autonomously
+
+    CHAT = "chat"  # AI provides instructions only
+    AGENT = "agent"  # AI executes tools autonomously
+
 
 class ExecutionState(enum.Enum):
     """Execution state tracking"""
+
     IDLE = "idle"
     PLANNING = "planning"
     EXECUTING = "executing"
     PAUSED = "paused"
     ERROR = "error"
     COMPLETED = "completed"
+
 
 class AgentManager:
     """
@@ -51,7 +57,7 @@ class AgentManager:
             "require_approval": False,
             "safety_checks": True,
             "auto_rollback": True,
-            "log_executions": True
+            "log_executions": True,
         }
 
         # Callbacks
@@ -61,7 +67,7 @@ class AgentManager:
             "on_execution_start": [],
             "on_execution_complete": [],
             "on_execution_error": [],
-            "on_plan_created": []
+            "on_plan_created": [],
         }
 
         # Thread safety
@@ -75,20 +81,22 @@ class AgentManager:
         try:
             # Import components with relative imports
             try:
+                from ..core.context_enricher import ContextEnricher
+                from ..core.execution_pipeline import ExecutionPipeline
                 from ..core.tool_registry import ToolRegistry
                 from ..core.tool_selector import ToolSelector
-                from ..core.execution_pipeline import ExecutionPipeline
-                from ..core.context_enricher import ContextEnricher
             except ImportError:
                 # Try alternative import paths
                 try:
+                    from .context_enricher import ContextEnricher
+                    from .execution_pipeline import ExecutionPipeline
                     from .tool_registry import ToolRegistry
                     from .tool_selector import ToolSelector
-                    from .execution_pipeline import ExecutionPipeline
-                    from .context_enricher import ContextEnricher
                 except ImportError:
                     # Fallback to create dummy classes if components don't exist
-                    FreeCAD.Console.PrintMessage("Agent Manager: Core components not available, using fallback\n")
+                    FreeCAD.Console.PrintMessage(
+                        "Agent Manager: Core components not available, using fallback\n"
+                    )
                     self._initialize_fallback_components()
                     return
 
@@ -102,12 +110,17 @@ class AgentManager:
 
             FreeCAD.Console.PrintMessage("Agent Manager: All components initialized\n")
         except ImportError as e:
-            FreeCAD.Console.PrintError(f"Agent Manager: Failed to initialize components: {e}\n")
+            FreeCAD.Console.PrintError(
+                f"Agent Manager: Failed to initialize components: {e}\n"
+            )
             # Initialize fallback components
             self._initialize_fallback_components()
         except Exception as e:
-            FreeCAD.Console.PrintError(f"Agent Manager: Unexpected error during initialization: {e}\n")
+            FreeCAD.Console.PrintError(
+                f"Agent Manager: Unexpected error during initialization: {e}\n"
+            )
             import traceback
+
             FreeCAD.Console.PrintError(f"Traceback: {traceback.format_exc()}\n")
             self._initialize_fallback_components()
 
@@ -118,10 +131,13 @@ class AgentManager:
             self.tool_registry = self._create_fallback_tool_registry()
             FreeCAD.Console.PrintMessage("Agent Manager: Using fallback components\n")
         except Exception as e:
-            FreeCAD.Console.PrintError(f"Agent Manager: Even fallback initialization failed: {e}\n")
+            FreeCAD.Console.PrintError(
+                f"Agent Manager: Even fallback initialization failed: {e}\n"
+            )
 
     def _create_fallback_tool_registry(self):
         """Create a fallback tool registry with direct tool access"""
+
         class FallbackToolRegistry:
             def __init__(self):
                 self.tools = {}
@@ -132,16 +148,16 @@ class AgentManager:
                 try:
                     # Import tools directly using relative imports
                     try:
-                        from ..tools.primitives import PrimitivesTool
-                        from ..tools.operations import OperationsTool
-                        from ..tools.measurements import MeasurementsTool
                         from ..tools.export_import import ExportImportTool
+                        from ..tools.measurements import MeasurementsTool
+                        from ..tools.operations import OperationsTool
+                        from ..tools.primitives import PrimitivesTool
                     except ImportError:
                         # Try alternative import path
-                        from tools.primitives import PrimitivesTool
-                        from tools.operations import OperationsTool
-                        from tools.measurements import MeasurementsTool
                         from tools.export_import import ExportImportTool
+                        from tools.measurements import MeasurementsTool
+                        from tools.operations import OperationsTool
+                        from tools.primitives import PrimitivesTool
 
                     self.tools = {
                         "primitives": PrimitivesTool(),
@@ -153,19 +169,29 @@ class AgentManager:
                     # Try to load advanced tools
                     try:
                         try:
-                            from ..tools.advanced_primitives import AdvancedPrimitivesTool
-                            from ..tools.advanced_operations import AdvancedOperationsTool
-                            from ..tools.surface_modification import SurfaceModificationTool
+                            from ..tools.advanced_operations import (
+                                AdvancedOperationsTool,
+                            )
+                            from ..tools.advanced_primitives import (
+                                AdvancedPrimitivesTool,
+                            )
+                            from ..tools.surface_modification import (
+                                SurfaceModificationTool,
+                            )
                         except ImportError:
-                            from tools.advanced_primitives import AdvancedPrimitivesTool
                             from tools.advanced_operations import AdvancedOperationsTool
-                            from tools.surface_modification import SurfaceModificationTool
+                            from tools.advanced_primitives import AdvancedPrimitivesTool
+                            from tools.surface_modification import (
+                                SurfaceModificationTool,
+                            )
 
-                        self.tools.update({
-                            "advanced_primitives": AdvancedPrimitivesTool(),
-                            "advanced_operations": AdvancedOperationsTool(),
-                            "surface_modification": SurfaceModificationTool(),
-                        })
+                        self.tools.update(
+                            {
+                                "advanced_primitives": AdvancedPrimitivesTool(),
+                                "advanced_operations": AdvancedOperationsTool(),
+                                "surface_modification": SurfaceModificationTool(),
+                            }
+                        )
                     except ImportError:
                         pass
 
@@ -175,8 +201,8 @@ class AgentManager:
             def get_tool(self, tool_id):
                 """Get tool by ID"""
                 # Tool ID format: category.method
-                if '.' in tool_id:
-                    category, method = tool_id.split('.', 1)
+                if "." in tool_id:
+                    category, method = tool_id.split(".", 1)
                     if category in self.tools:
                         tool = self.tools[category]
                         if hasattr(tool, method):
@@ -191,8 +217,12 @@ class AgentManager:
                 """Get all methods for a tool category"""
                 if category in self.tools:
                     tool = self.tools[category]
-                    methods = [method for method in dir(tool)
-                             if not method.startswith('_') and callable(getattr(tool, method))]
+                    methods = [
+                        method
+                        for method in dir(tool)
+                        if not method.startswith("_")
+                        and callable(getattr(tool, method))
+                    ]
                     return methods
                 return []
 
@@ -205,14 +235,28 @@ class AgentManager:
 
         try:
             # Get tool categories and methods
-            tool_categories = ['primitives', 'operations', 'measurements', 'export_import',
-                             'advanced_primitives', 'advanced_operations', 'surface_modification']
+            tool_categories = [
+                "primitives",
+                "operations",
+                "measurements",
+                "export_import",
+                "advanced_primitives",
+                "advanced_operations",
+                "surface_modification",
+            ]
 
             for category in tool_categories:
-                if hasattr(self.tool_registry, 'tools') and category in self.tool_registry.tools:
+                if (
+                    hasattr(self.tool_registry, "tools")
+                    and category in self.tool_registry.tools
+                ):
                     tool = self.tool_registry.tools[category]
-                    methods = [method for method in dir(tool)
-                             if not method.startswith('_') and callable(getattr(tool, method))]
+                    methods = [
+                        method
+                        for method in dir(tool)
+                        if not method.startswith("_")
+                        and callable(getattr(tool, method))
+                    ]
 
                     for method in methods:
                         tool_id = f"{category}.{method}"
@@ -239,7 +283,9 @@ class AgentManager:
                     self.pause_execution()
 
             self._trigger_callbacks("on_mode_change", old_mode, mode)
-            FreeCAD.Console.PrintMessage(f"Agent Manager: Mode changed from {old_mode.value} to {mode.value}\n")
+            FreeCAD.Console.PrintMessage(
+                f"Agent Manager: Mode changed from {old_mode.value} to {mode.value}\n"
+            )
 
     def get_mode(self) -> AgentMode:
         """Get current agent mode"""
@@ -253,15 +299,20 @@ class AgentManager:
         """Get all available tools organized by category"""
         available_tools = {}
 
-        if self.tool_registry and hasattr(self.tool_registry, 'tools'):
+        if self.tool_registry and hasattr(self.tool_registry, "tools"):
             for category, tool in self.tool_registry.tools.items():
-                methods = [method for method in dir(tool)
-                         if not method.startswith('_') and callable(getattr(tool, method))]
+                methods = [
+                    method
+                    for method in dir(tool)
+                    if not method.startswith("_") and callable(getattr(tool, method))
+                ]
                 available_tools[category] = methods
 
         return available_tools
 
-    def process_message(self, message: str, context: Optional[Dict] = None) -> Dict[str, Any]:
+    def process_message(
+        self, message: str, context: Optional[Dict] = None
+    ) -> Dict[str, Any]:
         """
         Process a user message based on current mode
 
@@ -286,7 +337,7 @@ class AgentManager:
             "mode": "chat",
             "timestamp": datetime.now().isoformat(),
             "message": message,
-            "response_type": "instructions"
+            "response_type": "instructions",
         }
 
         try:
@@ -297,12 +348,16 @@ class AgentManager:
             # Generate instruction response
             instructions = self._generate_instructions(intent, suggested_tools, context)
 
-            response.update({
-                "intent": intent,
-                "suggested_tools": [self._get_tool_info(tool) for tool in suggested_tools],
-                "instructions": instructions,
-                "can_execute": True  # Indicate this could be executed in agent mode
-            })
+            response.update(
+                {
+                    "intent": intent,
+                    "suggested_tools": [
+                        self._get_tool_info(tool) for tool in suggested_tools
+                    ],
+                    "instructions": instructions,
+                    "can_execute": True,  # Indicate this could be executed in agent mode
+                }
+            )
 
         except Exception as e:
             FreeCAD.Console.PrintError(f"Agent Manager: Error in chat mode: {e}\n")
@@ -316,7 +371,7 @@ class AgentManager:
             "mode": "agent",
             "timestamp": datetime.now().isoformat(),
             "message": message,
-            "response_type": "execution"
+            "response_type": "execution",
         }
 
         try:
@@ -336,11 +391,15 @@ class AgentManager:
             # Trigger plan created callback
             self._trigger_callbacks("on_plan_created", plan)
 
-            response.update({
-                "intent": intent,
-                "plan": plan,
-                "selected_tools": [self._get_tool_info(tool) for tool in selected_tools]
-            })
+            response.update(
+                {
+                    "intent": intent,
+                    "plan": plan,
+                    "selected_tools": [
+                        self._get_tool_info(tool) for tool in selected_tools
+                    ],
+                }
+            )
 
             # Check if approval required
             if self.config["require_approval"]:
@@ -350,7 +409,9 @@ class AgentManager:
                 # Execute plan
                 execution_result = self._execute_plan(plan)
                 response["execution_result"] = execution_result
-                response["status"] = "completed" if execution_result["success"] else "failed"
+                response["status"] = (
+                    "completed" if execution_result["success"] else "failed"
+                )
 
         except Exception as e:
             FreeCAD.Console.PrintError(f"Agent Manager: Error in agent mode: {e}\n")
@@ -385,25 +446,31 @@ class AgentManager:
                 tools.extend(["primitives.create_box", "primitives.create_cylinder"])
 
         elif intent_type == "modification":
-            tools.extend([
-                "operations.move_object",
-                "operations.rotate_object",
-                "operations.scale_object"
-            ])
+            tools.extend(
+                [
+                    "operations.move_object",
+                    "operations.rotate_object",
+                    "operations.scale_object",
+                ]
+            )
 
         elif intent_type == "analysis":
-            tools.extend([
-                "measurements.measure_volume",
-                "measurements.measure_area",
-                "measurements.measure_distance"
-            ])
+            tools.extend(
+                [
+                    "measurements.measure_volume",
+                    "measurements.measure_area",
+                    "measurements.measure_distance",
+                ]
+            )
 
         elif intent_type == "boolean":
-            tools.extend([
-                "operations.boolean_union",
-                "operations.boolean_cut",
-                "operations.boolean_intersection"
-            ])
+            tools.extend(
+                [
+                    "operations.boolean_union",
+                    "operations.boolean_cut",
+                    "operations.boolean_intersection",
+                ]
+            )
 
         return tools
 
@@ -411,8 +478,8 @@ class AgentManager:
         """Get information about a tool"""
         return {
             "id": tool_id,
-            "name": tool_id.split('.')[-1].replace('_', ' ').title(),
-            "category": tool_id.split('.')[0] if '.' in tool_id else "unknown"
+            "name": tool_id.split(".")[-1].replace("_", " ").title(),
+            "category": tool_id.split(".")[0] if "." in tool_id else "unknown",
         }
 
     def _enrich_context(self, context: Optional[Dict]) -> Dict:
@@ -432,7 +499,7 @@ class AgentManager:
             context["freecad_state"] = {
                 "has_active_document": FreeCAD.ActiveDocument is not None,
                 "document_objects": [],
-                "selected_objects": []
+                "selected_objects": [],
             }
 
             if FreeCAD.ActiveDocument:
@@ -441,7 +508,7 @@ class AgentManager:
                     for obj in FreeCAD.ActiveDocument.Objects
                 ]
 
-            if hasattr(FreeCADGui, 'Selection'):
+            if hasattr(FreeCADGui, "Selection"):
                 context["freecad_state"]["selected_objects"] = [
                     {"name": obj.Name, "type": obj.TypeId}
                     for obj in FreeCADGui.Selection.getSelection()
@@ -458,14 +525,16 @@ class AgentManager:
             "type": "unknown",
             "confidence": 0.0,
             "entities": [],
-            "action": message
+            "action": message,
         }
 
         # Enhanced pattern matching
         message_lower = message.lower()
 
         # Creation patterns
-        if any(word in message_lower for word in ["create", "make", "build", "add", "new"]):
+        if any(
+            word in message_lower for word in ["create", "make", "build", "add", "new"]
+        ):
             intent["type"] = "creation"
             intent["action"] = "create"
             intent["confidence"] = 0.8
@@ -479,7 +548,9 @@ class AgentManager:
                 intent["entities"].append({"type": "shape", "value": "sphere"})
 
         # Boolean operations
-        elif any(word in message_lower for word in ["union", "combine", "merge", "join"]):
+        elif any(
+            word in message_lower for word in ["union", "combine", "merge", "join"]
+        ):
             intent["type"] = "boolean"
             intent["action"] = "union"
             intent["confidence"] = 0.9
@@ -493,44 +564,71 @@ class AgentManager:
             intent["confidence"] = 0.9
 
         # Modification patterns
-        elif any(word in message_lower for word in ["modify", "change", "edit", "update", "move", "rotate", "scale"]):
+        elif any(
+            word in message_lower
+            for word in [
+                "modify",
+                "change",
+                "edit",
+                "update",
+                "move",
+                "rotate",
+                "scale",
+            ]
+        ):
             intent["type"] = "modification"
             intent["action"] = "modify"
             intent["confidence"] = 0.7
 
         # Analysis patterns
-        elif any(word in message_lower for word in ["measure", "calculate", "analyze", "volume", "area", "distance"]):
+        elif any(
+            word in message_lower
+            for word in [
+                "measure",
+                "calculate",
+                "analyze",
+                "volume",
+                "area",
+                "distance",
+            ]
+        ):
             intent["type"] = "analysis"
             intent["action"] = "analyze"
             intent["confidence"] = 0.8
 
         return intent
 
-    def _generate_instructions(self, intent: Dict, tools: List[str], context: Dict) -> List[str]:
+    def _generate_instructions(
+        self, intent: Dict, tools: List[str], context: Dict
+    ) -> List[str]:
         """Generate step-by-step instructions for chat mode"""
         instructions = []
 
         if intent["type"] == "creation":
             instructions.append("To create the requested object:")
             for i, tool_id in enumerate(tools, 1):
-                tool_name = tool_id.split('.')[-1].replace('_', ' ').title()
+                tool_name = tool_id.split(".")[-1].replace("_", " ").title()
                 instructions.append(f"{i}. Use the {tool_name} tool from the Tools tab")
-                instructions.append(f"   - Click the appropriate button in the Tools widget")
+                instructions.append(
+                    f"   - Click the appropriate button in the Tools widget"
+                )
                 instructions.append(f"   - Configure the parameters as needed")
 
         elif intent["type"] == "modification":
             instructions.append("To modify the object:")
             instructions.append("1. Select the target object in the FreeCAD tree")
             for i, tool_id in enumerate(tools, 2):
-                tool_name = tool_id.split('.')[-1].replace('_', ' ').title()
+                tool_name = tool_id.split(".")[-1].replace("_", " ").title()
                 instructions.append(f"{i}. Apply {tool_name} from the Tools tab")
 
         elif intent["type"] == "analysis":
             instructions.append("To analyze the object:")
             instructions.append("1. Select the object(s) you want to measure")
             for i, tool_id in enumerate(tools, 2):
-                tool_name = tool_id.split('.')[-1].replace('_', ' ').title()
-                instructions.append(f"{i}. Use {tool_name} from the Measurements section")
+                tool_name = tool_id.split(".")[-1].replace("_", " ").title()
+                instructions.append(
+                    f"{i}. Use {tool_name} from the Measurements section"
+                )
 
         # Add safety reminders
         instructions.append("\nRemember to:")
@@ -540,7 +638,9 @@ class AgentManager:
 
         return instructions
 
-    def _create_execution_plan(self, intent: Dict, tools: List[str], context: Dict) -> Dict:
+    def _create_execution_plan(
+        self, intent: Dict, tools: List[str], context: Dict
+    ) -> Dict:
         """Create a detailed execution plan"""
         plan = {
             "id": f"plan_{int(datetime.now().timestamp() * 1000)}",
@@ -548,19 +648,19 @@ class AgentManager:
             "steps": [],
             "estimated_duration": 0,
             "risk_level": "low",
-            "rollback_possible": True
+            "rollback_possible": True,
         }
 
         # Create execution steps
         for i, tool_id in enumerate(tools):
             step = {
                 "order": i + 1,
-                "tool": tool_id.split('.')[-1],
+                "tool": tool_id.split(".")[-1],
                 "tool_id": tool_id,
                 "parameters": self._infer_parameters(tool_id, intent, context),
                 "description": f"Execute {tool_id.split('.')[-1].replace('_', ' ')}",
                 "estimated_duration": 2.0,
-                "dependencies": []
+                "dependencies": [],
             }
 
             plan["steps"].append(step)
@@ -579,7 +679,9 @@ class AgentManager:
         params = {}
 
         # Extract entities from intent
-        entities = {entity["type"]: entity["value"] for entity in intent.get("entities", [])}
+        entities = {
+            entity["type"]: entity["value"] for entity in intent.get("entities", [])
+        }
 
         # Tool-specific parameter inference
         if "create_box" in tool_id:
@@ -614,7 +716,7 @@ class AgentManager:
             "executed_steps": [],
             "failed_step": None,
             "outputs": [],
-            "errors": []
+            "errors": [],
         }
 
         try:
@@ -624,38 +726,41 @@ class AgentManager:
             else:
                 # Fallback execution
                 for step in plan["steps"]:
-                    self._trigger_callbacks("on_execution_start",
-                                           step["order"],
-                                           len(plan["steps"]),
-                                           step)
+                    self._trigger_callbacks(
+                        "on_execution_start", step["order"], len(plan["steps"]), step
+                    )
 
                     step_result = self._execute_step_fallback(step)
                     result["executed_steps"].append(step_result)
 
-                    self._trigger_callbacks("on_execution_complete",
-                                           step["order"],
-                                           len(plan["steps"]),
-                                           step_result)
+                    self._trigger_callbacks(
+                        "on_execution_complete",
+                        step["order"],
+                        len(plan["steps"]),
+                        step_result,
+                    )
 
                     if not step_result["success"]:
                         result["failed_step"] = step
-                        result["errors"].append(step_result.get("error", "Unknown error"))
+                        result["errors"].append(
+                            step_result.get("error", "Unknown error")
+                        )
                         break
                 else:
                     result["success"] = True
 
-            self._set_state(ExecutionState.COMPLETED if result["success"] else ExecutionState.ERROR)
+            self._set_state(
+                ExecutionState.COMPLETED if result["success"] else ExecutionState.ERROR
+            )
 
         except Exception as e:
             result["errors"].append(str(e))
             self._set_state(ExecutionState.ERROR)
 
         # Add to history
-        self.execution_history.append({
-            "timestamp": datetime.now().isoformat(),
-            "plan": plan,
-            "result": result
-        })
+        self.execution_history.append(
+            {"timestamp": datetime.now().isoformat(), "plan": plan, "result": result}
+        )
 
         return result
 
@@ -666,7 +771,7 @@ class AgentManager:
             "tool": step["tool_id"],
             "success": False,
             "output": None,
-            "error": None
+            "error": None,
         }
 
         try:
@@ -678,16 +783,20 @@ class AgentManager:
                 tool = self.tool_registry.get_tool(tool_id)
                 if tool:
                     # Execute the tool method
-                    category, method = tool_id.split('.', 1)
+                    category, method = tool_id.split(".", 1)
                     if hasattr(tool, method):
                         method_func = getattr(tool, method)
                         result = method_func(**parameters)
 
                         step_result["success"] = result.get("success", True)
-                        step_result["output"] = result.get("message", f"Executed {tool_id}")
+                        step_result["output"] = result.get(
+                            "message", f"Executed {tool_id}"
+                        )
 
                         if not step_result["success"]:
-                            step_result["error"] = result.get("message", "Execution failed")
+                            step_result["error"] = result.get(
+                                "message", "Execution failed"
+                            )
                     else:
                         step_result["error"] = f"Method {method} not found on tool"
                 else:
@@ -764,7 +873,7 @@ class AgentManager:
             "queue_size": len(self.execution_queue),
             "history_size": len(self.execution_history),
             "config": self.config.copy(),
-            "available_tools": self.get_available_tools()
+            "available_tools": self.get_available_tools(),
         }
 
     def update_config(self, config: Dict):

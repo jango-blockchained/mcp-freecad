@@ -8,12 +8,13 @@ addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if addon_dir not in sys.path:
     sys.path.insert(0, addon_dir)
 
-from PySide2 import QtCore, QtGui, QtWidgets
-import logging
 import json
-from typing import Dict, Any, Optional
-from utils.cad_context_extractor import get_cad_context_extractor
+import logging
+from typing import Any, Dict, Optional
+
 from config.config_manager import ConfigManager
+from PySide2 import QtCore, QtGui, QtWidgets
+from utils.cad_context_extractor import get_cad_context_extractor
 
 
 class SystemPromptsTableModel(QtCore.QAbstractTableModel):

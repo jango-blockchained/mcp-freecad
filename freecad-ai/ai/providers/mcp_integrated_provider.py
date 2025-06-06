@@ -9,9 +9,14 @@ Author: jango-blockchained
 
 import json
 import re
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-from ai.providers.base_provider import BaseAIProvider, AIResponse, AIMessage, MessageRole
+from ai.providers.base_provider import (
+    AIMessage,
+    AIResponse,
+    BaseAIProvider,
+    MessageRole,
+)
 
 
 class MCPIntegratedProvider(BaseAIProvider):
@@ -51,10 +56,10 @@ class MCPIntegratedProvider(BaseAIProvider):
         """Initialize available MCP tools."""
         try:
             # Import tools
-            from tools.primitives import PrimitivesTool
-            from tools.operations import OperationsTool
-            from tools.measurements import MeasurementsTool
             from tools.export_import import ExportImportTool
+            from tools.measurements import MeasurementsTool
+            from tools.operations import OperationsTool
+            from tools.primitives import PrimitivesTool
 
             # Initialize tool instances
             primitives = PrimitivesTool()
@@ -164,10 +169,10 @@ class MCPIntegratedProvider(BaseAIProvider):
         """Initialize available MCP resources."""
         try:
             from resources import (
-                MaterialResourceProvider,
-                ConstraintResourceProvider,
-                MeasurementResourceProvider,
                 CADModelResourceProvider,
+                ConstraintResourceProvider,
+                MaterialResourceProvider,
+                MeasurementResourceProvider,
             )
 
             # Initialize resource providers

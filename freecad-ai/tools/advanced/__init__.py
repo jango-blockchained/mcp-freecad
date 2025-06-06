@@ -13,7 +13,7 @@ tools_to_import = [
     ("assembly", "AssemblyToolProvider"),
     ("cam", "CAMToolProvider"),
     ("rendering", "RenderingToolProvider"),
-    ("smithery", "SmitheryToolProvider")
+    ("smithery", "SmitheryToolProvider"),
 ]
 
 for module_name, class_name in tools_to_import:
@@ -24,6 +24,7 @@ for module_name, class_name in tools_to_import:
     except ImportError as e:
         try:
             import FreeCAD
+
             FreeCAD.Console.PrintWarning(
                 f"FreeCAD AI: Failed to import {class_name}: {e}\n"
             )

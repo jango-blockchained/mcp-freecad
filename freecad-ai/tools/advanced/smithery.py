@@ -81,7 +81,11 @@ class SmitheryToolProvider(ToolProvider):
             },
             examples=[
                 {"action": "create_anvil", "length": 400, "width": 120, "height": 200},
-                {"action": "create_hammer", "handle_length": 300, "handle_diameter": 25},
+                {
+                    "action": "create_hammer",
+                    "handle_length": 300,
+                    "handle_diameter": 25,
+                },
             ],
         )
 
@@ -113,7 +117,9 @@ class SmitheryToolProvider(ToolProvider):
             elif action == "create_horseshoe":
                 return await self._create_horseshoe(params)
             else:
-                return self.format_result("error", error=f"Unknown smithery action: {action}")
+                return self.format_result(
+                    "error", error=f"Unknown smithery action: {action}"
+                )
         except Exception as e:
             logger.error(f"Smithery tool failed: {e}")
             return self.format_result("error", error=str(e))
@@ -174,11 +180,13 @@ class SmitheryToolProvider(ToolProvider):
                         "Height": height,
                         "HornLength": horn_length,
                     },
-                }
+                },
             )
         except Exception as e:
             logger.error(f"Error creating anvil: {str(e)}")
-            return self.format_result("error", error=f"Failed to create anvil: {str(e)}")
+            return self.format_result(
+                "error", error=f"Failed to create anvil: {str(e)}"
+            )
 
     async def _create_hammer(self, params: Dict[str, Any]) -> ToolResult:
         """Create a blacksmith hammer model."""
@@ -231,11 +239,13 @@ class SmitheryToolProvider(ToolProvider):
                         "HeadWidth": head_width,
                         "HeadHeight": head_height,
                     },
-                }
+                },
             )
         except Exception as e:
             logger.error(f"Error creating hammer: {str(e)}")
-            return self.format_result("error", error=f"Failed to create hammer: {str(e)}")
+            return self.format_result(
+                "error", error=f"Failed to create hammer: {str(e)}"
+            )
 
     async def _create_tongs(self, params: Dict[str, Any]) -> ToolResult:
         """Create blacksmith tongs model."""
@@ -312,11 +322,13 @@ class SmitheryToolProvider(ToolProvider):
                         "Width": width,
                         "OpeningAngle": opening_angle,
                     },
-                }
+                },
             )
         except Exception as e:
             logger.error(f"Error creating tongs: {str(e)}")
-            return self.format_result("error", error=f"Failed to create tongs: {str(e)}")
+            return self.format_result(
+                "error", error=f"Failed to create tongs: {str(e)}"
+            )
 
     async def _forge_blade(self, params: Dict[str, Any]) -> ToolResult:
         """Create a forged blade model."""
@@ -387,7 +399,7 @@ class SmitheryToolProvider(ToolProvider):
                         "TangWidth": tang_width,
                         "Curvature": curvature,
                     },
-                }
+                },
             )
         except Exception as e:
             logger.error(f"Error forging blade: {str(e)}")
@@ -445,11 +457,13 @@ class SmitheryToolProvider(ToolProvider):
                         "Thickness": thickness,
                         "OpeningAngle": opening_angle,
                     },
-                }
+                },
             )
         except Exception as e:
             logger.error(f"Error creating horseshoe: {str(e)}")
-            return self.format_result("error", error=f"Failed to create horseshoe: {str(e)}")
+            return self.format_result(
+                "error", error=f"Failed to create horseshoe: {str(e)}"
+            )
 
     def _get_active_document(self):
         """Get the active document or create a new one if none exists."""

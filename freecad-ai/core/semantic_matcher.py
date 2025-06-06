@@ -1,16 +1,17 @@
 """Semantic Matcher - Advanced semantic similarity for tool matching"""
 
-import re
-from typing import Dict, List, Tuple, Optional, Any, Set
-from dataclasses import dataclass
-import math
-from collections import defaultdict, Counter
 import json
+import math
+import re
+from collections import Counter, defaultdict
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 
 @dataclass
 class Match:
     """Represents a semantic match result"""
+
     tool_id: str
     tool_name: str
     similarity_score: float
@@ -58,7 +59,6 @@ class SemanticMatcher:
             "cylinder": {"pipe", "tube", "rod", "barrel"},
             "sphere": {"ball", "globe", "orb"},
             "cone": {"pyramid", "taper", "funnel"},
-
             # Actions
             "create": {"make", "build", "generate", "construct", "add", "new"},
             "modify": {"edit", "change", "alter", "update", "adjust"},
@@ -66,44 +66,67 @@ class SemanticMatcher:
             "move": {"translate", "shift", "relocate", "position", "displace"},
             "rotate": {"turn", "spin", "revolve", "pivot", "twist"},
             "scale": {"resize", "size", "enlarge", "shrink", "zoom"},
-
             # Operations
             "extrude": {"extend", "pull", "push", "elongate"},
             "revolve": {"lathe", "spin", "rotate around"},
             "fillet": {"round", "smooth", "curve", "blend"},
             "chamfer": {"bevel", "angle", "slope"},
             "pattern": {"array", "repeat", "duplicate", "copy"},
-
             # Measurements
             "measure": {"calculate", "compute", "find", "determine"},
             "distance": {"length", "span", "gap", "separation"},
             "area": {"surface", "region", "space"},
             "volume": {"capacity", "content", "size"},
-
             # Selection
             "select": {"pick", "choose", "highlight", "mark"},
             "all": {"everything", "entire", "whole", "complete"},
-            "none": {"nothing", "deselect", "clear"}
+            "none": {"nothing", "deselect", "clear"},
         }
 
     def _build_domain_terms(self) -> Set[str]:
         """Build set of domain-specific technical terms"""
         return {
             # CAD terms
-            "sketch", "constraint", "dimension", "feature", "body", "part",
-            "assembly", "workbench", "document", "view",
-
+            "sketch",
+            "constraint",
+            "dimension",
+            "feature",
+            "body",
+            "part",
+            "assembly",
+            "workbench",
+            "document",
+            "view",
             # Geometry terms
-            "vertex", "edge", "face", "solid", "shell", "wire",
-            "point", "line", "curve", "surface", "plane",
-
+            "vertex",
+            "edge",
+            "face",
+            "solid",
+            "shell",
+            "wire",
+            "point",
+            "line",
+            "curve",
+            "surface",
+            "plane",
             # Operations
-            "boolean", "union", "intersection", "difference",
-            "mirror", "offset", "transform", "projection",
-
+            "boolean",
+            "union",
+            "intersection",
+            "difference",
+            "mirror",
+            "offset",
+            "transform",
+            "projection",
             # Properties
-            "material", "color", "transparency", "texture",
-            "mass", "density", "inertia", "center"
+            "material",
+            "color",
+            "transparency",
+            "texture",
+            "mass",
+            "density",
+            "inertia",
+            "center",
         }
 
     def _initialize_weights(self):
@@ -124,8 +147,9 @@ class SemanticMatcher:
         for word in ["the", "a", "an", "of", "in", "at", "to", "for"]:
             self.word_weights[word] = 0.2
 
-    def add_tool_embedding(self, tool_id: str, description: str,
-                          keywords: List[str], examples: List[str]):
+    def add_tool_embedding(
+        self, tool_id: str, description: str, keywords: List[str], examples: List[str]
+    ):
         """Add tool embedding for matching"""
         # Create document from all text
         document = f"{description} {' '.join(keywords)} {' '.join(examples)}"
@@ -147,7 +171,7 @@ class SemanticMatcher:
             "examples": examples,
             "tokens": tokens,
             "term_freq": term_freq,
-            "embedding": embedding
+            "embedding": embedding,
         }
 
         # Update document frequencies
@@ -172,8 +196,7 @@ class SemanticMatcher:
                 idf = idf_values.get(term, 0)
                 embedding[term] = tf * idf
 
-    def match(self, query: str, top_k: int = 5,
-              min_score: float = 0.1) -> List[Match]:
+    def match(self, query: str, top_k: int = 5, min_score: float = 0.1) -> List[Match]:
         """
         Find best matching tools for query
 
@@ -193,10 +216,18 @@ class SemanticMatcher:
 
         for tool_id, tool_data in self.tool_embeddings.items():
             # Calculate multiple similarity measures
-            keyword_sim = self._keyword_similarity(query_expanded, tool_data["keywords"])
-            description_sim = self._description_similarity(query_expanded, tool_data["description"])
-            example_sim = self._example_similarity(query_expanded, tool_data["examples"])
-            embedding_sim = self._embedding_similarity(query_expanded, tool_data["embedding"])
+            keyword_sim = self._keyword_similarity(
+                query_expanded, tool_data["keywords"]
+            )
+            description_sim = self._description_similarity(
+                query_expanded, tool_data["description"]
+            )
+            example_sim = self._example_similarity(
+                query_expanded, tool_data["examples"]
+            )
+            embedding_sim = self._embedding_similarity(
+                query_expanded, tool_data["embedding"]
+            )
 
             # Find matched keywords
             keyword_matches = self._find_keyword_matches(query_tokens, tool_data)
@@ -206,15 +237,15 @@ class SemanticMatcher:
                 "keyword": keyword_sim,
                 "description": description_sim,
                 "example": example_sim,
-                "embedding": embedding_sim
+                "embedding": embedding_sim,
             }
 
             # Weighted combination
             combined_score = (
-                0.35 * keyword_sim +
-                0.25 * description_sim +
-                0.15 * example_sim +
-                0.25 * embedding_sim
+                0.35 * keyword_sim
+                + 0.25 * description_sim
+                + 0.15 * example_sim
+                + 0.25 * embedding_sim
             )
 
             # Adjust score based on match history
@@ -233,15 +264,17 @@ class SemanticMatcher:
                     semantic_features, keyword_matches
                 )
 
-                matches.append(Match(
-                    tool_id=tool_id,
-                    tool_name=tool_data["description"].split(":")[0],
-                    similarity_score=adjusted_score,
-                    keyword_matches=keyword_matches,
-                    semantic_features=semantic_features,
-                    explanation=explanation,
-                    confidence=confidence
-                ))
+                matches.append(
+                    Match(
+                        tool_id=tool_id,
+                        tool_name=tool_data["description"].split(":")[0],
+                        similarity_score=adjusted_score,
+                        keyword_matches=keyword_matches,
+                        semantic_features=semantic_features,
+                        explanation=explanation,
+                        confidence=confidence,
+                    )
+                )
 
         # Sort by score and return top k
         matches.sort(key=lambda x: x.similarity_score, reverse=True)
@@ -250,7 +283,7 @@ class SemanticMatcher:
     def _tokenize(self, text: str) -> List[str]:
         """Tokenize text into words"""
         # Simple tokenization - could be enhanced with NLP library
-        tokens = re.findall(r'\b\w+\b', text.lower())
+        tokens = re.findall(r"\b\w+\b", text.lower())
         return [t for t in tokens if len(t) > 1]
 
     def _expand_query(self, tokens: List[str]) -> Set[str]:
@@ -270,14 +303,14 @@ class SemanticMatcher:
 
         return expanded
 
-    def _keyword_similarity(self, query_terms: Set[str],
-                          keywords: List[str]) -> float:
+    def _keyword_similarity(self, query_terms: Set[str], keywords: List[str]) -> float:
         """Calculate keyword-based similarity"""
         if not keywords:
             return 0.0
 
-        keyword_set = set(word.lower() for keyword in keywords
-                         for word in self._tokenize(keyword))
+        keyword_set = set(
+            word.lower() for keyword in keywords for word in self._tokenize(keyword)
+        )
 
         # Calculate Jaccard similarity
         intersection = query_terms & keyword_set
@@ -294,8 +327,7 @@ class SemanticMatcher:
 
         return min(jaccard * boost_factor, 1.0)
 
-    def _description_similarity(self, query_terms: Set[str],
-                               description: str) -> float:
+    def _description_similarity(self, query_terms: Set[str], description: str) -> float:
         """Calculate description-based similarity"""
         desc_tokens = set(self._tokenize(description.lower()))
 
@@ -313,8 +345,7 @@ class SemanticMatcher:
             return min(score / (len(query_terms) * 1.5), 1.0)
         return 0.0
 
-    def _example_similarity(self, query_terms: Set[str],
-                           examples: List[str]) -> float:
+    def _example_similarity(self, query_terms: Set[str], examples: List[str]) -> float:
         """Calculate example-based similarity"""
         if not examples:
             return 0.0
@@ -333,8 +364,9 @@ class SemanticMatcher:
 
         return max_similarity
 
-    def _embedding_similarity(self, query_terms: Set[str],
-                            embedding: Dict[str, float]) -> float:
+    def _embedding_similarity(
+        self, query_terms: Set[str], embedding: Dict[str, float]
+    ) -> float:
         """Calculate embedding-based similarity (cosine similarity)"""
         # Create query embedding
         query_embedding = {}
@@ -353,16 +385,17 @@ class SemanticMatcher:
             t_val = embedding.get(term, 0.0)
 
             dot_product += q_val * t_val
-            query_norm += q_val ** 2
-            tool_norm += t_val ** 2
+            query_norm += q_val**2
+            tool_norm += t_val**2
 
         if query_norm > 0 and tool_norm > 0:
             return dot_product / (math.sqrt(query_norm) * math.sqrt(tool_norm))
 
         return 0.0
 
-    def _find_keyword_matches(self, query_tokens: List[str],
-                            tool_data: Dict) -> List[str]:
+    def _find_keyword_matches(
+        self, query_tokens: List[str], tool_data: Dict
+    ) -> List[str]:
         """Find which keywords matched"""
         matches = []
 
@@ -380,9 +413,9 @@ class SemanticMatcher:
 
         return list(set(matches))  # Remove duplicates
 
-    def _generate_explanation(self, query_tokens: List[str],
-                            tool_data: Dict,
-                            features: Dict[str, float]) -> str:
+    def _generate_explanation(
+        self, query_tokens: List[str], tool_data: Dict, features: Dict[str, float]
+    ) -> str:
         """Generate explanation for why tool was matched"""
         explanations = []
 
@@ -412,8 +445,9 @@ class SemanticMatcher:
 
         return "; ".join(explanations)
 
-    def _calculate_confidence(self, features: Dict[str, float],
-                            keyword_matches: List[str]) -> float:
+    def _calculate_confidence(
+        self, features: Dict[str, float], keyword_matches: List[str]
+    ) -> float:
         """Calculate confidence in the match"""
         # Base confidence from feature scores
         avg_score = sum(features.values()) / len(features)
@@ -434,15 +468,17 @@ class SemanticMatcher:
 
         return min(confidence, 1.0)
 
-    def _adjust_score_from_history(self, query: str, tool_id: str,
-                                  base_score: float) -> float:
+    def _adjust_score_from_history(
+        self, query: str, tool_id: str, base_score: float
+    ) -> float:
         """Adjust score based on match history"""
         # Simple implementation - could be enhanced with ML
         adjusted_score = base_score
 
         # Check recent history
-        recent_matches = [h for h in self.match_history[-20:]
-                         if h["tool_id"] == tool_id]
+        recent_matches = [
+            h for h in self.match_history[-20:] if h["tool_id"] == tool_id
+        ]
 
         if recent_matches:
             # Calculate success rate
@@ -457,16 +493,23 @@ class SemanticMatcher:
 
         return min(adjusted_score, 1.0)
 
-    def record_match_result(self, query: str, tool_id: str,
-                           successful: bool, user_feedback: Optional[str] = None):
+    def record_match_result(
+        self,
+        query: str,
+        tool_id: str,
+        successful: bool,
+        user_feedback: Optional[str] = None,
+    ):
         """Record match result for learning"""
-        self.match_history.append({
-            "query": query,
-            "tool_id": tool_id,
-            "successful": successful,
-            "feedback": user_feedback,
-            "timestamp": datetime.now().isoformat()
-        })
+        self.match_history.append(
+            {
+                "query": query,
+                "tool_id": tool_id,
+                "successful": successful,
+                "feedback": user_feedback,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
         # Update word weights based on feedback
         if successful:
@@ -502,7 +545,7 @@ class SemanticMatcher:
             "total_matches": total,
             "successful_matches": successful,
             "success_rate": successful / total if total > 0 else 0,
-            "tool_statistics": dict(tool_stats)
+            "tool_statistics": dict(tool_stats),
         }
 
     def export_learning_data(self) -> Dict[str, Any]:
@@ -510,7 +553,7 @@ class SemanticMatcher:
         return {
             "word_weights": dict(self.word_weights),
             "match_history": self.match_history[-100:],  # Last 100 matches
-            "statistics": self.get_match_statistics()
+            "statistics": self.get_match_statistics(),
         }
 
     def import_learning_data(self, data: Dict[str, Any]):
@@ -520,5 +563,6 @@ class SemanticMatcher:
 
         if "match_history" in data:
             self.match_history.extend(data["match_history"])
+
 
 from datetime import datetime

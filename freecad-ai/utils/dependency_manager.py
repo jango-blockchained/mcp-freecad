@@ -7,11 +7,12 @@ supporting different FreeCAD versions and installation types.
 Based on FreeCAD documentation and community best practices.
 """
 
-import os
-import sys
-import subprocess
 import importlib.util
-from typing import List, Dict, Optional, Tuple, Callable
+import os
+import subprocess
+import sys
+from typing import Callable, Dict, List, Optional, Tuple
+
 import FreeCAD
 
 

@@ -16,8 +16,8 @@ Author: jango-blockchained
 
 def install_mcp_dependencies():
     """Install dependencies for FreeCAD FreeCAD AI."""
-    import subprocess
     import os
+    import subprocess
     import sys
 
     print("🚀 FreeCAD FreeCAD AI - Dependency Installer")

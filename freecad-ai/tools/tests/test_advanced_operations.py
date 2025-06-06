@@ -7,18 +7,18 @@ sweep, and helix operations.
 Author: AI Assistant
 """
 
-import unittest
-import sys
 import os
+import sys
+import unittest
 
 # Add the parent directory to the path to import the tool
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    from advanced_operations import AdvancedOperationsTool
-    from advanced_primitives import AdvancedPrimitivesTool
     import FreeCAD as App
     import Part
+    from advanced_operations import AdvancedOperationsTool
+    from advanced_primitives import AdvancedPrimitivesTool
 
     FREECAD_AVAILABLE = True
 except ImportError:

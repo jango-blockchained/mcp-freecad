@@ -1,13 +1,14 @@
 """FreeCAD AI Workbench - Main workbench implementation"""
 
+import asyncio
+import json
 import os
 import sys
-import json
-import FreeCAD
-import FreeCADGui
-import asyncio
 import threading
 from datetime import datetime
+
+import FreeCAD
+import FreeCADGui
 
 # Ensure the addon directory is in the Python path
 addon_dir = os.path.dirname(os.path.abspath(__file__))
@@ -16,13 +17,14 @@ if addon_dir not in sys.path:
 
 # Try to import PySide2, fall back gracefully if not available
 try:
-    from PySide2 import QtWidgets, QtCore, QtGui
+    from PySide2 import QtCore, QtGui, QtWidgets
 
     HAS_PYSIDE2 = True
 except ImportError:
     try:
+        from PySide import QtCore
+        from PySide import QtGui
         from PySide import QtGui as QtWidgets
-        from PySide import QtCore, QtGui
 
         HAS_PYSIDE2 = False
         FreeCAD.Console.PrintWarning("FreeCAD AI: Using PySide instead of PySide2\n")
@@ -34,10 +36,10 @@ except ImportError:
 TOOLS_AVAILABLE = False
 try:
     # Try absolute imports first
-    from tools.primitives import PrimitivesTool
-    from tools.operations import OperationsTool
-    from tools.measurements import MeasurementsTool
     from tools.export_import import ExportImportTool
+    from tools.measurements import MeasurementsTool
+    from tools.operations import OperationsTool
+    from tools.primitives import PrimitivesTool
 
     TOOLS_AVAILABLE = True
 except ImportError as e:
@@ -48,10 +50,10 @@ except ImportError as e:
         # Try importing from the current directory structure
         import tools
         from tools import (
-            PrimitivesTool,
-            OperationsTool,
-            MeasurementsTool,
             ExportImportTool,
+            MeasurementsTool,
+            OperationsTool,
+            PrimitivesTool,
         )
 
         TOOLS_AVAILABLE = True
@@ -66,11 +68,11 @@ except ImportError as e:
 ADVANCED_TOOLS_AVAILABLE = False
 try:
     from tools.advanced import (
+        ADVANCED_TOOLS_AVAILABLE,
         AssemblyToolProvider,
         CAMToolProvider,
         RenderingToolProvider,
         SmitheryToolProvider,
-        ADVANCED_TOOLS_AVAILABLE,
     )
 
     FreeCAD.Console.PrintMessage("FreeCAD AI: Advanced tools loaded successfully\n")
@@ -82,11 +84,11 @@ except ImportError as e:
 RESOURCES_AVAILABLE = False
 try:
     from resources import (
-        MaterialResourceProvider,
-        ConstraintResourceProvider,
-        MeasurementResourceProvider,
-        CADModelResourceProvider,
         RESOURCES_AVAILABLE,
+        CADModelResourceProvider,
+        ConstraintResourceProvider,
+        MaterialResourceProvider,
+        MeasurementResourceProvider,
     )
 
     FreeCAD.Console.PrintMessage("FreeCAD AI: Resources loaded successfully\n")
@@ -98,10 +100,10 @@ except ImportError as e:
 EVENTS_AVAILABLE = False
 try:
     from events import (
-        DocumentEventHandler,
-        CommandEventHandler,
-        ErrorEventHandler,
         EVENTS_AVAILABLE,
+        CommandEventHandler,
+        DocumentEventHandler,
+        ErrorEventHandler,
     )
 
     FreeCAD.Console.PrintMessage("FreeCAD AI: Event handlers loaded successfully\n")
@@ -112,7 +114,12 @@ except ImportError as e:
 # Import API
 API_AVAILABLE = False
 try:
-    from api import create_tool_router, create_resource_router, create_event_router, API_AVAILABLE
+    from api import (
+        API_AVAILABLE,
+        create_event_router,
+        create_resource_router,
+        create_tool_router,
+    )
 
     FreeCAD.Console.PrintMessage("FreeCAD AI: API loaded successfully\n")
 except ImportError as e:
@@ -122,7 +129,7 @@ except ImportError as e:
 # Import clients
 CLIENTS_AVAILABLE = False
 try:
-    from clients import FreeCADClient, CursorMCPBridge, CLIENTS_AVAILABLE
+    from clients import CLIENTS_AVAILABLE, CursorMCPBridge, FreeCADClient
 
     FreeCAD.Console.PrintMessage("FreeCAD AI: Clients loaded successfully\n")
 except ImportError as e:
@@ -134,12 +141,12 @@ AI_PROVIDERS_AVAILABLE = False
 try:
     # Try absolute imports first
     from ai.providers import (
+        check_dependencies,
+        get_available_providers,
         get_claude_provider,
         get_gemini_provider,
         get_openrouter_provider,
-        get_available_providers,
         get_provider_errors,
-        check_dependencies,
     )
 
     AI_PROVIDERS_AVAILABLE = True
@@ -151,12 +158,12 @@ except ImportError as e:
         # Try importing from the current directory structure
         import ai.providers
         from ai.providers import (
+            check_dependencies,
+            get_available_providers,
             get_claude_provider,
             get_gemini_provider,
             get_openrouter_provider,
-            get_available_providers,
             get_provider_errors,
-            check_dependencies,
         )
 
         AI_PROVIDERS_AVAILABLE = True
@@ -210,7 +217,6 @@ try:
         )
 except Exception as e:
     FreeCAD.Console.PrintError(f"FreeCAD AI: Failed to register command: {e}\n")
-
 
 
 class MCPWorkbench(FreeCADGui.Workbench):
@@ -325,7 +331,10 @@ class MCPWorkbench(FreeCADGui.Workbench):
             # Import and create the correct main widget with proper initialization
             try:
                 from gui.main_widget import MCPMainWidget
-                FreeCAD.Console.PrintMessage("FreeCAD AI: Using new MCPMainWidget from gui.main_widget\n")
+
+                FreeCAD.Console.PrintMessage(
+                    "FreeCAD AI: Using new MCPMainWidget from gui.main_widget\n"
+                )
 
                 # Create main widget - this is a QDockWidget itself
                 dock_widget = MCPMainWidget(FreeCADGui.getMainWindow())
@@ -340,8 +349,12 @@ class MCPWorkbench(FreeCADGui.Workbench):
                 )
 
             except ImportError as e:
-                FreeCAD.Console.PrintWarning(f"FreeCAD AI: Failed to import new main widget: {e}\n")
-                FreeCAD.Console.PrintMessage("FreeCAD AI: Falling back to old main widget\n")
+                FreeCAD.Console.PrintWarning(
+                    f"FreeCAD AI: Failed to import new main widget: {e}\n"
+                )
+                FreeCAD.Console.PrintMessage(
+                    "FreeCAD AI: Falling back to old main widget\n"
+                )
 
                 # Fallback to old widget (but this has the interconnection issues)
                 main_widget = MCPMainWidget()

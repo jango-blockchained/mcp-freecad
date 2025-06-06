@@ -1,13 +1,15 @@
 """Tool Capabilities - Define tool capabilities and registry"""
 
-from enum import Enum
-from typing import Dict, List, Set, Any, Optional
 from dataclasses import dataclass
+from enum import Enum
+from typing import Any, Dict, List, Optional, Set
+
 import FreeCAD
 
 
 class CapabilityType(Enum):
     """Types of tool capabilities"""
+
     CREATE_GEOMETRY = "create_geometry"
     MODIFY_GEOMETRY = "modify_geometry"
     ANALYZE_GEOMETRY = "analyze_geometry"
@@ -23,6 +25,7 @@ class CapabilityType(Enum):
 @dataclass
 class ToolCapability:
     """Represents a single tool capability"""
+
     capability_type: CapabilityType
     name: str
     description: str
@@ -48,163 +51,229 @@ class CapabilityRegistry:
         """Initialize default tool capabilities"""
 
         # Primitive creation capabilities
-        self.register_capability("primitives", "create_box", ToolCapability(
-            capability_type=CapabilityType.CREATE_GEOMETRY,
-            name="Create Box",
-            description="Create a rectangular box/cube",
-            input_types=["dimensions"],
-            output_types=["solid"],
-            parameters=["length", "width", "height", "placement"]
-        ))
+        self.register_capability(
+            "primitives",
+            "create_box",
+            ToolCapability(
+                capability_type=CapabilityType.CREATE_GEOMETRY,
+                name="Create Box",
+                description="Create a rectangular box/cube",
+                input_types=["dimensions"],
+                output_types=["solid"],
+                parameters=["length", "width", "height", "placement"],
+            ),
+        )
 
-        self.register_capability("primitives", "create_cylinder", ToolCapability(
-            capability_type=CapabilityType.CREATE_GEOMETRY,
-            name="Create Cylinder",
-            description="Create a cylindrical shape",
-            input_types=["dimensions"],
-            output_types=["solid"],
-            parameters=["radius", "height", "placement"]
-        ))
+        self.register_capability(
+            "primitives",
+            "create_cylinder",
+            ToolCapability(
+                capability_type=CapabilityType.CREATE_GEOMETRY,
+                name="Create Cylinder",
+                description="Create a cylindrical shape",
+                input_types=["dimensions"],
+                output_types=["solid"],
+                parameters=["radius", "height", "placement"],
+            ),
+        )
 
-        self.register_capability("primitives", "create_sphere", ToolCapability(
-            capability_type=CapabilityType.CREATE_GEOMETRY,
-            name="Create Sphere",
-            description="Create a spherical shape",
-            input_types=["dimensions"],
-            output_types=["solid"],
-            parameters=["radius", "placement"]
-        ))
+        self.register_capability(
+            "primitives",
+            "create_sphere",
+            ToolCapability(
+                capability_type=CapabilityType.CREATE_GEOMETRY,
+                name="Create Sphere",
+                description="Create a spherical shape",
+                input_types=["dimensions"],
+                output_types=["solid"],
+                parameters=["radius", "placement"],
+            ),
+        )
 
-        self.register_capability("primitives", "create_cone", ToolCapability(
-            capability_type=CapabilityType.CREATE_GEOMETRY,
-            name="Create Cone",
-            description="Create a conical shape",
-            input_types=["dimensions"],
-            output_types=["solid"],
-            parameters=["radius1", "radius2", "height", "placement"]
-        ))
+        self.register_capability(
+            "primitives",
+            "create_cone",
+            ToolCapability(
+                capability_type=CapabilityType.CREATE_GEOMETRY,
+                name="Create Cone",
+                description="Create a conical shape",
+                input_types=["dimensions"],
+                output_types=["solid"],
+                parameters=["radius1", "radius2", "height", "placement"],
+            ),
+        )
 
         # Boolean operations capabilities
-        self.register_capability("operations", "boolean_union", ToolCapability(
-            capability_type=CapabilityType.BOOLEAN_OPERATIONS,
-            name="Boolean Union",
-            description="Combine two or more objects",
-            input_types=["solid", "solid"],
-            output_types=["solid"],
-            parameters=["obj1_name", "obj2_name"],
-            prerequisites=["objects_exist"]
-        ))
+        self.register_capability(
+            "operations",
+            "boolean_union",
+            ToolCapability(
+                capability_type=CapabilityType.BOOLEAN_OPERATIONS,
+                name="Boolean Union",
+                description="Combine two or more objects",
+                input_types=["solid", "solid"],
+                output_types=["solid"],
+                parameters=["obj1_name", "obj2_name"],
+                prerequisites=["objects_exist"],
+            ),
+        )
 
-        self.register_capability("operations", "boolean_cut", ToolCapability(
-            capability_type=CapabilityType.BOOLEAN_OPERATIONS,
-            name="Boolean Cut",
-            description="Subtract one object from another",
-            input_types=["solid", "solid"],
-            output_types=["solid"],
-            parameters=["obj1_name", "obj2_name"],
-            prerequisites=["objects_exist"]
-        ))
+        self.register_capability(
+            "operations",
+            "boolean_cut",
+            ToolCapability(
+                capability_type=CapabilityType.BOOLEAN_OPERATIONS,
+                name="Boolean Cut",
+                description="Subtract one object from another",
+                input_types=["solid", "solid"],
+                output_types=["solid"],
+                parameters=["obj1_name", "obj2_name"],
+                prerequisites=["objects_exist"],
+            ),
+        )
 
-        self.register_capability("operations", "boolean_intersection", ToolCapability(
-            capability_type=CapabilityType.BOOLEAN_OPERATIONS,
-            name="Boolean Intersection",
-            description="Find intersection of two objects",
-            input_types=["solid", "solid"],
-            output_types=["solid"],
-            parameters=["obj1_name", "obj2_name"],
-            prerequisites=["objects_exist"]
-        ))
+        self.register_capability(
+            "operations",
+            "boolean_intersection",
+            ToolCapability(
+                capability_type=CapabilityType.BOOLEAN_OPERATIONS,
+                name="Boolean Intersection",
+                description="Find intersection of two objects",
+                input_types=["solid", "solid"],
+                output_types=["solid"],
+                parameters=["obj1_name", "obj2_name"],
+                prerequisites=["objects_exist"],
+            ),
+        )
 
         # Transformation capabilities
-        self.register_capability("operations", "move_object", ToolCapability(
-            capability_type=CapabilityType.TRANSFORMATIONS,
-            name="Move Object",
-            description="Move an object to a new position",
-            input_types=["solid"],
-            output_types=["solid"],
-            parameters=["obj_name", "x", "y", "z"],
-            prerequisites=["object_exists"]
-        ))
+        self.register_capability(
+            "operations",
+            "move_object",
+            ToolCapability(
+                capability_type=CapabilityType.TRANSFORMATIONS,
+                name="Move Object",
+                description="Move an object to a new position",
+                input_types=["solid"],
+                output_types=["solid"],
+                parameters=["obj_name", "x", "y", "z"],
+                prerequisites=["object_exists"],
+            ),
+        )
 
-        self.register_capability("operations", "rotate_object", ToolCapability(
-            capability_type=CapabilityType.TRANSFORMATIONS,
-            name="Rotate Object",
-            description="Rotate an object around an axis",
-            input_types=["solid"],
-            output_types=["solid"],
-            parameters=["obj_name", "axis", "angle"],
-            prerequisites=["object_exists"]
-        ))
+        self.register_capability(
+            "operations",
+            "rotate_object",
+            ToolCapability(
+                capability_type=CapabilityType.TRANSFORMATIONS,
+                name="Rotate Object",
+                description="Rotate an object around an axis",
+                input_types=["solid"],
+                output_types=["solid"],
+                parameters=["obj_name", "axis", "angle"],
+                prerequisites=["object_exists"],
+            ),
+        )
 
-        self.register_capability("operations", "scale_object", ToolCapability(
-            capability_type=CapabilityType.TRANSFORMATIONS,
-            name="Scale Object",
-            description="Scale an object by given factors",
-            input_types=["solid"],
-            output_types=["solid"],
-            parameters=["obj_name", "scale_x", "scale_y", "scale_z"],
-            prerequisites=["object_exists"]
-        ))
+        self.register_capability(
+            "operations",
+            "scale_object",
+            ToolCapability(
+                capability_type=CapabilityType.TRANSFORMATIONS,
+                name="Scale Object",
+                description="Scale an object by given factors",
+                input_types=["solid"],
+                output_types=["solid"],
+                parameters=["obj_name", "scale_x", "scale_y", "scale_z"],
+                prerequisites=["object_exists"],
+            ),
+        )
 
         # Measurement capabilities
-        self.register_capability("measurements", "measure_volume", ToolCapability(
-            capability_type=CapabilityType.MEASUREMENTS,
-            name="Measure Volume",
-            description="Calculate the volume of an object",
-            input_types=["solid"],
-            output_types=["number"],
-            parameters=["obj_name"],
-            prerequisites=["object_exists"]
-        ))
+        self.register_capability(
+            "measurements",
+            "measure_volume",
+            ToolCapability(
+                capability_type=CapabilityType.MEASUREMENTS,
+                name="Measure Volume",
+                description="Calculate the volume of an object",
+                input_types=["solid"],
+                output_types=["number"],
+                parameters=["obj_name"],
+                prerequisites=["object_exists"],
+            ),
+        )
 
-        self.register_capability("measurements", "measure_area", ToolCapability(
-            capability_type=CapabilityType.MEASUREMENTS,
-            name="Measure Surface Area",
-            description="Calculate the surface area of an object",
-            input_types=["solid"],
-            output_types=["number"],
-            parameters=["obj_name"],
-            prerequisites=["object_exists"]
-        ))
+        self.register_capability(
+            "measurements",
+            "measure_area",
+            ToolCapability(
+                capability_type=CapabilityType.MEASUREMENTS,
+                name="Measure Surface Area",
+                description="Calculate the surface area of an object",
+                input_types=["solid"],
+                output_types=["number"],
+                parameters=["obj_name"],
+                prerequisites=["object_exists"],
+            ),
+        )
 
-        self.register_capability("measurements", "measure_distance", ToolCapability(
-            capability_type=CapabilityType.MEASUREMENTS,
-            name="Measure Distance",
-            description="Measure distance between two points or objects",
-            input_types=["point", "point"],
-            output_types=["number"],
-            parameters=["obj1_name", "obj2_name"]
-        ))
+        self.register_capability(
+            "measurements",
+            "measure_distance",
+            ToolCapability(
+                capability_type=CapabilityType.MEASUREMENTS,
+                name="Measure Distance",
+                description="Measure distance between two points or objects",
+                input_types=["point", "point"],
+                output_types=["number"],
+                parameters=["obj1_name", "obj2_name"],
+            ),
+        )
 
         # Export/Import capabilities
-        self.register_capability("export_import", "export_step", ToolCapability(
-            capability_type=CapabilityType.EXPORT_IMPORT,
-            name="Export STEP",
-            description="Export objects to STEP format",
-            input_types=["solid"],
-            output_types=["file"],
-            parameters=["filename", "objects"]
-        ))
+        self.register_capability(
+            "export_import",
+            "export_step",
+            ToolCapability(
+                capability_type=CapabilityType.EXPORT_IMPORT,
+                name="Export STEP",
+                description="Export objects to STEP format",
+                input_types=["solid"],
+                output_types=["file"],
+                parameters=["filename", "objects"],
+            ),
+        )
 
-        self.register_capability("export_import", "export_stl", ToolCapability(
-            capability_type=CapabilityType.EXPORT_IMPORT,
-            name="Export STL",
-            description="Export objects to STL format",
-            input_types=["solid"],
-            output_types=["file"],
-            parameters=["filename", "objects"]
-        ))
+        self.register_capability(
+            "export_import",
+            "export_stl",
+            ToolCapability(
+                capability_type=CapabilityType.EXPORT_IMPORT,
+                name="Export STL",
+                description="Export objects to STL format",
+                input_types=["solid"],
+                output_types=["file"],
+                parameters=["filename", "objects"],
+            ),
+        )
 
-        self.register_capability("export_import", "import_step", ToolCapability(
-            capability_type=CapabilityType.EXPORT_IMPORT,
-            name="Import STEP",
-            description="Import objects from STEP format",
-            input_types=["file"],
-            output_types=["solid"],
-            parameters=["filename"]
-        ))
+        self.register_capability(
+            "export_import",
+            "import_step",
+            ToolCapability(
+                capability_type=CapabilityType.EXPORT_IMPORT,
+                name="Import STEP",
+                description="Import objects from STEP format",
+                input_types=["file"],
+                output_types=["solid"],
+                parameters=["filename"],
+            ),
+        )
 
-    def register_capability(self, tool_category: str, tool_method: str, capability: ToolCapability):
+    def register_capability(
+        self, tool_category: str, tool_method: str, capability: ToolCapability
+    ):
         """Register a capability for a tool"""
         if tool_category not in self.capabilities:
             self.capabilities[tool_category] = {}
@@ -215,11 +284,15 @@ class CapabilityRegistry:
             f"Registered capability: {tool_category}.{tool_method} -> {capability.name}\n"
         )
 
-    def get_capability(self, tool_category: str, tool_method: str) -> Optional[ToolCapability]:
+    def get_capability(
+        self, tool_category: str, tool_method: str
+    ) -> Optional[ToolCapability]:
         """Get capability for a specific tool"""
         return self.capabilities.get(tool_category, {}).get(tool_method)
 
-    def get_capabilities_by_type(self, capability_type: CapabilityType) -> List[ToolCapability]:
+    def get_capabilities_by_type(
+        self, capability_type: CapabilityType
+    ) -> List[ToolCapability]:
         """Get all capabilities of a specific type"""
         result = []
         for category in self.capabilities.values():
@@ -238,7 +311,7 @@ class CapabilityRegistry:
             "transformation": CapabilityType.TRANSFORMATIONS,
             "measurement": CapabilityType.MEASUREMENTS,
             "export": CapabilityType.EXPORT_IMPORT,
-            "import": CapabilityType.EXPORT_IMPORT
+            "import": CapabilityType.EXPORT_IMPORT,
         }
 
         capability_type = intent_mapping.get(intent_type.lower())
@@ -247,7 +320,9 @@ class CapabilityRegistry:
 
         return []
 
-    def find_tools_for_capability(self, capability_type: CapabilityType) -> Dict[str, List[str]]:
+    def find_tools_for_capability(
+        self, capability_type: CapabilityType
+    ) -> Dict[str, List[str]]:
         """Find all tools that have a specific capability"""
         result = {}
 
@@ -262,7 +337,9 @@ class CapabilityRegistry:
 
         return result
 
-    def validate_tool_prerequisites(self, tool_category: str, tool_method: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_tool_prerequisites(
+        self, tool_category: str, tool_method: str, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Validate that tool prerequisites are met"""
         capability = self.get_capability(tool_category, tool_method)
         if not capability:
@@ -277,7 +354,9 @@ class CapabilityRegistry:
                     obj_name = context.get("obj_name")
                     if not obj_name or not self._object_exists(obj_name):
                         validation["valid"] = False
-                        validation["missing_prerequisites"].append(f"Object '{obj_name}' does not exist")
+                        validation["missing_prerequisites"].append(
+                            f"Object '{obj_name}' does not exist"
+                        )
 
             elif prerequisite == "objects_exist":
                 # Check if multiple objects exist
@@ -286,7 +365,9 @@ class CapabilityRegistry:
                         obj_name = context.get(param)
                         if not obj_name or not self._object_exists(obj_name):
                             validation["valid"] = False
-                            validation["missing_prerequisites"].append(f"Object '{obj_name}' does not exist")
+                            validation["missing_prerequisites"].append(
+                                f"Object '{obj_name}' does not exist"
+                            )
 
         return validation
 
@@ -318,13 +399,17 @@ def get_capability_registry() -> CapabilityRegistry:
     return _capability_registry
 
 
-def register_tool_capability(tool_category: str, tool_method: str, capability: ToolCapability):
+def register_tool_capability(
+    tool_category: str, tool_method: str, capability: ToolCapability
+):
     """Register a tool capability in the global registry"""
     registry = get_capability_registry()
     registry.register_capability(tool_category, tool_method, capability)
 
 
-def get_tool_capability(tool_category: str, tool_method: str) -> Optional[ToolCapability]:
+def get_tool_capability(
+    tool_category: str, tool_method: str
+) -> Optional[ToolCapability]:
     """Get capability for a specific tool from global registry"""
     registry = get_capability_registry()
     return registry.get_capability(tool_category, tool_method)

@@ -6,7 +6,7 @@ FreeCAD document and workspace to provide context to AI models.
 """
 
 import json
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
 
 
 class CADContextExtractor:

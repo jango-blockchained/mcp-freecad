@@ -10,10 +10,15 @@ Author: jango-blockchained
 import asyncio
 import json
 import time
-import aiohttp
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
-from ai.providers.base_provider import BaseAIProvider, AIResponse, AIMessage, MessageRole
+import aiohttp
+from ai.providers.base_provider import (
+    AIMessage,
+    AIResponse,
+    BaseAIProvider,
+    MessageRole,
+)
 
 
 class GeminiProvider(BaseAIProvider):
@@ -40,7 +45,9 @@ class GeminiProvider(BaseAIProvider):
         "gemini-1.5-flash": 1000000,  # 1M tokens
     }
 
-    def __init__(self, api_key: str, model: str = "gemini-2.5-pro-preview-06-05", **kwargs):
+    def __init__(
+        self, api_key: str, model: str = "gemini-2.5-pro-preview-06-05", **kwargs
+    ):
         """Initialize Gemini provider.
 
         Args:

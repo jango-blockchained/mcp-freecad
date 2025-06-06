@@ -7,18 +7,18 @@ draft, thickness, and offset operations.
 Author: AI Assistant
 """
 
-import unittest
-import sys
 import os
+import sys
+import unittest
 
 # Add the parent directory to the path to import the tool
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    from surface_modification import SurfaceModificationTool
-    from advanced_primitives import AdvancedPrimitivesTool
     import FreeCAD as App
     import Part
+    from advanced_primitives import AdvancedPrimitivesTool
+    from surface_modification import SurfaceModificationTool
 
     FREECAD_AVAILABLE = True
 except ImportError:

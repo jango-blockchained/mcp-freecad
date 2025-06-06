@@ -2,7 +2,8 @@
 
 import asyncio
 import logging
-from typing import Dict, List, Any, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+
 from ai.providers.base_provider import BaseAIProvider as AIProvider
 from ai.providers.claude_provider import ClaudeProvider
 from ai.providers.gemini_provider import GeminiProvider
@@ -36,7 +37,7 @@ class AIManager:
 
             # Normalize provider type for consistent handling
             normalized_type = provider_type.lower()
-            
+
             # Handle both 'claude' and 'anthropic' as Claude provider
             if normalized_type in ["claude", "anthropic"]:
                 if model:
@@ -117,7 +118,7 @@ class AIManager:
                 response = await provider.send_message(message, **context)
             else:
                 response = await provider.send_message(message)
-            return response.content if hasattr(response, 'content') else str(response)
+            return response.content if hasattr(response, "content") else str(response)
         except Exception as e:
             self.logger.error(f"Error sending message: {e}")
             return f"Error: {str(e)}"

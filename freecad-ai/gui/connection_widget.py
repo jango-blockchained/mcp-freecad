@@ -1,7 +1,8 @@
 """Connection Widget - Visual and interactive MCP connection manager"""
 
-from PySide2 import QtCore, QtGui, QtWidgets
 import time
+
+from PySide2 import QtCore, QtGui, QtWidgets
 
 
 class ConnectionStatusCard(QtWidgets.QFrame):
@@ -10,21 +11,25 @@ class ConnectionStatusCard(QtWidgets.QFrame):
     def __init__(self, title, parent=None):
         super().__init__(parent)
         self.setFrameStyle(QtWidgets.QFrame.Box)
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             QFrame {
                 border: 2px solid #ddd;
                 border-radius: 8px;
                 background-color: #f8f9fa;
                 padding: 10px;
             }
-        """)
+        """
+        )
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setSpacing(5)
 
         # Title
         self.title_label = QtWidgets.QLabel(title)
-        self.title_label.setStyleSheet("font-weight: bold; font-size: 12px; color: #333;")
+        self.title_label.setStyleSheet(
+            "font-weight: bold; font-size: 12px; color: #333;"
+        )
         layout.addWidget(self.title_label)
 
         # Status indicator
@@ -48,7 +53,9 @@ class ConnectionStatusCard(QtWidgets.QFrame):
 
         # Last activity
         self.activity_label = QtWidgets.QLabel("")
-        self.activity_label.setStyleSheet("font-size: 9px; color: #aaa; font-style: italic;")
+        self.activity_label.setStyleSheet(
+            "font-size: 9px; color: #aaa; font-style: italic;"
+        )
         layout.addWidget(self.activity_label)
 
     def set_status(self, status, info="", activity=""):
@@ -56,47 +63,55 @@ class ConnectionStatusCard(QtWidgets.QFrame):
         if status == "connected":
             self.status_icon.setText("🟢")
             self.status_text.setText("Connected")
-            self.setStyleSheet("""
+            self.setStyleSheet(
+                """
                 QFrame {
                     border: 2px solid #4CAF50;
                     border-radius: 8px;
                     background-color: #f1f8f4;
                     padding: 10px;
                 }
-            """)
+            """
+            )
         elif status == "connecting":
             self.status_icon.setText("🟡")
             self.status_text.setText("Connecting...")
-            self.setStyleSheet("""
+            self.setStyleSheet(
+                """
                 QFrame {
                     border: 2px solid #FF9800;
                     border-radius: 8px;
                     background-color: #fff8f1;
                     padding: 10px;
                 }
-            """)
+            """
+            )
         elif status == "error":
             self.status_icon.setText("🔴")
             self.status_text.setText("Error")
-            self.setStyleSheet("""
+            self.setStyleSheet(
+                """
                 QFrame {
                     border: 2px solid #f44336;
                     border-radius: 8px;
                     background-color: #fdf1f1;
                     padding: 10px;
                 }
-            """)
+            """
+            )
         else:  # disconnected
             self.status_icon.setText("⭕")
             self.status_text.setText("Disconnected")
-            self.setStyleSheet("""
+            self.setStyleSheet(
+                """
                 QFrame {
                     border: 2px solid #ddd;
                     border-radius: 8px;
                     background-color: #f8f9fa;
                     padding: 10px;
                 }
-            """)
+            """
+            )
 
         if info:
             self.info_label.setText(info)
@@ -178,7 +193,7 @@ class ConnectionWidget(QtWidgets.QWidget):
             ("FreeCAD MCP", "Main MCP connection to FreeCAD"),
             ("Claude Desktop", "Connection to Claude Desktop app"),
             ("AI Provider", "Active AI provider connection"),
-            ("Tool Server", "FreeCAD tool server status")
+            ("Tool Server", "FreeCAD tool server status"),
         ]
 
         for i, (name, desc) in enumerate(connections):
@@ -199,7 +214,9 @@ class ConnectionWidget(QtWidgets.QWidget):
         method_layout.addWidget(QtWidgets.QLabel("Method:"))
 
         self.method_combo = QtWidgets.QComboBox()
-        self.method_combo.addItems(["Auto-detect", "Launcher", "Wrapper", "Server", "Bridge"])
+        self.method_combo.addItems(
+            ["Auto-detect", "Launcher", "Wrapper", "Server", "Bridge"]
+        )
         self.method_combo.setMinimumWidth(120)
         self.method_combo.currentTextChanged.connect(self._on_method_changed)
         method_layout.addWidget(self.method_combo)
@@ -216,7 +233,8 @@ class ConnectionWidget(QtWidgets.QWidget):
         button_layout = QtWidgets.QHBoxLayout()
 
         self.connect_all_btn = QtWidgets.QPushButton("⚡ Connect All")
-        self.connect_all_btn.setStyleSheet("""
+        self.connect_all_btn.setStyleSheet(
+            """
             QPushButton {
                 background-color: #4CAF50;
                 color: white;
@@ -232,11 +250,13 @@ class ConnectionWidget(QtWidgets.QWidget):
             QPushButton:pressed {
                 background-color: #3d8b40;
             }
-        """)
+        """
+        )
         button_layout.addWidget(self.connect_all_btn)
 
         self.disconnect_all_btn = QtWidgets.QPushButton("🛑 Disconnect All")
-        self.disconnect_all_btn.setStyleSheet("""
+        self.disconnect_all_btn.setStyleSheet(
+            """
             QPushButton {
                 background-color: #f44336;
                 color: white;
@@ -252,12 +272,14 @@ class ConnectionWidget(QtWidgets.QWidget):
             QPushButton:disabled {
                 background-color: #ccc;
             }
-        """)
+        """
+        )
         self.disconnect_all_btn.setEnabled(False)
         button_layout.addWidget(self.disconnect_all_btn)
 
         self.test_btn = QtWidgets.QPushButton("🔍 Test All")
-        self.test_btn.setStyleSheet("""
+        self.test_btn.setStyleSheet(
+            """
             QPushButton {
                 background-color: #2196F3;
                 color: white;
@@ -270,7 +292,8 @@ class ConnectionWidget(QtWidgets.QWidget):
             QPushButton:hover {
                 background-color: #1976D2;
             }
-        """)
+        """
+        )
         button_layout.addWidget(self.test_btn)
 
         button_layout.addStretch()
@@ -290,7 +313,8 @@ class ConnectionWidget(QtWidgets.QWidget):
 
         self.activity_list = QtWidgets.QListWidget()
         self.activity_list.setMaximumHeight(100)
-        self.activity_list.setStyleSheet("""
+        self.activity_list.setStyleSheet(
+            """
             QListWidget {
                 background-color: #f5f5f5;
                 border: 1px solid #ddd;
@@ -298,7 +322,8 @@ class ConnectionWidget(QtWidgets.QWidget):
                 font-size: 10px;
                 font-family: monospace;
             }
-        """)
+        """
+        )
         log_layout.addWidget(self.activity_list)
 
         layout.addWidget(log_group)
@@ -317,7 +342,7 @@ class ConnectionWidget(QtWidgets.QWidget):
                 "launcher": "Launcher",
                 "wrapper": "Wrapper",
                 "server": "Server",
-                "bridge": "Bridge"
+                "bridge": "Bridge",
             }
             self.method_combo.setCurrentText(method_map.get(method, "Auto-detect"))
 
@@ -328,7 +353,7 @@ class ConnectionWidget(QtWidgets.QWidget):
             "Launcher": "🚀",
             "Wrapper": "📦",
             "Server": "🖥️",
-            "Bridge": "🌉"
+            "Bridge": "🌉",
         }
         self.method_indicator.setText(icons.get(method, "❓"))
         self._add_activity(f"Connection method changed to: {method}")
@@ -346,8 +371,9 @@ class ConnectionWidget(QtWidgets.QWidget):
             if card:
                 card.set_status("connecting", f"Establishing {conn_name} connection...")
                 # Simulate delayed connection
-                QtCore.QTimer.singleShot(500 * (i + 1),
-                    lambda c=conn_name: self._simulate_connection(c))
+                QtCore.QTimer.singleShot(
+                    500 * (i + 1), lambda c=conn_name: self._simulate_connection(c)
+                )
 
         self.disconnect_all_btn.setEnabled(True)
 
@@ -357,15 +383,18 @@ class ConnectionWidget(QtWidgets.QWidget):
         if card:
             # Simulate success/failure
             import random
+
             if random.random() > 0.1:  # 90% success rate
-                card.set_status("connected",
-                    f"{conn_name} active",
-                    time.strftime("%H:%M:%S"))
+                card.set_status(
+                    "connected", f"{conn_name} active", time.strftime("%H:%M:%S")
+                )
                 self._add_activity(f"✅ {conn_name} connected successfully")
             else:
-                card.set_status("error",
+                card.set_status(
+                    "error",
                     f"Failed to connect to {conn_name}",
-                    time.strftime("%H:%M:%S"))
+                    time.strftime("%H:%M:%S"),
+                )
                 self._add_activity(f"❌ {conn_name} connection failed")
 
         self._update_active_count()
@@ -392,8 +421,9 @@ class ConnectionWidget(QtWidgets.QWidget):
             if current_status == "Connected":
                 self._add_activity(f"🔍 Testing {conn_name}...")
                 # Show test result after delay
-                QtCore.QTimer.singleShot(1000,
-                    lambda c=conn_name: self._add_activity(f"✅ {c} test passed"))
+                QtCore.QTimer.singleShot(
+                    1000, lambda c=conn_name: self._add_activity(f"✅ {c} test passed")
+                )
 
     def _update_connection_status(self):
         """Update real-time connection status."""
@@ -401,12 +431,17 @@ class ConnectionWidget(QtWidgets.QWidget):
         # For now, just update activity timestamps
         for card in self.connection_cards.values():
             if card.status_text.text() == "Connected":
-                card.activity_label.setText(f"Last activity: {time.strftime('%H:%M:%S')}")
+                card.activity_label.setText(
+                    f"Last activity: {time.strftime('%H:%M:%S')}"
+                )
 
     def _update_active_count(self):
         """Update active connections counter."""
-        active_count = sum(1 for card in self.connection_cards.values()
-                          if card.status_text.text() == "Connected")
+        active_count = sum(
+            1
+            for card in self.connection_cards.values()
+            if card.status_text.text() == "Connected"
+        )
         self.active_connections_label.setText(f"{active_count} active connections")
 
         if active_count > 0:
@@ -437,7 +472,7 @@ class ConnectionWidget(QtWidgets.QWidget):
         return {
             "method": self.method_combo.currentText(),
             "active_connections": active_connections,
-            "total_active": len(active_connections)
+            "total_active": len(active_connections),
         }
 
     def set_provider_service(self, provider_service):
@@ -450,14 +485,20 @@ class ConnectionWidget(QtWidgets.QWidget):
                 self._on_provider_status_changed
             )
 
-    def _on_provider_status_changed(self, provider_name: str, status: str, message: str):
+    def _on_provider_status_changed(
+        self, provider_name: str, status: str, message: str
+    ):
         """Handle provider status change."""
         card = self.connection_cards.get("AI Provider")
         if card:
             if status == "connected":
-                card.set_status("connected", f"{provider_name} active", time.strftime("%H:%M:%S"))
+                card.set_status(
+                    "connected", f"{provider_name} active", time.strftime("%H:%M:%S")
+                )
             elif status == "error":
-                card.set_status("error", f"{provider_name}: {message}", time.strftime("%H:%M:%S"))
+                card.set_status(
+                    "error", f"{provider_name}: {message}", time.strftime("%H:%M:%S")
+                )
             else:
                 card.set_status("connecting", f"{provider_name}: {status}")
 

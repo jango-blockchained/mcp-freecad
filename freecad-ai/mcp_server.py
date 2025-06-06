@@ -10,9 +10,9 @@ Author: jango-blockchained
 
 import asyncio
 import json
-import sys
-import os
 import logging
+import os
+import sys
 from typing import Any, Dict, List, Optional, Sequence
 
 # Add the addon directory to Python path
@@ -25,19 +25,19 @@ try:
     from mcp.server.models import InitializationOptions
     from mcp.server.stdio import stdio_server
     from mcp.types import (
-        Resource,
-        Tool,
-        TextContent,
-        ImageContent,
-        EmbeddedResource,
         CallToolRequest,
         CallToolResult,
+        EmbeddedResource,
+        ImageContent,
         ListResourcesRequest,
         ListResourcesResult,
         ListToolsRequest,
         ListToolsResult,
         ReadResourceRequest,
         ReadResourceResult,
+        Resource,
+        TextContent,
+        Tool,
     )
 
     MCP_AVAILABLE = True
@@ -76,10 +76,10 @@ class FreeCADMCPServer:
 
             # Try to import tools
             try:
-                from tools.primitives import PrimitivesTool
-                from tools.operations import OperationsTool
-                from tools.measurements import MeasurementsTool
                 from tools.export_import import ExportImportTool
+                from tools.measurements import MeasurementsTool
+                from tools.operations import OperationsTool
+                from tools.primitives import PrimitivesTool
 
                 self.primitives_tool = PrimitivesTool()
                 self.operations_tool = OperationsTool()

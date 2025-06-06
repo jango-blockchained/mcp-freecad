@@ -7,10 +7,11 @@ Includes fillet, chamfer, draft, thickness, and offset operations.
 Author: AI Assistant
 """
 
+import math
+from typing import Any, Dict, List, Optional, Union
+
 import FreeCAD as App
 import Part
-import math
-from typing import Dict, Any, List, Optional, Union
 
 
 class SurfaceModificationTool:

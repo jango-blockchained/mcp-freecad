@@ -7,6 +7,7 @@ It registers the AI workbench and initializes GUI components.
 
 import os
 import sys
+
 import FreeCAD
 import FreeCADGui
 

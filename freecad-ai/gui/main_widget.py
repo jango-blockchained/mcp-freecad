@@ -59,7 +59,9 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         header_layout.addStretch()
 
         self.status_label = QtWidgets.QLabel("Ready")
-        self.status_label.setStyleSheet("padding: 2px 8px; background-color: #f0f0f0; border-radius: 10px; font-size: 11px;")
+        self.status_label.setStyleSheet(
+            "padding: 2px 8px; background-color: #f0f0f0; border-radius: 10px; font-size: 11px;"
+        )
         header_layout.addWidget(self.status_label)
 
         layout.addLayout(header_layout)
@@ -82,6 +84,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             # Strategy 1: Relative import
             try:
                 from ..ai.provider_integration_service import get_provider_service
+
                 provider_service_imported = True
                 print("FreeCAD AI: Provider service imported via relative path")
             except ImportError as e:
@@ -91,6 +94,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             if not provider_service_imported:
                 try:
                     from ai.provider_integration_service import get_provider_service
+
                     provider_service_imported = True
                     print("FreeCAD AI: Provider service imported via direct path")
                 except ImportError as e:
@@ -99,29 +103,41 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             # Strategy 3: Add parent to path and import
             if not provider_service_imported:
                 try:
-                    import sys
                     import os
-                    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    import sys
+
+                    parent_dir = os.path.dirname(
+                        os.path.dirname(os.path.abspath(__file__))
+                    )
                     if parent_dir not in sys.path:
                         sys.path.insert(0, parent_dir)
                     from ai.provider_integration_service import get_provider_service
+
                     provider_service_imported = True
-                    print("FreeCAD AI: Provider service imported after adding to sys.path")
+                    print(
+                        "FreeCAD AI: Provider service imported after adding to sys.path"
+                    )
                 except ImportError as e:
                     print(f"FreeCAD AI: Import with sys.path modification failed: {e}")
 
             if not provider_service_imported:
-                raise ImportError("Could not import provider_integration_service after all strategies")
+                raise ImportError(
+                    "Could not import provider_integration_service after all strategies"
+                )
 
             self.provider_service = get_provider_service()
-            print(f"FreeCAD AI: Provider service created: {self.provider_service is not None}")
+            print(
+                f"FreeCAD AI: Provider service created: {self.provider_service is not None}"
+            )
 
             if self.provider_service:
                 # Connect provider service signals to update status
                 self.provider_service.provider_status_changed.connect(
                     self._on_provider_status_changed
                 )
-                self.provider_service.providers_updated.connect(self._on_providers_updated)
+                self.provider_service.providers_updated.connect(
+                    self._on_providers_updated
+                )
                 print("FreeCAD AI: Provider service signals connected")
 
                 # Initialize providers from configuration with multiple attempts
@@ -141,6 +157,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         except Exception as e:
             print(f"FreeCAD AI: Error setting up provider service - {e}")
             import traceback
+
             print(f"FreeCAD AI: Traceback: {traceback.format_exc()}")
 
     def _on_provider_status_changed(
@@ -193,12 +210,12 @@ class MCPMainWidget(QtWidgets.QDockWidget):
     def _create_tabs(self):
         """Create the tab interface."""
         try:
-            from .unified_connection_widget import UnifiedConnectionWidget
-            from .providers_widget import ProvidersWidget
-            from .conversation_widget import ConversationWidget
-            from .tools_widget_compact import ToolsWidget  # Use compact version
-            from .settings_widget import SettingsWidget
             from .agent_control_widget import AgentControlWidget
+            from .conversation_widget import ConversationWidget
+            from .providers_widget import ProvidersWidget
+            from .settings_widget import SettingsWidget
+            from .tools_widget_compact import ToolsWidget  # Use compact version
+            from .unified_connection_widget import UnifiedConnectionWidget
 
             # Create widgets
             self.unified_connection_widget = UnifiedConnectionWidget()
@@ -233,16 +250,25 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         """Connect GUI widgets to the provider service."""
         try:
             print(f"FreeCAD AI: Connecting widgets to services...")
-            print(f"FreeCAD AI: Provider service available: {self.provider_service is not None}")
-            print(f"FreeCAD AI: Agent manager available: {self.agent_manager is not None}")
+            print(
+                f"FreeCAD AI: Provider service available: {self.provider_service is not None}"
+            )
+            print(
+                f"FreeCAD AI: Agent manager available: {self.agent_manager is not None}"
+            )
 
             if not self.provider_service:
-                print("FreeCAD AI: Warning - provider service still None during connection")
+                print(
+                    "FreeCAD AI: Warning - provider service still None during connection"
+                )
                 # Try to get it again
                 try:
                     from ..ai.provider_integration_service import get_provider_service
+
                     self.provider_service = get_provider_service()
-                    print(f"FreeCAD AI: Retry got provider service: {self.provider_service is not None}")
+                    print(
+                        f"FreeCAD AI: Retry got provider service: {self.provider_service is not None}"
+                    )
                 except Exception as e:
                     print(f"FreeCAD AI: Failed to get provider service on retry: {e}")
 
@@ -251,7 +277,9 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 self.providers_widget.set_provider_service(self.provider_service)
                 print("FreeCAD AI: Provider service connected to providers widget")
             else:
-                print("FreeCAD AI: Warning - providers widget has no set_provider_service method")
+                print(
+                    "FreeCAD AI: Warning - providers widget has no set_provider_service method"
+                )
 
             # Connect providers widget API key changes to service
             if hasattr(self.providers_widget, "api_key_changed"):
@@ -276,25 +304,37 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                     self.conversation_widget.refresh_providers()
                     print("FreeCAD AI: Conversation widget providers refreshed")
             else:
-                print("FreeCAD AI: Warning - conversation widget has no set_provider_service method")
+                print(
+                    "FreeCAD AI: Warning - conversation widget has no set_provider_service method"
+                )
 
             # Connect conversation widget to agent manager
-            if self.agent_manager and hasattr(self.conversation_widget, "set_agent_manager"):
+            if self.agent_manager and hasattr(
+                self.conversation_widget, "set_agent_manager"
+            ):
                 self.conversation_widget.set_agent_manager(self.agent_manager)
                 print("FreeCAD AI: Agent manager connected to conversation widget")
             elif not self.agent_manager:
-                print("FreeCAD AI: Agent manager is None - cannot connect to conversation widget")
+                print(
+                    "FreeCAD AI: Agent manager is None - cannot connect to conversation widget"
+                )
 
             # Connect agent control widget to agent manager
-            if self.agent_manager and hasattr(self.agent_control_widget, "set_agent_manager"):
+            if self.agent_manager and hasattr(
+                self.agent_control_widget, "set_agent_manager"
+            ):
                 self.agent_control_widget.set_agent_manager(self.agent_manager)
                 print("FreeCAD AI: Agent manager connected to agent control widget")
             elif not self.agent_manager:
-                print("FreeCAD AI: Agent manager is None - cannot connect to agent control widget")
+                print(
+                    "FreeCAD AI: Agent manager is None - cannot connect to agent control widget"
+                )
 
             # Connect connection widget to show MCP connection status (no AI provider status)
             if hasattr(self.unified_connection_widget, "set_provider_service"):
-                self.unified_connection_widget.set_provider_service(self.provider_service)
+                self.unified_connection_widget.set_provider_service(
+                    self.provider_service
+                )
 
             # Schedule a second connection attempt to be sure
             QtCore.QTimer.singleShot(2000, self._final_connection_check)
@@ -302,6 +342,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         except Exception as e:
             self.status_label.setText(f"⚠️ {e}")
             import traceback
+
             print(f"FreeCAD AI: Error connecting widgets: {e}")
             print(f"FreeCAD AI: Traceback: {traceback.format_exc()}")
 
@@ -311,7 +352,9 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             print("FreeCAD AI: Performing final connection check...")
 
             # Force provider service to initialize providers if not done yet
-            if self.provider_service and hasattr(self.provider_service, "initialize_providers_from_config"):
+            if self.provider_service and hasattr(
+                self.provider_service, "initialize_providers_from_config"
+            ):
                 self.provider_service.initialize_providers_from_config()
                 print("FreeCAD AI: Forced provider service initialization")
 
@@ -333,7 +376,9 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         # Refresh conversation widget when provider is configured
         if hasattr(self.conversation_widget, "refresh_providers"):
             self.conversation_widget.refresh_providers()
-            print(f"FreeCAD AI: Refreshed conversation widget after {provider_name} configured")
+            print(
+                f"FreeCAD AI: Refreshed conversation widget after {provider_name} configured"
+            )
 
         # Update provider service
         if self.provider_service:
@@ -344,40 +389,48 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         try:
             # Try multiple import strategies for agent manager
             agent_manager_imported = False
-            
+
             # Strategy 1: Relative import
             try:
                 from ..core.agent_manager import AgentManager, AgentMode
+
                 agent_manager_imported = True
                 print("FreeCAD AI: AgentManager imported via relative path")
             except ImportError as e:
                 print(f"FreeCAD AI: Relative import failed: {e}")
-            
+
             # Strategy 2: Direct import
             if not agent_manager_imported:
                 try:
                     from core.agent_manager import AgentManager, AgentMode
+
                     agent_manager_imported = True
                     print("FreeCAD AI: AgentManager imported via direct path")
                 except ImportError as e:
                     print(f"FreeCAD AI: Direct import failed: {e}")
-            
+
             # Strategy 3: Add parent to path
             if not agent_manager_imported:
                 try:
-                    import sys
                     import os
-                    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    import sys
+
+                    parent_dir = os.path.dirname(
+                        os.path.dirname(os.path.abspath(__file__))
+                    )
                     if parent_dir not in sys.path:
                         sys.path.insert(0, parent_dir)
                     from core.agent_manager import AgentManager, AgentMode
+
                     agent_manager_imported = True
                     print("FreeCAD AI: AgentManager imported after adding to sys.path")
                 except ImportError as e:
                     print(f"FreeCAD AI: Import with sys.path modification failed: {e}")
-            
+
             if not agent_manager_imported:
-                print("FreeCAD AI: ERROR - Could not import AgentManager after all strategies")
+                print(
+                    "FreeCAD AI: ERROR - Could not import AgentManager after all strategies"
+                )
                 self.agent_manager = None
                 return
 
@@ -386,19 +439,18 @@ class MCPMainWidget(QtWidgets.QDockWidget):
 
             # Register callbacks
             self.agent_manager.register_callback(
-                "on_mode_change",
-                self._on_agent_mode_changed
+                "on_mode_change", self._on_agent_mode_changed
             )
             self.agent_manager.register_callback(
-                "on_state_change",
-                self._on_agent_state_changed
+                "on_state_change", self._on_agent_state_changed
             )
 
             print("FreeCAD AI: Agent Manager initialized and callbacks registered")
-            
+
         except Exception as e:
             print(f"FreeCAD AI: Agent Manager initialization failed - {e}")
             import traceback
+
             print(f"FreeCAD AI: Full traceback: {traceback.format_exc()}")
             self.agent_manager = None
 
@@ -416,12 +468,14 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             "executing": "Executing...",
             "paused": "Paused",
             "error": "Error",
-            "completed": "Completed"
+            "completed": "Completed",
         }
         status_text = state_display.get(new_state.value, new_state.value)
 
         # Show mode and state
-        mode_text = "Chat" if self.agent_manager.current_mode.value == "chat" else "Agent"
+        mode_text = (
+            "Chat" if self.agent_manager.current_mode.value == "chat" else "Agent"
+        )
         self.status_label.setText(f"{mode_text}: {status_text}")
 
         # Update status color
@@ -449,7 +503,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
     def _update_ui_for_chat_mode(self):
         """Update UI elements for chat mode."""
         # In chat mode, disable autonomous execution features
-        if hasattr(self, 'tools_widget'):
+        if hasattr(self, "tools_widget"):
             self.tools_widget.setEnabled(True)  # Manual tool use allowed
 
         # Update tab visibility or highlighting
@@ -464,7 +518,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
     def _update_ui_for_agent_mode(self):
         """Update UI elements for agent mode."""
         # In agent mode, enable autonomous execution features
-        if hasattr(self, 'tools_widget'):
+        if hasattr(self, "tools_widget"):
             self.tools_widget.setEnabled(True)  # Tools can be executed by agent
 
         # Update tab visibility or highlighting
@@ -493,7 +547,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             return {
                 "connected": False,
                 "error": "Agent manager is None - initialization failed",
-                "suggestion": "Check FreeCAD console for initialization errors"
+                "suggestion": "Check FreeCAD console for initialization errors",
             }
 
         try:
@@ -503,13 +557,13 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 "status": status,
                 "mode": status.get("mode", "unknown"),
                 "state": status.get("state", "unknown"),
-                "available_tools": len(status.get("available_tools", {}))
+                "available_tools": len(status.get("available_tools", {})),
             }
         except Exception as e:
             return {
                 "connected": False,
                 "error": f"Agent manager exists but is not functional: {e}",
-                "suggestion": "Agent manager may be partially initialized"
+                "suggestion": "Agent manager may be partially initialized",
             }
 
     def _load_persisted_mode(self):
@@ -521,6 +575,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             # Set the agent manager mode directly
             if self.agent_manager:
                 from ..core.agent_manager import AgentMode
+
                 if mode == "Agent":
                     self.agent_manager.set_mode(AgentMode.AGENT)
                 else:

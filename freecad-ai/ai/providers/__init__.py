@@ -4,11 +4,17 @@ AI Providers Package
 Provides AI provider implementations with lazy loading and dependency management.
 """
 
+from typing import Any, Dict, Optional
+
 import FreeCAD
-from typing import Dict, Any, Optional
 
 # Import base classes first
-from ai.providers.base_provider import BaseAIProvider, AIResponse, AIMessage, MessageRole
+from ai.providers.base_provider import (
+    AIMessage,
+    AIResponse,
+    BaseAIProvider,
+    MessageRole,
+)
 
 # Lazy loading for providers to handle missing dependencies gracefully
 _providers = {}

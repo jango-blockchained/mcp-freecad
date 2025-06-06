@@ -11,7 +11,7 @@ available_clients = []
 # Try importing each client individually to be more robust
 clients_to_import = [
     ("freecad_client", "FreeCADClient"),
-    ("cursor_mcp_bridge", "main")  # Import the main function instead of a class
+    ("cursor_mcp_bridge", "main"),  # Import the main function instead of a class
 ]
 
 for module_name, item_name in clients_to_import:
@@ -28,7 +28,10 @@ for module_name, item_name in clients_to_import:
     except ImportError as e:
         try:
             import FreeCAD
-            FreeCAD.Console.PrintWarning(f"FreeCAD AI: Failed to import {item_name}: {e}\n")
+
+            FreeCAD.Console.PrintWarning(
+                f"FreeCAD AI: Failed to import {item_name}: {e}\n"
+            )
         except ImportError:
             print(f"FreeCAD AI: Failed to import {item_name}: {e}")
 

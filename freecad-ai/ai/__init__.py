@@ -17,9 +17,14 @@ try:
     from .providers.claude_provider import ClaudeProvider
     from .providers.gemini_provider import GeminiProvider
     from .providers.openrouter_provider import OpenRouterProvider
-    
-    __all__ = ["BaseAIProvider", "ClaudeProvider", "GeminiProvider", "OpenRouterProvider"]
-    
+
+    __all__ = [
+        "BaseAIProvider",
+        "ClaudeProvider",
+        "GeminiProvider",
+        "OpenRouterProvider",
+    ]
+
     # Available provider types
     AVAILABLE_PROVIDERS = {
         "claude": ClaudeProvider,

@@ -1,13 +1,16 @@
 """Tool Registry - Centralized tool registration and management"""
 
-from typing import Dict, List, Optional, Any, Callable, Tuple
-from dataclasses import dataclass, field
 import json
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import FreeCAD
+
 
 @dataclass
 class ToolInfo:
     """Information about a registered tool"""
+
     id: str
     name: str
     category: str
@@ -18,6 +21,7 @@ class ToolInfo:
     capabilities: List[str] = field(default_factory=list)
     dependencies: List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
+
 
 class ToolRegistry:
     """
@@ -37,7 +41,7 @@ class ToolRegistry:
             "auto_discover": True,
             "validate_on_register": True,
             "allow_duplicates": False,
-            "log_registration": True
+            "log_registration": True,
         }
 
         # Initialize with built-in tools
@@ -48,24 +52,30 @@ class ToolRegistry:
         try:
             # Import and register primitive tools
             from ..tools.primitives import PrimitivesTool
+
             self._register_primitives_tool()
 
             # Import and register operation tools
             from ..tools.operations import OperationsTool
+
             self._register_operations_tool()
 
             # Import and register measurement tools
             from ..tools.measurements import MeasurementsTool
+
             self._register_measurements_tool()
 
             # Import and register export/import tools
             from ..tools.export_import import ExportImportTool
+
             self._register_export_import_tool()
 
             FreeCAD.Console.PrintMessage("Tool Registry: Built-in tools registered\n")
 
         except ImportError as e:
-            FreeCAD.Console.PrintError(f"Tool Registry: Failed to import built-in tools: {e}\n")
+            FreeCAD.Console.PrintError(
+                f"Tool Registry: Failed to import built-in tools: {e}\n"
+            )
 
     def _register_primitives_tool(self):
         """Register primitive creation tools"""
@@ -79,13 +89,29 @@ class ToolRegistry:
                 category="primitives",
                 description="Create a box/cube with specified dimensions",
                 parameters={
-                    "length": {"type": "float", "default": 10.0, "description": "Length of the box"},
-                    "width": {"type": "float", "default": 10.0, "description": "Width of the box"},
-                    "height": {"type": "float", "default": 10.0, "description": "Height of the box"},
-                    "position": {"type": "vector", "default": [0, 0, 0], "description": "Position of the box"}
+                    "length": {
+                        "type": "float",
+                        "default": 10.0,
+                        "description": "Length of the box",
+                    },
+                    "width": {
+                        "type": "float",
+                        "default": 10.0,
+                        "description": "Width of the box",
+                    },
+                    "height": {
+                        "type": "float",
+                        "default": 10.0,
+                        "description": "Height of the box",
+                    },
+                    "position": {
+                        "type": "vector",
+                        "default": [0, 0, 0],
+                        "description": "Position of the box",
+                    },
                 },
-                capabilities=["create", "3d", "solid", "primitive"]
-            )
+                capabilities=["create", "3d", "solid", "primitive"],
+            ),
         )
 
         # Cylinder tool
@@ -98,12 +124,24 @@ class ToolRegistry:
                 category="primitives",
                 description="Create a cylinder with specified dimensions",
                 parameters={
-                    "radius": {"type": "float", "default": 5.0, "description": "Radius of the cylinder"},
-                    "height": {"type": "float", "default": 10.0, "description": "Height of the cylinder"},
-                    "position": {"type": "vector", "default": [0, 0, 0], "description": "Position of the cylinder"}
+                    "radius": {
+                        "type": "float",
+                        "default": 5.0,
+                        "description": "Radius of the cylinder",
+                    },
+                    "height": {
+                        "type": "float",
+                        "default": 10.0,
+                        "description": "Height of the cylinder",
+                    },
+                    "position": {
+                        "type": "vector",
+                        "default": [0, 0, 0],
+                        "description": "Position of the cylinder",
+                    },
                 },
-                capabilities=["create", "3d", "solid", "primitive", "round"]
-            )
+                capabilities=["create", "3d", "solid", "primitive", "round"],
+            ),
         )
 
         # Sphere tool
@@ -116,11 +154,19 @@ class ToolRegistry:
                 category="primitives",
                 description="Create a sphere with specified radius",
                 parameters={
-                    "radius": {"type": "float", "default": 5.0, "description": "Radius of the sphere"},
-                    "position": {"type": "vector", "default": [0, 0, 0], "description": "Position of the sphere"}
+                    "radius": {
+                        "type": "float",
+                        "default": 5.0,
+                        "description": "Radius of the sphere",
+                    },
+                    "position": {
+                        "type": "vector",
+                        "default": [0, 0, 0],
+                        "description": "Position of the sphere",
+                    },
                 },
-                capabilities=["create", "3d", "solid", "primitive", "round"]
-            )
+                capabilities=["create", "3d", "solid", "primitive", "round"],
+            ),
         )
 
         # Cone tool
@@ -133,13 +179,29 @@ class ToolRegistry:
                 category="primitives",
                 description="Create a cone with specified dimensions",
                 parameters={
-                    "radius1": {"type": "float", "default": 5.0, "description": "Bottom radius"},
-                    "radius2": {"type": "float", "default": 0.0, "description": "Top radius"},
-                    "height": {"type": "float", "default": 10.0, "description": "Height of the cone"},
-                    "position": {"type": "vector", "default": [0, 0, 0], "description": "Position of the cone"}
+                    "radius1": {
+                        "type": "float",
+                        "default": 5.0,
+                        "description": "Bottom radius",
+                    },
+                    "radius2": {
+                        "type": "float",
+                        "default": 0.0,
+                        "description": "Top radius",
+                    },
+                    "height": {
+                        "type": "float",
+                        "default": 10.0,
+                        "description": "Height of the cone",
+                    },
+                    "position": {
+                        "type": "vector",
+                        "default": [0, 0, 0],
+                        "description": "Position of the cone",
+                    },
                 },
-                capabilities=["create", "3d", "solid", "primitive", "tapered"]
-            )
+                capabilities=["create", "3d", "solid", "primitive", "tapered"],
+            ),
         )
 
     def _register_operations_tool(self):
@@ -154,12 +216,20 @@ class ToolRegistry:
                 category="operations",
                 description="Move/translate selected objects",
                 parameters={
-                    "vector": {"type": "vector", "required": True, "description": "Translation vector [x, y, z]"},
-                    "copy": {"type": "bool", "default": False, "description": "Create a copy instead of moving"}
+                    "vector": {
+                        "type": "vector",
+                        "required": True,
+                        "description": "Translation vector [x, y, z]",
+                    },
+                    "copy": {
+                        "type": "bool",
+                        "default": False,
+                        "description": "Create a copy instead of moving",
+                    },
                 },
                 capabilities=["transform", "position", "translate"],
-                dependencies=["selection"]
-            )
+                dependencies=["selection"],
+            ),
         )
 
         # Rotate tool
@@ -172,13 +242,25 @@ class ToolRegistry:
                 category="operations",
                 description="Rotate selected objects",
                 parameters={
-                    "angle": {"type": "float", "required": True, "description": "Rotation angle in degrees"},
-                    "axis": {"type": "vector", "default": [0, 0, 1], "description": "Rotation axis"},
-                    "center": {"type": "vector", "default": [0, 0, 0], "description": "Center of rotation"}
+                    "angle": {
+                        "type": "float",
+                        "required": True,
+                        "description": "Rotation angle in degrees",
+                    },
+                    "axis": {
+                        "type": "vector",
+                        "default": [0, 0, 1],
+                        "description": "Rotation axis",
+                    },
+                    "center": {
+                        "type": "vector",
+                        "default": [0, 0, 0],
+                        "description": "Center of rotation",
+                    },
                 },
                 capabilities=["transform", "rotate", "orientation"],
-                dependencies=["selection"]
-            )
+                dependencies=["selection"],
+            ),
         )
 
         # Scale tool
@@ -191,12 +273,20 @@ class ToolRegistry:
                 category="operations",
                 description="Scale selected objects",
                 parameters={
-                    "factor": {"type": "float", "default": 1.0, "description": "Scale factor"},
-                    "uniform": {"type": "bool", "default": True, "description": "Uniform scaling"}
+                    "factor": {
+                        "type": "float",
+                        "default": 1.0,
+                        "description": "Scale factor",
+                    },
+                    "uniform": {
+                        "type": "bool",
+                        "default": True,
+                        "description": "Uniform scaling",
+                    },
                 },
                 capabilities=["transform", "resize", "scale"],
-                dependencies=["selection"]
-            )
+                dependencies=["selection"],
+            ),
         )
 
         # Boolean operations
@@ -209,12 +299,19 @@ class ToolRegistry:
                 category="operations",
                 description="Perform boolean operations on objects",
                 parameters={
-                    "operation": {"type": "enum", "values": ["union", "difference", "intersection"], "required": True},
-                    "objects": {"type": "list", "description": "List of objects to operate on"}
+                    "operation": {
+                        "type": "enum",
+                        "values": ["union", "difference", "intersection"],
+                        "required": True,
+                    },
+                    "objects": {
+                        "type": "list",
+                        "description": "List of objects to operate on",
+                    },
                 },
                 capabilities=["boolean", "combine", "subtract", "intersect"],
-                dependencies=["selection"]
-            )
+                dependencies=["selection"],
+            ),
         )
 
     def _register_measurements_tool(self):
@@ -229,10 +326,10 @@ class ToolRegistry:
                 description="Measure distance between points or objects",
                 parameters={
                     "point1": {"type": "vector", "description": "First point"},
-                    "point2": {"type": "vector", "description": "Second point"}
+                    "point2": {"type": "vector", "description": "Second point"},
                 },
-                capabilities=["measure", "analyze", "distance"]
-            )
+                capabilities=["measure", "analyze", "distance"],
+            ),
         )
 
         self.register_tool(
@@ -245,8 +342,8 @@ class ToolRegistry:
                 description="Calculate volume of selected objects",
                 parameters={},
                 capabilities=["measure", "analyze", "volume"],
-                dependencies=["selection"]
-            )
+                dependencies=["selection"],
+            ),
         )
 
     def _register_export_import_tool(self):
@@ -260,12 +357,20 @@ class ToolRegistry:
                 category="export_import",
                 description="Export selected objects to STL format",
                 parameters={
-                    "filename": {"type": "string", "required": True, "description": "Output filename"},
-                    "ascii": {"type": "bool", "default": False, "description": "Use ASCII format"}
+                    "filename": {
+                        "type": "string",
+                        "required": True,
+                        "description": "Output filename",
+                    },
+                    "ascii": {
+                        "type": "bool",
+                        "default": False,
+                        "description": "Use ASCII format",
+                    },
                 },
                 capabilities=["export", "stl", "3d_printing"],
-                dependencies=["selection"]
-            )
+                dependencies=["selection"],
+            ),
         )
 
         self.register_tool(
@@ -277,14 +382,19 @@ class ToolRegistry:
                 category="export_import",
                 description="Export document to STEP format",
                 parameters={
-                    "filename": {"type": "string", "required": True, "description": "Output filename"}
+                    "filename": {
+                        "type": "string",
+                        "required": True,
+                        "description": "Output filename",
+                    }
                 },
-                capabilities=["export", "step", "cad_exchange"]
-            )
+                capabilities=["export", "step", "cad_exchange"],
+            ),
         )
 
     def _create_tool_wrapper(self, tool_name: str) -> Callable:
         """Create a wrapper function for a tool"""
+
         def tool_wrapper(**kwargs):
             # This is a placeholder - actual implementation would call the real tool
             return f"Executed {tool_name} with parameters: {kwargs}"
@@ -306,13 +416,17 @@ class ToolRegistry:
         """
         # Check for duplicates
         if tool_id in self.tools and not self.config["allow_duplicates"]:
-            FreeCAD.Console.PrintWarning(f"Tool Registry: Tool '{tool_id}' already registered\n")
+            FreeCAD.Console.PrintWarning(
+                f"Tool Registry: Tool '{tool_id}' already registered\n"
+            )
             return False
 
         # Validate tool if required
         if self.config["validate_on_register"]:
             if not self._validate_tool(tool, info):
-                FreeCAD.Console.PrintError(f"Tool Registry: Tool '{tool_id}' validation failed\n")
+                FreeCAD.Console.PrintError(
+                    f"Tool Registry: Tool '{tool_id}' validation failed\n"
+                )
                 return False
 
         # Register the tool
@@ -331,14 +445,16 @@ class ToolRegistry:
             self.capabilities_index[capability].append(tool_id)
 
         if self.config["log_registration"]:
-            FreeCAD.Console.PrintMessage(f"Tool Registry: Registered '{tool_id}' ({info.name})\n")
+            FreeCAD.Console.PrintMessage(
+                f"Tool Registry: Registered '{tool_id}' ({info.name})\n"
+            )
 
         return True
 
     def _validate_tool(self, tool: Any, info: ToolInfo) -> bool:
         """Validate a tool before registration"""
         # Check if tool is callable
-        if not callable(tool) and not hasattr(tool, 'execute'):
+        if not callable(tool) and not hasattr(tool, "execute"):
             return False
 
         # Validate required fields in info
@@ -400,9 +516,11 @@ class ToolRegistry:
         query_lower = query.lower()
 
         for tool_id, info in self.tool_info.items():
-            if (query_lower in info.name.lower() or
-                query_lower in info.description.lower() or
-                any(query_lower in cap for cap in info.capabilities)):
+            if (
+                query_lower in info.name.lower()
+                or query_lower in info.description.lower()
+                or any(query_lower in cap for cap in info.capabilities)
+            ):
                 results.append((tool_id, info))
 
         return results
@@ -420,7 +538,7 @@ class ToolRegistry:
         registry_data = {
             "tools": {},
             "categories": self.categories,
-            "capabilities": list(self.capabilities_index.keys())
+            "capabilities": list(self.capabilities_index.keys()),
         }
 
         for tool_id, info in self.tool_info.items():
@@ -433,7 +551,7 @@ class ToolRegistry:
                 "parameters": info.parameters,
                 "capabilities": info.capabilities,
                 "dependencies": info.dependencies,
-                "metadata": info.metadata
+                "metadata": info.metadata,
             }
 
         return registry_data

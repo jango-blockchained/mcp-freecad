@@ -1,14 +1,16 @@
 """Tool Capabilities Framework - Define and query tool capabilities"""
 
-from typing import Dict, List, Optional, Any, Set, Callable
+import json
 from dataclasses import dataclass, field
 from enum import Enum
-import json
+from typing import Any, Callable, Dict, List, Optional, Set
+
 import FreeCAD
 
 
 class CapabilityType(Enum):
     """Types of tool capabilities"""
+
     CREATION = "creation"
     MODIFICATION = "modification"
     ANALYSIS = "analysis"
@@ -20,6 +22,7 @@ class CapabilityType(Enum):
 
 class RequirementType(Enum):
     """Types of requirements for tools"""
+
     DOCUMENT = "document"
     SELECTION = "selection"
     WORKBENCH = "workbench"
@@ -31,6 +34,7 @@ class RequirementType(Enum):
 @dataclass
 class Parameter:
     """Defines a tool parameter"""
+
     name: str
     type: str
     description: str
@@ -44,6 +48,7 @@ class Parameter:
 @dataclass
 class Requirement:
     """Defines a tool requirement"""
+
     type: RequirementType
     description: str
     validator: Optional[Callable] = None
@@ -53,6 +58,7 @@ class Requirement:
 @dataclass
 class Example:
     """Defines a usage example"""
+
     description: str
     input_text: str
     parameters: Dict[str, Any]
@@ -63,6 +69,7 @@ class Example:
 @dataclass
 class ToolCapability:
     """Complete capability definition for a tool"""
+
     tool_id: str
     name: str
     category: CapabilityType
@@ -94,7 +101,7 @@ class ToolCapability:
                     "default": p.default,
                     "constraints": p.constraints,
                     "units": p.units,
-                    "examples": p.examples
+                    "examples": p.examples,
                 }
                 for p in self.parameters
             ],
@@ -102,7 +109,7 @@ class ToolCapability:
                 {
                     "type": r.type.value,
                     "description": r.description,
-                    "error_message": r.error_message
+                    "error_message": r.error_message,
                 }
                 for r in self.requirements
             ],
@@ -112,7 +119,7 @@ class ToolCapability:
                     "input_text": e.input_text,
                     "parameters": e.parameters,
                     "expected_output": e.expected_output,
-                    "explanation": e.explanation
+                    "explanation": e.explanation,
                 }
                 for e in self.examples
             ],
@@ -120,7 +127,7 @@ class ToolCapability:
             "related_tools": self.related_tools,
             "produces": self.produces,
             "modifies": self.modifies,
-            "version": self.version
+            "version": self.version,
         }
 
 
@@ -169,12 +176,14 @@ class ToolCapabilityRegistry:
         """Get capability by tool ID"""
         return self.capabilities.get(tool_id)
 
-    def query(self,
-              category: Optional[CapabilityType] = None,
-              keywords: Optional[List[str]] = None,
-              produces: Optional[str] = None,
-              modifies: Optional[str] = None,
-              has_all_keywords: bool = False) -> List[ToolCapability]:
+    def query(
+        self,
+        category: Optional[CapabilityType] = None,
+        keywords: Optional[List[str]] = None,
+        produces: Optional[str] = None,
+        modifies: Optional[str] = None,
+        has_all_keywords: bool = False,
+    ) -> List[ToolCapability]:
         """
         Query capabilities based on criteria
 
@@ -220,8 +229,9 @@ class ToolCapabilityRegistry:
         # Return capabilities
         return [self.capabilities[tool_id] for tool_id in tool_ids]
 
-    def validate_parameters(self, tool_id: str,
-                          parameters: Dict[str, Any]) -> Tuple[bool, List[str]]:
+    def validate_parameters(
+        self, tool_id: str, parameters: Dict[str, Any]
+    ) -> Tuple[bool, List[str]]:
         """
         Validate parameters for a tool
 
@@ -277,15 +287,15 @@ class ToolCapabilityRegistry:
                 # Use custom validator
                 if not requirement.validator():
                     errors.append(
-                        requirement.error_message or
-                        f"Requirement not met: {requirement.description}"
+                        requirement.error_message
+                        or f"Requirement not met: {requirement.description}"
                     )
             else:
                 # Use built-in validators
                 if not self._check_requirement(requirement):
                     errors.append(
-                        requirement.error_message or
-                        f"Requirement not met: {requirement.description}"
+                        requirement.error_message
+                        or f"Requirement not met: {requirement.description}"
                     )
 
         return len(errors) == 0, errors
@@ -299,7 +309,7 @@ class ToolCapabilityRegistry:
             "float": float,
             "boolean": bool,
             "array": list,
-            "object": dict
+            "object": dict,
         }
 
         if expected_type in type_map:
@@ -307,20 +317,29 @@ class ToolCapabilityRegistry:
 
         # Special types
         if expected_type == "vector3":
-            return (isinstance(value, (list, tuple)) and len(value) == 3 and
-                   all(isinstance(v, (int, float)) for v in value))
+            return (
+                isinstance(value, (list, tuple))
+                and len(value) == 3
+                and all(isinstance(v, (int, float)) for v in value)
+            )
 
         if expected_type == "color":
             # Accept various color formats
             if isinstance(value, str):
-                return value.startswith("#") or value in ["red", "green", "blue", "yellow"]
+                return value.startswith("#") or value in [
+                    "red",
+                    "green",
+                    "blue",
+                    "yellow",
+                ]
             if isinstance(value, (list, tuple)):
                 return len(value) in [3, 4] and all(0 <= v <= 1 for v in value)
 
         return True  # Unknown type, allow
 
-    def _validate_constraints(self, name: str, value: Any,
-                            constraints: Dict[str, Any]) -> List[str]:
+    def _validate_constraints(
+        self, name: str, value: Any, constraints: Dict[str, Any]
+    ) -> List[str]:
         """Validate parameter constraints"""
         errors = []
 
@@ -338,6 +357,7 @@ class ToolCapabilityRegistry:
         # Pattern constraint (for strings)
         if "pattern" in constraints and isinstance(value, str):
             import re
+
             if not re.match(constraints["pattern"], value):
                 errors.append(f"{name} must match pattern: {constraints['pattern']}")
 
@@ -356,6 +376,7 @@ class ToolCapabilityRegistry:
 
         elif requirement.type == RequirementType.SELECTION:
             import FreeCADGui
+
             return len(FreeCADGui.Selection.getSelection()) > 0
 
         elif requirement.type == RequirementType.WORKBENCH:
@@ -371,119 +392,130 @@ class ToolCapabilityRegistry:
     def _register_builtin_capabilities(self):
         """Register built-in tool capabilities"""
         # Example: Box creation tool
-        self.register(ToolCapability(
-            tool_id="primitives.create_box",
-            name="Create Box",
-            category=CapabilityType.CREATION,
-            description="Create a box/cube primitive",
-            detailed_description="""
+        self.register(
+            ToolCapability(
+                tool_id="primitives.create_box",
+                name="Create Box",
+                category=CapabilityType.CREATION,
+                description="Create a box/cube primitive",
+                detailed_description="""
             Creates a parametric box (rectangular prism) in the active document.
             The box can be positioned and sized according to the provided parameters.
             """,
-            parameters=[
-                Parameter(
-                    name="length",
-                    type="number",
-                    description="Length of the box (X direction)",
-                    required=False,
-                    default=10.0,
-                    units="mm",
-                    constraints={"min": 0.1, "max": 10000},
-                    examples=[10, 50, 100]
-                ),
-                Parameter(
-                    name="width",
-                    type="number",
-                    description="Width of the box (Y direction)",
-                    required=False,
-                    default=10.0,
-                    units="mm",
-                    constraints={"min": 0.1, "max": 10000},
-                    examples=[10, 50, 100]
-                ),
-                Parameter(
-                    name="height",
-                    type="number",
-                    description="Height of the box (Z direction)",
-                    required=False,
-                    default=10.0,
-                    units="mm",
-                    constraints={"min": 0.1, "max": 10000},
-                    examples=[10, 50, 100]
-                ),
-                Parameter(
-                    name="position",
-                    type="vector3",
-                    description="Position of the box center",
-                    required=False,
-                    default=[0, 0, 0],
-                    units="mm",
-                    examples=[[0, 0, 0], [100, 50, 0]]
-                ),
-                Parameter(
-                    name="name",
-                    type="string",
-                    description="Name for the created box",
-                    required=False,
-                    default="Box",
-                    constraints={"pattern": r"^[A-Za-z][A-Za-z0-9_]*$"},
-                    examples=["Box", "MyBox", "Container"]
-                )
-            ],
-            requirements=[
-                Requirement(
-                    type=RequirementType.DOCUMENT,
-                    description="Active document required",
-                    error_message="Please create or open a document first"
-                )
-            ],
-            examples=[
-                Example(
-                    description="Create a simple cube",
-                    input_text="create a cube",
-                    parameters={"length": 10, "width": 10, "height": 10},
-                    expected_output="Box created with dimensions 10x10x10mm"
-                ),
-                Example(
-                    description="Create a box with specific dimensions",
-                    input_text="create a box 50mm x 30mm x 20mm",
-                    parameters={"length": 50, "width": 30, "height": 20},
-                    expected_output="Box created with dimensions 50x30x20mm"
-                ),
-                Example(
-                    description="Create a box at specific position",
-                    input_text="create a box at position (100, 50, 0)",
-                    parameters={
-                        "length": 10, "width": 10, "height": 10,
-                        "position": [100, 50, 0]
-                    },
-                    expected_output="Box created at position (100, 50, 0)"
-                )
-            ],
-            keywords=[
-                "box", "cube", "rectangular", "prism", "block",
-                "create", "make", "build", "primitive"
-            ],
-            related_tools=["primitives.create_cylinder", "primitives.create_sphere"],
-            produces=["Part::Box", "solid", "shape"],
-            modifies=["document"]
-        ))
+                parameters=[
+                    Parameter(
+                        name="length",
+                        type="number",
+                        description="Length of the box (X direction)",
+                        required=False,
+                        default=10.0,
+                        units="mm",
+                        constraints={"min": 0.1, "max": 10000},
+                        examples=[10, 50, 100],
+                    ),
+                    Parameter(
+                        name="width",
+                        type="number",
+                        description="Width of the box (Y direction)",
+                        required=False,
+                        default=10.0,
+                        units="mm",
+                        constraints={"min": 0.1, "max": 10000},
+                        examples=[10, 50, 100],
+                    ),
+                    Parameter(
+                        name="height",
+                        type="number",
+                        description="Height of the box (Z direction)",
+                        required=False,
+                        default=10.0,
+                        units="mm",
+                        constraints={"min": 0.1, "max": 10000},
+                        examples=[10, 50, 100],
+                    ),
+                    Parameter(
+                        name="position",
+                        type="vector3",
+                        description="Position of the box center",
+                        required=False,
+                        default=[0, 0, 0],
+                        units="mm",
+                        examples=[[0, 0, 0], [100, 50, 0]],
+                    ),
+                    Parameter(
+                        name="name",
+                        type="string",
+                        description="Name for the created box",
+                        required=False,
+                        default="Box",
+                        constraints={"pattern": r"^[A-Za-z][A-Za-z0-9_]*$"},
+                        examples=["Box", "MyBox", "Container"],
+                    ),
+                ],
+                requirements=[
+                    Requirement(
+                        type=RequirementType.DOCUMENT,
+                        description="Active document required",
+                        error_message="Please create or open a document first",
+                    )
+                ],
+                examples=[
+                    Example(
+                        description="Create a simple cube",
+                        input_text="create a cube",
+                        parameters={"length": 10, "width": 10, "height": 10},
+                        expected_output="Box created with dimensions 10x10x10mm",
+                    ),
+                    Example(
+                        description="Create a box with specific dimensions",
+                        input_text="create a box 50mm x 30mm x 20mm",
+                        parameters={"length": 50, "width": 30, "height": 20},
+                        expected_output="Box created with dimensions 50x30x20mm",
+                    ),
+                    Example(
+                        description="Create a box at specific position",
+                        input_text="create a box at position (100, 50, 0)",
+                        parameters={
+                            "length": 10,
+                            "width": 10,
+                            "height": 10,
+                            "position": [100, 50, 0],
+                        },
+                        expected_output="Box created at position (100, 50, 0)",
+                    ),
+                ],
+                keywords=[
+                    "box",
+                    "cube",
+                    "rectangular",
+                    "prism",
+                    "block",
+                    "create",
+                    "make",
+                    "build",
+                    "primitive",
+                ],
+                related_tools=[
+                    "primitives.create_cylinder",
+                    "primitives.create_sphere",
+                ],
+                produces=["Part::Box", "solid", "shape"],
+                modifies=["document"],
+            )
+        )
 
         # Add more built-in capabilities as needed...
 
     def export_capabilities(self, file_path: str):
         """Export all capabilities to JSON file"""
-        data = {
-            tool_id: cap.to_dict()
-            for tool_id, cap in self.capabilities.items()
-        }
+        data = {tool_id: cap.to_dict() for tool_id, cap in self.capabilities.items()}
 
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             json.dump(data, f, indent=2)
 
     def import_capabilities(self, file_path: str):
         """Import capabilities from JSON file"""
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             data = json.load(f)
 
         for tool_id, cap_data in data.items():
@@ -507,7 +539,9 @@ class ToolCapabilityRegistry:
             doc += "## Parameters\n\n"
             for param in capability.parameters:
                 req = "Required" if param.required else "Optional"
-                doc += f"- **{param.name}** ({param.type}, {req}): {param.description}\n"
+                doc += (
+                    f"- **{param.name}** ({param.type}, {req}): {param.description}\n"
+                )
                 if param.default is not None:
                     doc += f"  - Default: {param.default}\n"
                 if param.units:
@@ -545,6 +579,7 @@ class ToolCapabilityRegistry:
 
 # Global registry instance
 _capability_registry = None
+
 
 def get_capability_registry() -> ToolCapabilityRegistry:
     """Get the global capability registry"""

@@ -12,7 +12,7 @@ available_apis = []
 apis_to_import = [
     ("tools", "create_tool_router"),
     ("resources", "create_resource_router"),
-    ("events", "create_event_router")
+    ("events", "create_event_router"),
 ]
 
 for module_name, item_name in apis_to_import:
@@ -24,6 +24,7 @@ for module_name, item_name in apis_to_import:
     except ImportError as e:
         try:
             import FreeCAD
+
             FreeCAD.Console.PrintWarning(
                 f"FreeCAD AI: Failed to import {item_name}: {e}\n"
             )

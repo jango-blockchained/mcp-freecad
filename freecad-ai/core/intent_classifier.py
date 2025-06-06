@@ -1,14 +1,16 @@
 """Intent Classifier - Classifies user intent from natural language input"""
 
 import re
-from typing import Dict, List, Tuple, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
+
 import FreeCAD
 
 
 class IntentType(Enum):
     """Types of user intents"""
+
     CREATE = "create"
     MODIFY = "modify"
     DELETE = "delete"
@@ -25,6 +27,7 @@ class IntentType(Enum):
 
 class ActionType(Enum):
     """Types of actions within intents"""
+
     # Creation actions
     PRIMITIVE = "primitive"
     SKETCH = "sketch"
@@ -51,6 +54,7 @@ class ActionType(Enum):
 @dataclass
 class Intent:
     """Represents a classified intent"""
+
     type: IntentType
     action: Optional[ActionType]
     confidence: float
@@ -75,56 +79,139 @@ class IntentClassifier:
         # Intent keywords mapping
         self.intent_keywords = {
             IntentType.CREATE: [
-                "create", "make", "build", "add", "new", "generate", "construct",
-                "draw", "design", "model", "produce"
+                "create",
+                "make",
+                "build",
+                "add",
+                "new",
+                "generate",
+                "construct",
+                "draw",
+                "design",
+                "model",
+                "produce",
             ],
             IntentType.MODIFY: [
-                "modify", "change", "edit", "update", "alter", "adjust", "transform",
-                "move", "rotate", "scale", "resize", "extend", "trim"
+                "modify",
+                "change",
+                "edit",
+                "update",
+                "alter",
+                "adjust",
+                "transform",
+                "move",
+                "rotate",
+                "scale",
+                "resize",
+                "extend",
+                "trim",
             ],
             IntentType.DELETE: [
-                "delete", "remove", "erase", "clear", "destroy", "eliminate",
-                "cut", "subtract"
+                "delete",
+                "remove",
+                "erase",
+                "clear",
+                "destroy",
+                "eliminate",
+                "cut",
+                "subtract",
             ],
             IntentType.QUERY: [
-                "what", "which", "where", "show", "find", "get", "list",
-                "display", "tell", "info", "information"
+                "what",
+                "which",
+                "where",
+                "show",
+                "find",
+                "get",
+                "list",
+                "display",
+                "tell",
+                "info",
+                "information",
             ],
             IntentType.MEASURE: [
-                "measure", "calculate", "compute", "distance", "length", "area",
-                "volume", "angle", "dimension", "size"
+                "measure",
+                "calculate",
+                "compute",
+                "distance",
+                "length",
+                "area",
+                "volume",
+                "angle",
+                "dimension",
+                "size",
             ],
             IntentType.EXPORT: [
-                "export", "save", "output", "write", "generate file", "convert to"
+                "export",
+                "save",
+                "output",
+                "write",
+                "generate file",
+                "convert to",
             ],
-            IntentType.IMPORT: [
-                "import", "load", "open", "read", "bring in"
-            ],
+            IntentType.IMPORT: ["import", "load", "open", "read", "bring in"],
             IntentType.VIEW: [
-                "view", "look", "zoom", "pan", "orbit", "fit", "focus", "center"
+                "view",
+                "look",
+                "zoom",
+                "pan",
+                "orbit",
+                "fit",
+                "focus",
+                "center",
             ],
             IntentType.ANALYZE: [
-                "analyze", "check", "verify", "validate", "inspect", "evaluate",
-                "test", "examine"
+                "analyze",
+                "check",
+                "verify",
+                "validate",
+                "inspect",
+                "evaluate",
+                "test",
+                "examine",
             ],
             IntentType.HELP: [
-                "help", "how", "explain", "guide", "tutorial", "documentation",
-                "what is", "how to"
+                "help",
+                "how",
+                "explain",
+                "guide",
+                "tutorial",
+                "documentation",
+                "what is",
+                "how to",
             ],
             IntentType.CONFIGURE: [
-                "configure", "settings", "preferences", "setup", "options",
-                "customize", "config"
-            ]
+                "configure",
+                "settings",
+                "preferences",
+                "setup",
+                "options",
+                "customize",
+                "config",
+            ],
         }
 
         # Action keywords
         self.action_keywords = {
-            ActionType.PRIMITIVE: ["box", "cube", "cylinder", "sphere", "cone", "torus"],
+            ActionType.PRIMITIVE: [
+                "box",
+                "cube",
+                "cylinder",
+                "sphere",
+                "cone",
+                "torus",
+            ],
             ActionType.SKETCH: ["sketch", "2d", "profile", "drawing"],
             ActionType.TRANSFORM: ["move", "translate", "rotate", "scale", "mirror"],
-            ActionType.BOOLEAN: ["union", "difference", "intersection", "combine", "subtract"],
+            ActionType.BOOLEAN: [
+                "union",
+                "difference",
+                "intersection",
+                "combine",
+                "subtract",
+            ],
             ActionType.FILLET_CHAMFER: ["fillet", "round", "chamfer", "bevel"],
-            ActionType.PATTERN: ["pattern", "array", "duplicate", "copy", "repeat"]
+            ActionType.PATTERN: ["pattern", "array", "duplicate", "copy", "repeat"],
         }
 
     def classify(self, text: str, context: Optional[Dict] = None) -> Intent:
@@ -144,7 +231,9 @@ class IntentClassifier:
         entities = self._extract_entities(text)
 
         # Determine intent type
-        intent_type, intent_confidence, intent_keywords = self._classify_intent_type(text_lower)
+        intent_type, intent_confidence, intent_keywords = self._classify_intent_type(
+            text_lower
+        )
 
         # Determine action type
         action_type = self._classify_action_type(text_lower, intent_type)
@@ -168,7 +257,7 @@ class IntentClassifier:
             entities=entities,
             parameters=parameters,
             original_text=text,
-            keywords_matched=intent_keywords
+            keywords_matched=intent_keywords,
         )
 
     def _build_intent_patterns(self) -> Dict[IntentType, List[re.Pattern]]:
@@ -177,32 +266,34 @@ class IntentClassifier:
 
         # Create patterns
         patterns[IntentType.CREATE] = [
-            re.compile(r'\b(create|make|build|add)\s+(a\s+)?(\w+)', re.I),
-            re.compile(r'\b(new|generate)\s+(\w+)', re.I),
-            re.compile(r'\b(draw|design)\s+(a\s+)?(\w+)', re.I)
+            re.compile(r"\b(create|make|build|add)\s+(a\s+)?(\w+)", re.I),
+            re.compile(r"\b(new|generate)\s+(\w+)", re.I),
+            re.compile(r"\b(draw|design)\s+(a\s+)?(\w+)", re.I),
         ]
 
         patterns[IntentType.MODIFY] = [
-            re.compile(r'\b(modify|change|edit|update)\s+(\w+)', re.I),
-            re.compile(r'\b(move|rotate|scale)\s+(the\s+)?(\w+)?', re.I),
-            re.compile(r'\b(extend|trim|offset)\s+(\w+)', re.I)
+            re.compile(r"\b(modify|change|edit|update)\s+(\w+)", re.I),
+            re.compile(r"\b(move|rotate|scale)\s+(the\s+)?(\w+)?", re.I),
+            re.compile(r"\b(extend|trim|offset)\s+(\w+)", re.I),
         ]
 
         patterns[IntentType.DELETE] = [
-            re.compile(r'\b(delete|remove|erase)\s+(the\s+)?(\w+)?', re.I),
-            re.compile(r'\b(clear|destroy)\s+(all\s+)?(\w+)?', re.I)
+            re.compile(r"\b(delete|remove|erase)\s+(the\s+)?(\w+)?", re.I),
+            re.compile(r"\b(clear|destroy)\s+(all\s+)?(\w+)?", re.I),
         ]
 
         patterns[IntentType.QUERY] = [
-            re.compile(r'\b(what|which|where)\s+(is|are)\s+(\w+)', re.I),
-            re.compile(r'\b(show|display|list)\s+(me\s+)?(the\s+)?(\w+)?', re.I),
-            re.compile(r'\b(get|find)\s+(the\s+)?(\w+)', re.I)
+            re.compile(r"\b(what|which|where)\s+(is|are)\s+(\w+)", re.I),
+            re.compile(r"\b(show|display|list)\s+(me\s+)?(the\s+)?(\w+)?", re.I),
+            re.compile(r"\b(get|find)\s+(the\s+)?(\w+)", re.I),
         ]
 
         patterns[IntentType.MEASURE] = [
-            re.compile(r'\b(measure|calculate)\s+(the\s+)?(distance|length|area|volume)', re.I),
-            re.compile(r'\b(what\s+is\s+the)\s+(distance|length|area|volume)', re.I),
-            re.compile(r'\b(compute|find)\s+(the\s+)?(dimension|size)', re.I)
+            re.compile(
+                r"\b(measure|calculate)\s+(the\s+)?(distance|length|area|volume)", re.I
+            ),
+            re.compile(r"\b(what\s+is\s+the)\s+(distance|length|area|volume)", re.I),
+            re.compile(r"\b(compute|find)\s+(the\s+)?(dimension|size)", re.I),
         ]
 
         return patterns
@@ -210,23 +301,38 @@ class IntentClassifier:
     def _build_entity_patterns(self) -> Dict[str, re.Pattern]:
         """Build patterns for entity extraction"""
         return {
-            "object_type": re.compile(r'\b(box|cube|cylinder|sphere|cone|torus|sketch|part|assembly|body)\b', re.I),
-            "dimension": re.compile(r'(\d+(?:\.\d+)?)\s*(mm|cm|m|inch|in|ft)?', re.I),
-            "color": re.compile(r'\b(red|green|blue|yellow|orange|purple|black|white|gray|grey)\b', re.I),
-            "position": re.compile(r'at\s*\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)?', re.I),
-            "angle": re.compile(r'(\d+(?:\.\d+)?)\s*(degrees?|deg|radians?|rad|°)', re.I),
-            "count": re.compile(r'\b(\d+)\s+(times?|copies|instances?)\b', re.I),
-            "axis": re.compile(r'\b(x|y|z)[\s-]?axis\b', re.I),
-            "direction": re.compile(r'\b(up|down|left|right|forward|backward|north|south|east|west)\b', re.I),
-            "reference": re.compile(r'\b(selected|current|active|last|previous|all)\b', re.I)
+            "object_type": re.compile(
+                r"\b(box|cube|cylinder|sphere|cone|torus|sketch|part|assembly|body)\b",
+                re.I,
+            ),
+            "dimension": re.compile(r"(\d+(?:\.\d+)?)\s*(mm|cm|m|inch|in|ft)?", re.I),
+            "color": re.compile(
+                r"\b(red|green|blue|yellow|orange|purple|black|white|gray|grey)\b", re.I
+            ),
+            "position": re.compile(
+                r"at\s*\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)?",
+                re.I,
+            ),
+            "angle": re.compile(
+                r"(\d+(?:\.\d+)?)\s*(degrees?|deg|radians?|rad|°)", re.I
+            ),
+            "count": re.compile(r"\b(\d+)\s+(times?|copies|instances?)\b", re.I),
+            "axis": re.compile(r"\b(x|y|z)[\s-]?axis\b", re.I),
+            "direction": re.compile(
+                r"\b(up|down|left|right|forward|backward|north|south|east|west)\b", re.I
+            ),
+            "reference": re.compile(
+                r"\b(selected|current|active|last|previous|all)\b", re.I
+            ),
         }
 
     def _build_parameter_extractors(self) -> Dict[str, callable]:
         """Build parameter extraction functions"""
+
         def extract_dimensions(text):
             """Extract dimensional parameters"""
             dims = []
-            pattern = re.compile(r'(\d+(?:\.\d+)?)\s*(mm|cm|m|inch|in)?', re.I)
+            pattern = re.compile(r"(\d+(?:\.\d+)?)\s*(mm|cm|m|inch|in)?", re.I)
             for match in pattern.findall(text):
                 value = float(match[0])
                 unit = match[1] if match[1] else "mm"
@@ -235,20 +341,20 @@ class IntentClassifier:
 
         def extract_position(text):
             """Extract position parameters"""
-            pattern = re.compile(r'at\s*\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)?', re.I)
+            pattern = re.compile(
+                r"at\s*\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)?",
+                re.I,
+            )
             match = pattern.search(text)
             if match:
                 return {
                     "x": float(match.group(1)),
                     "y": float(match.group(2)),
-                    "z": float(match.group(3))
+                    "z": float(match.group(3)),
                 }
             return None
 
-        return {
-            "dimensions": extract_dimensions,
-            "position": extract_position
-        }
+        return {"dimensions": extract_dimensions, "position": extract_position}
 
     def _classify_intent_type(self, text: str) -> Tuple[IntentType, float, List[str]]:
         """Classify the intent type from text"""
@@ -282,7 +388,9 @@ class IntentClassifier:
 
         return IntentType.UNKNOWN, 0.0, []
 
-    def _classify_action_type(self, text: str, intent_type: IntentType) -> Optional[ActionType]:
+    def _classify_action_type(
+        self, text: str, intent_type: IntentType
+    ) -> Optional[ActionType]:
         """Classify the action type based on intent and text"""
         if intent_type == IntentType.CREATE:
             # Check for primitive shapes
@@ -300,7 +408,10 @@ class IntentClassifier:
                 return ActionType.TRANSFORM
 
             # Check for boolean
-            if any(word in text for word in ["union", "difference", "intersection", "subtract"]):
+            if any(
+                word in text
+                for word in ["union", "difference", "intersection", "subtract"]
+            ):
                 return ActionType.BOOLEAN
 
             # Check for fillet/chamfer
@@ -320,14 +431,15 @@ class IntentClassifier:
                     "type": entity_type,
                     "value": match,
                     "start": text.find(str(match)),
-                    "end": text.find(str(match)) + len(str(match))
+                    "end": text.find(str(match)) + len(str(match)),
                 }
                 entities.append(entity)
 
         return entities
 
-    def _extract_parameters(self, text: str, intent_type: IntentType,
-                           action_type: Optional[ActionType]) -> Dict[str, Any]:
+    def _extract_parameters(
+        self, text: str, intent_type: IntentType, action_type: Optional[ActionType]
+    ) -> Dict[str, Any]:
         """Extract parameters based on intent and action"""
         parameters = {}
 
@@ -355,24 +467,35 @@ class IntentClassifier:
         if intent_type == IntentType.CREATE and action_type == ActionType.PRIMITIVE:
             # Check for specific shape parameters
             if "radius" in text:
-                radius_match = re.search(r'radius\s*(?:of\s*)?(\d+(?:\.\d+)?)', text, re.I)
+                radius_match = re.search(
+                    r"radius\s*(?:of\s*)?(\d+(?:\.\d+)?)", text, re.I
+                )
                 if radius_match:
                     parameters["radius"] = float(radius_match.group(1))
 
         elif intent_type == IntentType.MODIFY and action_type == ActionType.TRANSFORM:
             # Extract transformation parameters
-            angle_match = re.search(r'(\d+(?:\.\d+)?)\s*degrees?', text, re.I)
+            angle_match = re.search(r"(\d+(?:\.\d+)?)\s*degrees?", text, re.I)
             if angle_match:
                 parameters["angle"] = float(angle_match.group(1))
 
         return parameters
 
-    def _enhance_with_context(self, intent_type: IntentType, action_type: Optional[ActionType],
-                            parameters: Dict[str, Any], context: Dict):
+    def _enhance_with_context(
+        self,
+        intent_type: IntentType,
+        action_type: Optional[ActionType],
+        parameters: Dict[str, Any],
+        context: Dict,
+    ):
         """Enhance classification with context information"""
         # If there's a selection and intent is modify/delete, assume operation on selection
         if context.get("selection", {}).get("has_selection"):
-            if intent_type in [IntentType.MODIFY, IntentType.DELETE, IntentType.MEASURE]:
+            if intent_type in [
+                IntentType.MODIFY,
+                IntentType.DELETE,
+                IntentType.MEASURE,
+            ]:
                 parameters["target"] = "selection"
 
         # If no object specified but there's only one object, assume that's the target
@@ -380,9 +503,14 @@ class IntentClassifier:
             if "target" not in parameters:
                 parameters["target"] = "current_object"
 
-    def _calculate_confidence(self, text: str, intent_type: IntentType,
-                            action_type: Optional[ActionType],
-                            entities: List[Dict], parameters: Dict) -> float:
+    def _calculate_confidence(
+        self,
+        text: str,
+        intent_type: IntentType,
+        action_type: Optional[ActionType],
+        entities: List[Dict],
+        parameters: Dict,
+    ) -> float:
         """Calculate overall confidence score"""
         confidence = 0.5  # Base confidence
 
@@ -417,7 +545,9 @@ class IntentClassifier:
             explanation += f" (specifically: {intent.action.value})"
 
         if intent.entities:
-            objects = [e["value"] for e in intent.entities if e["type"] == "object_type"]
+            objects = [
+                e["value"] for e in intent.entities if e["type"] == "object_type"
+            ]
             if objects:
                 explanation += f" involving {', '.join(objects)}"
 
@@ -425,7 +555,9 @@ class IntentClassifier:
             param_strs = []
             for key, value in intent.parameters.items():
                 if key == "position":
-                    param_strs.append(f"at position ({value['x']}, {value['y']}, {value['z']})")
+                    param_strs.append(
+                        f"at position ({value['x']}, {value['y']}, {value['z']})"
+                    )
                 elif key in ["length", "width", "height", "radius"]:
                     param_strs.append(f"{key}: {value}")
 

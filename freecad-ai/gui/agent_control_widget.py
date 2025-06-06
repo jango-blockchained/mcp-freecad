@@ -1,7 +1,8 @@
 """Agent Control Widget - Control panel for autonomous agent execution"""
 
-from PySide2 import QtCore, QtGui, QtWidgets
 from datetime import datetime
+
+from PySide2 import QtCore, QtGui, QtWidgets
 
 
 class AgentControlWidget(QtWidgets.QWidget):
@@ -55,9 +56,12 @@ class AgentControlWidget(QtWidgets.QWidget):
         input_layout = QtWidgets.QHBoxLayout()
 
         self.command_input = QtWidgets.QLineEdit()
-        self.command_input.setPlaceholderText("Type a command for the agent (e.g., 'Create a 20x20x10mm box')")
+        self.command_input.setPlaceholderText(
+            "Type a command for the agent (e.g., 'Create a 20x20x10mm box')"
+        )
         self.command_input.returnPressed.connect(self._send_command)
-        self.command_input.setStyleSheet("""
+        self.command_input.setStyleSheet(
+            """
             QLineEdit {
                 padding: 8px;
                 font-size: 14px;
@@ -67,13 +71,15 @@ class AgentControlWidget(QtWidgets.QWidget):
             QLineEdit:focus {
                 border-color: #007acc;
             }
-        """)
+        """
+        )
         input_layout.addWidget(self.command_input)
 
         # Send button
         self.send_btn = QtWidgets.QPushButton("Send")
         self.send_btn.clicked.connect(self._send_command)
-        self.send_btn.setStyleSheet("""
+        self.send_btn.setStyleSheet(
+            """
             QPushButton {
                 padding: 8px 15px;
                 font-size: 14px;
@@ -89,14 +95,19 @@ class AgentControlWidget(QtWidgets.QWidget):
             QPushButton:disabled {
                 background-color: #cccccc;
             }
-        """)
+        """
+        )
         input_layout.addWidget(self.send_btn)
 
         command_layout.addLayout(input_layout)
 
         # Command examples
-        examples_label = QtWidgets.QLabel("Examples: 'Create a cylinder 20mm radius, 40mm height' • 'Make a gear with 24 teeth' • 'Design a house foundation 12x8x1.5m'")
-        examples_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic; margin-top: 5px;")
+        examples_label = QtWidgets.QLabel(
+            "Examples: 'Create a cylinder 20mm radius, 40mm height' • 'Make a gear with 24 teeth' • 'Design a house foundation 12x8x1.5m'"
+        )
+        examples_label.setStyleSheet(
+            "color: #666; font-size: 11px; font-style: italic; margin-top: 5px;"
+        )
         examples_label.setWordWrap(True)
         command_layout.addWidget(examples_label)
 
@@ -111,14 +122,16 @@ class AgentControlWidget(QtWidgets.QWidget):
         state_layout = QtWidgets.QHBoxLayout()
         state_layout.addWidget(QtWidgets.QLabel("State:"))
         self.state_label = QtWidgets.QLabel("Idle")
-        self.state_label.setStyleSheet("""
+        self.state_label.setStyleSheet(
+            """
             QLabel {
                 font-weight: bold;
                 padding: 5px 10px;
                 background-color: #f0f0f0;
                 border-radius: 4px;
             }
-        """)
+        """
+        )
         state_layout.addWidget(self.state_label)
         state_layout.addStretch()
         status_layout.addLayout(state_layout)
@@ -148,25 +161,29 @@ class AgentControlWidget(QtWidgets.QWidget):
         self.play_pause_btn = QtWidgets.QPushButton("▶ Start")
         self.play_pause_btn.setEnabled(False)
         self.play_pause_btn.clicked.connect(self._toggle_execution)
-        self.play_pause_btn.setStyleSheet("""
+        self.play_pause_btn.setStyleSheet(
+            """
             QPushButton {
                 padding: 8px 15px;
                 font-size: 14px;
                 font-weight: bold;
             }
-        """)
+        """
+        )
         control_layout.addWidget(self.play_pause_btn)
 
         # Stop button
         self.stop_btn = QtWidgets.QPushButton("⏹ Stop")
         self.stop_btn.setEnabled(False)
         self.stop_btn.clicked.connect(self._stop_execution)
-        self.stop_btn.setStyleSheet("""
+        self.stop_btn.setStyleSheet(
+            """
             QPushButton {
                 padding: 8px 15px;
                 font-size: 14px;
             }
-        """)
+        """
+        )
         control_layout.addWidget(self.stop_btn)
 
         # Step button
@@ -278,7 +295,7 @@ class AgentControlWidget(QtWidgets.QWidget):
                 "Agent Not Available",
                 "Agent manager is not connected. This usually means the agent manager failed to initialize.\n\n"
                 "Please check the FreeCAD console for error messages and restart the FreeCAD AI addon.\n\n"
-                "If the problem persists, there may be missing dependencies or import errors."
+                "If the problem persists, there may be missing dependencies or import errors.",
             )
             return
 
@@ -292,7 +309,8 @@ class AgentControlWidget(QtWidgets.QWidget):
             # Update status
             self.operation_label.setText(f"Processing: {command[:50]}...")
             self.state_label.setText("Processing")
-            self.state_label.setStyleSheet("""
+            self.state_label.setStyleSheet(
+                """
                 QLabel {
                     font-weight: bold;
                     padding: 5px 10px;
@@ -300,7 +318,8 @@ class AgentControlWidget(QtWidgets.QWidget):
                     border-radius: 4px;
                     color: #856404;
                 }
-            """)
+            """
+            )
 
             # Enable execution controls
             self.play_pause_btn.setEnabled(True)
@@ -308,13 +327,13 @@ class AgentControlWidget(QtWidgets.QWidget):
 
             # TODO: Send command to agent manager
             # For now, just simulate processing
-            QtCore.QTimer.singleShot(2000, lambda: self._simulate_command_completion(command))
+            QtCore.QTimer.singleShot(
+                2000, lambda: self._simulate_command_completion(command)
+            )
 
         except Exception as e:
             QtWidgets.QMessageBox.critical(
-                self,
-                "Command Error",
-                f"Failed to send command to agent:\n{str(e)}"
+                self, "Command Error", f"Failed to send command to agent:\n{str(e)}"
             )
 
     def _simulate_command_completion(self, command):
@@ -322,7 +341,8 @@ class AgentControlWidget(QtWidgets.QWidget):
         # Update status to completed
         self.operation_label.setText("Ready")
         self.state_label.setText("Idle")
-        self.state_label.setStyleSheet("""
+        self.state_label.setStyleSheet(
+            """
             QLabel {
                 font-weight: bold;
                 padding: 5px 10px;
@@ -330,7 +350,8 @@ class AgentControlWidget(QtWidgets.QWidget):
                 border-radius: 4px;
                 color: #155724;
             }
-        """)
+        """
+        )
 
         # Add to history
         timestamp = datetime.now().strftime("%H:%M:%S")
@@ -378,20 +399,16 @@ class AgentControlWidget(QtWidgets.QWidget):
         if self.agent_manager:
             # Register callbacks
             self.agent_manager.register_callback(
-                "on_state_change",
-                self._on_state_changed
+                "on_state_change", self._on_state_changed
             )
             self.agent_manager.register_callback(
-                "on_execution_start",
-                self._on_execution_start
+                "on_execution_start", self._on_execution_start
             )
             self.agent_manager.register_callback(
-                "on_execution_complete",
-                self._on_execution_complete
+                "on_execution_complete", self._on_execution_complete
             )
             self.agent_manager.register_callback(
-                "on_plan_created",
-                self._on_plan_created
+                "on_plan_created", self._on_plan_created
             )
 
             # Load current settings
@@ -414,14 +431,18 @@ class AgentControlWidget(QtWidgets.QWidget):
         mode_text = "Chat Mode" if current_mode.value == "chat" else "Agent Mode"
 
         # Add mode indicator to header
-        self.findChild(QtWidgets.QLabel).setText(f"🤖 Agent Control Panel - {mode_text}")
+        self.findChild(QtWidgets.QLabel).setText(
+            f"🤖 Agent Control Panel - {mode_text}"
+        )
 
         # Show available tools info
         available_tools = self.agent_manager.get_available_tools()
         tool_count = sum(len(methods) for methods in available_tools.values())
 
         if tool_count > 0:
-            self.state_label.setToolTip(f"Agent has access to {tool_count} tools across {len(available_tools)} categories")
+            self.state_label.setToolTip(
+                f"Agent has access to {tool_count} tools across {len(available_tools)} categories"
+            )
 
     def _load_agent_settings(self):
         """Load current agent settings."""
@@ -445,7 +466,7 @@ class AgentControlWidget(QtWidgets.QWidget):
             "auto_rollback": self.rollback_check.isChecked(),
             "safety_checks": self.safety_check.isChecked(),
             "execution_timeout": self.timeout_spin.value(),
-            "max_retries": self.retries_spin.value()
+            "max_retries": self.retries_spin.value(),
         }
 
         self.agent_manager.update_config(config)
@@ -462,18 +483,20 @@ class AgentControlWidget(QtWidgets.QWidget):
             "executing": "#e3f2fd",
             "paused": "#fff9c4",
             "error": "#ffcdd2",
-            "completed": "#c8e6c9"
+            "completed": "#c8e6c9",
         }
 
         color = state_colors.get(new_state.value, "#f0f0f0")
-        self.state_label.setStyleSheet(f"""
+        self.state_label.setStyleSheet(
+            f"""
             QLabel {{
                 font-weight: bold;
                 padding: 5px 10px;
                 background-color: {color};
                 border-radius: 4px;
             }}
-        """)
+        """
+        )
 
         # Update button states
         if new_state.value == "executing":
@@ -515,7 +538,7 @@ class AgentControlWidget(QtWidgets.QWidget):
 
     def _on_execution_start(self, step_num, total_steps, step):
         """Handle execution start."""
-        step_desc = step.get('description', 'Unknown step')
+        step_desc = step.get("description", "Unknown step")
         self.operation_label.setText(f"Step {step_num}/{total_steps}: {step_desc}")
         self.progress_bar.setMaximum(total_steps)
         self.progress_bar.setValue(step_num)
@@ -527,7 +550,7 @@ class AgentControlWidget(QtWidgets.QWidget):
 
         # Handle different result formats
         success = result.get("success", False)
-        if hasattr(result.get("status"), 'value'):
+        if hasattr(result.get("status"), "value"):
             success = result["status"].value == "completed"
 
         status = "✅" if success else "❌"
@@ -549,12 +572,14 @@ class AgentControlWidget(QtWidgets.QWidget):
         self.execution_queue.append(plan)
 
         # Update queue display
-        plan_id = plan.get('id', 'unknown')
-        steps = plan.get('steps', [])
-        duration = plan.get('estimated_duration', 0)
-        risk = plan.get('risk_level', 'unknown')
+        plan_id = plan.get("id", "unknown")
+        steps = plan.get("steps", [])
+        duration = plan.get("estimated_duration", 0)
+        risk = plan.get("risk_level", "unknown")
 
-        queue_item = f"Plan {plan_id[:8]}... ({len(steps)} steps, {duration:.1f}s, {risk} risk)"
+        queue_item = (
+            f"Plan {plan_id[:8]}... ({len(steps)} steps, {duration:.1f}s, {risk} risk)"
+        )
         self.queue_list.addItem(queue_item)
 
         # Enable start button if idle
@@ -572,7 +597,7 @@ class AgentControlWidget(QtWidgets.QWidget):
             # Start execution
             plan = self.execution_queue.pop(0)
             self.queue_list.takeItem(0)
-            plan_id = plan.get('id')
+            plan_id = plan.get("id")
             if plan_id:
                 # Check if approval is required
                 if self.agent_manager.config.get("require_approval", False):
@@ -609,7 +634,7 @@ class AgentControlWidget(QtWidgets.QWidget):
                 self,
                 "Clear Queue",
                 f"Are you sure you want to clear {len(self.execution_queue)} pending plans?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
             )
 
             if reply == QtWidgets.QMessageBox.Yes:
@@ -627,8 +652,10 @@ class AgentControlWidget(QtWidgets.QWidget):
             self.queue_list.setCurrentRow(current_row - 1)
 
             # Swap in execution queue
-            self.execution_queue[current_row], self.execution_queue[current_row - 1] = \
-                self.execution_queue[current_row - 1], self.execution_queue[current_row]
+            self.execution_queue[current_row], self.execution_queue[current_row - 1] = (
+                self.execution_queue[current_row - 1],
+                self.execution_queue[current_row],
+            )
 
     def _move_queue_item_down(self):
         """Move selected queue item down."""
@@ -640,8 +667,10 @@ class AgentControlWidget(QtWidgets.QWidget):
             self.queue_list.setCurrentRow(current_row + 1)
 
             # Swap in execution queue
-            self.execution_queue[current_row], self.execution_queue[current_row + 1] = \
-                self.execution_queue[current_row + 1], self.execution_queue[current_row]
+            self.execution_queue[current_row], self.execution_queue[current_row + 1] = (
+                self.execution_queue[current_row + 1],
+                self.execution_queue[current_row],
+            )
 
     def _remove_queue_item(self):
         """Remove selected queue item."""
@@ -649,13 +678,13 @@ class AgentControlWidget(QtWidgets.QWidget):
         if current_row >= 0:
             # Get plan info for confirmation
             plan = self.execution_queue[current_row]
-            plan_id = plan.get('id', 'unknown')[:8]
+            plan_id = plan.get("id", "unknown")[:8]
 
             reply = QtWidgets.QMessageBox.question(
                 self,
                 "Remove Plan",
                 f"Remove plan {plan_id}... from queue?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
             )
 
             if reply == QtWidgets.QMessageBox.Yes:
@@ -690,15 +719,15 @@ class AgentControlWidget(QtWidgets.QWidget):
                     details += f"=== Execution {len(history) - i} ===\n"
                     details += f"Timestamp: {entry.get('timestamp', 'Unknown')}\n"
 
-                    plan = entry.get('plan', {})
+                    plan = entry.get("plan", {})
                     details += f"Plan ID: {plan.get('id', 'Unknown')}\n"
                     details += f"Steps: {len(plan.get('steps', []))}\n"
                     details += f"Risk Level: {plan.get('risk_level', 'Unknown')}\n"
 
-                    result = entry.get('result', {})
+                    result = entry.get("result", {})
                     details += f"Success: {result.get('success', False)}\n"
 
-                    if result.get('errors'):
+                    if result.get("errors"):
                         details += f"Errors: {', '.join(result['errors'])}\n"
 
                     details += "\n"
@@ -722,9 +751,7 @@ class AgentControlWidget(QtWidgets.QWidget):
 
         if not history:
             QtWidgets.QMessageBox.information(
-                self,
-                "No History",
-                "No execution history to export."
+                self, "No History", "No execution history to export."
             )
             return
 
@@ -733,7 +760,7 @@ class AgentControlWidget(QtWidgets.QWidget):
             self,
             "Export Execution History",
             f"agent_execution_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-            "JSON Files (*.json);;Text Files (*.txt)"
+            "JSON Files (*.json);;Text Files (*.txt)",
         )
 
         if filename:
@@ -746,45 +773,43 @@ class AgentControlWidget(QtWidgets.QWidget):
                     "agent_mode": self.agent_manager.current_mode.value,
                     "total_executions": len(history),
                     "agent_config": self.agent_manager.config,
-                    "history": history
+                    "history": history,
                 }
 
-                if filename.endswith('.json'):
-                    with open(filename, 'w') as f:
+                if filename.endswith(".json"):
+                    with open(filename, "w") as f:
                         json.dump(export_data, f, indent=2)
                 else:
                     # Export as text
-                    with open(filename, 'w') as f:
+                    with open(filename, "w") as f:
                         f.write(f"FreeCAD AI Agent Execution History\n")
                         f.write(f"Export Date: {export_data['export_timestamp']}\n")
-                        f.write(f"Total Executions: {export_data['total_executions']}\n")
+                        f.write(
+                            f"Total Executions: {export_data['total_executions']}\n"
+                        )
                         f.write(f"Agent Mode: {export_data['agent_mode']}\n\n")
 
                         for i, entry in enumerate(history, 1):
                             f.write(f"=== Execution {i} ===\n")
                             f.write(f"Timestamp: {entry.get('timestamp', 'Unknown')}\n")
 
-                            plan = entry.get('plan', {})
+                            plan = entry.get("plan", {})
                             f.write(f"Plan ID: {plan.get('id', 'Unknown')}\n")
                             f.write(f"Steps: {len(plan.get('steps', []))}\n")
 
-                            result = entry.get('result', {})
+                            result = entry.get("result", {})
                             f.write(f"Success: {result.get('success', False)}\n")
 
-                            if result.get('errors'):
+                            if result.get("errors"):
                                 f.write(f"Errors: {', '.join(result['errors'])}\n")
                             f.write("\n")
 
                 QtWidgets.QMessageBox.information(
-                    self,
-                    "Export Complete",
-                    f"History exported to {filename}"
+                    self, "Export Complete", f"History exported to {filename}"
                 )
             except Exception as e:
                 QtWidgets.QMessageBox.critical(
-                    self,
-                    "Export Error",
-                    f"Failed to export history: {str(e)}"
+                    self, "Export Error", f"Failed to export history: {str(e)}"
                 )
 
     def _clear_history(self):
@@ -793,7 +818,7 @@ class AgentControlWidget(QtWidgets.QWidget):
             self,
             "Clear History",
             "Are you sure you want to clear the execution history?\n\nThis will clear the visual history list but not the agent's internal history.",
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
         )
 
         if reply == QtWidgets.QMessageBox.Yes:
@@ -807,13 +832,13 @@ class AgentControlWidget(QtWidgets.QWidget):
             "queue_length": len(self.execution_queue),
             "queue_items": [
                 {
-                    "plan_id": plan.get('id', 'unknown')[:8],
-                    "steps": len(plan.get('steps', [])),
-                    "risk_level": plan.get('risk_level', 'unknown'),
-                    "estimated_duration": plan.get('estimated_duration', 0)
+                    "plan_id": plan.get("id", "unknown")[:8],
+                    "steps": len(plan.get("steps", [])),
+                    "risk_level": plan.get("risk_level", "unknown"),
+                    "estimated_duration": plan.get("estimated_duration", 0),
                 }
                 for plan in self.execution_queue
-            ]
+            ],
         }
 
     def _show_diagnostic_info(self):
@@ -822,7 +847,7 @@ class AgentControlWidget(QtWidgets.QWidget):
         main_widget = None
         widget = self.parent()
         while widget:
-            if hasattr(widget, 'get_agent_manager_status'):
+            if hasattr(widget, "get_agent_manager_status"):
                 main_widget = widget
                 break
             widget = widget.parent()
@@ -831,7 +856,7 @@ class AgentControlWidget(QtWidgets.QWidget):
             QtWidgets.QMessageBox.information(
                 self,
                 "Diagnostic Info",
-                "Cannot find main widget to check agent manager status."
+                "Cannot find main widget to check agent manager status.",
             )
             return
 
@@ -851,8 +876,4 @@ class AgentControlWidget(QtWidgets.QWidget):
             message += f"Suggestion: {status['suggestion']}\n\n"
             message += "Please check the FreeCAD console for detailed error messages."
 
-        QtWidgets.QMessageBox.information(
-            self,
-            "Agent Manager Diagnostic",
-            message
-        )
+        QtWidgets.QMessageBox.information(self, "Agent Manager Diagnostic", message)

@@ -6,12 +6,13 @@ MCP tool for debugging FreeCAD scripts and addons with advanced debugging capabi
 Author: jango-blockchained
 """
 
-import FreeCAD as App
+import inspect
+import pdb
 import sys
 import traceback
-import pdb
-import inspect
-from typing import Dict, Any, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+
+import FreeCAD as App
 
 
 class DebuggingTool:
@@ -389,8 +390,9 @@ class DebuggingTool:
             Dictionary with memory usage details
         """
         try:
-            import psutil
             import gc
+
+            import psutil
 
             # Get process memory info
             process = psutil.Process()

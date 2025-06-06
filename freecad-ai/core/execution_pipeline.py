@@ -1,22 +1,26 @@
 """Execution Pipeline - Manages autonomous tool execution flow"""
 
-import time
-import threading
 import queue
-from typing import Dict, List, Optional, Any, Callable
-from enum import Enum
+import threading
+import time
 from datetime import datetime
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional
+
 import FreeCAD
 import FreeCADGui
 
+
 class StepStatus(Enum):
     """Status of an execution step"""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
     SKIPPED = "skipped"
     ROLLED_BACK = "rolled_back"
+
 
 class ExecutionPipeline:
     """
@@ -48,7 +52,7 @@ class ExecutionPipeline:
             "on_step_start": [],
             "on_step_complete": [],
             "on_step_failed": [],
-            "on_progress": []
+            "on_progress": [],
         }
 
         # Safety settings
@@ -57,7 +61,7 @@ class ExecutionPipeline:
             "validate_before_execute": True,
             "auto_save_before_execute": True,
             "create_checkpoints": True,
-            "rollback_on_failure": True
+            "rollback_on_failure": True,
         }
 
     def execute(self, plan: Dict) -> Dict:
@@ -77,7 +81,7 @@ class ExecutionPipeline:
             "status": "running",
             "current_step": 0,
             "total_steps": len(plan["steps"]),
-            "results": []
+            "results": [],
         }
 
         # Reset tracking
@@ -95,8 +99,7 @@ class ExecutionPipeline:
 
         # Execute in separate thread
         self.execution_thread = threading.Thread(
-            target=self._execute_plan_thread,
-            args=(plan,)
+            target=self._execute_plan_thread, args=(plan,)
         )
         self.execution_thread.start()
         self.execution_thread.join()  # Wait for completion
@@ -108,7 +111,9 @@ class ExecutionPipeline:
             "failed_step": None,
             "outputs": [],
             "errors": [],
-            "duration": (datetime.now() - self.current_execution["start_time"]).total_seconds()
+            "duration": (
+                datetime.now() - self.current_execution["start_time"]
+            ).total_seconds(),
         }
 
         # Find failed step if any
@@ -145,7 +150,9 @@ class ExecutionPipeline:
 
                 # Check if step failed
                 if step_result["status"] == StepStatus.FAILED:
-                    self._log(f"Step {i + 1} failed: {step_result.get('error', 'Unknown error')}")
+                    self._log(
+                        f"Step {i + 1} failed: {step_result.get('error', 'Unknown error')}"
+                    )
 
                     # Attempt rollback if enabled
                     if self.safety_config["rollback_on_failure"]:
@@ -172,7 +179,7 @@ class ExecutionPipeline:
             "start_time": datetime.now(),
             "duration": 0,
             "output": None,
-            "error": None
+            "error": None,
         }
 
         try:
@@ -201,18 +208,20 @@ class ExecutionPipeline:
 
             # Record state before execution for potential rollback
             before_state = self._capture_state()
-            self.undo_stack.append({
-                "step": step_num,
-                "before_state": before_state,
-                "tool": tool,
-                "parameters": parameters
-            })
+            self.undo_stack.append(
+                {
+                    "step": step_num,
+                    "before_state": before_state,
+                    "tool": tool,
+                    "parameters": parameters,
+                }
+            )
 
             # Execute the tool
-            if hasattr(tool, 'execute'):
+            if hasattr(tool, "execute"):
                 result = self._execute_with_timeout(
                     lambda: tool.execute(**parameters),
-                    timeout=self.safety_config["max_execution_time"]
+                    timeout=self.safety_config["max_execution_time"],
                 )
                 step_result["output"] = result
             else:
@@ -222,10 +231,14 @@ class ExecutionPipeline:
 
             # Update status
             step_result["status"] = StepStatus.COMPLETED
-            step_result["duration"] = (datetime.now() - step_result["start_time"]).total_seconds()
+            step_result["duration"] = (
+                datetime.now() - step_result["start_time"]
+            ).total_seconds()
 
             # Notify completion
-            self._trigger_step_callback("on_step_complete", step_num, total_steps, step_result)
+            self._trigger_step_callback(
+                "on_step_complete", step_num, total_steps, step_result
+            )
 
             # Update progress
             progress = step_num / total_steps
@@ -234,10 +247,14 @@ class ExecutionPipeline:
         except Exception as e:
             step_result["status"] = StepStatus.FAILED
             step_result["error"] = str(e)
-            step_result["duration"] = (datetime.now() - step_result["start_time"]).total_seconds()
+            step_result["duration"] = (
+                datetime.now() - step_result["start_time"]
+            ).total_seconds()
 
             # Notify failure
-            self._trigger_step_callback("on_step_failed", step_num, total_steps, step_result)
+            self._trigger_step_callback(
+                "on_step_failed", step_num, total_steps, step_result
+            )
 
             self._log(f"Step execution failed: {str(e)}")
 
@@ -260,11 +277,13 @@ class ExecutionPipeline:
             return validation
 
         # Validate parameters
-        if hasattr(tool, 'validate_parameters'):
+        if hasattr(tool, "validate_parameters"):
             param_validation = tool.validate_parameters(step.get("parameters", {}))
             if not param_validation.get("valid", True):
                 validation["valid"] = False
-                validation["reason"] = param_validation.get("reason", "Parameter validation failed")
+                validation["reason"] = param_validation.get(
+                    "reason", "Parameter validation failed"
+                )
 
         # Check dependencies
         if "dependencies" in step and step["dependencies"]:
@@ -292,14 +311,14 @@ class ExecutionPipeline:
         parameters = step.get("parameters", {}).copy()
 
         # Apply default parameters if not specified
-        if hasattr(tool, 'get_default_parameters'):
+        if hasattr(tool, "get_default_parameters"):
             defaults = tool.get_default_parameters()
             for key, value in defaults.items():
                 if key not in parameters:
                     parameters[key] = value
 
         # Convert parameter types if needed
-        if hasattr(tool, 'convert_parameters'):
+        if hasattr(tool, "convert_parameters"):
             parameters = tool.convert_parameters(parameters)
 
         return parameters
@@ -307,11 +326,11 @@ class ExecutionPipeline:
     def _execute_tool_fallback(self, tool, parameters: Dict) -> Any:
         """Fallback execution method for tools without execute method"""
         # Try different execution methods
-        if hasattr(tool, 'run'):
+        if hasattr(tool, "run"):
             return tool.run(**parameters)
-        elif hasattr(tool, 'apply'):
+        elif hasattr(tool, "apply"):
             return tool.apply(**parameters)
-        elif hasattr(tool, '__call__'):
+        elif hasattr(tool, "__call__"):
             return tool(**parameters)
         else:
             raise ValueError(f"Tool {tool} has no known execution method")
@@ -346,12 +365,14 @@ class ExecutionPipeline:
             # Save current document state
             doc = FreeCAD.ActiveDocument
             if doc:
-                checkpoint_name = f"checkpoint_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                checkpoint_name = (
+                    f"checkpoint_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                )
                 # Store in memory for now, could save to temp file
                 self._checkpoint_data = {
                     "name": checkpoint_name,
                     "timestamp": datetime.now(),
-                    "document_state": self._capture_state()
+                    "document_state": self._capture_state(),
                 }
                 self._log(f"Created checkpoint: {checkpoint_name}")
         except Exception as e:
@@ -360,9 +381,11 @@ class ExecutionPipeline:
     def _rollback_to_checkpoint(self):
         """Rollback to the last checkpoint"""
         try:
-            if hasattr(self, '_checkpoint_data') and self._checkpoint_data:
+            if hasattr(self, "_checkpoint_data") and self._checkpoint_data:
                 # In a real implementation, this would restore the document state
-                self._log(f"Rolling back to checkpoint: {self._checkpoint_data['name']}")
+                self._log(
+                    f"Rolling back to checkpoint: {self._checkpoint_data['name']}"
+                )
 
                 # Use undo stack for rollback
                 while self.undo_stack:
@@ -376,20 +399,15 @@ class ExecutionPipeline:
 
     def _capture_state(self) -> Dict:
         """Capture current FreeCAD document state"""
-        state = {
-            "timestamp": datetime.now().isoformat(),
-            "objects": []
-        }
+        state = {"timestamp": datetime.now().isoformat(), "objects": []}
 
         try:
             doc = FreeCAD.ActiveDocument
             if doc:
                 for obj in doc.Objects:
-                    state["objects"].append({
-                        "name": obj.Name,
-                        "type": obj.TypeId,
-                        "label": obj.Label
-                    })
+                    state["objects"].append(
+                        {"name": obj.Name, "type": obj.TypeId, "label": obj.Label}
+                    )
         except Exception as e:
             self._log(f"Failed to capture state: {str(e)}")
 
@@ -436,10 +454,7 @@ class ExecutionPipeline:
 
     def _log(self, message: str):
         """Log execution message"""
-        log_entry = {
-            "timestamp": datetime.now().isoformat(),
-            "message": message
-        }
+        log_entry = {"timestamp": datetime.now().isoformat(), "message": message}
         self.execution_log.append(log_entry)
         FreeCAD.Console.PrintMessage(f"Execution Pipeline: {message}\n")
 

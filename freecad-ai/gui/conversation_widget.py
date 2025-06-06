@@ -1,7 +1,12 @@
 """Conversation Widget - Clean AI Conversation Interface"""
 
 from PySide2 import QtCore, QtGui, QtWidgets
-from .conversation_formatter import ConversationFormatter, ConversationFormat, FormatSelectionWidget
+
+from .conversation_formatter import (
+    ConversationFormat,
+    ConversationFormatter,
+    FormatSelectionWidget,
+)
 
 
 class ConversationWidget(QtWidgets.QWidget):
@@ -25,7 +30,7 @@ class ConversationWidget(QtWidgets.QWidget):
         # Execution tracking
         self.current_execution = None
         self.execution_widget = None
-        
+
         # Conversation formatter
         self.formatter = ConversationFormatter()
 
@@ -44,11 +49,13 @@ class ConversationWidget(QtWidgets.QWidget):
             # Try relative import first
             try:
                 from ..ai.ai_manager import AIManager
+
                 self.ai_manager = AIManager()
                 print("ConversationWidget: AI Manager imported via relative path")
             except ImportError:
                 # Try direct import
                 from ai.ai_manager import AIManager
+
                 self.ai_manager = AIManager()
                 print("ConversationWidget: AI Manager imported via direct path")
         except ImportError as e:
@@ -60,24 +67,32 @@ class ConversationWidget(QtWidgets.QWidget):
             # Strategy 1: Relative import with double parent
             try:
                 from ..config.config_manager import ConfigManager
+
                 self.config_manager = ConfigManager()
                 print("ConversationWidget: Config Manager imported via relative path")
             except ImportError:
                 # Strategy 2: Direct import
                 try:
                     from config.config_manager import ConfigManager
+
                     self.config_manager = ConfigManager()
                     print("ConversationWidget: Config Manager imported via direct path")
                 except ImportError:
                     # Strategy 3: Add parent to path if needed
-                    import sys
                     import os
-                    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    import sys
+
+                    parent_dir = os.path.dirname(
+                        os.path.dirname(os.path.abspath(__file__))
+                    )
                     if parent_dir not in sys.path:
                         sys.path.insert(0, parent_dir)
                     from config.config_manager import ConfigManager
+
                     self.config_manager = ConfigManager()
-                    print("ConversationWidget: Config Manager imported after sys.path modification")
+                    print(
+                        "ConversationWidget: Config Manager imported after sys.path modification"
+                    )
         except ImportError as e:
             print(f"ConversationWidget: Failed to import Config Manager: {e}")
             self.config_manager = None
@@ -104,9 +119,7 @@ class ConversationWidget(QtWidgets.QWidget):
 
         # Show active provider status
         self.provider_status_label = QtWidgets.QLabel("Checking providers...")
-        self.provider_status_label.setStyleSheet(
-            "font-weight: bold; padding: 5px;"
-        )
+        self.provider_status_label.setStyleSheet("font-weight: bold; padding: 5px;")
         provider_layout.addWidget(self.provider_status_label)
 
         provider_layout.addStretch()
@@ -125,23 +138,23 @@ class ConversationWidget(QtWidgets.QWidget):
         """Create conversation display section."""
         conversation_group = QtWidgets.QGroupBox("Conversation")
         conversation_layout = QtWidgets.QVBoxLayout(conversation_group)
-        
+
         # Format selection header
         format_header = QtWidgets.QHBoxLayout()
-        
+
         # Format selector
         self.format_selector = FormatSelectionWidget()
         self.format_selector.format_changed.connect(self._on_format_changed)
         format_header.addWidget(self.format_selector)
-        
+
         format_header.addStretch()
-        
+
         # Export button
         self.export_btn = QtWidgets.QPushButton("📥 Export")
         self.export_btn.setMaximumWidth(80)
         self.export_btn.clicked.connect(self._export_conversation)
         format_header.addWidget(self.export_btn)
-        
+
         # Clear button
         self.clear_btn = QtWidgets.QPushButton("🗑️ Clear")
         self.clear_btn.setMaximumWidth(70)
@@ -150,7 +163,7 @@ class ConversationWidget(QtWidgets.QWidget):
         )
         self.clear_btn.clicked.connect(self._clear_conversation)
         format_header.addWidget(self.clear_btn)
-        
+
         conversation_layout.addLayout(format_header)
 
         # Conversation text display
@@ -188,13 +201,16 @@ class ConversationWidget(QtWidgets.QWidget):
         # Mode indicator
         mode_layout = QtWidgets.QHBoxLayout()
         self.mode_label = QtWidgets.QLabel("💬 Chat Mode")
-        self.mode_label.setStyleSheet("font-weight: bold; color: #2196F3; padding: 5px;")
+        self.mode_label.setStyleSheet(
+            "font-weight: bold; color: #2196F3; padding: 5px;"
+        )
         mode_layout.addWidget(self.mode_label)
 
         mode_layout.addStretch()
 
         self.switch_mode_btn = QtWidgets.QPushButton("Switch to Agent Mode")
-        self.switch_mode_btn.setStyleSheet("""
+        self.switch_mode_btn.setStyleSheet(
+            """
             QPushButton {
                 background-color: #FF9800;
                 color: white;
@@ -205,7 +221,8 @@ class ConversationWidget(QtWidgets.QWidget):
             QPushButton:hover {
                 background-color: #F57C00;
             }
-        """)
+        """
+        )
         self.switch_mode_btn.clicked.connect(self._toggle_mode)
         mode_layout.addWidget(self.switch_mode_btn)
 
@@ -255,7 +272,8 @@ class ConversationWidget(QtWidgets.QWidget):
 
         task_btn_layout = QtWidgets.QHBoxLayout()
         self.execute_task_btn = QtWidgets.QPushButton("Execute Tasks")
-        self.execute_task_btn.setStyleSheet("""
+        self.execute_task_btn.setStyleSheet(
+            """
             QPushButton {
                 background-color: #4CAF50;
                 color: white;
@@ -266,7 +284,8 @@ class ConversationWidget(QtWidgets.QWidget):
             QPushButton:hover {
                 background-color: #45a049;
             }
-        """)
+        """
+        )
         self.execute_task_btn.clicked.connect(self._execute_tasks)
         task_btn_layout.addWidget(self.execute_task_btn)
 
@@ -416,9 +435,13 @@ class ConversationWidget(QtWidgets.QWidget):
             if api_keys:
                 # Use the default provider or first available
                 default_provider = self.config_manager.get_default_provider()
-                if default_provider and default_provider.lower() in [k.lower() for k in api_keys]:
+                if default_provider and default_provider.lower() in [
+                    k.lower() for k in api_keys
+                ]:
                     self.current_provider = default_provider
-                    self.provider_status_label.setText(f"📋 {default_provider} (Config)")
+                    self.provider_status_label.setText(
+                        f"📋 {default_provider} (Config)"
+                    )
                     self.provider_status_label.setStyleSheet(
                         "color: blue; font-weight: bold; padding: 5px;"
                     )
@@ -507,15 +530,19 @@ class ConversationWidget(QtWidgets.QWidget):
         self._add_thinking_indicator()
 
         # Update usage count
-        self.conversation_history.append({
-            "sender": "You",
-            "message": message,
-            "timestamp": QtCore.QDateTime.currentDateTime().toString()
-        })
+        self.conversation_history.append(
+            {
+                "sender": "You",
+                "message": message,
+                "timestamp": QtCore.QDateTime.currentDateTime().toString(),
+            }
+        )
         self.usage_label.setText(f"Messages: {len(self.conversation_history)}")
 
         # Gather context
-        context = self._gather_freecad_context() if self.context_check.isChecked() else {}
+        context = (
+            self._gather_freecad_context() if self.context_check.isChecked() else {}
+        )
 
         # Send to AI
         self._send_to_provider(message, context)
@@ -536,16 +563,20 @@ class ConversationWidget(QtWidgets.QWidget):
         self._add_thinking_indicator()
 
         # Update usage count
-        self.conversation_history.append({
-            "sender": "You",
-            "message": message,
-            "timestamp": QtCore.QDateTime.currentDateTime().toString()
-        })
+        self.conversation_history.append(
+            {
+                "sender": "You",
+                "message": message,
+                "timestamp": QtCore.QDateTime.currentDateTime().toString(),
+            }
+        )
         self.usage_label.setText(f"Messages: {len(self.conversation_history)}")
 
         try:
             # Gather context
-            context = self._gather_freecad_context() if self.context_check.isChecked() else {}
+            context = (
+                self._gather_freecad_context() if self.context_check.isChecked() else {}
+            )
 
             # Send to agent manager
             response = self.agent_manager.process_message(message, context)
@@ -558,6 +589,7 @@ class ConversationWidget(QtWidgets.QWidget):
             self._add_system_message(f"Error processing agent request: {e}")
             print(f"ConversationWidget: Agent processing error: {e}")
             import traceback
+
             print(traceback.format_exc())
 
     def _send_to_provider(self, message, context):
@@ -565,15 +597,18 @@ class ConversationWidget(QtWidgets.QWidget):
         if not self.current_provider:
             self._remove_thinking_indicator()
             self._add_system_message("No provider selected")
-            self._add_conversation_message("AI",
+            self._add_conversation_message(
+                "AI",
                 "Please select an AI provider from the dropdown above. "
-                "If no providers are shown, go to the Providers tab to configure one.")
+                "If no providers are shown, go to the Providers tab to configure one.",
+            )
             return
 
         if not self.provider_service:
             self._remove_thinking_indicator()
             self._add_system_message("Provider service not available")
-            self._add_conversation_message("AI",
+            self._add_conversation_message(
+                "AI",
                 "The provider service is not initialized. This is likely a configuration issue.\n\n"
                 "**Troubleshooting steps:**\n"
                 "1. Go to the **Providers** tab\n"
@@ -581,7 +616,8 @@ class ConversationWidget(QtWidgets.QWidget):
                 "3. Add your API key\n"
                 "4. Click **Test Connection**\n"
                 "5. Come back to this Chat tab\n\n"
-                "If the issue persists, try clicking the **⟳ Refresh** button next to the provider dropdown.")
+                "If the issue persists, try clicking the **⟳ Refresh** button next to the provider dropdown.",
+            )
             return
 
         try:
@@ -599,7 +635,9 @@ class ConversationWidget(QtWidgets.QWidget):
                     full_message += f"\n\nCurrent FreeCAD State:\n{context_info}"
 
             # Use a timer to make the AI call asynchronous and non-blocking
-            QtCore.QTimer.singleShot(10, lambda: self._make_ai_call(full_message, context))
+            QtCore.QTimer.singleShot(
+                10, lambda: self._make_ai_call(full_message, context)
+            )
 
         except Exception as e:
             self._remove_thinking_indicator()
@@ -677,7 +715,11 @@ RESPONSE STYLE:
             prompt += "\n- Mention workbench-specific tools and workflows"
 
         # Add tool registry information if available
-        if hasattr(self, 'agent_manager') and self.agent_manager and hasattr(self.agent_manager, 'tool_registry'):
+        if (
+            hasattr(self, "agent_manager")
+            and self.agent_manager
+            and hasattr(self.agent_manager, "tool_registry")
+        ):
             try:
                 available_tools = self.agent_manager.get_available_tools()
                 if available_tools:
@@ -696,8 +738,8 @@ RESPONSE STYLE:
 
         # Document information
         if freecad_state.get("has_active_document"):
-            doc_name = freecad_state.get('document_name', 'Unnamed')
-            doc_label = freecad_state.get('document_label', doc_name)
+            doc_name = freecad_state.get("document_name", "Unnamed")
+            doc_label = freecad_state.get("document_label", doc_name)
             context_parts.append(f"- Active document: {doc_label} ({doc_name})")
 
             # Object counts by type
@@ -717,13 +759,17 @@ RESPONSE STYLE:
                     for obj in doc_objects:
                         visibility = "visible" if obj.get("visible", True) else "hidden"
                         obj_type = obj["type"].split("::")[-1]  # Simplified type
-                        context_parts.append(f"  • {obj['label']} ({obj_type}, {visibility})")
+                        context_parts.append(
+                            f"  • {obj['label']} ({obj_type}, {visibility})"
+                        )
                 else:
                     context_parts.append("- Recent objects:")
                     for obj in doc_objects[:3]:
                         visibility = "visible" if obj.get("visible", True) else "hidden"
                         obj_type = obj["type"].split("::")[-1]
-                        context_parts.append(f"  • {obj['label']} ({obj_type}, {visibility})")
+                        context_parts.append(
+                            f"  • {obj['label']} ({obj_type}, {visibility})"
+                        )
                     context_parts.append(f"  • ... and {len(doc_objects) - 3} more")
         else:
             context_parts.append("- No active document")
@@ -752,7 +798,9 @@ RESPONSE STYLE:
             primary = freecad_state.get("primary_selection")
             if primary:
                 primary_type = primary["type"].split("::")[-1]
-                context_parts.append(f"- Primary selection: {primary['name']} ({primary_type})")
+                context_parts.append(
+                    f"- Primary selection: {primary['name']} ({primary_type})"
+                )
         else:
             context_parts.append("- No objects selected")
 
@@ -788,27 +836,38 @@ RESPONSE STYLE:
             error_msg = str(e)
 
             # Check if this is a provider availability issue
-            if "not found" in error_msg.lower() or "not initialized" in error_msg.lower():
+            if (
+                "not found" in error_msg.lower()
+                or "not initialized" in error_msg.lower()
+            ):
                 self._add_system_message("❌ AI provider not available")
-                self._add_conversation_message("AI",
+                self._add_conversation_message(
+                    "AI",
                     "I'm sorry, but the AI provider is not currently available. "
                     "Please check the Providers tab to configure an AI service (OpenRouter, Claude, etc.) "
-                    "or try again later.")
+                    "or try again later.",
+                )
             elif "api key" in error_msg.lower():
                 self._add_system_message("❌ AI provider authentication error")
-                self._add_conversation_message("AI",
+                self._add_conversation_message(
+                    "AI",
                     "There's an issue with the AI provider authentication. "
-                    "Please check your API key in the Providers tab.")
+                    "Please check your API key in the Providers tab.",
+                )
             elif "timeout" in error_msg.lower() or "connection" in error_msg.lower():
                 self._add_system_message("❌ AI provider connection error")
-                self._add_conversation_message("AI",
+                self._add_conversation_message(
+                    "AI",
                     "I couldn't connect to the AI service. Please check your internet connection "
-                    "and try again.")
+                    "and try again.",
+                )
             else:
                 self._add_system_message(f"❌ Error communicating with AI: {error_msg}")
-                self._add_conversation_message("AI",
+                self._add_conversation_message(
+                    "AI",
                     "I encountered an error while processing your request. "
-                    "Please try again or check the Providers tab for configuration issues.")
+                    "Please try again or check the Providers tab for configuration issues.",
+                )
 
     def _handle_ai_response(self, response):
         """Handle the AI provider response."""
@@ -824,19 +883,21 @@ RESPONSE STYLE:
     def _clean_ai_response(self, response):
         """Clean up AI response to remove system prompt echoes."""
         # Remove any system prompt repetition that might occur
-        lines = response.split('\n')
+        lines = response.split("\n")
         cleaned_lines = []
 
         for line in lines:
             # Skip lines that look like system prompt echoes
-            if not (line.startswith("You are an AI assistant") or
-                   line.startswith("IMPORTANT:") or
-                   line.startswith("AVAILABLE TOOL") or
-                   line.startswith("CONTEXT AWARENESS:") or
-                   line.startswith("RESPONSE STYLE:")):
+            if not (
+                line.startswith("You are an AI assistant")
+                or line.startswith("IMPORTANT:")
+                or line.startswith("AVAILABLE TOOL")
+                or line.startswith("CONTEXT AWARENESS:")
+                or line.startswith("RESPONSE STYLE:")
+            ):
                 cleaned_lines.append(line)
 
-        return '\n'.join(cleaned_lines).strip()
+        return "\n".join(cleaned_lines).strip()
 
     def _handle_agent_response(self, response):
         """Handle response from agent manager."""
@@ -859,7 +920,9 @@ RESPONSE STYLE:
 
             # Check if approval is required
             if response.get("approval_required", False):
-                self._add_system_message("Tasks created. Please review and execute when ready.")
+                self._add_system_message(
+                    "Tasks created. Please review and execute when ready."
+                )
             else:
                 # Auto-execute if approval not required
                 self._add_system_message("Executing tasks automatically...")
@@ -875,8 +938,10 @@ RESPONSE STYLE:
 
         for step in plan["steps"]:
             task_lines.append(f"Step {step['order']}: {step['description']}")
-            if step.get('parameters'):
-                params_str = ", ".join([f"{k}={v}" for k, v in step['parameters'].items()])
+            if step.get("parameters"):
+                params_str = ", ".join(
+                    [f"{k}={v}" for k, v in step["parameters"].items()]
+                )
                 task_lines.append(f"  Parameters: {params_str}")
 
         self.task_text.setPlainText("\n".join(task_lines))
@@ -893,7 +958,9 @@ RESPONSE STYLE:
             # Show executed steps count
             executed_count = len(result.get("executed_steps", []))
             if executed_count > 0:
-                self._add_conversation_message("AI", f"✓ Completed {executed_count} steps")
+                self._add_conversation_message(
+                    "AI", f"✓ Completed {executed_count} steps"
+                )
 
             # Show outputs
             outputs = result.get("outputs", [])
@@ -918,20 +985,24 @@ RESPONSE STYLE:
                 self._add_conversation_message("AI", f"❌ Failed at: {step_desc}")
 
             # Suggest troubleshooting
-            self._add_conversation_message("AI",
-                "💡 Try: Check object selection, verify parameters, or switch to Chat mode for manual steps")
+            self._add_conversation_message(
+                "AI",
+                "💡 Try: Check object selection, verify parameters, or switch to Chat mode for manual steps",
+            )
 
     def _show_approval_dialog(self, plan):
         """Show approval dialog for execution plan."""
         dialog = QtWidgets.QMessageBox(self)
         dialog.setWindowTitle("Approve Execution Plan")
-        dialog.setText(f"The AI has created an execution plan with {len(plan.get('steps', []))} steps.")
+        dialog.setText(
+            f"The AI has created an execution plan with {len(plan.get('steps', []))} steps."
+        )
         dialog.setInformativeText("Do you want to proceed with the execution?")
         dialog.setDetailedText(self._format_plan_details(plan))
         dialog.setStandardButtons(
-            QtWidgets.QMessageBox.Yes |
-            QtWidgets.QMessageBox.No |
-            QtWidgets.QMessageBox.Cancel
+            QtWidgets.QMessageBox.Yes
+            | QtWidgets.QMessageBox.No
+            | QtWidgets.QMessageBox.Cancel
         )
         dialog.setDefaultButton(QtWidgets.QMessageBox.Yes)
 
@@ -972,17 +1043,25 @@ RESPONSE STYLE:
 
         # Update UI based on mode
         if str(mode).endswith("CHAT"):
-            self._add_system_message("💬 Switched to Chat Mode - AI will provide instructions")
+            self._add_system_message(
+                "💬 Switched to Chat Mode - AI will provide instructions"
+            )
             if self.context_check:
-                self.context_check.setToolTip("Include current FreeCAD document state in AI queries for better instructions")
+                self.context_check.setToolTip(
+                    "Include current FreeCAD document state in AI queries for better instructions"
+                )
             # Hide execution controls in chat mode
             self.execution_controls.setVisible(False)
             # Update send button text
             self.send_btn.setText("Ask AI")
         else:
-            self._add_system_message("🤖 Switched to Agent Mode - AI will execute tools autonomously")
+            self._add_system_message(
+                "🤖 Switched to Agent Mode - AI will execute tools autonomously"
+            )
             if self.context_check:
-                self.context_check.setToolTip("Include current FreeCAD document state for autonomous execution")
+                self.context_check.setToolTip(
+                    "Include current FreeCAD document state for autonomous execution"
+                )
             # Show execution controls in agent mode if needed
             # (will be shown when execution starts)
             # Update send button text
@@ -990,7 +1069,9 @@ RESPONSE STYLE:
 
     def _on_execution_start(self, step_num, total_steps, step):
         """Handle execution start callback."""
-        self._add_system_message(f"▶️ Executing step {step_num}/{total_steps}: {step.get('description', 'Unknown step')}")
+        self._add_system_message(
+            f"▶️ Executing step {step_num}/{total_steps}: {step.get('description', 'Unknown step')}"
+        )
 
         # Enable execution controls
         if step_num == 1:  # First step
@@ -1002,7 +1083,7 @@ RESPONSE STYLE:
     def _on_execution_complete(self, step_num, total_steps, result):
         """Handle execution complete callback."""
         status = result.get("status")
-        if hasattr(status, 'value'):
+        if hasattr(status, "value"):
             status_val = status.value
         else:
             status_val = str(status)
@@ -1011,7 +1092,9 @@ RESPONSE STYLE:
             self._add_system_message(f"✅ Step {step_num}/{total_steps} completed")
         else:
             error_msg = result.get("error", "Unknown error")
-            self._add_system_message(f"❌ Step {step_num}/{total_steps} failed: {error_msg}")
+            self._add_system_message(
+                f"❌ Step {step_num}/{total_steps} failed: {error_msg}"
+            )
 
         # Reset controls if this was the last step or execution failed
         if step_num == total_steps or not result.get("success"):
@@ -1045,7 +1128,7 @@ RESPONSE STYLE:
                 self,
                 "Cancel Execution",
                 "Are you sure you want to cancel the current execution?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
             )
 
             if reply == QtWidgets.QMessageBox.Yes:
@@ -1065,32 +1148,34 @@ RESPONSE STYLE:
     def _add_conversation_message(self, sender, message):
         """Add a message to the conversation display with formatting."""
         timestamp = QtCore.QDateTime.currentDateTime().toString("hh:mm:ss")
-        
+
         # Add to history
-        self.conversation_history.append({
-            "sender": sender,
-            "message": message,
-            "timestamp": timestamp
-        })
-        
+        self.conversation_history.append(
+            {"sender": sender, "message": message, "timestamp": timestamp}
+        )
+
         # Format and display message
         formatted_message = self.formatter.format_message(sender, message, timestamp)
-        
+
         # Move cursor to end and insert formatted message
         cursor = self.conversation_text.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)
-        
+
         # Insert based on format type
-        if self.formatter.format_type in [ConversationFormat.RICH_TEXT, ConversationFormat.MARKDOWN, ConversationFormat.HTML]:
+        if self.formatter.format_type in [
+            ConversationFormat.RICH_TEXT,
+            ConversationFormat.MARKDOWN,
+            ConversationFormat.HTML,
+        ]:
             cursor.insertHtml(formatted_message)
         else:
             cursor.insertText(formatted_message)
-        
+
         # Scroll to bottom
         self.conversation_text.verticalScrollBar().setValue(
             self.conversation_text.verticalScrollBar().maximum()
         )
-        
+
         # Update usage counter
         self.usage_label.setText(f"Messages: {len(self.conversation_history)}")
 
@@ -1157,7 +1242,9 @@ RESPONSE STYLE:
         print("ConversationWidget: Refreshing providers...")
 
         if self.provider_service:
-            print("ConversationWidget: Provider service available, getting active providers...")
+            print(
+                "ConversationWidget: Provider service available, getting active providers..."
+            )
 
             # Get active providers
             active_providers = self.provider_service.get_active_providers()
@@ -1171,9 +1258,13 @@ RESPONSE STYLE:
                     saved_provider = settings.value("last_selected_provider", None)
                     if saved_provider and saved_provider in active_providers:
                         last_selected_provider = saved_provider
-                        print(f"ConversationWidget: Restored last selected provider: {saved_provider}")
+                        print(
+                            f"ConversationWidget: Restored last selected provider: {saved_provider}"
+                        )
                 except Exception as e:
-                    print(f"ConversationWidget: Failed to restore provider preference: {e}")
+                    print(
+                        f"ConversationWidget: Failed to restore provider preference: {e}"
+                    )
 
                 # Use the last selected, default, or first active provider
                 selected_provider = None
@@ -1197,13 +1288,17 @@ RESPONSE STYLE:
                     status = provider_info.get("status", "unknown")
 
                     if status in ["connected", "initialized"]:
-                        self.provider_status_label.setText(f"✅ {selected_provider} Connected")
+                        self.provider_status_label.setText(
+                            f"✅ {selected_provider} Connected"
+                        )
                         self.provider_status_label.setStyleSheet(
                             "color: green; font-weight: bold; padding: 5px;"
                         )
                         self.send_btn.setEnabled(True)
                     else:
-                        self.provider_status_label.setText(f"⚠️ {selected_provider} - {status}")
+                        self.provider_status_label.setText(
+                            f"⚠️ {selected_provider} - {status}"
+                        )
                         self.provider_status_label.setStyleSheet(
                             "color: orange; font-weight: bold; padding: 5px;"
                         )
@@ -1230,11 +1325,13 @@ RESPONSE STYLE:
             provider_service.providers_updated.connect(self.refresh_providers)
 
             # Get the AI manager from provider service instead of creating our own
-            if hasattr(provider_service, 'get_ai_manager'):
+            if hasattr(provider_service, "get_ai_manager"):
                 self.ai_manager = provider_service.get_ai_manager()
                 print("ConversationWidget: Using AI manager from provider service")
             else:
-                print("ConversationWidget: Provider service has no AI manager - using local one")
+                print(
+                    "ConversationWidget: Provider service has no AI manager - using local one"
+                )
 
             # Initial refresh
             self.refresh_providers()
@@ -1262,19 +1359,21 @@ RESPONSE STYLE:
     def _rebuild_conversation_display(self):
         """Rebuild conversation display from history with current format."""
         self.conversation_text.clear()
-        
+
         for entry in self.conversation_history:
             formatted_message = self.formatter.format_message(
-                entry["sender"], 
-                entry["message"], 
-                entry["timestamp"]
+                entry["sender"], entry["message"], entry["timestamp"]
             )
-            
+
             # Insert based on format type
             cursor = self.conversation_text.textCursor()
             cursor.movePosition(QtGui.QTextCursor.End)
-            
-            if self.formatter.format_type in [ConversationFormat.RICH_TEXT, ConversationFormat.MARKDOWN, ConversationFormat.HTML]:
+
+            if self.formatter.format_type in [
+                ConversationFormat.RICH_TEXT,
+                ConversationFormat.MARKDOWN,
+                ConversationFormat.HTML,
+            ]:
                 cursor.insertHtml(formatted_message)
             else:
                 cursor.insertText(formatted_message)
@@ -1286,16 +1385,13 @@ RESPONSE STYLE:
         # Register callbacks for execution updates
         if self.agent_manager:
             self.agent_manager.register_callback(
-                "on_execution_start",
-                self._on_execution_start
+                "on_execution_start", self._on_execution_start
             )
             self.agent_manager.register_callback(
-                "on_execution_complete",
-                self._on_execution_complete
+                "on_execution_complete", self._on_execution_complete
             )
             self.agent_manager.register_callback(
-                "on_plan_created",
-                self._on_plan_created
+                "on_plan_created", self._on_plan_created
             )
 
     def _gather_freecad_context(self):
@@ -1307,20 +1403,24 @@ RESPONSE STYLE:
             import FreeCADGui
 
             # Basic document information
-            context["freecad_state"]["has_active_document"] = FreeCAD.ActiveDocument is not None
+            context["freecad_state"]["has_active_document"] = (
+                FreeCAD.ActiveDocument is not None
+            )
 
             if FreeCAD.ActiveDocument:
                 doc = FreeCAD.ActiveDocument
                 context["freecad_state"]["document_name"] = doc.Name
-                context["freecad_state"]["document_label"] = getattr(doc, 'Label', doc.Name)
+                context["freecad_state"]["document_label"] = getattr(
+                    doc, "Label", doc.Name
+                )
 
                 # Document objects
                 context["freecad_state"]["document_objects"] = [
                     {
                         "name": obj.Name,
-                        "label": getattr(obj, 'Label', obj.Name),
+                        "label": getattr(obj, "Label", obj.Name),
                         "type": obj.TypeId,
-                        "visible": getattr(obj, 'Visibility', True)
+                        "visible": getattr(obj, "Visibility", True),
                     }
                     for obj in doc.Objects
                 ]
@@ -1333,13 +1433,13 @@ RESPONSE STYLE:
                 context["freecad_state"]["object_type_counts"] = type_counts
 
             # Selected objects
-            if hasattr(FreeCADGui, 'Selection'):
+            if hasattr(FreeCADGui, "Selection"):
                 selection = FreeCADGui.Selection.getSelection()
                 context["freecad_state"]["selected_objects"] = [
                     {
                         "name": obj.Name,
-                        "label": getattr(obj, 'Label', obj.Name),
-                        "type": obj.TypeId
+                        "label": getattr(obj, "Label", obj.Name),
+                        "type": obj.TypeId,
                     }
                     for obj in selection
                 ]
@@ -1349,7 +1449,7 @@ RESPONSE STYLE:
                 if selection:
                     context["freecad_state"]["primary_selection"] = {
                         "name": selection[0].Name,
-                        "type": selection[0].TypeId
+                        "type": selection[0].TypeId,
                     }
 
             # Current workbench
@@ -1357,19 +1457,36 @@ RESPONSE STYLE:
                 wb = FreeCADGui.activeWorkbench()
                 if wb:
                     context["freecad_state"]["active_workbench"] = {
-                        "name": wb.name() if hasattr(wb, 'name') else "Unknown",
-                        "menu_text": wb.MenuText if hasattr(wb, 'MenuText') else "Unknown"
+                        "name": wb.name() if hasattr(wb, "name") else "Unknown",
+                        "menu_text": (
+                            wb.MenuText if hasattr(wb, "MenuText") else "Unknown"
+                        ),
                     }
             except:
-                context["freecad_state"]["active_workbench"] = {"name": "Unknown", "menu_text": "Unknown"}
+                context["freecad_state"]["active_workbench"] = {
+                    "name": "Unknown",
+                    "menu_text": "Unknown",
+                }
 
             # View information
             try:
-                view = FreeCADGui.ActiveDocument.ActiveView if FreeCADGui.ActiveDocument else None
+                view = (
+                    FreeCADGui.ActiveDocument.ActiveView
+                    if FreeCADGui.ActiveDocument
+                    else None
+                )
                 if view:
                     context["freecad_state"]["view_info"] = {
-                        "camera_position": str(view.getCameraNode().position.getValue()) if hasattr(view, 'getCameraNode') else "Unknown",
-                        "view_provider_count": len(view.getViewProviders()) if hasattr(view, 'getViewProviders') else 0
+                        "camera_position": (
+                            str(view.getCameraNode().position.getValue())
+                            if hasattr(view, "getCameraNode")
+                            else "Unknown"
+                        ),
+                        "view_provider_count": (
+                            len(view.getViewProviders())
+                            if hasattr(view, "getViewProviders")
+                            else 0
+                        ),
                     }
             except:
                 pass  # View info is optional
@@ -1377,7 +1494,9 @@ RESPONSE STYLE:
             # FreeCAD version info
             context["freecad_state"]["version_info"] = {
                 "version": FreeCAD.Version()[0:3],  # Major, minor, micro
-                "build_info": FreeCAD.Version()[3] if len(FreeCAD.Version()) > 3 else "Unknown"
+                "build_info": (
+                    FreeCAD.Version()[3] if len(FreeCAD.Version()) > 3 else "Unknown"
+                ),
             }
 
         except Exception as e:
@@ -1396,9 +1515,9 @@ RESPONSE STYLE:
         # Remove the thinking message from display
         text = self.conversation_text.toHtml()
         if self.thinking_message in text:
-            text = text.replace(
-                f"<p>{self.thinking_message}</p>", ""
-            ).replace(self.thinking_message, "")
+            text = text.replace(f"<p>{self.thinking_message}</p>", "").replace(
+                self.thinking_message, ""
+            )
             self.conversation_text.setHtml(text)
 
     def _simulate_ai_response(self, user_message):
@@ -1507,7 +1626,9 @@ Would you like detailed step-by-step instructions or prefer Agent mode execution
 
 💡 Agent mode can measure and analyze automatically!"""
 
-        elif any(word in message_lower for word in ["boolean", "combine", "merge", "cut"]):
+        elif any(
+            word in message_lower for word in ["boolean", "combine", "merge", "cut"]
+        ):
             response = """Boolean operations in FreeCAD:
 
 **Union (∪) - Combine:**
@@ -1620,7 +1741,9 @@ I'm here to guide you through FreeCAD!"""
     def _toggle_mode(self):
         """Toggle between chat and agent mode."""
         if not self.agent_manager:
-            self._add_system_message("Agent manager not available. Please check configuration.")
+            self._add_system_message(
+                "Agent manager not available. Please check configuration."
+            )
             return
 
         try:
@@ -1630,17 +1753,25 @@ I'm here to guide you through FreeCAD!"""
             if current_mode == AgentMode.CHAT:
                 self.agent_manager.set_mode(AgentMode.AGENT)
                 self.mode_label.setText("🤖 Agent Mode")
-                self.mode_label.setStyleSheet("font-weight: bold; color: #FF9800; padding: 5px;")
+                self.mode_label.setStyleSheet(
+                    "font-weight: bold; color: #FF9800; padding: 5px;"
+                )
                 self.switch_mode_btn.setText("Switch to Chat Mode")
                 self.task_preview.setVisible(True)
-                self._add_system_message("Switched to Agent Mode - AI will execute tasks autonomously")
+                self._add_system_message(
+                    "Switched to Agent Mode - AI will execute tasks autonomously"
+                )
             else:
                 self.agent_manager.set_mode(AgentMode.CHAT)
                 self.mode_label.setText("💬 Chat Mode")
-                self.mode_label.setStyleSheet("font-weight: bold; color: #2196F3; padding: 5px;")
+                self.mode_label.setStyleSheet(
+                    "font-weight: bold; color: #2196F3; padding: 5px;"
+                )
                 self.switch_mode_btn.setText("Switch to Agent Mode")
                 self.task_preview.setVisible(False)
-                self._add_system_message("Switched to Chat Mode - AI will provide instructions only")
+                self._add_system_message(
+                    "Switched to Chat Mode - AI will provide instructions only"
+                )
 
         except Exception as e:
             self._add_system_message(f"Error switching mode: {e}")
@@ -1670,7 +1801,9 @@ I'm here to guide you through FreeCAD!"""
             # Buttons
             button_layout = QtWidgets.QHBoxLayout()
             save_btn = QtWidgets.QPushButton("Save Changes")
-            save_btn.clicked.connect(lambda: self._save_modified_plan(task_editor.toPlainText(), dialog))
+            save_btn.clicked.connect(
+                lambda: self._save_modified_plan(task_editor.toPlainText(), dialog)
+            )
             button_layout.addWidget(save_btn)
 
             cancel_btn = QtWidgets.QPushButton("Cancel")
@@ -1694,10 +1827,10 @@ I'm here to guide you through FreeCAD!"""
         lines = []
         lines.append(f"Task: {plan['intent']['action']}")
         lines.append("")
-        for step in plan['steps']:
+        for step in plan["steps"]:
             lines.append(f"Step {step['order']}: {step['description']}")
             lines.append(f"  Tool: {step['tool']}")
-            if step.get('parameters'):
+            if step.get("parameters"):
                 lines.append(f"  Parameters: {step['parameters']}")
             lines.append("")
         return "\n".join(lines)
@@ -1712,7 +1845,7 @@ I'm here to guide you through FreeCAD!"""
         """Handle format change."""
         self.formatter.format_type = new_format
         self._rebuild_conversation_display()
-        
+
     def _export_conversation(self):
         """Export conversation in selected format."""
         if not self.conversation_history:
@@ -1720,48 +1853,46 @@ I'm here to guide you through FreeCAD!"""
                 self, "Export", "No conversation to export"
             )
             return
-            
+
         # Get export format
         format_type = self.format_selector.get_current_format()
-        
+
         # Get file extension based on format
         extensions = {
             ConversationFormat.PLAIN_TEXT: "txt",
             ConversationFormat.MARKDOWN: "md",
             ConversationFormat.HTML: "html",
-            ConversationFormat.RICH_TEXT: "html"
+            ConversationFormat.RICH_TEXT: "html",
         }
-        
+
         ext = extensions.get(format_type, "txt")
-        
+
         # Get save file path
         file_path, _ = QtWidgets.QFileDialog.getSaveFileName(
             self,
             "Export Conversation",
             f"conversation.{ext}",
-            f"{format_type.value.title()} Files (*.{ext});;All Files (*.*)"
+            f"{format_type.value.title()} Files (*.{ext});;All Files (*.*)",
         )
-        
+
         if file_path:
             try:
                 # Export conversation
                 exported_content = self.formatter.export_conversation(
                     self.conversation_history, format_type
                 )
-                
+
                 # Write to file
-                with open(file_path, 'w', encoding='utf-8') as f:
+                with open(file_path, "w", encoding="utf-8") as f:
                     f.write(exported_content)
-                    
+
                 QtWidgets.QMessageBox.information(
-                    self, "Export Complete",
-                    f"Conversation exported to:\n{file_path}"
+                    self, "Export Complete", f"Conversation exported to:\n{file_path}"
                 )
-                
+
             except Exception as e:
                 QtWidgets.QMessageBox.critical(
-                    self, "Export Error",
-                    f"Failed to export conversation:\n{str(e)}"
+                    self, "Export Error", f"Failed to export conversation:\n{str(e)}"
                 )
 
 

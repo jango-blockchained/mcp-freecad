@@ -7,10 +7,11 @@ tubes, prisms, wedges, and ellipsoids.
 Author: AI Assistant
 """
 
+import math
+from typing import Any, Dict, Optional
+
 import FreeCAD as App
 import Part
-import math
-from typing import Dict, Any, Optional
 
 
 class AdvancedPrimitivesTool:

@@ -16,9 +16,9 @@ if addon_dir not in sys.path:
 
 import asyncio
 import logging
-from typing import Dict, Any, Optional, List, Callable
-from PySide2 import QtCore
+from typing import Any, Callable, Dict, List, Optional
 
+from PySide2 import QtCore
 
 # Import using multiple strategies to handle different file locations
 ai_manager_imported = False
@@ -30,6 +30,7 @@ try:
     from .providers.claude_provider import ClaudeProvider
     from .providers.gemini_provider import GeminiProvider
     from .providers.openrouter_provider import OpenRouterProvider
+
     ai_manager_imported = True
     providers_imported = True
     logging.info("Imported AI components from providers subdirectory")
@@ -43,6 +44,7 @@ if not providers_imported:
         from ai.claude_provider import ClaudeProvider
         from ai.gemini_provider import GeminiProvider
         from ai.openrouter_provider import OpenRouterProvider
+
         ai_manager_imported = True
         providers_imported = True
         logging.info("Imported AI components from ai directory (legacy)")
@@ -56,9 +58,12 @@ if not providers_imported:
         from ai.providers.claude_provider import ClaudeProvider
         from ai.providers.gemini_provider import GeminiProvider
         from ai.providers.openrouter_provider import OpenRouterProvider
+
         ai_manager_imported = True
         providers_imported = True
-        logging.info("Imported AI components using absolute imports with providers subdirectory")
+        logging.info(
+            "Imported AI components using absolute imports with providers subdirectory"
+        )
     except ImportError as e:
         logging.warning(f"Could not import with absolute paths: {e}")
 
@@ -69,6 +74,7 @@ if not providers_imported:
         import ai.providers.claude_provider
         import ai.providers.gemini_provider
         import ai.providers.openrouter_provider
+
         AIManager = ai.ai_manager.AIManager
         ClaudeProvider = ai.providers.claude_provider.ClaudeProvider
         GeminiProvider = ai.providers.gemini_provider.GeminiProvider
@@ -83,6 +89,7 @@ if not providers_imported:
             import ai.claude_provider
             import ai.gemini_provider
             import ai.openrouter_provider
+
             AIManager = ai.ai_manager.AIManager
             ClaudeProvider = ai.claude_provider.ClaudeProvider
             GeminiProvider = ai.gemini_provider.GeminiProvider
@@ -101,12 +108,15 @@ if not providers_imported:
         def __init__(self):
             self.providers = {}
             logging.warning("Using dummy AIManager - no real functionality")
+
         def add_provider(self, **kwargs):
             logging.warning("Dummy AIManager: add_provider called")
             return False
+
         def remove_provider(self, name):
             logging.warning("Dummy AIManager: remove_provider called")
             return False
+
         def get_providers(self):
             return {}
 
@@ -121,7 +131,6 @@ if not providers_imported:
     class OpenRouterProvider:
         def __init__(self, **kwargs):
             logging.warning("Using dummy OpenRouterProvider")
-
 
 
 class ProviderIntegrationService(QtCore.QObject):
@@ -284,7 +293,7 @@ class ProviderIntegrationService(QtCore.QObject):
             provider_type_map = {
                 "openai": "openrouter",  # Using OpenRouter for OpenAI compatibility
                 "anthropic": "anthropic",  # Use 'anthropic' consistently
-                "claude": "anthropic",     # Map 'claude' to 'anthropic' for backward compatibility
+                "claude": "anthropic",  # Map 'claude' to 'anthropic' for backward compatibility
                 "google": "gemini",
                 "openrouter": "openrouter",
             }
