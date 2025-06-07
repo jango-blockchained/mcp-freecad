@@ -6,7 +6,6 @@ supporting different FreeCAD versions and installation types.
 
 Based on FreeCAD documentation and community best practices.
 """
-
 import importlib.util
 import os
 import subprocess
@@ -248,20 +247,20 @@ class DependencyManager:
 
     def check_sub_dependencies(self, package_name: str) -> Dict[str, bool]:
         """Check sub-dependencies for a specific package.
-
+        
         Args:
             package_name: Name of the main package to check sub-dependencies for
-
+            
         Returns:
             Dictionary mapping sub-dependency names to availability status
         """
         sub_deps = {}
-
+        
         if package_name == "aiohttp":
             # Check critical aiohttp sub-dependencies
             for sub_dep in ["multidict", "yarl", "aiosignal"]:
                 sub_deps[sub_dep] = self.check_dependency(sub_dep)
-
+        
         return sub_deps
 
     def check_all_dependencies(self) -> Dict[str, bool]:
@@ -274,7 +273,6 @@ class DependencyManager:
         for package_name in self.REQUIRED_DEPENDENCIES:
             results[package_name] = self.check_dependency(package_name)
         return results
-    
 
     def get_missing_dependencies(self) -> List[str]:
         """Get list of missing dependencies.
@@ -435,11 +433,10 @@ class DependencyManager:
                 "--disable-pip-version-check",
                 "--target",
                 vendor_path,
-                # NOTE: Removed --no-deps to allow sub-dependencies to install
                 package_name  # No version specification
             ]
 
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout) 
 
             if result.returncode == 0:
                 self.progress_callback(f"✅ Alternative installation of {package_name} succeeded")
@@ -463,7 +460,6 @@ class DependencyManager:
                 "--target",
                 vendor_path,
                 "--force-reinstall",
-                # NOTE: Removed --no-deps to allow sub-dependencies to install
                 package_spec
             ]
 
@@ -573,7 +569,6 @@ class DependencyManager:
                 self.progress_callback("✅ All critical dependencies installed successfully")
                 return True
 
-
     def auto_install_on_first_run(self) -> bool:
         """Automatically install missing dependencies on first run or when critical deps are missing."""
         try:
@@ -660,7 +655,6 @@ class DependencyManager:
             self.progress_callback(f"❌ Auto-installation failed: {e}")
             self.progress_callback(f"❌ Traceback: {traceback.format_exc()}")
             return False
-    
 
     def get_installation_info(self) -> Dict[str, str]:
         """Get information about the current installation.

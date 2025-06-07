@@ -165,14 +165,14 @@ def install_mcp_dependencies():
                 "--disable-pip-version-check",
                 "--target",
                 vendor_path,
-                "--upgrade",  # Ensure latest compatible version
+                "--upgrade",
             ]
 
             # Add Python 3.13+ specific options
             if python_version >= (3, 13):
                 cmd.extend(["--use-feature", "2020-resolver"])
                 if package_name in ["aiohttp", "multidict", "yarl", "aiosignal"]:
-                    cmd.append("--pre")  # Allow pre-releases if needed
+                    cmd.append("--pre")
 
             cmd.append(package_spec)
 
@@ -195,7 +195,7 @@ def install_mcp_dependencies():
                         success_count += 1
                     except ImportError:
                         print(f"   ⚠️ {package_name} installed but not importable - may need restart")
-                        success_count += 1  # Still count as success, restart may be needed
+                        success_count += 1
                 else:
                     print(f"   ❌ Failed to install {package_name}")
                     if result.stderr:
@@ -214,8 +214,7 @@ def install_mcp_dependencies():
                             "--disable-pip-version-check",
                             "--target",
                             vendor_path,
-                            # NOTE: Removed --no-deps to allow sub-dependencies to install
-                            package_name  # No version specification
+                            package_name
                         ]
 
                         alt_result = subprocess.run(
@@ -247,7 +246,6 @@ def install_mcp_dependencies():
                     critical_failed.append(package_name)
 
         print("\n" + "=" * 60)
-
 
         # Enhanced results reporting with sub-dependency verification
         if success_count == len(dependencies):
@@ -321,8 +319,6 @@ def install_mcp_dependencies():
             print("   - Avoid using --no-deps flag which skips sub-dependencies")
             print("   - Consider using a virtual environment with compatible package versions")
             print("   - Check package documentation for Python 3.13 support status")
-    
-
     except Exception as e:
         print(f"❌ Unexpected error: {str(e)}")
         print("💡 Please report this error to the addon developers")
