@@ -190,13 +190,74 @@ EVENTS_AVAILABLE = safe_import_with_fallback(
     False
 )
 
-# Import API with graceful degradation
-API_AVAILABLE = safe_import_with_fallback(
-    lambda: __import__('api', fromlist=['API_AVAILABLE']).API_AVAILABLE,
-    "API",
-    False
-)
+# Import API with enhanced version conflict handling
+API_AVAILABLE = False
+API_IMPORT_ERROR = None
 
+try:
+    # Check for FastAPI/Pydantic compatibility issues before importing
+    python_version = sys.version_info
+    if python_version >= (3, 13):
+        FreeCAD.Console.PrintMessage("FreeCAD AI: Python 3.13+ detected - checking API compatibility...\n")
+        
+        # Test FastAPI/Pydantic compatibility
+        try:
+            import fastapi
+            from pydantic import BaseModel
+            
+            # Test basic functionality that often fails with version conflicts
+            class TestModel(BaseModel):
+                test_field: str = "test"
+            
+            FreeCAD.Console.PrintMessage("FreeCAD AI: FastAPI/Pydantic compatibility test passed\n")
+        except TypeError as e:
+            if "Protocols with non-method members" in str(e):
+                FreeCAD.Console.PrintWarning(f"FreeCAD AI: FastAPI/Pydantic compatibility issue detected: {e}\n")
+                FreeCAD.Console.PrintWarning("FreeCAD AI: API module will be disabled due to version conflicts\n")
+                FreeCAD.Console.PrintWarning("FreeCAD AI: Consider updating FastAPI/Pydantic or using Python < 3.13\n")
+                API_IMPORT_ERROR = f"FastAPI/Pydantic compatibility issue: {e}"
+                raise ImportError(API_IMPORT_ERROR)
+            else:
+                FreeCAD.Console.PrintWarning(f"FreeCAD AI: FastAPI/Pydantic type error: {e}\n")
+                API_IMPORT_ERROR = f"FastAPI/Pydantic type error: {e}"
+                raise ImportError(API_IMPORT_ERROR)
+        except ImportError as e:
+            FreeCAD.Console.PrintMessage(f"FreeCAD AI: FastAPI/Pydantic not available: {e}\n")
+            API_IMPORT_ERROR = f"FastAPI/Pydantic not available: {e}"
+            raise ImportError(API_IMPORT_ERROR)
+
+    # If compatibility check passed or not needed, try importing API
+    from api import API_AVAILABLE as API_LOADED
+    API_AVAILABLE = API_LOADED
+    
+    if API_AVAILABLE:
+        FreeCAD.Console.PrintMessage("FreeCAD AI: API loaded successfully\n")
+    else:
+        FreeCAD.Console.PrintMessage("FreeCAD AI: API module reports unavailable\n")
+except ImportError as e:
+    FreeCAD.Console.PrintMessage(f"FreeCAD AI: API not available: {e}\n")
+    API_AVAILABLE = False
+    if not API_IMPORT_ERROR:
+        API_IMPORT_ERROR = str(e)
+except TypeError as e:
+    if "Protocols with non-method members" in str(e):
+        FreeCAD.Console.PrintError(f"FreeCAD AI: CRASH PREVENTED - FastAPI/Pydantic compatibility error: {e}\n")
+        FreeCAD.Console.PrintError("FreeCAD AI: This is a known issue with Python 3.13+ and certain library versions\n")
+        FreeCAD.Console.PrintError("FreeCAD AI: API functionality will be disabled\n")
+        FreeCAD.Console.PrintError("FreeCAD AI: Solutions:\n")
+        FreeCAD.Console.PrintError("  1. Update FastAPI and Pydantic to latest versions\n")
+        FreeCAD.Console.PrintError("  2. Use Python 3.12 or earlier\n")
+        FreeCAD.Console.PrintError("  3. Use a virtual environment with compatible versions\n")
+    else:
+        FreeCAD.Console.PrintError(f"FreeCAD AI: CRASH PREVENTED - API type error: {e}\n")
+    API_AVAILABLE = False
+    API_IMPORT_ERROR = str(e)
+except Exception as e:
+    FreeCAD.Console.PrintError(f"FreeCAD AI: CRASH PREVENTED - API import error: {e}\n")
+    FreeCAD.Console.PrintError(f"FreeCAD AI: API import traceback: {traceback.format_exc()}\n")
+    API_AVAILABLE = False
+    API_IMPORT_ERROR = str(e)
+    
 # Import clients with graceful degradation
 CLIENTS_AVAILABLE = safe_import_with_fallback(
     lambda: __import__('clients', fromlist=['CLIENTS_AVAILABLE']).CLIENTS_AVAILABLE,
@@ -204,9 +265,47 @@ CLIENTS_AVAILABLE = safe_import_with_fallback(
     False
 )
 
-# Import AI providers with comprehensive fallback strategies
+# Import AI providers with comprehensive fallback strategies and dependency management
 AI_PROVIDERS_AVAILABLE = False
 AI_PROVIDERS_IMPORT_ERROR = None
+DEPENDENCY_INSTALL_ATTEMPTED = False
+
+def attempt_dependency_installation():
+    """Attempt to install missing dependencies for AI providers."""
+    global DEPENDENCY_INSTALL_ATTEMPTED
+    
+    if DEPENDENCY_INSTALL_ATTEMPTED:
+        return False
+    
+    DEPENDENCY_INSTALL_ATTEMPTED = True
+    
+    try:
+        FreeCAD.Console.PrintMessage("FreeCAD AI: Attempting automatic dependency installation for AI providers...\n")
+        
+        # Try to use the dependency manager
+        from utils.dependency_manager import DependencyManager
+        
+        def progress_callback(message):
+            FreeCAD.Console.PrintMessage(f"FreeCAD AI: {message}\n")
+        
+        manager = DependencyManager(progress_callback)
+        
+        # Install critical dependencies (like aiohttp)
+        success = manager.install_missing_dependencies(critical_only=True)
+        
+        if success:
+            FreeCAD.Console.PrintMessage("FreeCAD AI: ✅ Dependencies installed - restart FreeCAD to use AI providers\n")
+            return True
+        else:
+            FreeCAD.Console.PrintWarning("FreeCAD AI: ❌ Some dependencies failed to install\n")
+            return False
+            
+    except ImportError as e:
+        FreeCAD.Console.PrintMessage(f"FreeCAD AI: Could not import dependency manager: {e}\n")
+        return False
+    except Exception as e:
+        FreeCAD.Console.PrintError(f"FreeCAD AI: Dependency installation failed: {e}\n")
+        return False
 
 try:
     # Strategy 1: Try absolute imports first
@@ -219,6 +318,20 @@ try:
     except ImportError as e:
         FreeCAD.Console.PrintMessage(f"FreeCAD AI: Absolute AI providers import failed: {e}\n")
         AI_PROVIDERS_IMPORT_ERROR = str(e)
+
+        # Check if it's a missing dependency issue
+        if "aiohttp" in str(e):
+            FreeCAD.Console.PrintWarning("FreeCAD AI: Missing 'aiohttp' dependency detected\n")
+            
+            # Attempt automatic installation
+            if attempt_dependency_installation():
+                FreeCAD.Console.PrintMessage("FreeCAD AI: Dependencies installed - AI providers will be available after restart\n")
+            else:
+                FreeCAD.Console.PrintWarning("FreeCAD AI: Automatic installation failed\n")
+                FreeCAD.Console.PrintMessage("FreeCAD AI: Manual installation guide:\n")
+                FreeCAD.Console.PrintMessage("  1. Use the Dependencies tab in FreeCAD AI interface\n")
+                FreeCAD.Console.PrintMessage("  2. Or run: pip install aiohttp>=3.8.0\n")
+                FreeCAD.Console.PrintMessage("  3. Restart FreeCAD after installation\n")
 
         # Strategy 2: Try importing from the current directory structure
         try:
@@ -272,18 +385,91 @@ except Exception as e:
 
 if not AI_PROVIDERS_AVAILABLE:
     FreeCAD.Console.PrintWarning(f"FreeCAD AI: AI providers not available - last error: {AI_PROVIDERS_IMPORT_ERROR}\n")
+    
+    # Provide specific guidance based on the error
+    if AI_PROVIDERS_IMPORT_ERROR and "aiohttp" in AI_PROVIDERS_IMPORT_ERROR:
+        FreeCAD.Console.PrintMessage("FreeCAD AI: 💡 To enable AI providers:\n")
+        FreeCAD.Console.PrintMessage("  1. Open FreeCAD AI interface and go to Dependencies tab\n")
+        FreeCAD.Console.PrintMessage("  2. Click 'Install Missing Dependencies'\n")
+        FreeCAD.Console.PrintMessage("  3. Restart FreeCAD\n")
+        FreeCAD.Console.PrintMessage("  4. Or manually install: pip install aiohttp>=3.8.0\n")
 
 # Print summary of import status with crash prevention
 try:
-    FreeCAD.Console.PrintMessage("FreeCAD AI: Import Summary:\n")
-    FreeCAD.Console.PrintMessage(f"  - Qt Bindings: {'✓' if HAS_PYSIDE2 else '✗'}\n")
-    FreeCAD.Console.PrintMessage(f"  - Tools: {'✓' if TOOLS_AVAILABLE else '✗'}\n")
-    FreeCAD.Console.PrintMessage(f"  - Advanced Tools: {'✓' if ADVANCED_TOOLS_AVAILABLE else '✗'}\n")
-    FreeCAD.Console.PrintMessage(f"  - Resources: {'✓' if RESOURCES_AVAILABLE else '✗'}\n")
-    FreeCAD.Console.PrintMessage(f"  - Events: {'✓' if EVENTS_AVAILABLE else '✗'}\n")
-    FreeCAD.Console.PrintMessage(f"  - API: {'✓' if API_AVAILABLE else '✗'}\n")
-    FreeCAD.Console.PrintMessage(f"  - Clients: {'✓' if CLIENTS_AVAILABLE else '✗'}\n")
-    FreeCAD.Console.PrintMessage(f"  - AI Providers: {'✓' if AI_PROVIDERS_AVAILABLE else '✗'}\n")
+
+    # Print comprehensive import status summary with user guidance
+    FreeCAD.Console.PrintMessage("=" * 60 + "\n")
+    FreeCAD.Console.PrintMessage("FreeCAD AI: COMPONENT STATUS SUMMARY\n")
+    FreeCAD.Console.PrintMessage("=" * 60 + "\n")
+
+    # Core components
+    FreeCAD.Console.PrintMessage("Core Components:\n")
+    FreeCAD.Console.PrintMessage(f"  Qt Bindings: {'✓ Available' if HAS_PYSIDE2 else '✗ Missing'}\n")
+    FreeCAD.Console.PrintMessage(f"  Tools: {'✓ Available' if TOOLS_AVAILABLE else '✗ Missing'}\n")
+
+    # Optional components
+    FreeCAD.Console.PrintMessage("Optional Components:\n")
+    FreeCAD.Console.PrintMessage(f"  Advanced Tools: {'✓ Available' if ADVANCED_TOOLS_AVAILABLE else '✗ Missing'}\n")
+    FreeCAD.Console.PrintMessage(f"  Resources: {'✓ Available' if RESOURCES_AVAILABLE else '✗ Missing'}\n")
+    FreeCAD.Console.PrintMessage(f"  Events: {'✓ Available' if EVENTS_AVAILABLE else '✗ Missing'}\n")
+    FreeCAD.Console.PrintMessage(f"  Clients: {'✓ Available' if CLIENTS_AVAILABLE else '✗ Missing'}\n")
+
+    # API and AI components with detailed status
+    api_status = "✓ Available" if API_AVAILABLE else "✗ Disabled"
+    if not API_AVAILABLE and API_IMPORT_ERROR:
+        if "Protocols with non-method members" in API_IMPORT_ERROR:
+            api_status += " (FastAPI/Pydantic compatibility issue)"
+        else:
+            api_status += f" ({API_IMPORT_ERROR[:50]}...)"
+
+    ai_status = "✓ Available" if AI_PROVIDERS_AVAILABLE else "✗ Missing"
+    if not AI_PROVIDERS_AVAILABLE and AI_PROVIDERS_IMPORT_ERROR:
+        if "aiohttp" in AI_PROVIDERS_IMPORT_ERROR:
+            ai_status += " (missing aiohttp dependency)"
+        else:
+            ai_status += f" ({AI_PROVIDERS_IMPORT_ERROR[:50]}...)"
+
+    FreeCAD.Console.PrintMessage("Network Components:\n")
+    FreeCAD.Console.PrintMessage(f"  API: {api_status}\n")
+    FreeCAD.Console.PrintMessage(f"  AI Providers: {ai_status}\n")
+
+    # Overall status assessment
+    critical_missing = []
+    if not HAS_PYSIDE2:
+        critical_missing.append("Qt Bindings")
+    if not TOOLS_AVAILABLE:
+        critical_missing.append("Tools")
+
+    optional_missing = []
+    if not API_AVAILABLE:
+        optional_missing.append("API")
+    if not AI_PROVIDERS_AVAILABLE:
+        optional_missing.append("AI Providers")
+
+    FreeCAD.Console.PrintMessage("\nOverall Status:\n")
+    if not critical_missing:
+        FreeCAD.Console.PrintMessage("  ✅ Core functionality: Available\n")
+    else:
+        FreeCAD.Console.PrintMessage(f"  ❌ Core functionality: Missing {', '.join(critical_missing)}\n")
+
+    if not optional_missing:
+        FreeCAD.Console.PrintMessage("  ✅ Extended functionality: Fully available\n")
+    else:
+        FreeCAD.Console.PrintMessage(f"  ⚠️ Extended functionality: Missing {', '.join(optional_missing)}\n")
+
+    # User guidance
+    if optional_missing:
+        FreeCAD.Console.PrintMessage("\n💡 To enable missing functionality:\n")
+        if not API_AVAILABLE and "Protocols with non-method members" in str(API_IMPORT_ERROR):
+            FreeCAD.Console.PrintMessage("  • API: Update FastAPI/Pydantic or use Python < 3.13\n")
+        if not AI_PROVIDERS_AVAILABLE and "aiohttp" in str(AI_PROVIDERS_IMPORT_ERROR):
+            FreeCAD.Console.PrintMessage("  • AI Providers: Install aiohttp dependency\n")
+            FreeCAD.Console.PrintMessage("    - Use Dependencies tab in FreeCAD AI interface\n")
+            FreeCAD.Console.PrintMessage("    - Or run: pip install aiohttp>=3.8.0\n")
+            FreeCAD.Console.PrintMessage("    - Then restart FreeCAD\n")
+
+    FreeCAD.Console.PrintMessage("=" * 60 + "\n")
+    
 except Exception as e:
     FreeCAD.Console.PrintError(f"FreeCAD AI: Error printing import summary: {e}\n")
 
