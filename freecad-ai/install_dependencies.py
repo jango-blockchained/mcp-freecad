@@ -97,12 +97,30 @@ def install_mcp_dependencies():
             os.makedirs(vendor_path)
             print(f"📂 Created target directory: {vendor_path}")
 
-        # Enhanced dependencies with Python 3.13+ compatibility
+        # Enhanced dependencies with Python 3.13+ compatibility and sub-dependencies
         dependencies = [
             {
                 "name": "aiohttp",
                 "version": ">=3.8.0" if python_version < (3, 13) else ">=3.9.0",
                 "description": "Async HTTP client for AI provider communication",
+                "critical": True,
+            },
+            {
+                "name": "multidict",
+                "version": ">=4.7.0" if python_version < (3, 13) else ">=6.0.0",
+                "description": "Multi-dictionary implementation (required by aiohttp)",
+                "critical": True,
+            },
+            {
+                "name": "yarl",
+                "version": ">=1.6.0" if python_version < (3, 13) else ">=1.9.0",
+                "description": "URL parsing library (required by aiohttp)",
+                "critical": True,
+            },
+            {
+                "name": "aiosignal",
+                "version": ">=1.1.0" if python_version < (3, 13) else ">=1.3.0",
+                "description": "Signal handling for asyncio (required by aiohttp)",
                 "critical": True,
             },
             {
@@ -119,7 +137,7 @@ def install_mcp_dependencies():
             },
         ]
 
-        print(f"\n📦 Installing {len(dependencies)} dependencies with enhanced compatibility...")
+        print(f"\n📦 Installing {len(dependencies)} dependencies with enhanced sub-dependency support...")
         print("-" * 70)
 
         success_count = 0
@@ -138,7 +156,7 @@ def install_mcp_dependencies():
             print(f"   Version: {version_spec}")
             print(f"   Critical: {'Yes' if is_critical else 'No'}")
 
-            # Build pip command with Python 3.13+ enhancements
+            # Build pip command with Python 3.13+ enhancements and sub-dependency support
             cmd = [
                 python_exe,
                 "-m",
@@ -147,14 +165,14 @@ def install_mcp_dependencies():
                 "--disable-pip-version-check",
                 "--target",
                 vendor_path,
-                "--upgrade",
+                "--upgrade",  # Ensure latest compatible version
             ]
 
             # Add Python 3.13+ specific options
             if python_version >= (3, 13):
                 cmd.extend(["--use-feature", "2020-resolver"])
-                if package_name == "aiohttp":
-                    cmd.append("--pre")
+                if package_name in ["aiohttp", "multidict", "yarl", "aiosignal"]:
+                    cmd.append("--pre")  # Allow pre-releases if needed
 
             cmd.append(package_spec)
 
@@ -169,7 +187,15 @@ def install_mcp_dependencies():
 
                 if result.returncode == 0:
                     print(f"   ✅ Successfully installed {package_name}")
-                    success_count += 1
+
+                    # Verify the installation worked
+                    try:
+                        __import__(package_name)
+                        print(f"   ✅ Verified {package_name} is importable")
+                        success_count += 1
+                    except ImportError:
+                        print(f"   ⚠️ {package_name} installed but not importable - may need restart")
+                        success_count += 1  # Still count as success, restart may be needed
                 else:
                     print(f"   ❌ Failed to install {package_name}")
                     if result.stderr:
@@ -179,6 +205,7 @@ def install_mcp_dependencies():
                     if is_critical:
                         print(f"   🔄 Trying alternative installation for critical package {package_name}...")
 
+                        # Try without version constraints but WITH dependencies
                         alt_cmd = [
                             python_exe,
                             "-m",
@@ -187,8 +214,8 @@ def install_mcp_dependencies():
                             "--disable-pip-version-check",
                             "--target",
                             vendor_path,
-                            "--no-deps",
-                            package_name
+                            # NOTE: Removed --no-deps to allow sub-dependencies to install
+                            package_name  # No version specification
                         ]
 
                         alt_result = subprocess.run(
@@ -197,7 +224,13 @@ def install_mcp_dependencies():
 
                         if alt_result.returncode == 0:
                             print(f"   ✅ Alternative installation of {package_name} succeeded")
-                            success_count += 1
+                            try:
+                                __import__(package_name)
+                                print(f"   ✅ Verified {package_name} is importable")
+                                success_count += 1
+                            except ImportError:
+                                print(f"   ⚠️ {package_name} installed but not importable - may need restart")
+                                success_count += 1
                         else:
                             print(f"   ❌ Alternative installation also failed")
                             critical_failed.append(package_name)
@@ -215,7 +248,8 @@ def install_mcp_dependencies():
 
         print("\n" + "=" * 60)
 
-        # Enhanced results reporting
+
+        # Enhanced results reporting with sub-dependency verification
         if success_count == len(dependencies):
             print("🎉 All dependencies installed successfully!")
             print("🔄 Please restart FreeCAD to use the new dependencies.")
@@ -231,21 +265,63 @@ def install_mcp_dependencies():
             print("❌ No dependencies were installed successfully")
             print("💡 Try installing manually using your system package manager")
 
-        print("\n📋 Installation Summary:")
+        print("\n📋 Installation Summary with Sub-dependency Verification:")
+
+        # Verify main dependencies
+        main_deps_available = 0
         for dep in dependencies:
             package_name = dep["name"]
             try:
                 __import__(package_name)
                 print(f"   ✅ {package_name}: Available")
+                main_deps_available += 1
             except ImportError:
                 print(f"   ❌ {package_name}: Not available")
+
+        # Special verification for aiohttp sub-dependencies
+        if main_deps_available > 0:
+            print("\n📋 Sub-dependency Verification:")
+
+            # Check if aiohttp is available
+            aiohttp_available = False
+            try:
+                import aiohttp
+                aiohttp_available = True
+                print("   ✅ aiohttp: Available")
+            except ImportError:
+                print("   ❌ aiohttp: Not available")
+
+            if aiohttp_available:
+                # Check aiohttp sub-dependencies
+                sub_deps = ["multidict", "yarl", "aiosignal"]
+                sub_deps_ok = 0
+
+                for sub_dep in sub_deps:
+                    try:
+                        __import__(sub_dep)
+                        print(f"   ✅ {sub_dep}: Available")
+                        sub_deps_ok += 1
+                    except ImportError:
+                        print(f"   ❌ {sub_dep}: Missing (aiohttp sub-dependency)")
+
+                if sub_deps_ok == len(sub_deps):
+                    print("   🎉 All aiohttp sub-dependencies verified!")
+                else:
+                    print(f"   ⚠️ {sub_deps_ok}/{len(sub_deps)} aiohttp sub-dependencies available")
+                    print("   💡 Missing sub-dependencies may cause AI provider failures")
+                    print("   🔧 Try reinstalling aiohttp without --no-deps flag")
+            else:
+                print("   ⚠️ Cannot verify aiohttp sub-dependencies (aiohttp not available)")
 
         # Python 3.13+ specific guidance
         if python_version >= (3, 13) and (critical_failed or success_count < len(dependencies)):
             print("\n🐍 Python 3.13+ Troubleshooting:")
             print("   - Some packages may need newer versions for Python 3.13 compatibility")
+            print("   - Sub-dependencies are critical for proper functionality")
+            print("   - Avoid using --no-deps flag which skips sub-dependencies")
             print("   - Consider using a virtual environment with compatible package versions")
             print("   - Check package documentation for Python 3.13 support status")
+    
 
     except Exception as e:
         print(f"❌ Unexpected error: {str(e)}")

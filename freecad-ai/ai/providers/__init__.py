@@ -26,35 +26,65 @@ _dependency_install_attempted = False
 def _attempt_dependency_installation():
     """Attempt to install missing dependencies automatically."""
     global _dependency_install_attempted
-
+    
     if _dependency_install_attempted:
         return False  # Don't try multiple times
-
+    
     _dependency_install_attempted = True
-
+    
     try:
         FreeCAD.Console.PrintMessage("FreeCAD AI: Attempting automatic dependency installation...\n")
-
+        
         # Try to import and use the dependency manager
         try:
             from utils.dependency_manager import DependencyManager
-
+            
             def progress_callback(message):
                 FreeCAD.Console.PrintMessage(f"FreeCAD AI: {message}\n")
-
+            
             manager = DependencyManager(progress_callback)
-
-            # Check for missing critical dependencies
+            
+            # Check for missing critical dependencies and sub-dependencies
             critical_missing = manager.get_critical_missing_dependencies()
-
+            
             if critical_missing:
                 FreeCAD.Console.PrintMessage(f"FreeCAD AI: Installing critical dependencies: {', '.join(critical_missing)}\n")
-
-                # Try to install critical dependencies
+                
+                # Special handling for aiohttp and its sub-dependencies
+                if "aiohttp" in critical_missing:
+                    FreeCAD.Console.PrintMessage("FreeCAD AI: Checking aiohttp sub-dependencies...\n")
+                    
+                    # Check sub-dependencies
+                    sub_deps = manager.check_sub_dependencies("aiohttp")
+                    missing_sub_deps = [dep for dep, available in sub_deps.items() if not available]
+                    
+                    if missing_sub_deps:
+                        FreeCAD.Console.PrintMessage(f"FreeCAD AI: Missing sub-dependencies: {', '.join(missing_sub_deps)}\n")
+                
+                # Try to install critical dependencies with sub-dependency support
                 success = manager.install_missing_dependencies(critical_only=True)
-
+                
                 if success:
                     FreeCAD.Console.PrintMessage("FreeCAD AI: ✅ Critical dependencies installed successfully\n")
+                    
+                    # Verify sub-dependencies were installed correctly
+                    if "aiohttp" in critical_missing and manager.check_dependency("aiohttp"):
+                        sub_deps_after = manager.check_sub_dependencies("aiohttp")
+                        still_missing = [dep for dep, available in sub_deps_after.items() if not available]
+                        
+                        if still_missing:
+                            FreeCAD.Console.PrintWarning(f"FreeCAD AI: ⚠️ Some sub-dependencies still missing: {', '.join(still_missing)}\n")
+                            FreeCAD.Console.PrintMessage("FreeCAD AI: Attempting to install missing sub-dependencies individually...\n")
+                            
+                            # Try to install missing sub-dependencies individually
+                            for sub_dep in still_missing:
+                                if manager.install_dependency(sub_dep):
+                                    FreeCAD.Console.PrintMessage(f"FreeCAD AI: ✅ Sub-dependency {sub_dep} installed\n")
+                                else:
+                                    FreeCAD.Console.PrintWarning(f"FreeCAD AI: ❌ Failed to install sub-dependency {sub_dep}\n")
+                        else:
+                            FreeCAD.Console.PrintMessage("FreeCAD AI: ✅ All aiohttp sub-dependencies verified\n")
+                    
                     FreeCAD.Console.PrintMessage("FreeCAD AI: Please restart FreeCAD to use the new dependencies\n")
                     return True
                 else:
@@ -62,15 +92,30 @@ def _attempt_dependency_installation():
                     return False
             else:
                 FreeCAD.Console.PrintMessage("FreeCAD AI: All critical dependencies are already available\n")
+                
+                # Even if main dependencies are available, check sub-dependencies
+                if manager.check_dependency("aiohttp"):
+                    sub_deps = manager.check_sub_dependencies("aiohttp")
+                    missing_sub_deps = [dep for dep, available in sub_deps.items() if not available]
+                    
+                    if missing_sub_deps:
+                        FreeCAD.Console.PrintMessage(f"FreeCAD AI: Installing missing aiohttp sub-dependencies: {', '.join(missing_sub_deps)}\n")
+                        
+                        for sub_dep in missing_sub_deps:
+                            if manager.install_dependency(sub_dep):
+                                FreeCAD.Console.PrintMessage(f"FreeCAD AI: ✅ Sub-dependency {sub_dep} installed\n")
+                            else:
+                                FreeCAD.Console.PrintWarning(f"FreeCAD AI: ❌ Failed to install sub-dependency {sub_dep}\n")
+                
                 return True
-
+                
         except ImportError as e:
             FreeCAD.Console.PrintWarning(f"FreeCAD AI: Could not import dependency manager: {e}\n")
             return False
         except Exception as e:
             FreeCAD.Console.PrintError(f"FreeCAD AI: Dependency installation failed: {e}\n")
             return False
-
+            
     except Exception as e:
         FreeCAD.Console.PrintError(f"FreeCAD AI: Automatic dependency installation error: {e}\n")
         return False
@@ -128,6 +173,68 @@ def _show_dependency_guidance(missing_dependency, provider_name):
     FreeCAD.Console.PrintMessage("=" * 60 + "\n")
 
 
+
+def _show_sub_dependency_guidance(main_dependency, missing_sub_dependency, provider_name):
+    """Show user-friendly guidance for installing missing sub-dependencies."""
+    FreeCAD.Console.PrintMessage("=" * 60 + "\n")
+    FreeCAD.Console.PrintMessage("FreeCAD AI: SUB-DEPENDENCY INSTALLATION GUIDE\n")
+    FreeCAD.Console.PrintMessage("=" * 60 + "\n")
+    
+    FreeCAD.Console.PrintMessage(f"The {provider_name} provider requires '{missing_sub_dependency}', which is a sub-dependency of '{main_dependency}'.\n")
+    FreeCAD.Console.PrintMessage(f"This usually means {main_dependency} was installed without its required sub-dependencies.\n")
+    
+    FreeCAD.Console.PrintMessage("\n📋 INSTALLATION OPTIONS:\n")
+    FreeCAD.Console.PrintMessage("\n1. 🔧 Use the FreeCAD AI Dependencies Tab:\n")
+    FreeCAD.Console.PrintMessage("   - Open the FreeCAD AI interface\n")
+    FreeCAD.Console.PrintMessage("   - Go to the 'Dependencies' or 'Settings' tab\n")
+    FreeCAD.Console.PrintMessage("   - Click 'Install Missing Dependencies'\n")
+    FreeCAD.Console.PrintMessage("   - This will install both main and sub-dependencies\n")
+    
+    FreeCAD.Console.PrintMessage("\n2. 🐍 Manual Installation via FreeCAD Python Console:\n")
+    FreeCAD.Console.PrintMessage("   Copy and paste this into the FreeCAD Python console:\n")
+    FreeCAD.Console.PrintMessage("   " + "-" * 50 + "\n")
+    
+    # Generate installation script for sub-dependency
+    try:
+        from utils.dependency_manager import DependencyManager
+        manager = DependencyManager()
+        
+        # Create script for both main dependency and sub-dependency
+        FreeCAD.Console.PrintMessage("   exec('''\n")
+        FreeCAD.Console.PrintMessage("   import subprocess, sys, os\n")
+        FreeCAD.Console.PrintMessage("   \n")
+        FreeCAD.Console.PrintMessage("   # Install sub-dependency first\n")
+        FreeCAD.Console.PrintMessage(f"   subprocess.run([sys.executable, '-m', 'pip', 'install', '{missing_sub_dependency}'])\n")
+        FreeCAD.Console.PrintMessage("   \n")
+        FreeCAD.Console.PrintMessage("   # Reinstall main dependency to ensure compatibility\n")
+        FreeCAD.Console.PrintMessage(f"   subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade', '{main_dependency}'])\n")
+        FreeCAD.Console.PrintMessage("   ''')\n")
+    except Exception:
+        # Fallback simple script
+        FreeCAD.Console.PrintMessage("   import subprocess, sys\n")
+        FreeCAD.Console.PrintMessage(f"   subprocess.run([sys.executable, '-m', 'pip', 'install', '{missing_sub_dependency}'])\n")
+        FreeCAD.Console.PrintMessage(f"   subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade', '{main_dependency}'])\n")
+    
+    FreeCAD.Console.PrintMessage("   " + "-" * 50 + "\n")
+    
+    FreeCAD.Console.PrintMessage("\n3. 💻 System Package Manager:\n")
+    if main_dependency == "aiohttp":
+        FreeCAD.Console.PrintMessage("   Ubuntu/Debian: sudo apt install python3-aiohttp python3-multidict python3-yarl\n")
+        FreeCAD.Console.PrintMessage("   Fedora: sudo dnf install python3-aiohttp python3-multidict python3-yarl\n")
+        FreeCAD.Console.PrintMessage("   macOS: pip3 install aiohttp[speedups]\n")
+    else:
+        FreeCAD.Console.PrintMessage(f"   Install both: pip3 install {missing_sub_dependency} {main_dependency}\n")
+    
+    FreeCAD.Console.PrintMessage("\n4. 🔄 Restart FreeCAD:\n")
+    FreeCAD.Console.PrintMessage("   After installation, restart FreeCAD to use the new dependencies\n")
+    
+    FreeCAD.Console.PrintMessage("\n💡 TROUBLESHOOTING:\n")
+    FreeCAD.Console.PrintMessage("   - Sub-dependencies are often missed when using --no-deps flag\n")
+    FreeCAD.Console.PrintMessage("   - Try reinstalling the main dependency without --no-deps\n")
+    FreeCAD.Console.PrintMessage("   - Check that your pip version is up to date\n")
+    
+    FreeCAD.Console.PrintMessage("=" * 60 + "\n")
+
 def _lazy_import_provider(provider_name: str, module_name: str, class_name: str):
     """Lazy import a provider with enhanced dependency management and error handling."""
     if provider_name in _providers:
@@ -143,39 +250,63 @@ def _lazy_import_provider(provider_name: str, module_name: str, class_name: str)
         _providers[provider_name] = provider_class
         FreeCAD.Console.PrintMessage(f"FreeCAD AI: ✅ {provider_name} provider loaded successfully\n")
         return provider_class
-
+        
     except ImportError as e:
         error_msg = f"Failed to import {provider_name}: {str(e)}"
         _provider_errors[provider_name] = error_msg
-
-        # Check if it's a missing dependency issue
+        
+        # Enhanced sub-dependency detection
         missing_dependency = None
+        missing_sub_dependency = None
+        
         if "aiohttp" in str(e):
             missing_dependency = "aiohttp"
+        elif "multidict" in str(e):
+            missing_dependency = "aiohttp"
+            missing_sub_dependency = "multidict"
+        elif "yarl" in str(e):
+            missing_dependency = "aiohttp"
+            missing_sub_dependency = "yarl"
+        elif "aiosignal" in str(e):
+            missing_dependency = "aiohttp"
+            missing_sub_dependency = "aiosignal"
         elif "requests" in str(e):
             missing_dependency = "requests"
         elif "mcp" in str(e):
             missing_dependency = "mcp"
-
+        
         if missing_dependency:
-            FreeCAD.Console.PrintWarning(f"FreeCAD AI: ❌ {provider_name} provider unavailable - missing '{missing_dependency}' dependency\n")
-
-            # Attempt automatic installation
+            if missing_sub_dependency:
+                FreeCAD.Console.PrintWarning(f"FreeCAD AI: ❌ {provider_name} provider unavailable - missing '{missing_sub_dependency}' sub-dependency\n")
+                FreeCAD.Console.PrintWarning(f"FreeCAD AI: This is a sub-dependency of '{missing_dependency}' that wasn't installed properly\n")
+            else:
+                FreeCAD.Console.PrintWarning(f"FreeCAD AI: ❌ {provider_name} provider unavailable - missing '{missing_dependency}' dependency\n")
+            
+            # Attempt automatic installation with sub-dependency handling
             if not _dependency_install_attempted:
-                FreeCAD.Console.PrintMessage(f"FreeCAD AI: Attempting to install {missing_dependency} automatically...\n")
-
+                if missing_sub_dependency:
+                    FreeCAD.Console.PrintMessage(f"FreeCAD AI: Attempting to install {missing_dependency} with sub-dependencies...\n")
+                else:
+                    FreeCAD.Console.PrintMessage(f"FreeCAD AI: Attempting to install {missing_dependency} automatically...\n")
+                
                 if _attempt_dependency_installation():
                     FreeCAD.Console.PrintMessage(f"FreeCAD AI: ✅ Dependencies installed - restart FreeCAD to use {provider_name}\n")
                 else:
                     FreeCAD.Console.PrintWarning(f"FreeCAD AI: ❌ Automatic installation failed\n")
-                    _show_dependency_guidance(missing_dependency, provider_name)
+                    if missing_sub_dependency:
+                        _show_sub_dependency_guidance(missing_dependency, missing_sub_dependency, provider_name)
+                    else:
+                        _show_dependency_guidance(missing_dependency, provider_name)
             else:
-                _show_dependency_guidance(missing_dependency, provider_name)
+                if missing_sub_dependency:
+                    _show_sub_dependency_guidance(missing_dependency, missing_sub_dependency, provider_name)
+                else:
+                    _show_dependency_guidance(missing_dependency, provider_name)
         else:
             FreeCAD.Console.PrintWarning(f"FreeCAD AI: ❌ {provider_name} provider import failed: {error_msg}\n")
-
+        
         return None
-
+        
     except Exception as e:
         error_msg = f"Error loading {provider_name}: {str(e)}"
         _provider_errors[provider_name] = error_msg
@@ -213,18 +344,45 @@ def get_available_providers() -> Dict[str, Any]:
         "OpenRouter": get_openrouter_provider(),
     }
 
-    # Log availability summary
+
+    # Enhanced availability summary with sub-dependency information
     available_count = sum(1 for p in providers.values() if p is not None)
     total_count = len(providers)
 
     if available_count == 0:
         FreeCAD.Console.PrintWarning(f"FreeCAD AI: ⚠️ No AI providers available ({available_count}/{total_count})\n")
         FreeCAD.Console.PrintWarning("FreeCAD AI: Install missing dependencies to enable AI providers\n")
+        
+        # Check if it's a sub-dependency issue
+        try:
+            from utils.dependency_manager import DependencyManager
+            manager = DependencyManager()
+            
+            if manager.check_dependency("aiohttp"):
+                sub_deps = manager.check_sub_dependencies("aiohttp")
+                missing_sub_deps = [dep for dep, available in sub_deps.items() if not available]
+                
+                if missing_sub_deps:
+                    FreeCAD.Console.PrintWarning(f"FreeCAD AI: ⚠️ aiohttp is installed but missing sub-dependencies: {', '.join(missing_sub_deps)}\n")
+                    FreeCAD.Console.PrintWarning("FreeCAD AI: Use Dependencies tab to fix sub-dependency issues\n")
+        except Exception:
+            pass  # Ignore errors in sub-dependency checking
+
     elif available_count < total_count:
         FreeCAD.Console.PrintMessage(f"FreeCAD AI: ⚠️ Partial AI provider availability ({available_count}/{total_count})\n")
+        
+        # Show which providers are missing and why
+        for provider_name, provider_class in providers.items():
+            if provider_class is None and provider_name in _provider_errors:
+                error = _provider_errors[provider_name]
+                if "multidict" in error or "yarl" in error or "aiosignal" in error:
+                    FreeCAD.Console.PrintMessage(f"FreeCAD AI: ⚠️ {provider_name}: Missing sub-dependency\n")
+                else:
+                    FreeCAD.Console.PrintMessage(f"FreeCAD AI: ⚠️ {provider_name}: Missing main dependency\n")
+
     else:
         FreeCAD.Console.PrintMessage(f"FreeCAD AI: ✅ All AI providers available ({available_count}/{total_count})\n")
-
+    
     return providers
 
 
