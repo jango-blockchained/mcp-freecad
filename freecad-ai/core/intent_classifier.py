@@ -6,7 +6,6 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 
-
 class IntentType(Enum):
     """Types of user intents"""
 

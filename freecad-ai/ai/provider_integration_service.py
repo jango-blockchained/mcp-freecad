@@ -179,73 +179,91 @@ class ProviderIntegrationService:
     @property
     def provider_added(self):
         """Signal-like interface for provider_added callbacks."""
+
         class CallbackSignal:
             def __init__(self, callbacks):
                 self.callbacks = callbacks
+
             def connect(self, callback):
                 if callback not in self.callbacks:
                     self.callbacks.append(callback)
                 logging.debug(f"Connected callback to provider_added: {callback}")
+
             def emit(self, *args):
                 for callback in self.callbacks:
                     try:
                         callback(*args)
                     except Exception as e:
                         logging.error(f"Error in provider_added callback: {e}")
+
         return CallbackSignal(self.provider_added_callbacks)
 
     @property
     def provider_removed(self):
         """Signal-like interface for provider_removed callbacks."""
+
         class CallbackSignal:
             def __init__(self, callbacks):
                 self.callbacks = callbacks
+
             def connect(self, callback):
                 if callback not in self.callbacks:
                     self.callbacks.append(callback)
                 logging.debug(f"Connected callback to provider_removed: {callback}")
+
             def emit(self, *args):
                 for callback in self.callbacks:
                     try:
                         callback(*args)
                     except Exception as e:
                         logging.error(f"Error in provider_removed callback: {e}")
+
         return CallbackSignal(self.provider_removed_callbacks)
 
     @property
     def provider_status_changed(self):
         """Signal-like interface for provider_status_changed callbacks."""
+
         class CallbackSignal:
             def __init__(self, callbacks):
                 self.callbacks = callbacks
+
             def connect(self, callback):
                 if callback not in self.callbacks:
                     self.callbacks.append(callback)
-                logging.debug(f"Connected callback to provider_status_changed: {callback}")
+                logging.debug(
+                    f"Connected callback to provider_status_changed: {callback}"
+                )
+
             def emit(self, *args):
                 for callback in self.callbacks:
                     try:
                         callback(*args)
                     except Exception as e:
                         logging.error(f"Error in provider_status_changed callback: {e}")
+
         return CallbackSignal(self.provider_status_changed_callbacks)
 
     @property
     def providers_updated(self):
         """Signal-like interface for providers_updated callbacks."""
+
         class CallbackSignal:
             def __init__(self, callbacks):
                 self.callbacks = callbacks
+
             def connect(self, callback):
                 if callback not in self.callbacks:
                     self.callbacks.append(callback)
                 logging.debug(f"Connected callback to providers_updated: {callback}")
+
             def emit(self, *args):
                 for callback in self.callbacks:
                     try:
                         callback(*args)
                     except Exception as e:
                         logging.error(f"Error in providers_updated callback: {e}")
+
         return CallbackSignal(self.providers_updated_callbacks)
 
     def _setup_config_manager(self):
@@ -495,7 +513,9 @@ class ProviderIntegrationService:
             self._perform_connection_test(provider_name)
         except Exception as e:
             self.logger.error(f"Connection test failed: {e}")
-            self._update_provider_status(provider_name, "error", f"Test failed: {str(e)}")
+            self._update_provider_status(
+                provider_name, "error", f"Test failed: {str(e)}"
+            )
 
     def _perform_connection_test(self, provider_name: str):
         """Perform the actual connection test."""

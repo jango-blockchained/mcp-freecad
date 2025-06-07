@@ -330,7 +330,9 @@ class ConnectionWidget(QtWidgets.QWidget):
 
     def _setup_update_timer(self):
         """Setup timer for real-time updates."""
-        self.update_timer = QtCore.QTimer(self)  # parented to widget to avoid GC segfaults
+        self.update_timer = QtCore.QTimer(
+            self
+        )  # parented to widget to avoid GC segfaults
         self.update_timer.setSingleShot(False)
         self.update_timer.timeout.connect(self._update_connection_status)
         self.update_timer.start(2000)  # Update every 2 seconds

@@ -221,8 +221,11 @@ class MCPWorkbench(FreeCADGui.Workbench):
         FreeCAD.Console.PrintMessage("FreeCAD AI Workbench: Initializing...\n")
 
         try:
-            # Create toolbar with available commands
-            self._create_toolbar()
+            # Define the toolbar commands using the standard FreeCAD method
+            self.appendToolbar("FreeCAD AI", ["MCP_ShowInterface"])
+            
+            # Define menu structure
+            self.appendMenu("FreeCAD AI", ["MCP_ShowInterface"])
 
             # Create dock widget immediately to avoid timer issues
             self._create_dock_widget()
@@ -252,47 +255,6 @@ class MCPWorkbench(FreeCADGui.Workbench):
     def GetClassName(self):
         """Return the workbench class name."""
         return "Gui::PythonWorkbench"
-
-    def _create_toolbar(self):
-        """Create the MCP toolbar."""
-        try:
-            # Create a simple toolbar with basic commands
-            toolbar_commands = []
-
-            # Only add commands that are properly registered
-            try:
-                # Check if the command exists before adding it
-                if (
-                    hasattr(FreeCADGui, "listCommands")
-                    and "MCP_ShowInterface" in FreeCADGui.listCommands()
-                ):
-                    toolbar_commands.append("MCP_ShowInterface")
-            except:
-                pass
-
-            # Only create toolbar if we have valid commands and appendToolbar method exists
-            if toolbar_commands and hasattr(self, "appendToolbar"):
-                self.appendToolbar("FreeCAD AI", toolbar_commands)
-                FreeCAD.Console.PrintMessage(
-                    f"FreeCAD AI: Toolbar created with {len(toolbar_commands)} commands\n"
-                )
-            else:
-                if not hasattr(self, "appendToolbar"):
-                    FreeCAD.Console.PrintMessage(
-                        "FreeCAD AI: appendToolbar method not available\n"
-                    )
-                else:
-                    FreeCAD.Console.PrintMessage(
-                        "FreeCAD AI: Toolbar creation skipped - no valid commands available\n"
-                    )
-
-        except Exception as e:
-            FreeCAD.Console.PrintError(f"Failed to create toolbar: {e}\n")
-            import traceback
-
-            FreeCAD.Console.PrintError(
-                f"Toolbar creation traceback: {traceback.format_exc()}\n"
-            )
 
     def _create_dock_widget(self):
         """Create and show the dock widget."""

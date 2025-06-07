@@ -6,7 +6,6 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 
-
 class InstructionType(Enum):
     """Types of instructions"""
 
