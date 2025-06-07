@@ -397,7 +397,8 @@ class UnifiedConnectionWidget(QtWidgets.QWidget):
 
     def _setup_timers(self):
         """Setup update timers."""
-        self.update_timer = QtCore.QTimer()
+        self.update_timer = QtCore.QTimer(self)  # parent timer to widget to avoid GC segfaults
+        self.update_timer.setSingleShot(False)
         self.update_timer.timeout.connect(self._update_all_status)
         self.update_timer.start(3000)  # Update every 3 seconds
 

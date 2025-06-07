@@ -35,7 +35,8 @@ from xmlrpc.server import SimpleXMLRPCServer
 try:
     import FreeCAD
     import FreeCADGui
-    from PySide2.QtCore import QTimer
+    # Defer QtCore import until FreeCAD GUI is fully initialised to avoid crashes
+    from PySide2 import QtCore
 
     FREECAD_AVAILABLE = True
 except ImportError:
@@ -45,6 +46,8 @@ except ImportError:
 # Global variables to track server state
 rpc_server_thread = None
 rpc_server_instance = None
+# Keep reference to timer to avoid garbage collection
+task_timer = None
 
 # GUI task queue (for operations that must run in the main thread)
 rpc_request_queue = queue.Queue()
@@ -52,16 +55,25 @@ rpc_response_queue = queue.Queue()
 
 
 def process_gui_tasks():
-    """Process any pending tasks in the GUI thread queue"""
+    """Process any pending tasks in the GUI thread queue (runs in GUI thread)"""
     if not FREECAD_AVAILABLE:
         return
 
+    # Process all queued tasks
     while not rpc_request_queue.empty():
-        task = rpc_request_queue.get()
-        res = task()
-        if res is not None:
-            rpc_response_queue.put(res)
-    QTimer.singleShot(500, process_gui_tasks)
+        try:
+            task = rpc_request_queue.get_nowait()
+        except Exception:
+            break
+        try:
+            res = task()
+            if res is not None:
+                rpc_response_queue.put(res)
+        except Exception as e:
+            import traceback, FreeCAD
+            FreeCAD.Console.PrintError(f"Error executing GUI task: {e}\n{traceback.format_exc()}\n")
+
+    # Nothing else: function returns, QTimer will trigger again automatically
 
 
 class FreeCADRPC:
@@ -354,8 +366,12 @@ def start_rpc_server(host="localhost", port=9875):
         rpc_server_thread = threading.Thread(target=server_loop, daemon=True)
         rpc_server_thread.start()
 
-        # Start task processing timer
-        QTimer.singleShot(500, process_gui_tasks)
+        # Start task processing timer using persistent QTimer to avoid singleShot recursion
+        global task_timer
+        task_timer = QtCore.QTimer()
+        task_timer.setInterval(500)  # 500 ms
+        task_timer.timeout.connect(process_gui_tasks)
+        task_timer.start()
 
         return f"RPC Server started at {host}:{port}"
     except Exception as e:

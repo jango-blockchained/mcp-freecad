@@ -368,7 +368,8 @@ class ServerWidget(QtWidgets.QWidget):
 
     def _setup_timer(self):
         """Setup timer for periodic updates."""
-        self.update_timer = QtCore.QTimer()
+        self.update_timer = QtCore.QTimer(self)  # parent timer to widget to avoid GC segfaults
+        self.update_timer.setSingleShot(False)
         self.update_timer.timeout.connect(self._update_display)
         self.update_timer.start(2000)  # Update every 2 seconds
 

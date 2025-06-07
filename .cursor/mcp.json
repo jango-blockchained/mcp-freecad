@@ -1,8 +1,6 @@
 {
     "mcpServers": {
-      "freecad": {
-        "command": "./cursor_mcp_bridge.py"
-      },
+
       "memory": {
         "command": "npx",
         "args": [
