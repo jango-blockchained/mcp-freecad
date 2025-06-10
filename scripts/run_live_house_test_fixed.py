@@ -48,7 +48,7 @@ class FixedLiveHouseTestRunner:
         # Configure logging
         logging.basicConfig(
             level=logging.INFO,
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
         self.logger = logging.getLogger(__name__)
 
@@ -59,28 +59,24 @@ class FixedLiveHouseTestRunner:
                 "length": 10.0,
                 "width": 8.0,
                 "height": 0.3,
-                "material": "concrete"
+                "material": "concrete",
             },
-            "walls": {
-                "height": 3.0,
-                "thickness": 0.3,
-                "material": "brick"
-            },
+            "walls": {"height": 3.0, "thickness": 0.3, "material": "brick"},
             "windows": [
                 {
                     "id": "front_window_1",
                     "width": 1.2,
                     "height": 1.5,
                     "position": {"x": 2.0, "y": 0.0, "z": 1.0},
-                    "wall": "front"
+                    "wall": "front",
                 },
                 {
                     "id": "front_window_2",
                     "width": 1.2,
                     "height": 1.5,
                     "position": {"x": 6.0, "y": 0.0, "z": 1.0},
-                    "wall": "front"
-                }
+                    "wall": "front",
+                },
             ],
             "doors": [
                 {
@@ -88,9 +84,9 @@ class FixedLiveHouseTestRunner:
                     "width": 0.9,
                     "height": 2.1,
                     "position": {"x": 4.5, "y": 0.0, "z": 0.0},
-                    "wall": "front"
+                    "wall": "front",
                 }
-            ]
+            ],
         }
 
     async def start_freecad(self) -> bool:
@@ -104,7 +100,10 @@ class FixedLiveHouseTestRunner:
             self.logger.info("🚀 Starting FreeCAD with GUI...")
 
             # Use the AppImage in the project root
-            freecad_path = Path(__file__).parent / "FreeCAD_1.0.0-conda-Linux-x86_64-py311.AppImage"
+            freecad_path = (
+                Path(__file__).parent
+                / "FreeCAD_1.0.0-conda-Linux-x86_64-py311.AppImage"
+            )
 
             if not freecad_path.exists():
                 self.logger.error(f"FreeCAD AppImage not found at: {freecad_path}")
@@ -112,9 +111,7 @@ class FixedLiveHouseTestRunner:
 
             # Start FreeCAD in the background
             self.freecad_process = subprocess.Popen(
-                [str(freecad_path)],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                [str(freecad_path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
 
             # Give FreeCAD time to start
@@ -155,10 +152,15 @@ class FixedLiveHouseTestRunner:
                     if method == "launcher":
                         success = await self.connection_manager.connect_to_freecad(
                             method=method,
-                            freecad_path=str(Path(__file__).parent / "FreeCAD_1.0.0-conda-Linux-x86_64-py311.AppImage")
+                            freecad_path=str(
+                                Path(__file__).parent
+                                / "FreeCAD_1.0.0-conda-Linux-x86_64-py311.AppImage"
+                            ),
                         )
                     else:
-                        success = await self.connection_manager.connect_to_freecad(method=method)
+                        success = await self.connection_manager.connect_to_freecad(
+                            method=method
+                        )
 
                     if success:
                         self.logger.info(f"✅ Connected using {method} method!")
@@ -172,9 +174,11 @@ class FixedLiveHouseTestRunner:
                 return False
 
             # Test the connection with a simple command
-            test_result = await self.execute_freecad_command("""
+            test_result = await self.execute_freecad_command(
+                """
 print("Connection test successful!")
-""")
+"""
+            )
 
             if "successful" in test_result:
                 self.logger.info("✅ Connection test passed!")
@@ -249,7 +253,9 @@ print(f"FOUNDATION_CREATED:{foundation.Name}")
         else:
             raise Exception(f"Failed to create foundation: {result}")
 
-    async def create_wall(self, wall_name: str, wall_params: Dict[str, float], translation: List[float]) -> str:
+    async def create_wall(
+        self, wall_name: str, wall_params: Dict[str, float], translation: List[float]
+    ) -> str:
         """Create and position a single wall."""
         self.logger.info(f"Creating {wall_name}...")
 
@@ -289,7 +295,9 @@ print(f"WALL_CREATED:{wall.Name}")
         else:
             raise Exception(f"Failed to create {wall_name}: {result}")
 
-    async def create_walls(self, foundation_spec: Dict[str, Any], wall_spec: Dict[str, Any]) -> List[str]:
+    async def create_walls(
+        self, foundation_spec: Dict[str, Any], wall_spec: Dict[str, Any]
+    ) -> List[str]:
         """Create the house walls."""
         self.logger.info("🧱 Creating walls...")
 
@@ -301,38 +309,62 @@ print(f"WALL_CREATED:{wall.Name}")
         wall_configs = [
             {
                 "name": "front wall",
-                "params": {"length": foundation_spec["length"], "width": wall_thickness, "height": wall_height},
-                "translation": [0, -wall_thickness/2, foundation_spec["height"]]
+                "params": {
+                    "length": foundation_spec["length"],
+                    "width": wall_thickness,
+                    "height": wall_height,
+                },
+                "translation": [0, -wall_thickness / 2, foundation_spec["height"]],
             },
             {
                 "name": "back wall",
-                "params": {"length": foundation_spec["length"], "width": wall_thickness, "height": wall_height},
-                "translation": [0, foundation_spec["width"] + wall_thickness/2, foundation_spec["height"]]
+                "params": {
+                    "length": foundation_spec["length"],
+                    "width": wall_thickness,
+                    "height": wall_height,
+                },
+                "translation": [
+                    0,
+                    foundation_spec["width"] + wall_thickness / 2,
+                    foundation_spec["height"],
+                ],
             },
             {
                 "name": "left wall",
-                "params": {"length": wall_thickness, "width": foundation_spec["width"], "height": wall_height},
-                "translation": [-wall_thickness/2, 0, foundation_spec["height"]]
+                "params": {
+                    "length": wall_thickness,
+                    "width": foundation_spec["width"],
+                    "height": wall_height,
+                },
+                "translation": [-wall_thickness / 2, 0, foundation_spec["height"]],
             },
             {
                 "name": "right wall",
-                "params": {"length": wall_thickness, "width": foundation_spec["width"], "height": wall_height},
-                "translation": [foundation_spec["length"] + wall_thickness/2, 0, foundation_spec["height"]]
-            }
+                "params": {
+                    "length": wall_thickness,
+                    "width": foundation_spec["width"],
+                    "height": wall_height,
+                },
+                "translation": [
+                    foundation_spec["length"] + wall_thickness / 2,
+                    0,
+                    foundation_spec["height"],
+                ],
+            },
         ]
 
         for wall_config in wall_configs:
             wall_id = await self.create_wall(
-                wall_config["name"],
-                wall_config["params"],
-                wall_config["translation"]
+                wall_config["name"], wall_config["params"], wall_config["translation"]
             )
             wall_ids.append(wall_id)
 
         self.logger.info(f"✅ All walls created: {wall_ids}")
         return wall_ids
 
-    async def create_opening(self, opening_name: str, opening_params: Dict[str, float], position: List[float]) -> str:
+    async def create_opening(
+        self, opening_name: str, opening_params: Dict[str, float], position: List[float]
+    ) -> str:
         """Create a window or door opening."""
         self.logger.info(f"Creating {opening_name}...")
 
@@ -373,7 +405,9 @@ print(f"OPENING_CREATED:{opening.Name}")
         else:
             raise Exception(f"Failed to create {opening_name}: {result}")
 
-    async def create_openings(self, windows: List[Dict], doors: List[Dict], wall_thickness: float) -> List[str]:
+    async def create_openings(
+        self, windows: List[Dict], doors: List[Dict], wall_thickness: float
+    ) -> List[str]:
         """Create window and door openings."""
         self.logger.info("🪟 Creating windows and doors...")
 
@@ -386,9 +420,13 @@ print(f"OPENING_CREATED:{opening.Name}")
                 {
                     "length": window["width"],
                     "width": wall_thickness + 0.1,
-                    "height": window["height"]
+                    "height": window["height"],
                 },
-                [window["position"]["x"], window["position"]["y"], window["position"]["z"]]
+                [
+                    window["position"]["x"],
+                    window["position"]["y"],
+                    window["position"]["z"],
+                ],
             )
             opening_ids.append(opening_id)
 
@@ -399,9 +437,9 @@ print(f"OPENING_CREATED:{opening.Name}")
                 {
                     "length": door["width"],
                     "width": wall_thickness + 0.1,
-                    "height": door["height"]
+                    "height": door["height"],
                 },
-                [door["position"]["x"], door["position"]["y"], door["position"]["z"]]
+                [door["position"]["x"], door["position"]["y"], door["position"]["z"]],
             )
             opening_ids.append(opening_id)
 
@@ -455,15 +493,14 @@ print("MODEL_FINALIZED")
 
             # Create walls
             wall_ids = await self.create_walls(
-                house_spec["foundation"],
-                house_spec["walls"]
+                house_spec["foundation"], house_spec["walls"]
             )
 
             # Create openings
             opening_ids = await self.create_openings(
                 house_spec["windows"],
                 house_spec["doors"],
-                house_spec["walls"]["thickness"]
+                house_spec["walls"]["thickness"],
             )
 
             # Finalize the model
@@ -491,6 +528,7 @@ print("MODEL_FINALIZED")
         except Exception as e:
             self.logger.error(f"Test failed: {e}")
             import traceback
+
             traceback.print_exc()
             return False
 
@@ -514,14 +552,14 @@ Examples:
   python run_live_house_test_fixed.py                    # Run with default 2s delay
   python run_live_house_test_fixed.py --delay 1.0        # Run with 1s delay between steps
   python run_live_house_test_fixed.py --delay 5.0        # Run with 5s delay for slower viewing
-        """
+        """,
     )
 
     parser.add_argument(
         "--delay",
         type=float,
         default=2.0,
-        help="Delay in seconds between modeling steps (default: 2.0)"
+        help="Delay in seconds between modeling steps (default: 2.0)",
     )
 
     args = parser.parse_args()

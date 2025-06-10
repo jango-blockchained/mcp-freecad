@@ -31,10 +31,7 @@ def mock_part():
 @pytest.fixture
 def mock_freecad_modules(mock_freecad, mock_part):
     """Mock FreeCAD and Part modules in sys.modules."""
-    with patch.dict(sys.modules, {
-        'FreeCAD': mock_freecad,
-        'Part': mock_part
-    }):
+    with patch.dict(sys.modules, {"FreeCAD": mock_freecad, "Part": mock_part}):
         yield mock_freecad, mock_part
 
 
@@ -71,41 +68,32 @@ def house_specification():
             "length": 10.0,
             "width": 8.0,
             "height": 0.3,
-            "material": "concrete"
+            "material": "concrete",
         },
-        "walls": {
-            "height": 3.0,
-            "thickness": 0.3,
-            "material": "brick"
-        },
-        "roof": {
-            "type": "gabled",
-            "pitch": 45.0,
-            "thickness": 0.2,
-            "material": "wood"
-        },
+        "walls": {"height": 3.0, "thickness": 0.3, "material": "brick"},
+        "roof": {"type": "gabled", "pitch": 45.0, "thickness": 0.2, "material": "wood"},
         "windows": [
             {
                 "id": "front_window_1",
                 "width": 1.2,
                 "height": 1.5,
                 "position": {"x": 2.0, "y": 0.0, "z": 1.0},
-                "wall": "front"
+                "wall": "front",
             },
             {
                 "id": "front_window_2",
                 "width": 1.2,
                 "height": 1.5,
                 "position": {"x": 6.0, "y": 0.0, "z": 1.0},
-                "wall": "front"
+                "wall": "front",
             },
             {
                 "id": "side_window",
                 "width": 1.0,
                 "height": 1.2,
                 "position": {"x": 10.0, "y": 3.0, "z": 1.0},
-                "wall": "right"
-            }
+                "wall": "right",
+            },
         ],
         "doors": [
             {
@@ -113,9 +101,9 @@ def house_specification():
                 "width": 0.9,
                 "height": 2.1,
                 "position": {"x": 4.5, "y": 0.0, "z": 0.0},
-                "wall": "front"
+                "wall": "front",
             }
-        ]
+        ],
     }
 
 
@@ -125,21 +113,18 @@ def expected_house_results():
     return {
         "foundation": {
             "volume": 24.0,  # 10 * 8 * 0.3
-            "area": 164.8,   # Approximate surface area
-            "object_type": "Part::Box"
+            "area": 164.8,  # Approximate surface area
+            "object_type": "Part::Box",
         },
         "wall_volumes": {
-            "front": 8.1,    # (10 * 3 * 0.3) - window/door cutouts
-            "back": 9.0,     # 10 * 3 * 0.3
-            "left": 7.2,     # 8 * 3 * 0.3
-            "right": 6.84    # (8 * 3 * 0.3) - window cutout
+            "front": 8.1,  # (10 * 3 * 0.3) - window/door cutouts
+            "back": 9.0,  # 10 * 3 * 0.3
+            "left": 7.2,  # 8 * 3 * 0.3
+            "right": 6.84,  # (8 * 3 * 0.3) - window cutout
         },
         "total_wall_volume": 31.14,
         "total_volume": 55.14,  # foundation + walls
-        "openings": {
-            "windows": 3,
-            "doors": 1
-        }
+        "openings": {"windows": 3, "doors": 1},
     }
 
 
@@ -151,68 +136,56 @@ def mock_user_inputs():
             "step": "create_foundation",
             "tool": "primitives",
             "action": "create_box",
-            "params": {"length": 10.0, "width": 8.0, "height": 0.3}
+            "params": {"length": 10.0, "width": 8.0, "height": 0.3},
         },
         {
             "step": "create_front_wall",
             "tool": "primitives",
             "action": "create_box",
-            "params": {"length": 10.0, "width": 0.3, "height": 3.0}
+            "params": {"length": 10.0, "width": 0.3, "height": 3.0},
         },
         {
             "step": "position_front_wall",
             "tool": "model_manipulation",
             "action": "transform",
-            "params": {
-                "object": "Box001",
-                "translation": [0, -0.15, 0.3]
-            }
+            "params": {"object": "Box001", "translation": [0, -0.15, 0.3]},
         },
         {
             "step": "create_back_wall",
             "tool": "primitives",
             "action": "create_box",
-            "params": {"length": 10.0, "width": 0.3, "height": 3.0}
+            "params": {"length": 10.0, "width": 0.3, "height": 3.0},
         },
         {
             "step": "position_back_wall",
             "tool": "model_manipulation",
             "action": "transform",
-            "params": {
-                "object": "Box002",
-                "translation": [0, 8.15, 0.3]
-            }
+            "params": {"object": "Box002", "translation": [0, 8.15, 0.3]},
         },
         {
             "step": "create_left_wall",
             "tool": "primitives",
             "action": "create_box",
-            "params": {"length": 0.3, "width": 8.0, "height": 3.0}
+            "params": {"length": 0.3, "width": 8.0, "height": 3.0},
         },
         {
             "step": "position_left_wall",
             "tool": "model_manipulation",
             "action": "transform",
-            "params": {
-                "object": "Box003",
-                "translation": [-0.15, 0, 0.3]
-            }
+            "params": {"object": "Box003", "translation": [-0.15, 0, 0.3]},
         },
         {
             "step": "create_right_wall",
             "tool": "primitives",
             "action": "create_box",
-            "params": {"length": 0.3, "width": 8.0, "height": 3.0}
+            "params": {"length": 0.3, "width": 8.0, "height": 3.0},
         },
         {
             "step": "position_right_wall",
             "tool": "model_manipulation",
             "action": "transform",
-            "params": {
-                "object": "Box004",
-                "translation": [10.15, 0, 0.3]
-            }
-        }
+            "params": {"object": "Box004", "translation": [10.15, 0, 0.3]},
+        },
     ]
 
 
@@ -220,18 +193,9 @@ def mock_user_inputs():
 def performance_benchmarks():
     """Performance benchmarks for testing."""
     return {
-        "primitive_creation": {
-            "max_time_seconds": 0.1,
-            "max_memory_mb": 10
-        },
-        "boolean_operation": {
-            "max_time_seconds": 0.5,
-            "max_memory_mb": 50
-        },
-        "house_complete_creation": {
-            "max_time_seconds": 5.0,
-            "max_memory_mb": 100
-        }
+        "primitive_creation": {"max_time_seconds": 0.1, "max_memory_mb": 10},
+        "boolean_operation": {"max_time_seconds": 0.5, "max_memory_mb": 50},
+        "house_complete_creation": {"max_time_seconds": 5.0, "max_memory_mb": 100},
     }
 
 
@@ -239,21 +203,25 @@ class TestUtilities:
     """Utility functions for testing."""
 
     @staticmethod
-    def validate_model_dimensions(obj, expected_dimensions: Dict[str, float], tolerance: float = 0.01):
+    def validate_model_dimensions(
+        obj, expected_dimensions: Dict[str, float], tolerance: float = 0.01
+    ):
         """Validate that an object has expected dimensions."""
         for attr, expected_value in expected_dimensions.items():
             if hasattr(obj, attr):
                 actual_value = getattr(obj, attr)
-                assert abs(actual_value - expected_value) <= tolerance, \
-                    f"{attr}: expected {expected_value}, got {actual_value}"
+                assert (
+                    abs(actual_value - expected_value) <= tolerance
+                ), f"{attr}: expected {expected_value}, got {actual_value}"
 
     @staticmethod
     def validate_volume(shape, expected_volume: float, tolerance: float = 0.01):
         """Validate shape volume."""
-        if hasattr(shape, 'Volume'):
+        if hasattr(shape, "Volume"):
             actual_volume = shape.Volume
-            assert abs(actual_volume - expected_volume) <= tolerance, \
-                f"Volume: expected {expected_volume}, got {actual_volume}"
+            assert (
+                abs(actual_volume - expected_volume) <= tolerance
+            ), f"Volume: expected {expected_volume}, got {actual_volume}"
 
     @staticmethod
     def count_objects_by_type(document, object_type: str) -> int:
@@ -265,7 +233,7 @@ class TestUtilities:
         """Calculate total volume of all objects in document."""
         total_volume = 0.0
         for obj in document.Objects:
-            if hasattr(obj, 'Shape') and hasattr(obj.Shape, 'Volume'):
+            if hasattr(obj, "Shape") and hasattr(obj.Shape, "Volume"):
                 total_volume += obj.Shape.Volume
         return total_volume
 
@@ -277,21 +245,25 @@ def test_utilities():
 
 
 # Parametrized fixtures for testing multiple scenarios
-@pytest.fixture(params=[
-    {"length": 10.0, "width": 5.0, "height": 3.0},
-    {"length": 20.0, "width": 10.0, "height": 5.0},
-    {"length": 1.0, "width": 1.0, "height": 1.0}
-])
+@pytest.fixture(
+    params=[
+        {"length": 10.0, "width": 5.0, "height": 3.0},
+        {"length": 20.0, "width": 10.0, "height": 5.0},
+        {"length": 1.0, "width": 1.0, "height": 1.0},
+    ]
+)
 def box_parameters(request):
     """Parametrized box dimensions for testing."""
     return request.param
 
 
-@pytest.fixture(params=[
-    {"radius": 5.0, "height": 10.0},
-    {"radius": 2.5, "height": 5.0},
-    {"radius": 1.0, "height": 1.0}
-])
+@pytest.fixture(
+    params=[
+        {"radius": 5.0, "height": 10.0},
+        {"radius": 2.5, "height": 5.0},
+        {"radius": 1.0, "height": 1.0},
+    ]
+)
 def cylinder_parameters(request):
     """Parametrized cylinder dimensions for testing."""
     return request.param

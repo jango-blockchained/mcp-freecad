@@ -17,7 +17,9 @@ def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Path to the MCP server script (corrected path)
-    mcp_script = os.path.join(script_dir, "..", "src", "mcp_freecad", "server", "freecad_mcp_server.py")
+    mcp_script = os.path.join(
+        script_dir, "..", "src", "mcp_freecad", "server", "freecad_mcp_server.py"
+    )
 
     # Path to the AppRun executable (relative to the script's original intended location)
     # Adjust based on where AppRun is actually located relative to the *new* script location if needed.
@@ -58,6 +60,7 @@ def main():
     except Exception as e:
         print(f"Error running MCP server: {e}")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

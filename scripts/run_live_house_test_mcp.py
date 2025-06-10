@@ -43,7 +43,7 @@ class MCPLiveHouseTestRunner:
         # Configure logging
         logging.basicConfig(
             level=logging.INFO,
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
         self.logger = logging.getLogger(__name__)
 
@@ -54,28 +54,24 @@ class MCPLiveHouseTestRunner:
                 "length": 10.0,
                 "width": 8.0,
                 "height": 0.3,
-                "material": "concrete"
+                "material": "concrete",
             },
-            "walls": {
-                "height": 3.0,
-                "thickness": 0.3,
-                "material": "brick"
-            },
+            "walls": {"height": 3.0, "thickness": 0.3, "material": "brick"},
             "windows": [
                 {
                     "id": "front_window_1",
                     "width": 1.2,
                     "height": 1.5,
                     "position": {"x": 2.0, "y": 0.0, "z": 1.0},
-                    "wall": "front"
+                    "wall": "front",
                 },
                 {
                     "id": "front_window_2",
                     "width": 1.2,
                     "height": 1.5,
                     "position": {"x": 6.0, "y": 0.0, "z": 1.0},
-                    "wall": "front"
-                }
+                    "wall": "front",
+                },
             ],
             "doors": [
                 {
@@ -83,9 +79,9 @@ class MCPLiveHouseTestRunner:
                     "width": 0.9,
                     "height": 2.1,
                     "position": {"x": 4.5, "y": 0.0, "z": 0.0},
-                    "wall": "front"
+                    "wall": "front",
                 }
-            ]
+            ],
         }
 
     async def start_freecad(self) -> bool:
@@ -99,7 +95,10 @@ class MCPLiveHouseTestRunner:
             self.logger.info("🚀 Starting FreeCAD with GUI...")
 
             # Use the AppImage in the project root
-            freecad_path = Path(__file__).parent / "FreeCAD_1.0.0-conda-Linux-x86_64-py311.AppImage"
+            freecad_path = (
+                Path(__file__).parent
+                / "FreeCAD_1.0.0-conda-Linux-x86_64-py311.AppImage"
+            )
 
             if not freecad_path.exists():
                 self.logger.error(f"FreeCAD AppImage not found at: {freecad_path}")
@@ -107,9 +106,7 @@ class MCPLiveHouseTestRunner:
 
             # Start FreeCAD in the background
             self.freecad_process = subprocess.Popen(
-                [str(freecad_path)],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                [str(freecad_path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
 
             # Give FreeCAD time to start
@@ -145,7 +142,10 @@ class MCPLiveHouseTestRunner:
             self.logger.info("Connecting to FreeCAD...")
             connection_success = await self.connection_manager.connect_to_freecad(
                 method="launcher",
-                freecad_path=str(Path(__file__).parent / "FreeCAD_1.0.0-conda-Linux-x86_64-py311.AppImage")
+                freecad_path=str(
+                    Path(__file__).parent
+                    / "FreeCAD_1.0.0-conda-Linux-x86_64-py311.AppImage"
+                ),
             )
 
             if not connection_success:
@@ -156,11 +156,9 @@ class MCPLiveHouseTestRunner:
             self.mcp_server = FreecadMcpServer()
 
             # Create a new document
-            result = await self.execute_tool("primitives", "create_box", {
-                "length": 0.1,
-                "width": 0.1,
-                "height": 0.1
-            })
+            result = await self.execute_tool(
+                "primitives", "create_box", {"length": 0.1, "width": 0.1, "height": 0.1}
+            )
 
             if result.get("status") == "success":
                 # Delete the test box
@@ -174,7 +172,9 @@ class MCPLiveHouseTestRunner:
             self.logger.error(f"Failed to setup MCP server: {e}")
             return False
 
-    async def execute_tool(self, tool_type: str, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_tool(
+        self, tool_type: str, tool_name: str, params: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Execute a tool via the MCP server.
 
@@ -199,7 +199,10 @@ class MCPLiveHouseTestRunner:
                 elif tool_name == "boolean_operation":
                     return await self._boolean_operation(params)
 
-            return {"status": "error", "error": f"Unknown tool: {tool_type}.{tool_name}"}
+            return {
+                "status": "error",
+                "error": f"Unknown tool: {tool_type}.{tool_name}",
+            }
 
         except Exception as e:
             return {"status": "error", "error": str(e)}
@@ -237,8 +240,8 @@ print(f"BOX_CREATED:{box.Name}")
                     "result": {
                         "object_id": object_name,
                         "object_type": "Part::Box",
-                        "message": f"Box {object_name} created successfully"
-                    }
+                        "message": f"Box {object_name} created successfully",
+                    },
                 }
             else:
                 return {"status": "error", "error": "Failed to create box"}
@@ -275,8 +278,8 @@ print(f"CYLINDER_CREATED:{cylinder.Name}")
                     "result": {
                         "object_id": object_name,
                         "object_type": "Part::Cylinder",
-                        "message": f"Cylinder {object_name} created successfully"
-                    }
+                        "message": f"Cylinder {object_name} created successfully",
+                    },
                 }
             else:
                 return {"status": "error", "error": "Failed to create cylinder"}
@@ -327,11 +330,14 @@ else:
                     "status": "success",
                     "result": {
                         "object_id": object_name,
-                        "message": f"Object {object_name} transformed successfully"
-                    }
+                        "message": f"Object {object_name} transformed successfully",
+                    },
                 }
             else:
-                return {"status": "error", "error": f"Failed to transform {object_name}"}
+                return {
+                    "status": "error",
+                    "error": f"Failed to transform {object_name}",
+                }
 
         except Exception as e:
             return {"status": "error", "error": str(e)}
@@ -377,8 +383,8 @@ else:
                     "status": "success",
                     "result": {
                         "object_id": object_name,
-                        "message": f"Boolean {operation} created: {object_name}"
-                    }
+                        "message": f"Boolean {operation} created: {object_name}",
+                    },
                 }
             else:
                 return {"status": "error", "error": f"Failed to perform {operation}"}
@@ -396,12 +402,14 @@ else:
             {
                 "length": foundation_spec["length"],
                 "width": foundation_spec["width"],
-                "height": foundation_spec["height"]
-            }
+                "height": foundation_spec["height"],
+            },
         )
 
         if result["status"] != "success":
-            raise Exception(f"Failed to create foundation: {result.get('error', 'Unknown error')}")
+            raise Exception(
+                f"Failed to create foundation: {result.get('error', 'Unknown error')}"
+            )
 
         foundation_id = result["result"]["object_id"]
         self.logger.info(f"✅ Foundation created: {foundation_id}")
@@ -409,7 +417,9 @@ else:
         await asyncio.sleep(self.step_delay)
         return foundation_id
 
-    async def create_walls(self, foundation_spec: Dict[str, Any], wall_spec: Dict[str, Any]) -> List[str]:
+    async def create_walls(
+        self, foundation_spec: Dict[str, Any], wall_spec: Dict[str, Any]
+    ) -> List[str]:
         """Create the house walls."""
         self.logger.info("🧱 Creating walls...")
 
@@ -421,33 +431,61 @@ else:
         wall_configs = [
             {
                 "name": "front wall",
-                "params": {"length": foundation_spec["length"], "width": wall_thickness, "height": wall_height},
-                "translation": [0, -wall_thickness/2, foundation_spec["height"]]
+                "params": {
+                    "length": foundation_spec["length"],
+                    "width": wall_thickness,
+                    "height": wall_height,
+                },
+                "translation": [0, -wall_thickness / 2, foundation_spec["height"]],
             },
             {
                 "name": "back wall",
-                "params": {"length": foundation_spec["length"], "width": wall_thickness, "height": wall_height},
-                "translation": [0, foundation_spec["width"] + wall_thickness/2, foundation_spec["height"]]
+                "params": {
+                    "length": foundation_spec["length"],
+                    "width": wall_thickness,
+                    "height": wall_height,
+                },
+                "translation": [
+                    0,
+                    foundation_spec["width"] + wall_thickness / 2,
+                    foundation_spec["height"],
+                ],
             },
             {
                 "name": "left wall",
-                "params": {"length": wall_thickness, "width": foundation_spec["width"], "height": wall_height},
-                "translation": [-wall_thickness/2, 0, foundation_spec["height"]]
+                "params": {
+                    "length": wall_thickness,
+                    "width": foundation_spec["width"],
+                    "height": wall_height,
+                },
+                "translation": [-wall_thickness / 2, 0, foundation_spec["height"]],
             },
             {
                 "name": "right wall",
-                "params": {"length": wall_thickness, "width": foundation_spec["width"], "height": wall_height},
-                "translation": [foundation_spec["length"] + wall_thickness/2, 0, foundation_spec["height"]]
-            }
+                "params": {
+                    "length": wall_thickness,
+                    "width": foundation_spec["width"],
+                    "height": wall_height,
+                },
+                "translation": [
+                    foundation_spec["length"] + wall_thickness / 2,
+                    0,
+                    foundation_spec["height"],
+                ],
+            },
         ]
 
         for wall_config in wall_configs:
             self.logger.info(f"Creating {wall_config['name']}...")
 
             # Create wall
-            wall_result = await self.execute_tool("primitives", "create_box", wall_config["params"])
+            wall_result = await self.execute_tool(
+                "primitives", "create_box", wall_config["params"]
+            )
             if wall_result["status"] != "success":
-                raise Exception(f"Failed to create {wall_config['name']}: {wall_result.get('error')}")
+                raise Exception(
+                    f"Failed to create {wall_config['name']}: {wall_result.get('error')}"
+                )
 
             wall_id = wall_result["result"]["object_id"]
             wall_ids.append(wall_id)
@@ -456,10 +494,7 @@ else:
             await self.execute_tool(
                 "model_manipulation",
                 "transform",
-                {
-                    "object": wall_id,
-                    "translation": wall_config["translation"]
-                }
+                {"object": wall_id, "translation": wall_config["translation"]},
             )
 
             await asyncio.sleep(self.step_delay)
@@ -467,7 +502,9 @@ else:
         self.logger.info(f"✅ All walls created: {wall_ids}")
         return wall_ids
 
-    async def create_openings(self, windows: List[Dict], doors: List[Dict], wall_thickness: float) -> List[str]:
+    async def create_openings(
+        self, windows: List[Dict], doors: List[Dict], wall_thickness: float
+    ) -> List[str]:
         """Create window and door openings."""
         self.logger.info("🪟 Creating windows and doors...")
 
@@ -483,8 +520,8 @@ else:
                 {
                     "length": window["width"],
                     "width": wall_thickness + 0.1,
-                    "height": window["height"]
-                }
+                    "height": window["height"],
+                },
             )
 
             if window_result["status"] == "success":
@@ -498,8 +535,8 @@ else:
                     "transform",
                     {
                         "object": window_id,
-                        "translation": [pos["x"], pos["y"], pos["z"]]
-                    }
+                        "translation": [pos["x"], pos["y"], pos["z"]],
+                    },
                 )
 
                 await asyncio.sleep(self.step_delay)
@@ -514,8 +551,8 @@ else:
                 {
                     "length": door["width"],
                     "width": wall_thickness + 0.1,
-                    "height": door["height"]
-                }
+                    "height": door["height"],
+                },
             )
 
             if door_result["status"] == "success":
@@ -527,10 +564,7 @@ else:
                 await self.execute_tool(
                     "model_manipulation",
                     "transform",
-                    {
-                        "object": door_id,
-                        "translation": [pos["x"], pos["y"], pos["z"]]
-                    }
+                    {"object": door_id, "translation": [pos["x"], pos["y"], pos["z"]]},
                 )
 
                 await asyncio.sleep(self.step_delay)
@@ -564,15 +598,14 @@ else:
 
             # Create walls
             wall_ids = await self.create_walls(
-                house_spec["foundation"],
-                house_spec["walls"]
+                house_spec["foundation"], house_spec["walls"]
             )
 
             # Create openings
             opening_ids = await self.create_openings(
                 house_spec["windows"],
                 house_spec["doors"],
-                house_spec["walls"]["thickness"]
+                house_spec["walls"]["thickness"],
             )
 
             self.logger.info("🎉 House modeling completed successfully!")
@@ -597,6 +630,7 @@ else:
         except Exception as e:
             self.logger.error(f"Test failed: {e}")
             import traceback
+
             traceback.print_exc()
             return False
 
@@ -620,14 +654,14 @@ Examples:
   python run_live_house_test_mcp.py                    # Run with default 2s delay
   python run_live_house_test_mcp.py --delay 1.0        # Run with 1s delay between steps
   python run_live_house_test_mcp.py --delay 5.0        # Run with 5s delay for slower viewing
-        """
+        """,
     )
 
     parser.add_argument(
         "--delay",
         type=float,
         default=2.0,
-        help="Delay in seconds between modeling steps (default: 2.0)"
+        help="Delay in seconds between modeling steps (default: 2.0)",
     )
 
     args = parser.parse_args()

@@ -37,80 +37,48 @@ Examples:
   python run_tests.py --verbose                # Run with verbose output
   python run_tests.py --fast                   # Skip slow tests
   python run_tests.py --specific test_primitives.py  # Run specific test file
-        """
+        """,
     )
 
     # Test selection options
+    parser.add_argument("--unit", action="store_true", help="Run only unit tests")
     parser.add_argument(
-        "--unit",
-        action="store_true",
-        help="Run only unit tests"
-    )
-    parser.add_argument(
-        "--integration",
-        action="store_true",
-        help="Run only integration tests"
+        "--integration", action="store_true", help="Run only integration tests"
     )
     parser.add_argument(
         "--house-scenario",
         action="store_true",
-        help="Run only house modeling scenario tests"
+        help="Run only house modeling scenario tests",
     )
     parser.add_argument(
-        "--performance",
-        action="store_true",
-        help="Run only performance tests"
+        "--performance", action="store_true", help="Run only performance tests"
     )
-    parser.add_argument(
-        "--fast",
-        action="store_true",
-        help="Skip slow tests"
-    )
+    parser.add_argument("--fast", action="store_true", help="Skip slow tests")
 
     # Output options
     parser.add_argument(
-        "--coverage",
-        action="store_true",
-        help="Run with coverage report"
+        "--coverage", action="store_true", help="Run with coverage report"
     )
-    parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Verbose output"
-    )
-    parser.add_argument(
-        "--quiet", "-q",
-        action="store_true",
-        help="Quiet output"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+    parser.add_argument("--quiet", "-q", action="store_true", help="Quiet output")
 
     # Specific test options
     parser.add_argument(
-        "--specific",
-        type=str,
-        help="Run specific test file or test function"
+        "--specific", type=str, help="Run specific test file or test function"
     )
-    parser.add_argument(
-        "--pattern", "-k",
-        type=str,
-        help="Run tests matching pattern"
-    )
+    parser.add_argument("--pattern", "-k", type=str, help="Run tests matching pattern")
 
     # Other options
     parser.add_argument(
         "--install-deps",
         action="store_true",
-        help="Install test dependencies before running"
+        help="Install test dependencies before running",
     )
     parser.add_argument(
-        "--html-report",
-        action="store_true",
-        help="Generate HTML coverage report"
+        "--html-report", action="store_true", help="Generate HTML coverage report"
     )
     parser.add_argument(
-        "--parallel", "-n",
-        type=int,
-        help="Run tests in parallel (number of workers)"
+        "--parallel", "-n", type=int, help="Run tests in parallel (number of workers)"
     )
 
     args = parser.parse_args()
@@ -118,12 +86,16 @@ Examples:
     # Change to project root directory
     project_root = Path(__file__).parent
     import os
+
     os.chdir(project_root)
 
     # Install dependencies if requested
     if args.install_deps:
         print("Installing test dependencies...")
-        if not run_command([sys.executable, "-m", "pip", "install", "-e", ".[dev]"], "Installing dependencies"):
+        if not run_command(
+            [sys.executable, "-m", "pip", "install", "-e", ".[dev]"],
+            "Installing dependencies",
+        ):
             print("Failed to install dependencies")
             return 1
 
@@ -178,11 +150,13 @@ Examples:
         cmd.extend(["-k", args.pattern])
 
     # Add additional pytest options
-    cmd.extend([
-        "--tb=short",  # Shorter traceback format
-        "--strict-markers",  # Strict marker checking
-        "--strict-config",  # Strict config checking
-    ])
+    cmd.extend(
+        [
+            "--tb=short",  # Shorter traceback format
+            "--strict-markers",  # Strict marker checking
+            "--strict-config",  # Strict config checking
+        ]
+    )
 
     # Run the tests
     print(f"\nRunning MCP-FreeCAD Test Suite")
@@ -195,7 +169,9 @@ Examples:
 
         # Show coverage report location if generated
         if args.coverage and args.html_report:
-            print(f"\n📊 HTML coverage report generated: {project_root}/htmlcov/index.html")
+            print(
+                f"\n📊 HTML coverage report generated: {project_root}/htmlcov/index.html"
+            )
 
         return 0
     else:

@@ -24,26 +24,24 @@ Examples:
   python run_house_macro.py                    # Run in console mode (recommended)
   python run_house_macro.py --gui              # Run with GUI mode
   python run_house_macro.py --console          # Run in console mode only
-        """
+        """,
     )
 
     parser.add_argument(
         "--gui",
         action="store_true",
-        help="Start FreeCAD with GUI (default: console mode)"
+        help="Start FreeCAD with GUI (default: console mode)",
     )
 
     parser.add_argument(
-        "--console",
-        action="store_true",
-        help="Force console mode only"
+        "--console", action="store_true", help="Force console mode only"
     )
 
     parser.add_argument(
         "--delay",
         type=float,
         default=2.0,
-        help="Step delay in seconds (edit the script file to change this)"
+        help="Step delay in seconds (edit the script file to change this)",
     )
 
     args = parser.parse_args()
@@ -100,7 +98,9 @@ Examples:
     print()
 
     if args.delay != 2.0:
-        print(f"⚠️  Note: To change delay to {args.delay}s, edit STEP_DELAY in {script_file}")
+        print(
+            f"⚠️  Note: To change delay to {args.delay}s, edit STEP_DELAY in {script_file}"
+        )
         print()
 
     try:
@@ -145,6 +145,7 @@ Examples:
     except Exception as e:
         print(f"❌ Failed to start FreeCAD: {e}")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

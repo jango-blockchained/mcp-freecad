@@ -31,8 +31,7 @@ class MockMCPServer:
 
         tool = self.tools[tool_name]
         return await tool.execute_tool(
-            arguments.get("tool_id"),
-            arguments.get("params", {})
+            arguments.get("tool_id"), arguments.get("params", {})
         )
 
     def list_tools(self) -> List[str]:
@@ -49,8 +48,9 @@ class TestServerIntegration:
         return MockMCPServer()
 
     @pytest.fixture
-    def setup_server_tools(self, mock_server, primitive_tool_provider,
-                          model_manipulation_provider):
+    def setup_server_tools(
+        self, mock_server, primitive_tool_provider, model_manipulation_provider
+    ):
         """Setup server with tool providers."""
         mock_server.register_tool("primitives", primitive_tool_provider)
         mock_server.register_tool("model_manipulation", model_manipulation_provider)
@@ -76,9 +76,9 @@ class TestServerIntegration:
                     "length": 10.0,
                     "width": 8.0,
                     "height": 3.0,
-                    "name": "test_box"
-                }
-            }
+                    "name": "test_box",
+                },
+            },
         )
 
         assert result.status == "success"
@@ -99,9 +99,9 @@ class TestServerIntegration:
                     "length": 10.0,
                     "width": 8.0,
                     "height": 3.0,
-                    "name": "foundation"
-                }
-            }
+                    "name": "foundation",
+                },
+            },
         )
         assert box_result.status == "success"
 
@@ -110,12 +110,8 @@ class TestServerIntegration:
             "primitives",
             {
                 "tool_id": "create_cylinder",
-                "params": {
-                    "radius": 2.0,
-                    "height": 5.0,
-                    "name": "column"
-                }
-            }
+                "params": {"radius": 2.0, "height": 5.0, "name": "column"},
+            },
         )
         assert cylinder_result.status == "success"
 
@@ -124,11 +120,8 @@ class TestServerIntegration:
             "model_manipulation",
             {
                 "tool_id": "transform",
-                "params": {
-                    "object": "column",
-                    "translation": [5.0, 4.0, 3.0]
-                }
-            }
+                "params": {"object": "column", "translation": [5.0, 4.0, 3.0]},
+            },
         )
         assert move_result.status == "success"
 
@@ -141,9 +134,9 @@ class TestServerIntegration:
                     "operation": "union",
                     "object1": "foundation",
                     "object2": "column",
-                    "result_name": "foundation_with_column"
-                }
-            }
+                    "result_name": "foundation_with_column",
+                },
+            },
         )
         assert union_result.status == "success"
 
@@ -164,9 +157,9 @@ class TestServerIntegration:
                 "params": {
                     "length": -10.0,  # Invalid negative length
                     "width": 8.0,
-                    "height": 3.0
-                }
-            }
+                    "height": 3.0,
+                },
+            },
         )
         assert result.status == "error"
         assert "positive" in result.error.lower()
@@ -174,8 +167,7 @@ class TestServerIntegration:
 
 # Shared fixtures for integration tests
 @pytest.fixture
-def workflow_server(mock_freecad, primitive_tool_provider,
-                   model_manipulation_provider):
+def workflow_server(mock_freecad, primitive_tool_provider, model_manipulation_provider):
     """Setup server for workflow testing."""
     server = MockMCPServer()
     server.freecad = mock_freecad
@@ -201,9 +193,9 @@ class TestWorkflowIntegration:
                     "length": 20.0,
                     "width": 15.0,
                     "height": 1.0,
-                    "name": "foundation"
-                }
-            }
+                    "name": "foundation",
+                },
+            },
         )
         assert foundation.status == "success"
 
@@ -212,16 +204,12 @@ class TestWorkflowIntegration:
             {"length": 20.0, "width": 0.3, "height": 3.0, "name": "wall_front"},
             {"length": 20.0, "width": 0.3, "height": 3.0, "name": "wall_back"},
             {"length": 15.0, "width": 0.3, "height": 3.0, "name": "wall_left"},
-            {"length": 15.0, "width": 0.3, "height": 3.0, "name": "wall_right"}
+            {"length": 15.0, "width": 0.3, "height": 3.0, "name": "wall_right"},
         ]
 
         for spec in wall_specs:
             result = await server.call_tool(
-                "primitives",
-                {
-                    "tool_id": "create_box",
-                    "params": spec
-                }
+                "primitives", {"tool_id": "create_box", "params": spec}
             )
             assert result.status == "success"
 
@@ -233,20 +221,17 @@ class TestWorkflowIntegration:
                     "tool_id": "transform",
                     "params": {
                         "object": "wall_front",
-                        "translation": [0.0, -7.35, 1.5]
-                    }
-                }
+                        "translation": [0.0, -7.35, 1.5],
+                    },
+                },
             ),
             server.call_tool(
                 "model_manipulation",
                 {
                     "tool_id": "transform",
-                    "params": {
-                        "object": "wall_back",
-                        "translation": [0.0, 7.35, 1.5]
-                    }
-                }
-            )
+                    "params": {"object": "wall_back", "translation": [0.0, 7.35, 1.5]},
+                },
+            ),
         ]
 
         positioning_results = await asyncio.gather(*positioning_tasks)
@@ -267,9 +252,9 @@ class TestWorkflowIntegration:
                     "length": 10.0,
                     "width": 10.0,
                     "height": 5.0,
-                    "name": "base_block"
-                }
-            }
+                    "name": "base_block",
+                },
+            },
         )
         assert base.status == "success"
 
@@ -282,12 +267,8 @@ class TestWorkflowIntegration:
                 "primitives",
                 {
                     "tool_id": "create_cylinder",
-                    "params": {
-                        "radius": 1.0,
-                        "height": 6.0,
-                        "name": f"hole_{i}"
-                    }
-                }
+                    "params": {"radius": 1.0, "height": 6.0, "name": f"hole_{i}"},
+                },
             )
             assert hole_result.status == "success"
 
@@ -296,11 +277,8 @@ class TestWorkflowIntegration:
                 "model_manipulation",
                 {
                     "tool_id": "transform",
-                    "params": {
-                        "object": f"hole_{i}",
-                        "translation": [x, y, z]
-                    }
-                }
+                    "params": {"object": f"hole_{i}", "translation": [x, y, z]},
+                },
             )
             assert position_result.status == "success"
 
@@ -316,9 +294,9 @@ class TestWorkflowIntegration:
                         "operation": "difference",
                         "object1": current_base,
                         "object2": f"hole_{i}",
-                        "result_name": result_name
-                    }
-                }
+                        "result_name": result_name,
+                    },
+                },
             )
             assert cut_result.status == "success"
 
@@ -336,9 +314,9 @@ class TestWorkflowIntegration:
                     "length": -5.0,  # Invalid
                     "width": 10.0,
                     "height": 5.0,
-                    "name": "invalid_box"
-                }
-            }
+                    "name": "invalid_box",
+                },
+            },
         )
         assert invalid_result.status == "error"
 
@@ -351,9 +329,9 @@ class TestWorkflowIntegration:
                     "length": 5.0,  # Valid
                     "width": 10.0,
                     "height": 5.0,
-                    "name": "valid_box"
-                }
-            }
+                    "name": "valid_box",
+                },
+            },
         )
         assert valid_result.status == "success"
 
@@ -362,11 +340,8 @@ class TestWorkflowIntegration:
             "model_manipulation",
             {
                 "tool_id": "transform",
-                "params": {
-                    "object": "valid_box",
-                    "translation": [5.0, 0.0, 0.0]
-                }
-            }
+                "params": {"object": "valid_box", "translation": [5.0, 0.0, 0.0]},
+            },
         )
         assert move_result.status == "success"
 
@@ -394,9 +369,9 @@ class TestPerformanceIntegration:
                         "length": 1.0,
                         "width": 1.0,
                         "height": 1.0,
-                        "name": f"bulk_box_{i}"
-                    }
-                }
+                        "name": f"bulk_box_{i}",
+                    },
+                },
             )
             tasks.append(task)
 
@@ -430,9 +405,9 @@ class TestPerformanceIntegration:
                             "length": 1.0,
                             "width": 1.0,
                             "height": 1.0,
-                            "name": f"mem_test_{iteration}_{i}"
-                        }
-                    }
+                            "name": f"mem_test_{iteration}_{i}",
+                        },
+                    },
                 )
 
         # If we get here without memory issues, the test passes
@@ -457,9 +432,9 @@ class TestRealWorldScenarios:
                     "length": 12.0,
                     "width": 8.0,
                     "height": 0.5,
-                    "name": "house_foundation"
-                }
-            }
+                    "name": "house_foundation",
+                },
+            },
         )
         assert foundation.status == "success"
 
@@ -472,9 +447,9 @@ class TestRealWorldScenarios:
                     "length": 12.0,
                     "width": 8.0,
                     "height": 3.0,
-                    "name": "main_structure"
-                }
-            }
+                    "name": "main_structure",
+                },
+            },
         )
         assert main_box.status == "success"
 
@@ -483,19 +458,16 @@ class TestRealWorldScenarios:
             "model_manipulation",
             {
                 "tool_id": "transform",
-                "params": {
-                    "object": "main_structure",
-                    "translation": [0.0, 0.0, 1.75]
-                }
-            }
+                "params": {"object": "main_structure", "translation": [0.0, 0.0, 1.75]},
+            },
         )
         assert position_result.status == "success"
 
         # Add windows
         window_positions = [
-            (5.0, -4.0, 1.5),   # Front window
+            (5.0, -4.0, 1.5),  # Front window
             (-5.0, -4.0, 1.5),  # Front window 2
-            (0.0, 4.0, 1.5)     # Back window
+            (0.0, 4.0, 1.5),  # Back window
         ]
 
         for i, (x, y, z) in enumerate(window_positions):
@@ -507,9 +479,9 @@ class TestRealWorldScenarios:
                         "length": 2.0,
                         "width": 0.5,
                         "height": 1.5,
-                        "name": f"window_{i}"
-                    }
-                }
+                        "name": f"window_{i}",
+                    },
+                },
             )
             assert window.status == "success"
 
@@ -517,11 +489,8 @@ class TestRealWorldScenarios:
                 "model_manipulation",
                 {
                     "tool_id": "transform",
-                    "params": {
-                        "object": f"window_{i}",
-                        "translation": [x, y, z]
-                    }
-                }
+                    "params": {"object": f"window_{i}", "translation": [x, y, z]},
+                },
             )
             assert position_window.status == "success"
 
@@ -539,12 +508,8 @@ class TestRealWorldScenarios:
             "primitives",
             {
                 "tool_id": "create_cylinder",
-                "params": {
-                    "radius": 5.0,
-                    "height": 2.0,
-                    "name": "main_body"
-                }
-            }
+                "params": {"radius": 5.0, "height": 2.0, "name": "main_body"},
+            },
         )
         assert main_body.status == "success"
 
@@ -553,12 +518,8 @@ class TestRealWorldScenarios:
             "primitives",
             {
                 "tool_id": "create_cylinder",
-                "params": {
-                    "radius": 1.0,
-                    "height": 2.5,
-                    "name": "central_hole"
-                }
-            }
+                "params": {"radius": 1.0, "height": 2.5, "name": "central_hole"},
+            },
         )
         assert central_hole.status == "success"
 
@@ -571,15 +532,19 @@ class TestRealWorldScenarios:
                     "operation": "difference",
                     "object1": "main_body",
                     "object2": "central_hole",
-                    "result_name": "part_with_central_hole"
-                }
-            }
+                    "result_name": "part_with_central_hole",
+                },
+            },
         )
         assert central_cut.status == "success"
 
         # Create mounting holes
-        hole_positions = [(3.0, 0.0, 0.0), (-3.0, 0.0, 0.0),
-                         (0.0, 3.0, 0.0), (0.0, -3.0, 0.0)]
+        hole_positions = [
+            (3.0, 0.0, 0.0),
+            (-3.0, 0.0, 0.0),
+            (0.0, 3.0, 0.0),
+            (0.0, -3.0, 0.0),
+        ]
 
         current_part = "part_with_central_hole"
 
@@ -592,9 +557,9 @@ class TestRealWorldScenarios:
                     "params": {
                         "radius": 0.5,
                         "height": 2.5,
-                        "name": f"mounting_hole_{i}"
-                    }
-                }
+                        "name": f"mounting_hole_{i}",
+                    },
+                },
             )
             assert hole.status == "success"
 
@@ -605,9 +570,9 @@ class TestRealWorldScenarios:
                     "tool_id": "transform",
                     "params": {
                         "object": f"mounting_hole_{i}",
-                        "translation": [x, y, z]
-                    }
-                }
+                        "translation": [x, y, z],
+                    },
+                },
             )
             assert position_hole.status == "success"
 
@@ -621,9 +586,9 @@ class TestRealWorldScenarios:
                         "operation": "difference",
                         "object1": current_part,
                         "object2": f"mounting_hole_{i}",
-                        "result_name": result_name
-                    }
-                }
+                        "result_name": result_name,
+                    },
+                },
             )
             assert cut_result.status == "success"
             current_part = result_name

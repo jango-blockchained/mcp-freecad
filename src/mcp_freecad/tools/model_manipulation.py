@@ -170,7 +170,9 @@ class ModelManipulationToolProvider(ToolProvider):
             # Validate rotation format if provided
             if rotation is not None:
                 if not isinstance(rotation, list) or len(rotation) not in [3, 4]:
-                    raise ValueError("Invalid rotation format. Expected [x, y, z] or [x, y, z, angle]")
+                    raise ValueError(
+                        "Invalid rotation format. Expected [x, y, z] or [x, y, z, angle]"
+                    )
 
             # Get the active document
             doc = self.app.ActiveDocument

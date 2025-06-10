@@ -21,8 +21,8 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler("tests/test_output.log", mode="w")
-    ]
+        logging.FileHandler("tests/test_output.log", mode="w"),
+    ],
 )
 
 # Import fixtures from fixtures.py to make them available globally
@@ -34,12 +34,8 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
     )
-    config.addinivalue_line(
-        "markers", "integration: marks tests as integration tests"
-    )
-    config.addinivalue_line(
-        "markers", "performance: marks tests as performance tests"
-    )
+    config.addinivalue_line("markers", "integration: marks tests as integration tests")
+    config.addinivalue_line("markers", "performance: marks tests as performance tests")
     config.addinivalue_line(
         "markers", "house_scenario: marks tests related to house modeling scenario"
     )
@@ -141,11 +137,10 @@ def mock_freecad_import():
     mock_freecad = MockFreeCAD()
     mock_part = MockPart()
 
-    with patch.dict(sys.modules, {
-        'FreeCAD': mock_freecad,
-        'Part': mock_part,
-        'FreeCADGui': mock_freecad.Gui
-    }):
+    with patch.dict(
+        sys.modules,
+        {"FreeCAD": mock_freecad, "Part": mock_part, "FreeCADGui": mock_freecad.Gui},
+    ):
         yield mock_freecad, mock_part
 
 
@@ -153,28 +148,23 @@ def mock_freecad_import():
 def temp_config_file(tmp_path):
     """Create a temporary configuration file for testing."""
     config_content = {
-        "server": {
-            "name": "test-mcp-freecad-server",
-            "version": "1.0.0-test"
-        },
+        "server": {"name": "test-mcp-freecad-server", "version": "1.0.0-test"},
         "freecad": {
             "auto_connect": False,
             "connection_method": "mock",
             "host": "localhost",
-            "port": 12345
+            "port": 12345,
         },
         "tools": {
             "enable_primitives": True,
             "enable_model_manipulation": True,
-            "enable_export_import": False
+            "enable_export_import": False,
         },
-        "logging": {
-            "level": "DEBUG",
-            "file": "test.log"
-        }
+        "logging": {"level": "DEBUG", "file": "test.log"},
     }
 
     import json
+
     config_file = tmp_path / "test_config.json"
     config_file.write_text(json.dumps(config_content, indent=2))
 
@@ -251,7 +241,9 @@ def pytest_sessionstart(session):
 def pytest_sessionfinish(session, exitstatus):
     """Called after whole test run finished."""
     logging.getLogger("test_runner").info("=" * 80)
-    logging.getLogger("test_runner").info(f"MCP-FreeCAD Test Suite Finished (exit status: {exitstatus})")
+    logging.getLogger("test_runner").info(
+        f"MCP-FreeCAD Test Suite Finished (exit status: {exitstatus})"
+    )
     logging.getLogger("test_runner").info("=" * 80)
 
 

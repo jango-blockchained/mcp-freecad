@@ -13,8 +13,12 @@ from pathlib import Path
 
 def main():
     parser = argparse.ArgumentParser(description="Start MCP-FreeCAD Server")
-    parser.add_argument("--mode", choices=["server", "app", "docker", "freecad"],
-                       default="server", help="Start mode")
+    parser.add_argument(
+        "--mode",
+        choices=["server", "app", "docker", "freecad"],
+        default="server",
+        help="Start mode",
+    )
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
     parser.add_argument("--config", help="Configuration file path")
     parser.add_argument("--port", type=int, default=8000, help="Server port")
@@ -58,6 +62,7 @@ def main():
     except KeyboardInterrupt:
         print("\n🛑 Shutting down MCP server...")
         sys.exit(0)
+
 
 if __name__ == "__main__":
     main()

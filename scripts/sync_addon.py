@@ -39,7 +39,9 @@ def create_symlink():
                     print("✅ Symlink already exists and points to correct location")
                     return True
                 else:
-                    print(f"🔄 Updating symlink from {current_target} to {dev_addon_dir}")
+                    print(
+                        f"🔄 Updating symlink from {current_target} to {dev_addon_dir}"
+                    )
                     install_addon_dir.unlink()
             else:
                 # Backup existing directory
@@ -59,7 +61,9 @@ def create_symlink():
             # Test Python syntax
             test_file = install_addon_dir / "freecad_ai_workbench.py"
             if test_file.exists():
-                result = os.system(f"cd {install_addon_dir} && python -m py_compile freecad_ai_workbench.py")
+                result = os.system(
+                    f"cd {install_addon_dir} && python -m py_compile freecad_ai_workbench.py"
+                )
                 if result == 0:
                     print("✅ Python syntax validation passed")
                     return True
@@ -76,6 +80,7 @@ def create_symlink():
     except Exception as e:
         print(f"❌ Error during symlink creation: {e}")
         return False
+
 
 def main():
     """Main function."""
@@ -94,6 +99,7 @@ def main():
     else:
         print("\n💥 Symlink setup failed!")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

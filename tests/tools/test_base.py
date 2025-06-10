@@ -24,36 +24,29 @@ class MockToolProvider(ToolProvider):
                 "type": "object",
                 "properties": {
                     "tool_id": {"type": "string"},
-                    "params": {"type": "object"}
+                    "params": {"type": "object"},
                 },
-                "required": ["tool_id"]
+                "required": ["tool_id"],
             },
             returns={
                 "type": "object",
                 "properties": {
                     "status": {"type": "string"},
-                    "result": {"type": "object"}
-                }
+                    "result": {"type": "object"},
+                },
             },
-            examples=[{"tool_id": "test", "params": {}}]
+            examples=[{"tool_id": "test", "params": {}}],
         )
 
     async def execute_tool(self, tool_id: str, params: dict) -> ToolResult:
         if tool_id == "success_tool":
             return self.format_result(
-                status="success",
-                result={"message": "Tool executed successfully"}
+                status="success", result={"message": "Tool executed successfully"}
             )
         elif tool_id == "error_tool":
-            return self.format_result(
-                status="error",
-                error="Tool execution failed"
-            )
+            return self.format_result(status="error", error="Tool execution failed")
         else:
-            return self.format_result(
-                status="error",
-                error=f"Unknown tool: {tool_id}"
-            )
+            return self.format_result(status="error", error=f"Unknown tool: {tool_id}")
 
 
 class TestToolParams:
@@ -84,10 +77,7 @@ class TestToolResult:
 
     def test_tool_result_success(self):
         """Test creating a successful ToolResult."""
-        result = ToolResult(
-            status="success",
-            result={"data": "test_data"}
-        )
+        result = ToolResult(status="success", result={"data": "test_data"})
 
         assert result.status == "success"
         assert result.result == {"data": "test_data"}
@@ -95,10 +85,7 @@ class TestToolResult:
 
     def test_tool_result_error(self):
         """Test creating an error ToolResult."""
-        result = ToolResult(
-            status="error",
-            error="Something went wrong"
-        )
+        result = ToolResult(status="error", error="Something went wrong")
 
         assert result.status == "error"
         assert result.error == "Something went wrong"
@@ -120,7 +107,7 @@ class TestToolSchema:
             description="A test tool",
             parameters={"type": "object"},
             returns={"type": "object"},
-            examples=[{"example": "data"}]
+            examples=[{"example": "data"}],
         )
 
         assert schema.name == "test_tool"
@@ -135,7 +122,7 @@ class TestToolSchema:
             name="test_tool",
             description="A test tool",
             parameters={"type": "object"},
-            returns={"type": "object"}
+            returns={"type": "object"},
         )
 
         assert schema.examples is None
@@ -215,10 +202,7 @@ class TestToolProvider:
         """Test formatting a successful result."""
         provider = MockToolProvider()
 
-        result = provider.format_result(
-            status="success",
-            result={"data": "test"}
-        )
+        result = provider.format_result(status="success", result={"data": "test"})
 
         assert isinstance(result, ToolResult)
         assert result.status == "success"
@@ -229,10 +213,7 @@ class TestToolProvider:
         """Test formatting an error result."""
         provider = MockToolProvider()
 
-        result = provider.format_result(
-            status="error",
-            error="Test error"
-        )
+        result = provider.format_result(status="error", error="Test error")
 
         assert result.status == "error"
         assert result.error == "Test error"
@@ -243,9 +224,7 @@ class TestToolProvider:
         provider = MockToolProvider()
 
         result = provider.format_result(
-            status="warning",
-            result={"data": "partial"},
-            error="Warning message"
+            status="warning", result={"data": "partial"}, error="Warning message"
         )
 
         assert result.status == "warning"
@@ -289,13 +268,10 @@ class TestToolProviderEdgeCases:
         provider = MockToolProvider()
 
         complex_params = {
-            "nested": {
-                "array": [1, 2, 3],
-                "object": {"key": "value"}
-            },
+            "nested": {"array": [1, 2, 3], "object": {"key": "value"}},
             "string": "test",
             "number": 42,
-            "boolean": True
+            "boolean": True,
         }
 
         result = await provider.execute_tool("success_tool", complex_params)

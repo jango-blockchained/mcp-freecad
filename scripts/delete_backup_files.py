@@ -12,7 +12,9 @@ from pathlib import Path
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Delete all .bak files from the project")
+    parser = argparse.ArgumentParser(
+        description="Delete all .bak files from the project"
+    )
     parser.add_argument(
         "--dry-run",
         action="store_true",

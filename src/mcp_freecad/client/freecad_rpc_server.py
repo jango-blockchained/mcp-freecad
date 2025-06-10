@@ -74,7 +74,10 @@ def process_gui_tasks():
             import traceback
 
             import FreeCAD
-            FreeCAD.Console.PrintError(f"Error executing GUI task: {e}\n{traceback.format_exc()}\n")
+
+            FreeCAD.Console.PrintError(
+                f"Error executing GUI task: {e}\n{traceback.format_exc()}\n"
+            )
 
     # Nothing else: function returns, QTimer will trigger again automatically
 

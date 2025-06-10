@@ -45,7 +45,10 @@ def check_config():
     missing_fields = [field for field in required_fields if field not in freecad_config]
 
     if missing_fields:
-        log(f"Missing required configuration fields: {', '.join(missing_fields)}", "ERROR")
+        log(
+            f"Missing required configuration fields: {', '.join(missing_fields)}",
+            "ERROR",
+        )
         return False
 
     # Check if path exists
@@ -96,7 +99,9 @@ def check_freecad_installation():
 
         # Try running AppRun with --version
         try:
-            result = subprocess.run([apprun_path, "--version"], capture_output=True, text=True, timeout=10)
+            result = subprocess.run(
+                [apprun_path, "--version"], capture_output=True, text=True, timeout=10
+            )
             if result.returncode != 0:
                 log(f"AppRun failed to run: {result.stderr}", "ERROR")
                 return False
@@ -120,7 +125,7 @@ def check_script_files():
         "freecad_connection.py",
         "freecad_connection_launcher.py",
         "freecad_launcher_script.py",
-        "freecad_connection_bridge.py"
+        "freecad_connection_bridge.py",
     ]
 
     missing_files = []
@@ -142,7 +147,10 @@ def check_backup_files():
 
     backup_files = list(Path(".").glob("**/*.bak"))
     if backup_files:
-        log(f"Found {len(backup_files)} backup files that might cause issues:", "WARNING")
+        log(
+            f"Found {len(backup_files)} backup files that might cause issues:",
+            "WARNING",
+        )
         for file in backup_files[:10]:  # Show first 10 only if there are many
             log(f"  - {file}", "WARNING")
 
@@ -151,7 +159,7 @@ def check_backup_files():
 
         print("\nWould you like to delete these backup files? (y/n): ", end="")
         choice = input().strip().lower()
-        if choice == 'y':
+        if choice == "y":
             for file in backup_files:
                 try:
                     os.remove(file)
@@ -187,22 +195,9 @@ def check_launcher_script():
 
     # Set up the command
     if use_apprun and os.path.exists(apprun_path):
-        cmd = [
-            apprun_path,
-            script_path,
-            "--",
-            "get_version",
-            "{}"
-        ]
+        cmd = [apprun_path, script_path, "--", "get_version", "{}"]
     elif os.path.exists(freecad_path):
-        cmd = [
-            freecad_path,
-            "--console",
-            script_path,
-            "--",
-            "get_version",
-            "{}"
-        ]
+        cmd = [freecad_path, "--console", script_path, "--", "get_version", "{}"]
     else:
         log("No valid FreeCAD path found for testing", "ERROR")
         return False
@@ -219,8 +214,8 @@ def check_launcher_script():
         log(f"STDOUT: {result.stdout}")
 
         # Try to extract JSON from output
-        for line in reversed(result.stdout.strip().split('\n')):
-            if line.strip().startswith('{') and line.strip().endswith('}'):
+        for line in reversed(result.stdout.strip().split("\n")):
+            if line.strip().startswith("{") and line.strip().endswith("}"):
                 try:
                     version_info = json.loads(line)
                     log(f"Successfully retrieved version: {version_info}")
@@ -245,7 +240,7 @@ def fix_permissions():
     script_files = [
         "freecad_connection_launcher.py",
         "freecad_launcher_script.py",
-        "scripts/troubleshoot_freecad.py"
+        "scripts/troubleshoot_freecad.py",
     ]
 
     for file in script_files:
@@ -281,19 +276,22 @@ def main():
         log("Skipping launcher test due to previous failures", "WARNING")
 
     # Print summary
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     log("Troubleshooting Summary:")
     log(f"Configuration: {'✅ OK' if config_ok else '❌ FAILED'}")
     log(f"FreeCAD Installation: {'✅ OK' if freecad_ok else '❌ FAILED'}")
     log(f"Script Files: {'✅ OK' if scripts_ok else '❌ FAILED'}")
     log(f"Backup Files: {'✅ CHECKED' if backup_ok else '❌ FAILED'}")
     log(f"Launcher Test: {'✅ OK' if launcher_ok else '❌ FAILED'}")
-    print("="*60)
+    print("=" * 60)
 
     if all([config_ok, freecad_ok, scripts_ok, launcher_ok]):
         log("All checks passed. The system should be functioning correctly.")
     else:
-        log("Some checks failed. Please review the errors above and fix them.", "WARNING")
+        log(
+            "Some checks failed. Please review the errors above and fix them.",
+            "WARNING",
+        )
 
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ print("=" * 60)
 try:
     import FreeCAD
     import Part
+
     print("✅ FreeCAD modules imported successfully!")
 except ImportError as e:
     print(f"❌ Failed to import FreeCAD modules: {e}")
@@ -26,23 +27,32 @@ except ImportError as e:
 # Configuration
 STEP_DELAY = 2.0  # Seconds between each step
 HOUSE_SPEC = {
-    "foundation": {
-        "length": 10.0,
-        "width": 8.0,
-        "height": 0.3
-    },
-    "walls": {
-        "height": 3.0,
-        "thickness": 0.3
-    },
+    "foundation": {"length": 10.0, "width": 8.0, "height": 0.3},
+    "walls": {"height": 3.0, "thickness": 0.3},
     "windows": [
-        {"id": "front_window_1", "width": 1.2, "height": 1.5, "position": {"x": 2.0, "y": 0.0, "z": 1.0}},
-        {"id": "front_window_2", "width": 1.2, "height": 1.5, "position": {"x": 6.0, "y": 0.0, "z": 1.0}}
+        {
+            "id": "front_window_1",
+            "width": 1.2,
+            "height": 1.5,
+            "position": {"x": 2.0, "y": 0.0, "z": 1.0},
+        },
+        {
+            "id": "front_window_2",
+            "width": 1.2,
+            "height": 1.5,
+            "position": {"x": 6.0, "y": 0.0, "z": 1.0},
+        },
     ],
     "doors": [
-        {"id": "front_door", "width": 0.9, "height": 2.1, "position": {"x": 4.5, "y": 0.0, "z": 0.0}}
-    ]
+        {
+            "id": "front_door",
+            "width": 0.9,
+            "height": 2.1,
+            "position": {"x": 4.5, "y": 0.0, "z": 0.0},
+        }
+    ],
 }
+
 
 def log_step(message):
     """Log a step with emoji and formatting."""
@@ -50,9 +60,11 @@ def log_step(message):
     print(f"{message}")
     print(f"{'='*50}")
 
+
 def wait_step():
     """Wait between steps for visualization."""
     time.sleep(STEP_DELAY)
+
 
 def setup_document():
     """Set up the FreeCAD document and view."""
@@ -67,6 +79,7 @@ def setup_document():
 
     return doc
 
+
 def create_foundation(doc, foundation_spec):
     """Create the house foundation."""
     log_step("🏗️  Creating Foundation")
@@ -80,17 +93,20 @@ def create_foundation(doc, foundation_spec):
     doc.recompute()
 
     print(f"✅ Foundation created: {foundation.Name}")
-    print(f"   Dimensions: {foundation.Length} × {foundation.Width} × {foundation.Height} mm")
+    print(
+        f"   Dimensions: {foundation.Length} × {foundation.Width} × {foundation.Height} mm"
+    )
     wait_step()
 
     return foundation
+
 
 def create_wall(doc, wall_name, wall_params, translation):
     """Create and position a single wall."""
     log_step(f"🧱 Creating {wall_name.title()}")
 
     # Create wall box
-    wall = doc.addObject("Part::Box", wall_name.replace(' ', '_').title())
+    wall = doc.addObject("Part::Box", wall_name.replace(" ", "_").title())
     wall.Length = wall_params["length"]
     wall.Width = wall_params["width"]
     wall.Height = wall_params["height"]
@@ -108,6 +124,7 @@ def create_wall(doc, wall_name, wall_params, translation):
 
     return wall
 
+
 def create_walls(doc, foundation_spec, wall_spec):
     """Create all house walls."""
     log_step("🧱 Creating All Walls")
@@ -120,45 +137,67 @@ def create_walls(doc, foundation_spec, wall_spec):
     wall_configs = [
         {
             "name": "front wall",
-            "params": {"length": foundation_spec["length"], "width": wall_thickness, "height": wall_height},
-            "translation": [0, -wall_thickness/2, foundation_spec["height"]]
+            "params": {
+                "length": foundation_spec["length"],
+                "width": wall_thickness,
+                "height": wall_height,
+            },
+            "translation": [0, -wall_thickness / 2, foundation_spec["height"]],
         },
         {
             "name": "back wall",
-            "params": {"length": foundation_spec["length"], "width": wall_thickness, "height": wall_height},
-            "translation": [0, foundation_spec["width"] + wall_thickness/2, foundation_spec["height"]]
+            "params": {
+                "length": foundation_spec["length"],
+                "width": wall_thickness,
+                "height": wall_height,
+            },
+            "translation": [
+                0,
+                foundation_spec["width"] + wall_thickness / 2,
+                foundation_spec["height"],
+            ],
         },
         {
             "name": "left wall",
-            "params": {"length": wall_thickness, "width": foundation_spec["width"], "height": wall_height},
-            "translation": [-wall_thickness/2, 0, foundation_spec["height"]]
+            "params": {
+                "length": wall_thickness,
+                "width": foundation_spec["width"],
+                "height": wall_height,
+            },
+            "translation": [-wall_thickness / 2, 0, foundation_spec["height"]],
         },
         {
             "name": "right wall",
-            "params": {"length": wall_thickness, "width": foundation_spec["width"], "height": wall_height},
-            "translation": [foundation_spec["length"] + wall_thickness/2, 0, foundation_spec["height"]]
-        }
+            "params": {
+                "length": wall_thickness,
+                "width": foundation_spec["width"],
+                "height": wall_height,
+            },
+            "translation": [
+                foundation_spec["length"] + wall_thickness / 2,
+                0,
+                foundation_spec["height"],
+            ],
+        },
     ]
 
     # Create each wall
     for wall_config in wall_configs:
         wall = create_wall(
-            doc,
-            wall_config["name"],
-            wall_config["params"],
-            wall_config["translation"]
+            doc, wall_config["name"], wall_config["params"], wall_config["translation"]
         )
         walls.append(wall)
 
     print(f"✅ All walls completed: {[w.Name for w in walls]}")
     return walls
 
+
 def create_opening(doc, opening_name, opening_params, position):
     """Create a window or door opening."""
     log_step(f"🪟 Creating {opening_name.title()}")
 
     # Create opening box
-    opening = doc.addObject("Part::Box", opening_name.replace(' ', '_').title())
+    opening = doc.addObject("Part::Box", opening_name.replace(" ", "_").title())
     opening.Length = opening_params["length"]
     opening.Width = opening_params["width"]
     opening.Height = opening_params["height"]
@@ -176,6 +215,7 @@ def create_opening(doc, opening_name, opening_params, position):
 
     return opening
 
+
 def create_openings(doc, windows, doors, wall_thickness):
     """Create all window and door openings."""
     log_step("🪟 Creating Windows and Doors")
@@ -190,9 +230,9 @@ def create_openings(doc, windows, doors, wall_thickness):
             {
                 "length": window["width"],
                 "width": wall_thickness + 0.1,
-                "height": window["height"]
+                "height": window["height"],
             },
-            [window["position"]["x"], window["position"]["y"], window["position"]["z"]]
+            [window["position"]["x"], window["position"]["y"], window["position"]["z"]],
         )
         openings.append(opening)
 
@@ -204,14 +244,15 @@ def create_openings(doc, windows, doors, wall_thickness):
             {
                 "length": door["width"],
                 "width": wall_thickness + 0.1,
-                "height": door["height"]
+                "height": door["height"],
             },
-            [door["position"]["x"], door["position"]["y"], door["position"]["z"]]
+            [door["position"]["x"], door["position"]["y"], door["position"]["z"]],
         )
         openings.append(opening)
 
     print(f"✅ All openings completed: {[o.Name for o in openings]}")
     return openings
+
 
 def save_document(doc):
     """Save the document to disk."""
@@ -259,6 +300,7 @@ def save_document(doc):
         except Exception as e2:
             print(f"❌ Alternative save also failed: {e2}")
 
+
 def finalize_model(doc):
     """Add final touches to the model."""
     log_step("🎨 Finalizing Model")
@@ -268,6 +310,7 @@ def finalize_model(doc):
 
     print(f"✅ Model finalized with {object_count} objects!")
     wait_step()
+
 
 def main():
     """Main house modeling function."""
@@ -312,7 +355,9 @@ def main():
     except Exception as e:
         log_step(f"❌ Error: {str(e)}")
         import traceback
+
         traceback.print_exc()
+
 
 # Run the main function
 if __name__ == "__main__":

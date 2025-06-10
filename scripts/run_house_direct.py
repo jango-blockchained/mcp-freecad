@@ -23,7 +23,7 @@ def create_combined_script():
         print(f"❌ House modeling script not found: {script_path}")
         return None
 
-    with open(script_path, 'r') as f:
+    with open(script_path, "r") as f:
         house_script_content = f.read()
 
     # Create combined script that will execute and then exit
@@ -73,13 +73,16 @@ finally:
 
     return combined_script
 
+
 def main():
     """Main execution function."""
     print("🏠 Live House Modeling - Direct Python Runner")
     print("=" * 50)
 
     # Check FreeCAD AppImage
-    freecad_path = Path(__file__).parent / "FreeCAD_1.0.0-conda-Linux-x86_64-py311.AppImage"
+    freecad_path = (
+        Path(__file__).parent / "FreeCAD_1.0.0-conda-Linux-x86_64-py311.AppImage"
+    )
 
     if not freecad_path.exists():
         print(f"❌ FreeCAD AppImage not found: {freecad_path}")
@@ -92,7 +95,7 @@ def main():
         return 1
 
     # Write to temporary file
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as temp_file:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as temp_file:
         temp_file.write(combined_script)
         temp_script_path = temp_file.name
 
@@ -111,23 +114,18 @@ def main():
 
         # Set Qt platform
         env = os.environ.copy()
-        env['QT_QPA_PLATFORM'] = 'xcb'
+        env["QT_QPA_PLATFORM"] = "xcb"
 
         # Prepare command
-        cmd = [str(freecad_path), '--console']
+        cmd = [str(freecad_path), "--console"]
 
         print(f"🔧 Running: {' '.join(cmd)}")
         print("📺 Watch for step-by-step progress below:")
         print()
 
         # Run FreeCAD with the script as input
-        with open(temp_script_path, 'r') as script_file:
-            result = subprocess.run(
-                cmd,
-                stdin=script_file,
-                env=env,
-                text=True
-            )
+        with open(temp_script_path, "r") as script_file:
+            result = subprocess.run(cmd, stdin=script_file, env=env, text=True)
 
         print()
         if result.returncode == 0:
@@ -152,6 +150,7 @@ def main():
             os.unlink(temp_script_path)
         except:
             pass
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -19,7 +19,9 @@ import sys
 from pathlib import Path
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger("freecad-mcp-launcher")
 
 
@@ -29,32 +31,39 @@ def find_freecad_executable():
 
     if sys.platform == "win32":
         # Windows paths
-        possible_paths.extend([
-            r"C:\Program Files\FreeCAD 0.21\bin\FreeCAD.exe",
-            r"C:\Program Files\FreeCAD 0.22\bin\FreeCAD.exe",
-            r"C:\Program Files\FreeCAD\bin\FreeCAD.exe",
-            r"C:\Program Files (x86)\FreeCAD 0.21\bin\FreeCAD.exe",
-            r"C:\Program Files (x86)\FreeCAD 0.22\bin\FreeCAD.exe",
-            r"C:\Program Files (x86)\FreeCAD\bin\FreeCAD.exe"
-        ])
+        possible_paths.extend(
+            [
+                r"C:\Program Files\FreeCAD 0.21\bin\FreeCAD.exe",
+                r"C:\Program Files\FreeCAD 0.22\bin\FreeCAD.exe",
+                r"C:\Program Files\FreeCAD\bin\FreeCAD.exe",
+                r"C:\Program Files (x86)\FreeCAD 0.21\bin\FreeCAD.exe",
+                r"C:\Program Files (x86)\FreeCAD 0.22\bin\FreeCAD.exe",
+                r"C:\Program Files (x86)\FreeCAD\bin\FreeCAD.exe",
+            ]
+        )
     elif sys.platform == "darwin":
         # macOS paths
-        possible_paths.extend([
-            "/Applications/FreeCAD.app/Contents/MacOS/FreeCAD",
-            "/Applications/FreeCAD 0.21.app/Contents/MacOS/FreeCAD",
-            "/Applications/FreeCAD 0.22.app/Contents/MacOS/FreeCAD"
-        ])
+        possible_paths.extend(
+            [
+                "/Applications/FreeCAD.app/Contents/MacOS/FreeCAD",
+                "/Applications/FreeCAD 0.21.app/Contents/MacOS/FreeCAD",
+                "/Applications/FreeCAD 0.22.app/Contents/MacOS/FreeCAD",
+            ]
+        )
     else:
         # Linux paths
-        possible_paths.extend([
-            "/usr/bin/freecad",
-            "/usr/local/bin/freecad",
-            "/opt/freecad/bin/FreeCAD",
-            "/snap/freecad/current/usr/bin/freecad"
-        ])
+        possible_paths.extend(
+            [
+                "/usr/bin/freecad",
+                "/usr/local/bin/freecad",
+                "/opt/freecad/bin/FreeCAD",
+                "/snap/freecad/current/usr/bin/freecad",
+            ]
+        )
 
     # Check PATH
     import shutil
+
     freecad_in_path = shutil.which("freecad") or shutil.which("FreeCAD")
     if freecad_in_path:
         possible_paths.insert(0, freecad_in_path)
@@ -87,29 +96,35 @@ def setup_freecad_environment(freecad_path=None):
     lib_paths = []
 
     if sys.platform == "win32":
-        lib_paths.extend([
-            freecad_dir,
-            os.path.join(freecad_dir, "lib"),
-            os.path.join(freecad_dir, "Mod")
-        ])
+        lib_paths.extend(
+            [
+                freecad_dir,
+                os.path.join(freecad_dir, "lib"),
+                os.path.join(freecad_dir, "Mod"),
+            ]
+        )
     elif sys.platform == "darwin":
         # macOS app bundle structure
         contents_dir = os.path.dirname(freecad_dir)
-        lib_paths.extend([
-            os.path.join(contents_dir, "lib"),
-            os.path.join(contents_dir, "Mod"),
-            freecad_dir
-        ])
+        lib_paths.extend(
+            [
+                os.path.join(contents_dir, "lib"),
+                os.path.join(contents_dir, "Mod"),
+                freecad_dir,
+            ]
+        )
     else:
         # Linux
-        lib_paths.extend([
-            "/usr/lib/freecad/lib",
-            "/usr/lib/freecad/Mod",
-            "/usr/local/lib/freecad/lib",
-            "/usr/local/lib/freecad/Mod",
-            os.path.join(freecad_dir, "..", "lib"),
-            os.path.join(freecad_dir, "..", "Mod")
-        ])
+        lib_paths.extend(
+            [
+                "/usr/lib/freecad/lib",
+                "/usr/lib/freecad/Mod",
+                "/usr/local/lib/freecad/lib",
+                "/usr/local/lib/freecad/Mod",
+                os.path.join(freecad_dir, "..", "lib"),
+                os.path.join(freecad_dir, "..", "Mod"),
+            ]
+        )
 
     # Add existing paths to Python path
     for lib_path in lib_paths:

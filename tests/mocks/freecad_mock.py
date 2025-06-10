@@ -18,15 +18,15 @@ class MockVector:
         self.y = y
         self.z = z
 
-    def add(self, other: 'MockVector') -> 'MockVector':
+    def add(self, other: "MockVector") -> "MockVector":
         """Add two vectors."""
         return MockVector(self.x + other.x, self.y + other.y, self.z + other.z)
 
-    def sub(self, other: 'MockVector') -> 'MockVector':
+    def sub(self, other: "MockVector") -> "MockVector":
         """Subtract two vectors."""
         return MockVector(self.x - other.x, self.y - other.y, self.z - other.z)
 
-    def normalize(self) -> 'MockVector':
+    def normalize(self) -> "MockVector":
         """Return normalized vector."""
         length = math.sqrt(self.x**2 + self.y**2 + self.z**2)
         if length > 0:
@@ -48,7 +48,7 @@ class MockRotation:
         self.axis = axis or MockVector(0, 0, 1)
         self.angle = angle
 
-    def multiply(self, other: 'MockRotation') -> 'MockRotation':
+    def multiply(self, other: "MockRotation") -> "MockRotation":
         """Multiply rotations."""
         # Simplified rotation multiplication
         return MockRotation(self.axis, self.angle + other.angle)
@@ -95,40 +95,40 @@ class MockShape:
     def __init__(self, shape_type: str = "Solid"):
         self.ShapeType = shape_type
         self.Volume = 1000.0  # Default volume
-        self.Area = 600.0     # Default surface area
+        self.Area = 600.0  # Default surface area
         self.Edges = [MockEdge() for _ in range(12)]  # Default edges for a box
-        self.Faces = [MockFace() for _ in range(6)]   # Default faces for a box
+        self.Faces = [MockFace() for _ in range(6)]  # Default faces for a box
         self.Vertexes = [MockVertex() for _ in range(8)]  # Default vertices for a box
 
-    def fuse(self, other: 'MockShape') -> 'MockShape':
+    def fuse(self, other: "MockShape") -> "MockShape":
         """Boolean union operation."""
         result = MockShape("Solid")
         result.Volume = self.Volume + other.Volume
         result.Area = self.Area + other.Area * 0.8  # Approximate fusion
         return result
 
-    def cut(self, other: 'MockShape') -> 'MockShape':
+    def cut(self, other: "MockShape") -> "MockShape":
         """Boolean difference operation."""
         result = MockShape("Solid")
         result.Volume = max(0, self.Volume - other.Volume)
         result.Area = self.Area + other.Area * 0.5  # Approximate cutting
         return result
 
-    def common(self, other: 'MockShape') -> 'MockShape':
+    def common(self, other: "MockShape") -> "MockShape":
         """Boolean intersection operation."""
         result = MockShape("Solid")
         result.Volume = min(self.Volume, other.Volume) * 0.5  # Approximate intersection
         result.Area = min(self.Area, other.Area) * 0.7
         return result
 
-    def makeFillet(self, radius: float, edges: List['MockEdge']) -> 'MockShape':
+    def makeFillet(self, radius: float, edges: List["MockEdge"]) -> "MockShape":
         """Create fillet on edges."""
         result = MockShape("Solid")
         result.Volume = self.Volume * 0.95  # Slightly reduced volume
-        result.Area = self.Area * 1.05      # Slightly increased area
+        result.Area = self.Area * 1.05  # Slightly increased area
         return result
 
-    def transformed(self, matrix: MockMatrix) -> 'MockShape':
+    def transformed(self, matrix: MockMatrix) -> "MockShape":
         """Apply transformation matrix."""
         result = MockShape(self.ShapeType)
         result.Volume = self.Volume
@@ -185,7 +185,7 @@ class MockObject:
 
     def __setattr__(self, name, value):
         """Override setattr to track property changes."""
-        if hasattr(self, '_properties'):
+        if hasattr(self, "_properties"):
             self._properties[name] = value
         super().__setattr__(name, value)
 
@@ -284,7 +284,7 @@ class MockPart:
     def makeSphere(radius: float) -> MockShape:
         """Create a sphere shape."""
         shape = MockShape("Solid")
-        shape.Volume = (4/3) * math.pi * radius**3
+        shape.Volume = (4 / 3) * math.pi * radius**3
         shape.Area = 4 * math.pi * radius**2
         return shape
 
@@ -318,7 +318,7 @@ class MockFreeCAD:
     def openDocument(self, filename: str) -> MockDocument:
         """Open a document from file."""
         # Mock implementation - just create a new document
-        name = filename.split('/')[-1].split('.')[0]
+        name = filename.split("/")[-1].split(".")[0]
         return self.newDocument(name)
 
     def closeDocument(self, name: str) -> None:
@@ -341,6 +341,7 @@ class MockFreeCAD:
 # Create global mock instances that can be imported
 mock_freecad = MockFreeCAD()
 mock_part = MockPart()
+
 
 # Function to get a clean mock instance for testing
 def get_mock_freecad() -> MockFreeCAD:

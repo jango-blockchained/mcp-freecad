@@ -41,7 +41,7 @@ class LiveHouseTestRunner:
         # Configure logging
         logging.basicConfig(
             level=logging.INFO,
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
         self.logger = logging.getLogger(__name__)
 
@@ -52,28 +52,24 @@ class LiveHouseTestRunner:
                 "length": 10.0,
                 "width": 8.0,
                 "height": 0.3,
-                "material": "concrete"
+                "material": "concrete",
             },
-            "walls": {
-                "height": 3.0,
-                "thickness": 0.3,
-                "material": "brick"
-            },
+            "walls": {"height": 3.0, "thickness": 0.3, "material": "brick"},
             "windows": [
                 {
                     "id": "front_window_1",
                     "width": 1.2,
                     "height": 1.5,
                     "position": {"x": 2.0, "y": 0.0, "z": 1.0},
-                    "wall": "front"
+                    "wall": "front",
                 },
                 {
                     "id": "front_window_2",
                     "width": 1.2,
                     "height": 1.5,
                     "position": {"x": 6.0, "y": 0.0, "z": 1.0},
-                    "wall": "front"
-                }
+                    "wall": "front",
+                },
             ],
             "doors": [
                 {
@@ -81,9 +77,9 @@ class LiveHouseTestRunner:
                     "width": 0.9,
                     "height": 2.1,
                     "position": {"x": 4.5, "y": 0.0, "z": 0.0},
-                    "wall": "front"
+                    "wall": "front",
                 }
-            ]
+            ],
         }
 
     async def start_freecad(self) -> bool:
@@ -97,7 +93,10 @@ class LiveHouseTestRunner:
             self.logger.info("Starting FreeCAD with GUI...")
 
             # Use the AppImage in the project root
-            freecad_path = Path(__file__).parent / "FreeCAD_1.0.0-conda-Linux-x86_64-py311.AppImage"
+            freecad_path = (
+                Path(__file__).parent
+                / "FreeCAD_1.0.0-conda-Linux-x86_64-py311.AppImage"
+            )
 
             if not freecad_path.exists():
                 self.logger.error(f"FreeCAD AppImage not found at: {freecad_path}")
@@ -105,9 +104,7 @@ class LiveHouseTestRunner:
 
             # Start FreeCAD in the background
             self.freecad_process = subprocess.Popen(
-                [str(freecad_path)],
-                                                                                                                                stdout=subprocess.PIPE,
-                                                                                                                                stderr=subprocess.PIPE
+                [str(freecad_path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
 
             # Give FreeCAD time to start
@@ -171,8 +168,8 @@ class LiveHouseTestRunner:
             {
                 "length": foundation_spec["length"],
                 "width": foundation_spec["width"],
-                "height": foundation_spec["height"]
-            }
+                "height": foundation_spec["height"],
+            },
         )
 
         if result.status != "success":
@@ -184,7 +181,9 @@ class LiveHouseTestRunner:
         await asyncio.sleep(self.step_delay)
         return foundation_id
 
-    async def create_walls(self, foundation_spec: Dict[str, Any], wall_spec: Dict[str, Any]) -> List[str]:
+    async def create_walls(
+        self, foundation_spec: Dict[str, Any], wall_spec: Dict[str, Any]
+    ) -> List[str]:
         """
         Create the house walls.
 
@@ -209,8 +208,8 @@ class LiveHouseTestRunner:
             {
                 "length": foundation_spec["length"],
                 "width": wall_thickness,
-                "height": wall_height
-            }
+                "height": wall_height,
+            },
         )
         if front_wall_result.status != "success":
             raise Exception(f"Failed to create front wall: {front_wall_result.error}")
@@ -223,8 +222,8 @@ class LiveHouseTestRunner:
             "transform",
             {
                 "object": front_wall_id,
-                "translation": [0, -wall_thickness/2, foundation_spec["height"]]
-            }
+                "translation": [0, -wall_thickness / 2, foundation_spec["height"]],
+            },
         )
 
         await asyncio.sleep(self.step_delay)
@@ -236,8 +235,8 @@ class LiveHouseTestRunner:
             {
                 "length": foundation_spec["length"],
                 "width": wall_thickness,
-                "height": wall_height
-            }
+                "height": wall_height,
+            },
         )
         back_wall_id = back_wall_result.result["object_id"]
         wall_ids.append(back_wall_id)
@@ -247,8 +246,12 @@ class LiveHouseTestRunner:
             "transform",
             {
                 "object": back_wall_id,
-                "translation": [0, foundation_spec["width"] + wall_thickness/2, foundation_spec["height"]]
-            }
+                "translation": [
+                    0,
+                    foundation_spec["width"] + wall_thickness / 2,
+                    foundation_spec["height"],
+                ],
+            },
         )
 
         await asyncio.sleep(self.step_delay)
@@ -260,8 +263,8 @@ class LiveHouseTestRunner:
             {
                 "length": wall_thickness,
                 "width": foundation_spec["width"],
-                "height": wall_height
-            }
+                "height": wall_height,
+            },
         )
         left_wall_id = left_wall_result.result["object_id"]
         wall_ids.append(left_wall_id)
@@ -271,8 +274,8 @@ class LiveHouseTestRunner:
             "transform",
             {
                 "object": left_wall_id,
-                "translation": [-wall_thickness/2, 0, foundation_spec["height"]]
-            }
+                "translation": [-wall_thickness / 2, 0, foundation_spec["height"]],
+            },
         )
 
         await asyncio.sleep(self.step_delay)
@@ -284,8 +287,8 @@ class LiveHouseTestRunner:
             {
                 "length": wall_thickness,
                 "width": foundation_spec["width"],
-                "height": wall_height
-            }
+                "height": wall_height,
+            },
         )
         right_wall_id = right_wall_result.result["object_id"]
         wall_ids.append(right_wall_id)
@@ -295,8 +298,12 @@ class LiveHouseTestRunner:
             "transform",
             {
                 "object": right_wall_id,
-                "translation": [foundation_spec["length"] + wall_thickness/2, 0, foundation_spec["height"]]
-            }
+                "translation": [
+                    foundation_spec["length"] + wall_thickness / 2,
+                    0,
+                    foundation_spec["height"],
+                ],
+            },
         )
 
         await asyncio.sleep(self.step_delay)
@@ -304,7 +311,9 @@ class LiveHouseTestRunner:
         self.logger.info(f"✅ All walls created: {wall_ids}")
         return wall_ids
 
-    async def create_openings(self, windows: List[Dict], doors: List[Dict], wall_thickness: float) -> List[str]:
+    async def create_openings(
+        self, windows: List[Dict], doors: List[Dict], wall_thickness: float
+    ) -> List[str]:
         """
         Create window and door openings.
 
@@ -329,8 +338,8 @@ class LiveHouseTestRunner:
                 {
                     "length": window["width"],
                     "width": wall_thickness + 0.1,  # Slightly thicker than wall
-                    "height": window["height"]
-                }
+                    "height": window["height"],
+                },
             )
 
             if window_result.status == "success":
@@ -343,8 +352,8 @@ class LiveHouseTestRunner:
                     "transform",
                     {
                         "object": window_id,
-                        "translation": [pos["x"], pos["y"], pos["z"]]
-                    }
+                        "translation": [pos["x"], pos["y"], pos["z"]],
+                    },
                 )
 
                 await asyncio.sleep(self.step_delay)
@@ -358,8 +367,8 @@ class LiveHouseTestRunner:
                 {
                     "length": door["width"],
                     "width": wall_thickness + 0.1,
-                    "height": door["height"]
-                }
+                    "height": door["height"],
+                },
             )
 
             if door_result.status == "success":
@@ -370,10 +379,7 @@ class LiveHouseTestRunner:
                 pos = door["position"]
                 await self.manipulation_tool.execute_tool(
                     "transform",
-                    {
-                        "object": door_id,
-                        "translation": [pos["x"], pos["y"], pos["z"]]
-                    }
+                    {"object": door_id, "translation": [pos["x"], pos["y"], pos["z"]]},
                 )
 
                 await asyncio.sleep(self.step_delay)
@@ -409,15 +415,14 @@ class LiveHouseTestRunner:
 
             # Create walls
             wall_ids = await self.create_walls(
-                house_spec["foundation"],
-                house_spec["walls"]
+                house_spec["foundation"], house_spec["walls"]
             )
 
             # Create openings
             opening_ids = await self.create_openings(
                 house_spec["windows"],
                 house_spec["doors"],
-                house_spec["walls"]["thickness"]
+                house_spec["walls"]["thickness"],
             )
 
             self.logger.info("🎉 House modeling completed successfully!")
@@ -463,14 +468,14 @@ Examples:
   python run_live_house_test.py                    # Run with default 2s delay
   python run_live_house_test.py --delay 1.0        # Run with 1s delay between steps
   python run_live_house_test.py --delay 5.0        # Run with 5s delay for slower viewing
-        """
+        """,
     )
 
     parser.add_argument(
         "--delay",
         type=float,
         default=2.0,
-        help="Delay in seconds between modeling steps (default: 2.0)"
+        help="Delay in seconds between modeling steps (default: 2.0)",
     )
 
     args = parser.parse_args()
