@@ -8,19 +8,19 @@ in action while you watch the 3D house being built.
 """
 
 import asyncio
-import sys
-import time
+import json
 import logging
 import subprocess
-import json
+import sys
+import time
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from src.mcp_freecad.server.freecad_mcp_server import FreecadMcpServer
 from src.mcp_freecad.client.freecad_connection_manager import FreecadConnectionManager
+from src.mcp_freecad.server.freecad_mcp_server import FreecadMcpServer
 
 
 class MCPLiveHouseTestRunner:

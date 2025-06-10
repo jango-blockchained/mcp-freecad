@@ -8,19 +8,21 @@ FreeCAD modules directly.
 """
 
 import asyncio
-import sys
-import time
+import json
 import logging
 import subprocess
-import json
+import sys
+import time
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 try:
-    from src.mcp_freecad.client.freecad_connection_manager import FreecadConnectionManager
+    from src.mcp_freecad.client.freecad_connection_manager import (
+        FreecadConnectionManager,
+    )
 except ImportError as e:
     print(f"Could not import FreecadConnectionManager: {e}")
     print("Make sure you're in the right directory and dependencies are installed.")

@@ -6,11 +6,12 @@ This creates a single script that FreeCAD can execute directly,
 combining the execution logic with the house modeling code.
 """
 
+import os
 import subprocess
 import sys
-import os
 import tempfile
 from pathlib import Path
+
 
 def create_combined_script():
     """Create a combined script that includes both execution and house modeling logic."""

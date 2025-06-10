@@ -6,9 +6,9 @@ This script loads FreeCAD in a separate Python process to avoid initialization i
 It communicates with the main process via pipes.
 """
 
+import json
 import os
 import sys
-import json
 import traceback
 
 # REMOVED: Hardcoded path assumption - rely on environment (e.g., AppRun setup)

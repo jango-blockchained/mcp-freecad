@@ -3,6 +3,7 @@ Tests for utility functions.
 """
 
 import pytest
+
 from src.mcp_freecad.server.components.utils import (
     sanitize_name,
     sanitize_path,

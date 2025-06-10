@@ -6,10 +6,11 @@ This script runs the MCP server using FreeCAD's AppRun to ensure
 it has access to all FreeCAD modules.
 """
 
-import os
-import sys
-import subprocess
 import argparse
+import os
+import subprocess
+import sys
+
 
 def main():
     # Get the directory where this script is located

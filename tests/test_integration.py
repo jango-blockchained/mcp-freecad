@@ -4,10 +4,11 @@ Integration tests for MCP FreeCAD system.
 These tests verify that all components work together correctly.
 """
 
-import pytest
 import asyncio
-from unittest.mock import patch, MagicMock
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from tests.mocks.freecad_mock import MockFreeCAD
 

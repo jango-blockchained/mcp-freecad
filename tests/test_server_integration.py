@@ -5,10 +5,11 @@ Integration tests for MCP server components.
 import asyncio
 import json
 import tempfile
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from src.mcp_freecad.server.components import load_config, setup_logging, ToolContext
+import pytest
+
+from src.mcp_freecad.server.components import ToolContext, load_config, setup_logging
 
 
 class TestServerIntegration:

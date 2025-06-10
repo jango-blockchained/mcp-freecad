@@ -5,14 +5,14 @@ Modular components for configuration, logging, connection management,
 progress tracking, and utilities.
 """
 
-from .config import load_config, get_config, get_server_name, get_server_version
-from .logging_setup import setup_logging, LogRecordSocketReceiver
+from .config import get_config, get_server_name, get_server_version, load_config
 from .connection_manager import (
-    initialize_connection,
     connection_check_loop,
     get_connection,
+    initialize_connection,
     is_connected,
 )
+from .logging_setup import LogRecordSocketReceiver, setup_logging
 from .progress_tracker import ToolContext
 from .utils import sanitize_name, sanitize_path, validate_numeric_input
 

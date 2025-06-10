@@ -6,17 +6,25 @@ using the MCP-FreeCAD addon with mocked user inputs. This test represents a real
 use case and validates the entire tool chain.
 """
 
-import pytest
 import asyncio
-import time
 import logging
-from typing import Dict, List, Any
+import time
+from typing import Any, Dict, List
+
+import pytest
 
 from tests.fixtures import (
-    mock_freecad, mock_part, mock_freecad_modules,
-    primitive_tool_provider, model_manipulation_tool_provider,
-    test_document, house_specification, expected_house_results,
-    mock_user_inputs, performance_benchmarks, test_utilities
+    expected_house_results,
+    house_specification,
+    mock_freecad,
+    mock_freecad_modules,
+    mock_part,
+    mock_user_inputs,
+    model_manipulation_tool_provider,
+    performance_benchmarks,
+    primitive_tool_provider,
+    test_document,
+    test_utilities,
 )
 
 logger = logging.getLogger(__name__)

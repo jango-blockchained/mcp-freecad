@@ -19,13 +19,13 @@ Options:
 
 import argparse
 import json
+import logging
 import os
 import signal
 import socket
 import sys
 import traceback
-import logging
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(description="FreeCAD socket server")

@@ -6,6 +6,7 @@ Simple syntax check for provider selector integration
 import ast
 import os
 
+
 def check_syntax(file_path):
     """Check if a Python file has valid syntax."""
     try:

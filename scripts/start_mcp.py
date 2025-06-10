@@ -5,10 +5,11 @@ Run this from Cursor IDE to start the MCP server with various options.
 """
 
 import argparse
+import os
 import subprocess
 import sys
-import os
 from pathlib import Path
+
 
 def main():
     parser = argparse.ArgumentParser(description="Start MCP-FreeCAD Server")

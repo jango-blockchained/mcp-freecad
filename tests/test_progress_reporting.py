@@ -6,13 +6,14 @@ This script tests the progress reporting implementation in the MCP-FreeCAD serve
 by executing operations that should report progress.
 """
 
+import asyncio
+import json
+import logging
 import os
 import sys
-import asyncio
-import logging
-import json
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import pytest
-from typing import Dict, Any, List, Optional, Callable, Tuple
 
 # Set up logging
 logging.basicConfig(

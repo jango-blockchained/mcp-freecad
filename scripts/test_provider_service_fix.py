@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Test script to verify provider service import fix"""
 
-import sys
 import os
+import sys
 
 # Add the freecad-ai directory to path
 freecad_ai_path = os.path.join(os.path.dirname(__file__), 'freecad-ai')

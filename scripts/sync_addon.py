@@ -11,6 +11,7 @@ import shutil
 import sys
 from pathlib import Path
 
+
 def create_symlink():
     """Create symlink from installation to development directory."""
 

@@ -25,12 +25,12 @@ Usage:
 """
 
 import json
+import logging
 import os
 import socket
 import sys
 import xmlrpc.client
 from typing import Any, Dict, List, Optional
-import logging
 
 # Set up logger for this module
 logger = logging.getLogger(__name__)

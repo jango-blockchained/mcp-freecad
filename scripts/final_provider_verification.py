@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Final verification script for provider fixes"""
 
-import sys
 import os
 import re
+import sys
+
 
 def verify_loading_flag_complete():
     """Verify the loading flag is completely implemented."""

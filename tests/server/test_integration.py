@@ -5,10 +5,11 @@ These tests verify that all components work together correctly
 and simulate real-world usage scenarios.
 """
 
-import pytest
 import asyncio
-from unittest.mock import patch, MagicMock, AsyncMock
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 # Test imports (these will need to be adjusted based on actual structure)
 from tests.mocks.freecad_mock import MockFreeCAD

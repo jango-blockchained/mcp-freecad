@@ -4,13 +4,18 @@ Unit tests for PrimitiveToolProvider.
 This module tests the primitive shape creation functionality in isolation.
 """
 
-import pytest
 import asyncio
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from tests.fixtures import (
-    mock_freecad, primitive_tool_provider, test_document,
-    box_parameters, cylinder_parameters, test_utilities
+    box_parameters,
+    cylinder_parameters,
+    mock_freecad,
+    primitive_tool_provider,
+    test_document,
+    test_utilities,
 )
 
 

@@ -5,9 +5,9 @@ delete_backup_files.py
 A simple utility script to recursively delete all .bak files from the project.
 """
 
+import argparse
 import os
 import sys
-import argparse
 from pathlib import Path
 
 

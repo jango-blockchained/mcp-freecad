@@ -6,7 +6,7 @@ to enable comprehensive testing of the MCP-FreeCAD addon.
 """
 
 import math
-from typing import Dict, List, Optional, Any, Union
+from typing import Any, Dict, List, Optional, Union
 from unittest.mock import MagicMock
 
 

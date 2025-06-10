@@ -8,12 +8,13 @@ This client can work with the socket-based server, CLI bridge, or mock implement
 
 import argparse
 import json
+import os
 import socket
 import sys
-import os
-import requests
 import textwrap
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
+import requests
 
 # Import the FreeCADConnection class
 try:

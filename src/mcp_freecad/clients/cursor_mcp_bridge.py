@@ -6,11 +6,11 @@ This script launches the FreeCAD MCP server in stdio mode for Cursor integration
 All debugging/info messages are redirected to stderr, keeping stdout clean for JSON-only communication.
 """
 
-import os
-import sys
-import subprocess
-import logging
 import atexit
+import logging
+import os
+import subprocess
+import sys
 
 # Configure logging to stderr only (keep stdout clean for JSON)
 logging.basicConfig(

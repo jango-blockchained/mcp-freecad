@@ -3,8 +3,8 @@
 Test FreeCAD AI API compatibility within the addon context
 """
 
-import sys
 import os
+import sys
 
 # Add freecad-ai to path
 sys.path.insert(0, '/home/jango/Git/mcp-freecad/freecad-ai')

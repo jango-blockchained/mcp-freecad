@@ -3,8 +3,8 @@
 Test script to verify the ConfigManager attribute fix
 """
 
-import sys
 import os
+import sys
 
 # Add the freecad-ai directory to path
 freecad_ai_path = os.path.join(os.path.dirname(__file__), 'freecad-ai')
@@ -16,7 +16,7 @@ def test_config_manager_attributes():
     
     try:
         from config.config_manager import ConfigManager
-        
+
         # Create instance
         config_manager = ConfigManager()
         
@@ -52,7 +52,7 @@ def test_provider_integration_service():
     
     try:
         from ai.provider_integration_service import ProviderIntegrationService
-        
+
         # Try to create instance
         service = ProviderIntegrationService()
         print("✅ SUCCESS: ProviderIntegrationService imported and instantiated")

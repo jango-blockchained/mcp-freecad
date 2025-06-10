@@ -4,13 +4,18 @@ Unit tests for ModelManipulationToolProvider.
 This module tests the model manipulation and transformation functionality.
 """
 
-import pytest
 import asyncio
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from tests.fixtures import (
-    mock_freecad, model_manipulation_tool_provider, primitive_tool_provider,
-    test_document, boolean_operations, test_utilities
+    boolean_operations,
+    mock_freecad,
+    model_manipulation_tool_provider,
+    primitive_tool_provider,
+    test_document,
+    test_utilities,
 )
 
 
@@ -446,7 +451,9 @@ class TestModelManipulationToolProvider:
     @pytest.mark.asyncio
     async def test_no_freecad_connection(self):
         """Test behavior when FreeCAD is not available."""
-        from src.mcp_freecad.tools.model_manipulation import ModelManipulationToolProvider
+        from src.mcp_freecad.tools.model_manipulation import (
+            ModelManipulationToolProvider,
+        )
 
         # Create provider without FreeCAD
         provider = ModelManipulationToolProvider(freecad_app=None)

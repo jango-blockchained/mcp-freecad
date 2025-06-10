@@ -6,9 +6,10 @@ This script is meant to be run from within FreeCAD's Python console
 or as a macro to start the server in connect mode.
 """
 import os
+import subprocess
 import sys
 import threading
-import subprocess
+
 import FreeCAD
 import FreeCADGui
 

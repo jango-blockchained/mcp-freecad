@@ -6,13 +6,14 @@ This script tests different connection methods for connecting to FreeCAD.
 It attempts to connect using each method and reports success or failure.
 """
 
-import os
-import sys
-import logging
 import argparse
 import json
+import logging
+import os
+import sys
+from typing import Any, Dict, List, Optional
+
 import pytest
-from typing import Dict, Any, List, Optional
 
 # Set up logging
 logging.basicConfig(

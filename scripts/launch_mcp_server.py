@@ -11,11 +11,11 @@ Usage:
 Author: jango-blockchained
 """
 
-import sys
-import os
 import argparse
-import subprocess
 import logging
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 # Configure logging
@@ -168,8 +168,9 @@ def main():
             os.chdir(addon_path)
 
         try:
-            from mcp_server import main as mcp_main
             import asyncio
+
+            from mcp_server import main as mcp_main
 
             logger.info("Starting MCP server...")
             asyncio.run(mcp_main())

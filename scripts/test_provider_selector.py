@@ -3,8 +3,8 @@
 Test script to verify provider selector integration
 """
 
-import sys
 import os
+import sys
 
 # Add the addon directory to Python path
 addon_dir = "/home/jango/Git/mcp-freecad/freecad-ai"

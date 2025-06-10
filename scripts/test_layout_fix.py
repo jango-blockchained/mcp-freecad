@@ -3,10 +3,11 @@
 Test script to verify FreeCAD AI workbench layout fixes
 """
 
-import sys
 import os
 import subprocess
+import sys
 import time
+
 
 def test_freecad_ai_layout():
     """Test that FreeCAD AI workbench loads without layout errors"""

@@ -6,10 +6,10 @@ This script serves as the primary entry point for running the MCP server,
 providing a simplified interface for starting the application.
 """
 
-import asyncio
 import argparse
-import sys
+import asyncio
 import os
+import sys
 from pathlib import Path
 
 # Add src to Python path

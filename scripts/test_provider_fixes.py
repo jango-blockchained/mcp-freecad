@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Test script to verify provider-related fixes"""
 
-import sys
 import os
+import sys
 
 # Add the freecad-ai directory to path
 freecad_ai_path = os.path.join(os.path.dirname(__file__), 'freecad-ai')
@@ -14,7 +14,7 @@ def test_providers_widget_loading_flag():
         print("Testing ProvidersWidget loading flag...")
         
         from gui.providers_widget import ProvidersWidget
-        
+
         # Create widget instance
         widget = ProvidersWidget()
         
@@ -44,7 +44,7 @@ def test_provider_selector_refresh_method():
         print("Testing ProviderSelectorWidget refresh method...")
         
         from gui.provider_selector_widget import ProviderSelectorWidget
-        
+
         # Create widget instance
         widget = ProviderSelectorWidget()
         
@@ -72,7 +72,7 @@ def test_main_widget_tab_change_handler():
         
         # This test might require Qt, so we'll just check if the method exists
         from gui.main_widget import MainDockWidget
-        
+
         # Check if the method exists (we can't instantiate without Qt)
         if hasattr(MainDockWidget, '_on_tab_changed'):
             print("✅ SUCCESS: MainDockWidget has _on_tab_changed method")
@@ -91,7 +91,7 @@ def test_config_manager_integration():
         print("Testing config manager integration...")
         
         from gui.provider_selector_widget import ProviderSelectorWidget
-        
+
         # Create widget instance
         widget = ProviderSelectorWidget()
         

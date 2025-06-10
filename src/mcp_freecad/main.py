@@ -12,9 +12,9 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
-from . import __version__, TOOL_PROVIDERS
+from . import TOOL_PROVIDERS, __version__
 from .core.server import MCPServer
 
 logger = logging.getLogger(__name__)

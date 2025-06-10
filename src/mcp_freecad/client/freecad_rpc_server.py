@@ -21,20 +21,21 @@ Usage:
     ```
 """
 
+import base64
 import contextlib
 import io
+import json
 import os
 import queue
-import base64
 import tempfile
 import threading
-import json
 from typing import Any, Dict, List, Optional
 from xmlrpc.server import SimpleXMLRPCServer
 
 try:
     import FreeCAD
     import FreeCADGui
+
     # Defer QtCore import until FreeCAD GUI is fully initialised to avoid crashes
     from PySide2 import QtCore
 
@@ -70,7 +71,9 @@ def process_gui_tasks():
             if res is not None:
                 rpc_response_queue.put(res)
         except Exception as e:
-            import traceback, FreeCAD
+            import traceback
+
+            import FreeCAD
             FreeCAD.Console.PrintError(f"Error executing GUI task: {e}\n{traceback.format_exc()}\n")
 
     # Nothing else: function returns, QTimer will trigger again automatically

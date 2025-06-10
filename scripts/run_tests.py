@@ -6,8 +6,8 @@ This script provides a convenient way to run the MCP-FreeCAD test suite with var
 """
 
 import argparse
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
 

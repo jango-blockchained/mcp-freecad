@@ -7,18 +7,18 @@ allowing you to watch the 3D house being built step by step in real-time.
 """
 
 import asyncio
-import sys
-import time
 import logging
 import subprocess
+import sys
+import time
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from src.mcp_freecad.tools.primitives import PrimitiveToolProvider
 from src.mcp_freecad.tools.model_manipulation import ModelManipulationToolProvider
+from src.mcp_freecad.tools.primitives import PrimitiveToolProvider
 
 
 class LiveHouseTestRunner:

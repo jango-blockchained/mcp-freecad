@@ -4,13 +4,12 @@ Unit tests for Base Tool Provider classes.
 This module tests the base functionality that all tool providers inherit.
 """
 
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from pydantic import ValidationError
 
-from src.mcp_freecad.tools.base import (
-    ToolProvider, ToolResult, ToolSchema, ToolParams
-)
+from src.mcp_freecad.tools.base import ToolParams, ToolProvider, ToolResult, ToolSchema
 
 
 class MockToolProvider(ToolProvider):

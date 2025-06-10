@@ -6,9 +6,9 @@ This script is meant to be run inside FreeCAD's Python interpreter to perform op
 It avoids the module initialization issues.
 """
 
-import sys
-import os
 import json
+import os
+import sys
 
 # FreeCAD modules are already loaded when running inside FreeCAD
 import FreeCAD

@@ -4,8 +4,9 @@ Quick verification test for the urgent fixes applied.
 Tests both API compatibility and general functionality.
 """
 
-import sys
 import os
+import sys
+
 
 def test_api_compatibility_fix():
     """Test that API compatibility returns warnings instead of failures."""

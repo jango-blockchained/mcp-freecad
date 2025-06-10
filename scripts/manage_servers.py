@@ -13,14 +13,15 @@ Usage:
   python manage_servers.py restart [freecad|mcp|all]
 """
 
-import os
-import sys
-import subprocess
 import argparse
 import json
-import socket
-import time
+import os
 import signal
+import socket
+import subprocess
+import sys
+import time
+
 import psutil
 
 # Configuration

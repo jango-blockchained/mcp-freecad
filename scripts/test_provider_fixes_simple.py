@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Simple test script to verify provider-related fixes without GUI dependencies"""
 
-import sys
 import os
 import re
+import sys
+
 
 def test_loading_flag_implementation():
     """Test that the loading flag is properly implemented in ProvidersWidget."""

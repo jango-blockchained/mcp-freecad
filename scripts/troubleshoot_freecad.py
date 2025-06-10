@@ -5,12 +5,12 @@ FreeCAD MCP Troubleshooter
 This script helps diagnose and fix common issues with the FreeCAD MCP integration.
 """
 
-import os
-import sys
 import json
+import os
 import platform
-import subprocess
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 

@@ -4,12 +4,13 @@ Pytest configuration file for MCP-FreeCAD tests.
 This file contains global fixtures, configuration, and test setup for the entire test suite.
 """
 
-import pytest
-import sys
-import os
 import logging
+import os
+import sys
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 
 # Add the src directory to Python path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -183,9 +184,10 @@ def temp_config_file(tmp_path):
 @pytest.fixture
 def performance_monitor():
     """Monitor performance metrics during test execution."""
-    import time
-    import psutil
     import threading
+    import time
+
+    import psutil
 
     class PerformanceMonitor:
         def __init__(self):

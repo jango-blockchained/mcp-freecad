@@ -4,9 +4,10 @@ Final verification test for FreeCAD AI addon fixes.
 Tests UI components, API compatibility, and overall functionality.
 """
 
-import sys
 import os
+import sys
 import traceback
+
 
 def test_api_compatibility():
     """Test API compatibility without FreeCAD."""
@@ -19,7 +20,11 @@ def test_api_compatibility():
             sys.path.insert(0, addon_path)
         
         # Test the API compatibility check
-        from api import check_fastapi_pydantic_compatibility, API_AVAILABLE, available_apis
+        from api import (
+            API_AVAILABLE,
+            available_apis,
+            check_fastapi_pydantic_compatibility,
+        )
         
         print(f"  ✓ API module imported successfully")
         print(f"  ✓ API_AVAILABLE: {API_AVAILABLE}")
@@ -54,8 +59,8 @@ def test_ui_components():
             sys.path.insert(0, addon_path)
         
         # Test GUI imports (without actually creating widgets)
-        from gui.main_widget import MainWidget
         from gui.chat_widget import ChatWidget
+        from gui.main_widget import MainWidget
         from gui.settings_widget import SettingsWidget
         
         print(f"  ✓ MainWidget imported successfully")

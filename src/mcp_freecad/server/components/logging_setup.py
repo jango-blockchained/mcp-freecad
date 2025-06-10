@@ -7,9 +7,9 @@ Provides structured logging with socket receivers and file handlers.
 import logging
 import logging.handlers
 import os
+import pickle
 import socketserver
 import struct
-import pickle
 from typing import Optional
 
 

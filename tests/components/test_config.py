@@ -5,15 +5,16 @@ Tests for configuration management component.
 import json
 import os
 import tempfile
+from unittest.mock import mock_open, patch
+
 import pytest
-from unittest.mock import patch, mock_open
 
 from src.mcp_freecad.server.components.config import (
-    load_config,
+    _merge_configs,
     get_config,
     get_server_name,
     get_server_version,
-    _merge_configs,
+    load_config,
 )
 
 

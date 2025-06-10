@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Test script to verify OpenRouter async models fix"""
 
-import sys
 import os
+import sys
 
 # Add the freecad-ai directory to path
 freecad_ai_path = os.path.join(os.path.dirname(__file__), 'freecad-ai')
@@ -15,7 +15,7 @@ def test_openrouter_models_sync():
         
         # Import the provider
         from ai.providers.openrouter_provider import OpenRouterProvider
-        
+
         # Create provider instance (with dummy API key for testing)
         provider = OpenRouterProvider(api_key="sk-or-test-key")
         

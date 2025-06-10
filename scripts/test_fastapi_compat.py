@@ -6,6 +6,7 @@ Test script to diagnose FastAPI/Pydantic compatibility issue in FreeCAD AI conte
 import sys
 import traceback
 
+
 def test_basic_imports():
     """Test basic FastAPI/Pydantic imports"""
     print(f"Python version: {sys.version}")

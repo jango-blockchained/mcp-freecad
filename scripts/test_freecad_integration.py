@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 import traceback
 
 # Add the addon directory to Python path
@@ -119,8 +119,12 @@ try:
     # Test 10: Test AI providers with sub-dependency fixes
     print("\n10. Testing AI providers with sub-dependency fixes...")
     try:
-        from ai.providers import get_available_providers, check_dependencies, install_missing_dependencies
-        
+        from ai.providers import (
+            check_dependencies,
+            get_available_providers,
+            install_missing_dependencies,
+        )
+
         # Test dependency checking with sub-dependency awareness
         print("   🔍 Checking AI provider dependencies...")
         deps = check_dependencies()

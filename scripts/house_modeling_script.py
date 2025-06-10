@@ -6,9 +6,9 @@ This script creates a 3D house model step by step with visual delays.
 Can be run by FreeCAD using: FreeCAD --console house_modeling_script.py
 """
 
+import os
 import sys
 import time
-import os
 
 # Add some initial output to verify the script is running
 print("🏠 Starting Live House Modeling Script...")

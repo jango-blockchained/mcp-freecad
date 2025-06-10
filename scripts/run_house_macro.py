@@ -6,10 +6,11 @@ This script launches FreeCAD with the house modeling script using the correct co
 This is the most reliable method for running the live house test!
 """
 
+import argparse
 import subprocess
 import sys
-import argparse
 from pathlib import Path
+
 
 def main():
     """Launch FreeCAD with the house modeling script."""

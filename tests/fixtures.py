@@ -4,14 +4,16 @@ Pytest fixtures for MCP-FreeCAD testing.
 This module provides common fixtures and utilities for testing the MCP-FreeCAD addon.
 """
 
-import pytest
 import sys
-from unittest.mock import patch, MagicMock
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from src.mcp_freecad.tools.model_manipulation import ModelManipulationToolProvider
+from src.mcp_freecad.tools.primitives import PrimitiveToolProvider
 
 from .mocks.freecad_mock import MockFreeCAD, MockPart, get_mock_freecad, get_mock_part
-from src.mcp_freecad.tools.primitives import PrimitiveToolProvider
-from src.mcp_freecad.tools.model_manipulation import ModelManipulationToolProvider
 
 
 @pytest.fixture
