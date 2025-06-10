@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import sys
 import time
@@ -7,6 +6,7 @@ from typing import Any, Dict, List, Optional
 
 try:
     from .base import EventProvider
+    from ..utils.safe_async import freecad_safe_emit
 except ImportError:
     # Fallback for when module is loaded by FreeCAD
     import os
@@ -15,6 +15,7 @@ except ImportError:
     if addon_dir not in sys.path:
         sys.path.insert(0, addon_dir)
     from events.base import EventProvider
+    from utils.safe_async import freecad_safe_emit
 
 logger = logging.getLogger(__name__)
 
@@ -63,20 +64,18 @@ class ErrorEventProvider(EventProvider):
             # Connect to error signals if available
             if hasattr(self.app, "signalError"):
                 self.app.signalError.connect(self._on_error)
-                logger.info("Connected to FreeCAD error signal")
-
-            # Try to connect to the Console observer for Python errors
-            if hasattr(self.app, "Gui") and hasattr(self.app.Gui, "getMainWindow"):
-                try:
-                    # Some FreeCAD versions provide a console viewer with error signals
-                    console = self.app.Gui.getMainWindow().findChild(
-                        "QTextEdit", "Report view"
-                    )
-                    if console and hasattr(console, "signalError"):
-                        console.signalError.connect(self._on_error)
-                        logger.info("Connected to FreeCAD console error signal")
-                except:
-                    pass
+                logger.info("Connected to FreeCAD error signal")                # Try to connect to the Console observer for Python errors
+                if hasattr(self.app, "Gui") and hasattr(self.app.Gui, "getMainWindow"):
+                    try:
+                        # Some FreeCAD versions provide a console viewer with error signals
+                        console = self.app.Gui.getMainWindow().findChild(
+                            "QTextEdit", "Report view"
+                        )
+                        if console and hasattr(console, "signalError"):
+                            console.signalError.connect(self._on_error)
+                            logger.info("Connected to FreeCAD console error signal")
+                    except Exception as console_error:
+                        logger.debug(f"Could not connect to console error signal: {console_error}")
         except Exception as e:
             logger.error(f"Error setting up FreeCAD error signal handlers: {e}")
 
@@ -123,8 +122,8 @@ class ErrorEventProvider(EventProvider):
         if len(self.error_history) > 50:
             self.error_history.pop(0)
 
-        # Emit event
-        asyncio.create_task(self.emit_event("error", event_data))
+        # Emit event safely
+        freecad_safe_emit(self.emit_event, "error", event_data, "error_recorded")
 
     def get_error_history(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """

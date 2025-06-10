@@ -1,10 +1,10 @@
-import asyncio
 import logging
 import time
 from typing import Any, Dict, List, Optional
 
 try:
     from .base import EventProvider
+    from ..utils.safe_async import freecad_safe_emit
 except ImportError:
     # Fallback for when module is loaded by FreeCAD
     import os
@@ -14,6 +14,7 @@ except ImportError:
     if addon_dir not in sys.path:
         sys.path.insert(0, addon_dir)
     from events.base import EventProvider
+    from utils.safe_async import freecad_safe_emit
 
 logger = logging.getLogger(__name__)
 
@@ -87,8 +88,8 @@ class CommandExecutionEventProvider(EventProvider):
         if len(self.command_history) > 100:
             self.command_history.pop(0)
 
-        # Emit event
-        asyncio.create_task(self.emit_event("command_executed", event_data))
+        # Emit event safely
+        freecad_safe_emit(self.emit_event, "command_executed", event_data, "command_executed")
 
     def get_command_history(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """

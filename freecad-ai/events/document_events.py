@@ -1,10 +1,10 @@
-import asyncio
 import logging
 import time
 from typing import Any, Dict
 
 try:
     from .base import EventProvider
+    from ..utils.safe_async import freecad_safe_emit
 except ImportError:
     # Fallback for when module is loaded by FreeCAD
     import os
@@ -14,6 +14,7 @@ except ImportError:
     if addon_dir not in sys.path:
         sys.path.insert(0, addon_dir)
     from events.base import EventProvider
+    from utils.safe_async import freecad_safe_emit
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +95,7 @@ class DocumentEventProvider(EventProvider):
             "timestamp": time.time(),
             "recomputed_objects": [obj.Name for obj in doc.Objects if obj.State],
         }
-        asyncio.create_task(self.emit_event("document_changed", event_data))
+        freecad_safe_emit(self.emit_event, "document_changed", event_data, "document_changed")
 
     def _on_document_created(self, doc):
         """Handle document created event."""
@@ -104,7 +105,7 @@ class DocumentEventProvider(EventProvider):
             "document": doc.Name,
             "timestamp": time.time(),
         }
-        asyncio.create_task(self.emit_event("document_created", event_data))
+        freecad_safe_emit(self.emit_event, "document_created", event_data, "document_created")
 
     def _on_document_closed(self, doc_name):
         """Handle document closed event."""
@@ -114,7 +115,7 @@ class DocumentEventProvider(EventProvider):
             "document": doc_name,
             "timestamp": time.time(),
         }
-        asyncio.create_task(self.emit_event("document_closed", event_data))
+        freecad_safe_emit(self.emit_event, "document_closed", event_data, "document_closed")
 
     def _on_active_document_changed(self, doc):
         """Handle active document changed event."""
@@ -124,7 +125,7 @@ class DocumentEventProvider(EventProvider):
             "document": doc.Name if doc else None,
             "timestamp": time.time(),
         }
-        asyncio.create_task(self.emit_event("active_document_changed", event_data))
+        freecad_safe_emit(self.emit_event, "active_document_changed", event_data, "active_document_changed")
 
     def _on_selection_changed(self):
         """Handle selection changed event."""
@@ -147,7 +148,7 @@ class DocumentEventProvider(EventProvider):
             "selection": selected_objects,
             "timestamp": time.time(),
         }
-        asyncio.create_task(self.emit_event("selection_changed", event_data))
+        freecad_safe_emit(self.emit_event, "selection_changed", event_data, "selection_changed")
 
     async def emit_event(self, event_type: str, event_data: Dict[str, Any]) -> None:
         """

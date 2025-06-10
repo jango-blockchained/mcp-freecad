@@ -1,13 +1,6 @@
 {
   "version": "1.0.0",
   "providers": {
-    "openai": {
-      "enabled": true,
-      "model": "gpt-4o-mini",
-      "temperature": 0.7,
-      "timeout": 30,
-      "max_tokens": 4000
-    },
     "anthropic": {
       "enabled": true,
       "model": "claude-4-20241120",
@@ -15,21 +8,6 @@
       "timeout": 30,
       "max_tokens": 4096,
       "thinking_mode": false
-    },
-    "google": {
-      "enabled": true,
-      "model": "gemini-pro",
-      "temperature": 0.7,
-      "timeout": 30,
-      "max_tokens": 4096,
-      "thinking_mode": false
-    },
-    "openrouter": {
-      "enabled": true,
-      "model": "anthropic/claude-3.5-sonnet",
-      "temperature": 0.7,
-      "timeout": 30,
-      "max_tokens": 4000
     },
     "OpenAI": {
       "enabled": true,
@@ -41,7 +19,7 @@
     },
     "Google": {
       "enabled": true,
-      "model": "gemini-1.5-pro",
+      "model": "gemini-1.5-flash",
       "temperature": 0.7,
       "timeout": 30,
       "max_tokens": 4096,
