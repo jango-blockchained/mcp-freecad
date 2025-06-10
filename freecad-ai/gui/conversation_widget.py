@@ -417,12 +417,8 @@ class ConversationWidget(QtWidgets.QWidget):
         except Exception as e:
             print(f"ConversationWidget: Failed to save provider preference: {e}")
         
-        # Update status in any legacy status label if it exists
-        if hasattr(self, 'provider_status_label'):
-            self.provider_status_label.setText(f"✅ {provider_name}")
-            self.provider_status_label.setStyleSheet(
-                "color: #4CAF50; font-weight: bold; padding: 5px;"
-            )
+        # Provider status is now handled by ProviderSelectorWidget
+        # Legacy status label code removed
 
     def _on_provider_refresh(self):
         """Handle provider refresh request."""
@@ -440,10 +436,7 @@ class ConversationWidget(QtWidgets.QWidget):
     def _load_providers_fallback(self):
         """Load providers directly from config if service is not available."""
         if not self.config_manager:
-            self.provider_status_label.setText("No config manager")
-            self.provider_status_label.setStyleSheet(
-                "color: red; font-weight: bold; padding: 5px;"
-            )
+            # Provider status now handled by ProviderSelectorWidget
             self.send_btn.setEnabled(False)
             return
 
@@ -457,36 +450,22 @@ class ConversationWidget(QtWidgets.QWidget):
                     k.lower() for k in api_keys
                 ]:
                     self.current_provider = default_provider
-                    self.provider_status_label.setText(
-                        f"📋 {default_provider} (Config)"
-                    )
-                    self.provider_status_label.setStyleSheet(
-                        "color: blue; font-weight: bold; padding: 5px;"
-                    )
+                    # Provider status now handled by ProviderSelectorWidget
                     self.send_btn.setEnabled(True)
                 elif api_keys:
                     # Use first available provider
                     first_key = api_keys[0]
                     display_name = self._get_provider_display_name(first_key)
                     self.current_provider = display_name
-                    self.provider_status_label.setText(f"📋 {display_name} (Config)")
-                    self.provider_status_label.setStyleSheet(
-                        "color: blue; font-weight: bold; padding: 5px;"
-                    )
+                    # Provider status now handled by ProviderSelectorWidget
                     self.send_btn.setEnabled(True)
             else:
-                self.provider_status_label.setText("No providers configured")
-                self.provider_status_label.setStyleSheet(
-                    "color: red; font-weight: bold; padding: 5px;"
-                )
+                # Provider status now handled by ProviderSelectorWidget  
                 self.send_btn.setEnabled(False)
 
         except Exception as e:
             print(f"Error loading providers fallback: {e}")
-            self.provider_status_label.setText("Error loading providers")
-            self.provider_status_label.setStyleSheet(
-                "color: red; font-weight: bold; padding: 5px;"
-            )
+            # Provider status now handled by ProviderSelectorWidget
             self.send_btn.setEnabled(False)
 
     def _get_provider_display_name(self, provider_key: str) -> str:
@@ -1319,26 +1298,13 @@ RESPONSE STYLE:
                     status = provider_info.get("status", "unknown")
 
                     if status in ["connected", "initialized"]:
-                        self.provider_status_label.setText(
-                            f"✅ {selected_provider} Connected"
-                        )
-                        self.provider_status_label.setStyleSheet(
-                            "color: green; font-weight: bold; padding: 5px;"
-                        )
+                        # Provider status now handled by ProviderSelectorWidget
                         self.send_btn.setEnabled(True)
                     else:
-                        self.provider_status_label.setText(
-                            f"⚠️ {selected_provider} - {status}"
-                        )
-                        self.provider_status_label.setStyleSheet(
-                            "color: orange; font-weight: bold; padding: 5px;"
-                        )
+                        # Provider status now handled by ProviderSelectorWidget
                         self.send_btn.setEnabled(False)
             else:
-                self.provider_status_label.setText("No active providers")
-                self.provider_status_label.setStyleSheet(
-                    "color: red; font-weight: bold; padding: 5px;"
-                )
+                # Provider status now handled by ProviderSelectorWidget
                 self.send_btn.setEnabled(False)
         else:
             print("ConversationWidget: Provider service not available, using fallback")

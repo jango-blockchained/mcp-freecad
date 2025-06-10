@@ -1007,3 +1007,19 @@ class ProviderIntegrationService:
         except Exception as e:
             self.logger.error(f"Error setting default provider: {e}")
             return False
+
+
+# Global singleton instance access function
+_provider_service_instance = None
+
+def get_provider_service():
+    """
+    Get the singleton instance of ProviderIntegrationService.
+    
+    Returns:
+        ProviderIntegrationService: The singleton service instance
+    """
+    global _provider_service_instance
+    if _provider_service_instance is None:
+        _provider_service_instance = ProviderIntegrationService()
+    return _provider_service_instance
