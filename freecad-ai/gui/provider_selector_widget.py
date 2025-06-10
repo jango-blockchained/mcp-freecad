@@ -100,6 +100,15 @@ class ProviderSelectorWidget(QtWidgets.QWidget):
     def set_config_manager(self, config_manager):
         """Set the config manager instance."""
         self.config_manager = config_manager
+        # Refresh providers when config manager becomes available
+        if config_manager and not self.available_providers:
+            self._refresh_providers()
+
+    def refresh_on_show(self):
+        """Refresh providers when widget becomes visible (e.g., tab activation)."""
+        if not self.available_providers and self.provider_service:
+            print("ProviderSelector: Refreshing on show")
+            self._refresh_providers()
 
     def _refresh_providers(self):
         """Refresh the list of available providers."""

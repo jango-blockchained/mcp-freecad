@@ -364,6 +364,15 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                     setattr(self, attr_name, placeholder)
             
             FreeCAD.Console.PrintMessage(f"FreeCAD AI: Tab creation complete. Tab count: {self.tab_widget.count()}\n")
+            
+            # Connect to tab change signal to refresh provider selectors when tabs become active
+            if hasattr(self.tab_widget, 'currentChanged'):
+                safe_signal_connect(
+                    self.tab_widget.currentChanged,
+                    self._on_tab_changed,
+                    "tab change signal connection"
+                )
+                
         except Exception as e:
             FreeCAD.Console.PrintError(f"FreeCAD AI: Ultra-safe tab creation failed: {e}\n")
             # Create simple fallback tabs
@@ -376,11 +385,42 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 except Exception:
                     pass
 
+    @crash_safe_wrapper("tab change handling")
+    def _on_tab_changed(self, index):
+        """Handle tab change to refresh provider selectors when needed."""
+        try:
+            if index < 0 or not hasattr(self, 'tab_widget'):
+                return
+                
+            current_widget = self.tab_widget.widget(index)
+            if not current_widget:
+                return
+                
+            # Check if the current widget has a provider selector that needs refreshing
+            if hasattr(current_widget, 'provider_selector'):
+                safe_widget_operation(
+                    lambda: current_widget.provider_selector.refresh_on_show(),
+                    "provider selector refresh on tab activation"
+                )
+            
+            # Also check for provider selectors in sub-widgets
+            for child in current_widget.findChildren(QtWidgets.QWidget):
+                if hasattr(child, 'refresh_on_show'):
+                    safe_widget_operation(
+                        lambda: child.refresh_on_show(),
+                        "provider selector refresh on tab activation (child widget)"
+                    )
+                    
+        except Exception as e:
+            FreeCAD.Console.PrintWarning(f"FreeCAD AI: Tab change handling error: {e}\n")
+
     @crash_safe_wrapper("service connections")
     def _connect_services_safe(self):
         """Safely connect services to widgets after everything is initialized."""
         try:
             FreeCAD.Console.PrintMessage("FreeCAD AI: Connecting services safely...\n")
+            
+            # Connect provider service to widgets
             if self.provider_service:
                 if hasattr(self, 'providers_widget') and hasattr(self.providers_widget, 'set_provider_service'):
                     safe_widget_operation(
@@ -397,6 +437,25 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                         lambda: self.agent_control_widget.set_provider_service(self.provider_service),
                         "provider service connection to agent control widget"
                     )
+                    
+                # Connect config manager to provider selectors
+                if hasattr(self.provider_service, 'config_manager') and self.provider_service.config_manager:
+                    config_manager = self.provider_service.config_manager
+                    
+                    # Connect to conversation widget provider selector
+                    if hasattr(self, 'conversation_widget') and hasattr(self.conversation_widget, 'provider_selector'):
+                        safe_widget_operation(
+                            lambda: self.conversation_widget.provider_selector.set_config_manager(config_manager),
+                            "config manager connection to conversation provider selector"
+                        )
+                    
+                    # Connect to agent control widget provider selector
+                    if hasattr(self, 'agent_control_widget') and hasattr(self.agent_control_widget, 'provider_selector'):
+                        safe_widget_operation(
+                            lambda: self.agent_control_widget.provider_selector.set_config_manager(config_manager),
+                            "config manager connection to agent provider selector"
+                        )
+                
                 if hasattr(self.provider_service, 'provider_status_changed'):
                     safe_signal_connect(
                         self.provider_service.provider_status_changed,

@@ -121,6 +121,9 @@ class ProvidersWidget(QtWidgets.QWidget):
         self.ai_manager = None
         self.config_manager = None
         self.provider_service = None
+        
+        # Flag to prevent excessive config saving during loading
+        self._loading_config = False
 
         self._setup_services()
         self._setup_ui()
@@ -897,112 +900,123 @@ class ProvidersWidget(QtWidgets.QWidget):
 
     def _load_provider_config(self, provider_name):
         """Load configuration for selected provider."""
-        # Load API key for the selected provider
-        provider_info = self._get_default_provider_by_name(provider_name)
-        if provider_info:
-            provider_type = provider_info["type"]
+        # Set loading flag to prevent excessive config saves
+        self._loading_config = True
+        
+        try:
+            # Load API key for the selected provider
+            provider_info = self._get_default_provider_by_name(provider_name)
+            if provider_info:
+                provider_type = provider_info["type"]
 
-            # Load API key
-            if self.config_manager:
-                api_key = self.config_manager.get_api_key(provider_type)
-                if api_key:
-                    self.api_key_input.setText(api_key)
-                    self.api_key_status_label.setText("✅ Configured")
-                    self.api_key_status_label.setStyleSheet(
-                        "color: #4CAF50; font-size: 10px; padding: 2px;"
-                    )
-                else:
-                    self.api_key_input.setText("")
-                    self.api_key_status_label.setText("⚠️ Not configured")
-                    self.api_key_status_label.setStyleSheet(
-                        "color: #FF9800; font-size: 10px; padding: 2px;"
-                    )
+                # Load API key
+                if self.config_manager:
+                    api_key = self.config_manager.get_api_key(provider_type)
+                    if api_key:
+                        self.api_key_input.setText(api_key)
+                        self.api_key_status_label.setText("✅ Configured")
+                        self.api_key_status_label.setStyleSheet(
+                            "color: #4CAF50; font-size: 10px; padding: 2px;"
+                        )
+                    else:
+                        self.api_key_input.setText("")
+                        self.api_key_status_label.setText("⚠️ Not configured")
+                        self.api_key_status_label.setStyleSheet(
+                            "color: #FF9800; font-size: 10px; padding: 2px;"
+                        )
 
-            # Update model list with default provider models
-            models = provider_info["models"]
-            self.model_combo.clear()
-            self.model_combo.addItems(models)
-
-            # Set default model
-            default_model = provider_info["default_model"]
-            index = self.model_combo.findText(default_model)
-            if index >= 0:
-                self.model_combo.setCurrentIndex(index)
-
-            # Load default configuration
-            self.temperature_spin.setValue(0.7)
-            self.max_tokens_spin.setValue(4096)
-            self.timeout_spin.setValue(30)
-            self.thinking_mode_check.setChecked(False)
-
-            # Load saved configuration from config manager if available
-            if self.config_manager:
-                saved_config = self.config_manager.get_provider_config(provider_name)
-                if saved_config:
-                    self.temperature_spin.setValue(saved_config.get("temperature", 0.7))
-                    self.max_tokens_spin.setValue(saved_config.get("max_tokens", 4096))
-                    self.timeout_spin.setValue(saved_config.get("timeout", 30))
-                    self.thinking_mode_check.setChecked(
-                        saved_config.get("thinking_mode", False)
-                    )
-
-                    # Update model if saved
-                    saved_model = saved_config.get("model")
-                    if saved_model:
-                        index = self.model_combo.findText(saved_model)
-                        if index >= 0:
-                            self.model_combo.setCurrentIndex(index)
-
-            # Enable thinking mode for Claude providers
-            if provider_info["type"] == "anthropic":
-                self.thinking_mode_check.setEnabled(True)
-            else:
-                self.thinking_mode_check.setEnabled(False)
-
-            # Check if this is the default provider
-            if self.config_manager:
-                default_provider = self.config_manager.get_default_provider()
-                self.default_provider_check.setChecked(
-                    provider_name == default_provider
-                )
-
-            return
-
-        # If not a default provider, check AI manager
-        if self.ai_manager:
-            provider = self.ai_manager.providers.get(provider_name)
-            if provider:
-                # Clear API key input for AI manager providers
-                self.api_key_input.setText("")
-                self.api_key_status_label.setText("Managed by AI Manager")
-                self.api_key_status_label.setStyleSheet(
-                    "color: #666; font-size: 10px; padding: 2px;"
-                )
-
-                # Update model list
-                models = provider.get_available_models()
+                # Update model list with default provider models
+                models = provider_info["models"]
                 self.model_combo.clear()
                 self.model_combo.addItems(models)
 
-                # Set current model
-                current_model = provider.get_current_model()
-                if current_model:
-                    index = self.model_combo.findText(current_model)
-                    if index >= 0:
-                        self.model_combo.setCurrentIndex(index)
+                # Set default model
+                default_model = provider_info["default_model"]
+                index = self.model_combo.findText(default_model)
+                if index >= 0:
+                    self.model_combo.setCurrentIndex(index)
 
-                # Load other configuration if available
-                if hasattr(provider, "config"):
-                    config = provider.config
-                    self.temperature_spin.setValue(config.get("temperature", 0.7))
-                    self.max_tokens_spin.setValue(config.get("max_tokens", 4096))
-                    self.timeout_spin.setValue(config.get("timeout", 30))
-                    self.thinking_mode_check.setChecked(
-                        config.get("thinking_mode", False)
+                # Load default configuration
+                self.temperature_spin.setValue(0.7)
+                self.max_tokens_spin.setValue(4096)
+                self.timeout_spin.setValue(30)
+                self.thinking_mode_check.setChecked(False)
+
+                # Load saved configuration from config manager if available
+                if self.config_manager:
+                    saved_config = self.config_manager.get_provider_config(provider_name)
+                    if saved_config:
+                        self.temperature_spin.setValue(saved_config.get("temperature", 0.7))
+                        self.max_tokens_spin.setValue(saved_config.get("max_tokens", 4096))
+                        self.timeout_spin.setValue(saved_config.get("timeout", 30))
+                        self.thinking_mode_check.setChecked(
+                            saved_config.get("thinking_mode", False)
+                        )
+
+                        # Update model if saved
+                        saved_model = saved_config.get("model")
+                        if saved_model:
+                            index = self.model_combo.findText(saved_model)
+                            if index >= 0:
+                                self.model_combo.setCurrentIndex(index)
+
+                # Enable thinking mode for Claude providers
+                if provider_info["type"] == "anthropic":
+                    self.thinking_mode_check.setEnabled(True)
+                else:
+                    self.thinking_mode_check.setEnabled(False)
+
+                # Check if this is the default provider
+                if self.config_manager:
+                    default_provider = self.config_manager.get_default_provider()
+                    self.default_provider_check.setChecked(
+                        provider_name == default_provider
                     )
+
+                return
+
+            # If not a default provider, check AI manager
+            if self.ai_manager:
+                provider = self.ai_manager.providers.get(provider_name)
+                if provider:
+                    # Clear API key input for AI manager providers
+                    self.api_key_input.setText("")
+                    self.api_key_status_label.setText("Managed by AI Manager")
+                    self.api_key_status_label.setStyleSheet(
+                        "color: #666; font-size: 10px; padding: 2px;"
+                    )
+
+                    # Update model list
+                    models = provider.get_available_models()
+                    self.model_combo.clear()
+                    self.model_combo.addItems(models)
+
+                    # Set current model
+                    current_model = provider.get_current_model()
+                    if current_model:
+                        index = self.model_combo.findText(current_model)
+                        if index >= 0:
+                            self.model_combo.setCurrentIndex(index)
+
+                    # Load other configuration if available
+                    if hasattr(provider, "config"):
+                        config = provider.config
+                        self.temperature_spin.setValue(config.get("temperature", 0.7))
+                        self.max_tokens_spin.setValue(config.get("max_tokens", 4096))
+                        self.timeout_spin.setValue(config.get("timeout", 30))
+                        self.thinking_mode_check.setChecked(
+                            config.get("thinking_mode", False)
+                        )
+        finally:
+            # Always reset loading flag
+            self._loading_config = False
 
     def _on_model_changed(self, model_name):
         """Handle model selection change."""
+        # Skip saving during config loading to prevent excessive saves
+        if self._loading_config:
+            return
+            
         provider_name = self.selected_provider_label.text()
         if provider_name == "None selected" or not model_name:
             return
@@ -1056,6 +1070,10 @@ class ProvidersWidget(QtWidgets.QWidget):
 
     def _on_config_changed(self):
         """Handle configuration parameter changes."""
+        # Skip saving during config loading to prevent excessive saves
+        if self._loading_config:
+            return
+            
         provider_name = self.selected_provider_label.text()
         if provider_name == "None selected":
             return
