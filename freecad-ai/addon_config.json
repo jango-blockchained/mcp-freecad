@@ -30,6 +30,30 @@
       "temperature": 0.7,
       "timeout": 30,
       "max_tokens": 4000
+    },
+    "OpenAI": {
+      "enabled": true,
+      "model": "gpt-4o-mini",
+      "temperature": 0.7,
+      "timeout": 30,
+      "max_tokens": 4096,
+      "thinking_mode": false
+    },
+    "Google": {
+      "enabled": true,
+      "model": "gemini-1.5-flash",
+      "temperature": 0.7,
+      "timeout": 30,
+      "max_tokens": 4096,
+      "thinking_mode": false
+    },
+    "OpenRouter": {
+      "enabled": true,
+      "model": "anthropic/claude-3.5-sonnet",
+      "temperature": 0.7,
+      "timeout": 30,
+      "max_tokens": 4000,
+      "thinking_mode": false
     }
   },
   "ui_settings": {
