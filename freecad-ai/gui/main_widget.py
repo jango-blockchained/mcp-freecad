@@ -1,9 +1,10 @@
 """Main Widget for FreeCAD AI FreeCAD Addon"""
 
-import FreeCAD
-import traceback
 import functools
 import importlib
+import traceback
+
+import FreeCAD
 
 # Safe Qt imports with comprehensive fallback to prevent crashes
 try:

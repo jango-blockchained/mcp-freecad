@@ -1,9 +1,9 @@
 """FreeCAD AI Workbench - Main workbench implementation"""
 
+import functools
 import os
 import sys
 import traceback
-import functools
 
 import FreeCAD
 import FreeCADGui
@@ -95,12 +95,12 @@ TOOLS_IMPORT_ERROR = None
 try:
     # Strategy 1: Try absolute imports first
     try:
+        from tools import TOOLS_AVAILABLE as TOOLS_LOADED
         from tools import (
-            PrimitivesTool,
-            OperationsTool,
-            MeasurementsTool,
             ExportImportTool,
-            TOOLS_AVAILABLE as TOOLS_LOADED,
+            MeasurementsTool,
+            OperationsTool,
+            PrimitivesTool,
         )
         TOOLS_AVAILABLE = TOOLS_LOADED
         FreeCAD.Console.PrintMessage("FreeCAD AI: Tools imported successfully via absolute imports\n")
@@ -111,12 +111,12 @@ try:
         # Strategy 2: Try importing from the current directory structure
         try:
             sys.path.insert(0, addon_dir)
+            from tools import TOOLS_AVAILABLE as TOOLS_LOADED
             from tools import (
-                PrimitivesTool,
-                OperationsTool,
-                MeasurementsTool,
                 ExportImportTool,
-                TOOLS_AVAILABLE as TOOLS_LOADED,
+                MeasurementsTool,
+                OperationsTool,
+                PrimitivesTool,
             )
             TOOLS_AVAILABLE = TOOLS_LOADED
             FreeCAD.Console.PrintMessage("FreeCAD AI: Tools imported successfully via path modification\n")
@@ -204,7 +204,7 @@ try:
         try:
             import fastapi
             from pydantic import BaseModel
-            
+
             # Test basic functionality that often fails with version conflicts
             class TestModel(BaseModel):
                 test_field: str = "test"

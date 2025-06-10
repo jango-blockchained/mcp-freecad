@@ -1,9 +1,11 @@
 """
 Flask-based API for FreeCAD AI tools endpoint (migration template)
 """
-from flask import Flask, Blueprint, request, jsonify, abort
-from dataclasses import dataclass, asdict
-from typing import Dict, Any
+from dataclasses import asdict, dataclass
+from typing import Any, Dict
+
+from flask import Blueprint, Flask, abort, jsonify, request
+
 
 # Example dataclass for request/response (replace with real logic as needed)
 @dataclass
@@ -42,9 +44,9 @@ def execute_primitive_tool(tool_id):
     except Exception as e:
         abort(500, description=f'Error executing primitive tool: {str(e)}')
 
-from flask_tools_api import tools_bp
-from flask_resources_api import resources_bp
 from flask_events_api import events_bp
+from flask_resources_api import resources_bp
+from flask_tools_api import tools_bp
 
 # Flask app setup
 app = Flask(__name__)

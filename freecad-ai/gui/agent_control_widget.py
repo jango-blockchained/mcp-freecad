@@ -3,6 +3,7 @@
 from datetime import datetime
 
 from PySide2 import QtCore, QtWidgets
+
 from .provider_selector_widget import ProviderSelectorWidget
 
 

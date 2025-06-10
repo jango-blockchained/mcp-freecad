@@ -8,9 +8,9 @@ Based on FreeCAD documentation and community best practices.
 """
 import importlib.util
 import os
+import platform
 import subprocess
 import sys
-import platform
 import traceback
 from typing import Callable, Dict, List, Optional, Tuple
 

@@ -1,21 +1,22 @@
 """
 Flask-based API for FreeCAD AI unified server entrypoint
 """
-import sys
 import os
+import sys
+
 from flask import Flask
 
 # Ensure the current directory is in sys.path for local imports
 sys.path.insert(0, os.path.dirname(__file__))
 
 try:
-    from .flask_tools_api import tools_bp
-    from .flask_resources_api import resources_bp
     from .flask_events_api import events_bp
+    from .flask_resources_api import resources_bp
+    from .flask_tools_api import tools_bp
 except ImportError:
-    from flask_tools_api import tools_bp
-    from flask_resources_api import resources_bp
     from flask_events_api import events_bp
+    from flask_resources_api import resources_bp
+    from flask_tools_api import tools_bp
 
 app = Flask(__name__)
 app.register_blueprint(tools_bp)

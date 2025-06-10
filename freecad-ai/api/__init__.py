@@ -23,7 +23,7 @@ def check_fastapi_pydantic_compatibility():
                 # First, try basic imports
                 import fastapi
                 import pydantic
-                
+
                 # Check if we have reasonably recent versions that should work with Python 3.13
                 fastapi_version = getattr(fastapi, '__version__', '0.0.0')
                 pydantic_version = getattr(pydantic, '__version__', '0.0.0')
@@ -43,7 +43,7 @@ def check_fastapi_pydantic_compatibility():
                 # Try a more comprehensive test
                 from fastapi import APIRouter
                 from pydantic import BaseModel
-                
+
                 # Test model creation with type hints
                 class TestModel(BaseModel):
                     test_field: str = "test"

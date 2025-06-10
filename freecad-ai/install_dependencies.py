@@ -17,9 +17,9 @@ Author: jango-blockchained
 def install_mcp_dependencies():
     """Install dependencies for FreeCAD FreeCAD AI with enhanced Python 3.13+ support."""
     import os
+    import platform
     import subprocess
     import sys
-    import platform
 
     print("🚀 FreeCAD FreeCAD AI - Enhanced Dependency Installer")
     print("=" * 60)

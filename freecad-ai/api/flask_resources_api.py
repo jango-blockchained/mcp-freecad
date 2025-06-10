@@ -1,8 +1,9 @@
 """
 Flask-based API for FreeCAD AI resources endpoint (migration template)
 """
-from flask import Blueprint, request, jsonify, abort
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
+from flask import Blueprint, abort, jsonify, request
 
 resources_bp = Blueprint('resources', __name__, url_prefix='/resources')
 
