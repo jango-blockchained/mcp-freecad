@@ -106,6 +106,7 @@ coverage.xml
 dmypy.json
 
 .cursor/tasks/
-
+.cursorignore
+.cursorindexingignore
 
 freecad-ai/api_keys.enc

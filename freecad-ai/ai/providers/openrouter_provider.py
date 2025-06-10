@@ -420,15 +420,15 @@ Be precise with measurements and technical details. Adapt your response style ba
 
     def get_available_models(self) -> List[str]:
         """Get list of available models for UI compatibility.
-        
-        Returns static list for synchronous UI calls. 
+
+        Returns static list for synchronous UI calls.
         Use get_available_models_async() for dynamic API calls.
         """
         return self.OPENROUTER_MODELS.copy()
 
     async def get_available_models_async(self) -> List[Dict[str, Any]]:
         """Get list of currently available models from OpenRouter API.
-        
+
         This is the async version that fetches live data from OpenRouter.
         """
         try:
