@@ -11,6 +11,157 @@ This project provides a robust integration between AI assistants and FreeCAD CAD
 
 ---
 
+## 🤖 **AI Provider Models (2025)**
+
+The MCP-FreeCAD integration supports multiple AI providers with the latest 2025 models. Choose the right model for your specific use case:
+
+### **OpenAI Models**
+
+#### **Production Models:**
+- **gpt-4o** - Default multimodal model (text, image, audio)
+  - Context: 128K tokens
+  - Pricing: ~$5 per 1M input tokens
+  - Best for: General CAD tasks, multimodal interactions
+
+- **gpt-4.1** - Next-generation with 1M token context
+  - Features: Text, Image, Audio, Video support
+  - Pricing: ~$2.5 per 1M input tokens
+  - Best for: Complex CAD projects, large document analysis
+
+- **gpt-4-turbo** - Fast, cost-effective
+  - Context: 128K tokens
+  - Best for: High-volume operations, batch processing
+
+#### **Reasoning Models:**
+- **o3** - Advanced reasoning for complex CAD logic
+  - Pricing: ~$10 per 1M input tokens
+  - Best for: Complex geometry calculations, design optimization
+
+- **o4-mini** / **o4-mini-high** - Cost-effective reasoning
+  - Pricing: ~$0.15 per 1M input tokens
+  - Best for: Simple calculations, quick iterations
+
+### **Anthropic Claude Models**
+
+#### **Claude 4 Series (2025):**
+- **claude-opus-4** - Most advanced model
+  - Max Context: 200K tokens
+  - Pricing: $15/$75 per million tokens (input/output)
+  - Features: Extended thinking, tool use, memory handling
+  - Best for: Complex CAD workflows, autonomous design tasks
+
+- **claude-sonnet-4** - Balanced efficiency
+  - Max Context: 200K tokens  
+  - Pricing: $3/$15 per million tokens
+  - Features: Superior coding, hybrid reasoning
+  - Best for: General CAD operations, scripting assistance
+
+- **claude-haiku-3.5** - Fast, lightweight
+  - Best for: Quick queries, simple operations
+
+### **Google AI Models**
+
+#### **Gemini 2.5 Series (Latest):**
+- **gemini-2.5-pro-preview-05-06** - Most advanced
+  - Context: 1M tokens
+  - Features: Enhanced reasoning, thinking mode
+  - Best for: Complex CAD analysis, large assemblies
+
+- **gemini-2.5-flash-preview-04-17** - Performance optimized
+  - Features: Adaptive thinking, cost-effective
+  - Best for: Balanced performance and cost
+
+#### **Gemini 2.0 Series (Stable):**
+- **gemini-2.0-flash-001** - Production ready
+  - Features: 2x faster than Gemini 1.5 Pro
+  - Best for: Real-time CAD assistance
+
+- **gemini-2.0-flash-lite** - Cost-optimized
+  - Best for: High-volume, simple operations
+
+### **OpenRouter (Unified Access)**
+
+OpenRouter provides access to all models through a single API:
+
+#### **Model Format:** `provider/model-name`
+
+**Popular Models:**
+- `anthropic/claude-sonnet-4` - Recommended general use
+- `openai/gpt-4o` - OpenAI's flagship
+- `google/gemini-2.5-pro-preview` - Google's latest
+
+**Free Models (50-1000 requests/day):**
+- `deepseek/deepseek-r1` - Advanced reasoning
+- `deepseek/deepseek-v3` - General purpose
+- `google/gemini-2.5-flash-preview` - Google free tier
+
+### **Model Selection Guide**
+
+| **Use Case** | **Recommended Model** | **Alternative** |
+|-------------|---------------------|----------------|
+| **General CAD Work** | `claude-sonnet-4` | `gpt-4o`, `gemini-2.0-flash-001` |
+| **Complex Reasoning** | `claude-opus-4` | `o3`, `gemini-2.5-pro-preview-05-06` |
+| **Multimodal Tasks** | `gpt-4o` | `gpt-4.1`, `claude-opus-4` |
+| **Cost-Effective** | `o4-mini` | `claude-haiku-3.5`, `gemini-2.0-flash-lite` |
+| **High Volume** | `gpt-4-turbo` | `claude-sonnet-4`, `gemini-2.0-flash-001` |
+| **Free Usage** | `deepseek/deepseek-r1` | `google/gemini-2.5-flash-preview` |
+
+### **Configuration Example**
+
+```json
+{
+  "providers": {
+    "anthropic": {
+      "enabled": true,
+      "model": "claude-sonnet-4",
+      "thinking_mode": true,
+      "max_tokens": 64000
+    },
+    "openai": {
+      "enabled": true,
+      "model": "gpt-4o",
+      "max_tokens": 32000
+    },
+    "google": {
+      "enabled": true,
+      "model": "gemini-2.0-flash-001",
+      "thinking_mode": true
+    },
+    "openrouter": {
+      "enabled": true,
+      "model": "anthropic/claude-sonnet-4",
+      "free_models": ["deepseek/deepseek-r1"]
+    }
+  }
+}
+```
+
+### **API Usage Examples**
+
+```python
+# Using specific provider
+from freecad_ai import CADAssistant
+
+# Initialize with Claude Sonnet 4
+assistant = CADAssistant(provider="anthropic", model="claude-sonnet-4")
+
+# Create complex geometry
+result = assistant.generate_cad_script(
+    "Create a parametric gear with 20 teeth, 5mm module, and 20° pressure angle"
+)
+
+# Using OpenRouter for cost optimization
+assistant_free = CADAssistant(
+    provider="openrouter", 
+    model="deepseek/deepseek-r1"
+)
+
+# Quick operations with free model
+result = assistant_free.create_primitive("box", length=10, width=5, height=3)
+```
+
+---
+
 ## 🚀 **Quick Start**
 
 ### Option 1: FreeCAD Addon (Recommended for Users)

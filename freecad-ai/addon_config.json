@@ -3,41 +3,91 @@
   "providers": {
     "anthropic": {
       "enabled": true,
-      "model": "claude-4-20241120",
+      "model": "claude-sonnet-4",
+      "alternative_models": [
+        "claude-opus-4",
+        "claude-sonnet-3.7",
+        "claude-haiku-3.5"
+      ],
       "temperature": 0.7,
       "timeout": 30,
-      "max_tokens": 4096,
-      "thinking_mode": false
+      "max_tokens": 64000,
+      "thinking_mode": true,
+      "context_window": 200000,
+      "pricing": {
+        "input_tokens_per_million": 3.0,
+        "output_tokens_per_million": 15.0
+      }
     },
-    "OpenAI": {
+    "openai": {
       "enabled": true,
-      "model": "anthropic/claude-4-opus",
+      "model": "gpt-4o",
+      "alternative_models": [
+        "gpt-4.1",
+        "gpt-4-turbo",
+        "gpt-3.5-turbo",
+        "o3",
+        "o4-mini",
+        "o4-mini-high"
+      ],
       "temperature": 0.7,
       "timeout": 30,
-      "max_tokens": 4096,
-      "thinking_mode": false
+      "max_tokens": 32000,
+      "thinking_mode": false,
+      "context_window": 128000,
+      "pricing": {
+        "input_tokens_per_million": 5.0,
+        "output_tokens_per_million": 10.0
+      }
     },
-    "Google": {
+    "google": {
       "enabled": true,
-      "model": "gemini-1.5-flash",
+      "model": "gemini-2.0-flash-001",
+      "alternative_models": [
+        "gemini-2.5-pro-preview-05-06",
+        "gemini-2.5-flash-preview-04-17",
+        "gemini-2.0-flash-lite",
+        "gemini-1.5-pro-002",
+        "gemini-1.5-flash-002"
+      ],
       "temperature": 0.7,
       "timeout": 30,
-      "max_tokens": 4096,
-      "thinking_mode": false
+      "max_tokens": 64000,
+      "thinking_mode": true,
+      "context_window": 1000000,
+      "pricing": {
+        "input_tokens_per_million": 0.075,
+        "output_tokens_per_million": 0.30
+      }
     },
-    "OpenRouter": {
+    "openrouter": {
       "enabled": true,
-      "model": "anthropic/claude-4-opus",
+      "model": "anthropic/claude-sonnet-4",
+      "alternative_models": [
+        "openai/gpt-4o",
+        "openai/gpt-4.1",
+        "google/gemini-2.5-pro-preview",
+        "anthropic/claude-opus-4",
+        "deepseek/deepseek-r1",
+        "qwen/qwen3-235b-a22b"
+      ],
       "temperature": 0.7,
       "timeout": 30,
-      "max_tokens": 4000,
-      "thinking_mode": false
+      "max_tokens": 64000,
+      "thinking_mode": true,
+      "context_window": 200000,
+      "pricing": "variable",
+      "free_models": [
+        "deepseek/deepseek-r1",
+        "deepseek/deepseek-v3",
+        "google/gemini-2.5-flash-preview"
+      ]
     }
   },
   "ui_settings": {
     "theme": "dark",
-    "auto_save": true,
-    "log_level": "DEBUG",
+    "auto_save": false,
+    "log_level": "INFO",
     "show_tooltips": true,
     "confirm_operations": true
   },

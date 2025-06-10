@@ -9,6 +9,38 @@
         "api_key": "development",
         "enable_auth": true
     },
+    "ai_providers": {
+        "enabled": true,
+        "default_provider": "anthropic",
+        "models_2025": {
+            "openai": {
+                "recommended": {
+                    "general": "gpt-4o",
+                    "reasoning": "o3",
+                    "cost_effective": "o4-mini"
+                }
+            },
+            "anthropic": {
+                "recommended": {
+                    "general": "claude-sonnet-4",
+                    "advanced": "claude-opus-4",
+                    "cost_effective": "claude-haiku-3.5"
+                }
+            },
+            "google": {
+                "recommended": {
+                    "general": "gemini-2.0-flash-001",
+                    "advanced": "gemini-2.5-pro-preview-05-06"
+                }
+            },
+            "openrouter": {
+                "recommended": {
+                    "general": "anthropic/claude-sonnet-4",
+                    "free": "deepseek/deepseek-r1"
+                }
+            }
+        }
+    },
     "cache": {
         "default_ttl": 30.0,
         "max_size": 100,
