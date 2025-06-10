@@ -404,10 +404,12 @@ class ConversationWidget(QtWidgets.QWidget):
 
     def _on_provider_changed(self, provider_name, model_name):
         """Handle provider selection change from provider selector."""
-        print(f"ConversationWidget: Provider changed to {provider_name} with model {model_name}")
+        print(
+            f"ConversationWidget: Provider changed to {provider_name} with model {model_name}"
+        )
         self.current_provider = provider_name
         self.current_model = model_name
-        
+
         # Save the selected provider to settings
         try:
             settings = QtCore.QSettings("FreeCAD", "AI_ConversationWidget")
@@ -416,7 +418,7 @@ class ConversationWidget(QtWidgets.QWidget):
             settings.sync()
         except Exception as e:
             print(f"ConversationWidget: Failed to save provider preference: {e}")
-        
+
         # Provider status is now handled by ProviderSelectorWidget
         # Legacy status label code removed
 
@@ -426,9 +428,9 @@ class ConversationWidget(QtWidgets.QWidget):
         if self.provider_service:
             # Trigger a refresh of providers
             try:
-                if hasattr(self.provider_service, 'refresh_providers'):
+                if hasattr(self.provider_service, "refresh_providers"):
                     self.provider_service.refresh_providers()
-                elif hasattr(self.provider_service, 'initialize_providers_from_config'):
+                elif hasattr(self.provider_service, "initialize_providers_from_config"):
                     self.provider_service.initialize_providers_from_config()
             except Exception as e:
                 print(f"ConversationWidget: Error refreshing providers: {e}")
@@ -460,7 +462,7 @@ class ConversationWidget(QtWidgets.QWidget):
                     # Provider status now handled by ProviderSelectorWidget
                     self.send_btn.setEnabled(True)
             else:
-                # Provider status now handled by ProviderSelectorWidget  
+                # Provider status now handled by ProviderSelectorWidget
                 self.send_btn.setEnabled(False)
 
         except Exception as e:
@@ -509,11 +511,11 @@ class ConversationWidget(QtWidgets.QWidget):
 
         # Get current provider selection from provider selector
         current_selection = None
-        if hasattr(self, 'provider_selector'):
+        if hasattr(self, "provider_selector"):
             current_selection = self.provider_selector.get_current_selection()
-            if current_selection and current_selection['provider']:
-                self.current_provider = current_selection['provider']
-                self.current_model = current_selection.get('model')
+            if current_selection and current_selection["provider"]:
+                self.current_provider = current_selection["provider"]
+                self.current_model = current_selection.get("model")
 
         # Fallback to stored provider if selector not available
         if not self.current_provider:
@@ -1331,11 +1333,11 @@ RESPONSE STYLE:
                 )
 
             # Connect to provider selector
-            if hasattr(self, 'provider_selector'):
+            if hasattr(self, "provider_selector"):
                 self.provider_selector.set_provider_service(provider_service)
-                
+
             # Also set config manager if available
-            if self.config_manager and hasattr(self, 'provider_selector'):
+            if self.config_manager and hasattr(self, "provider_selector"):
                 self.provider_selector.set_config_manager(self.config_manager)
 
             # Initial refresh

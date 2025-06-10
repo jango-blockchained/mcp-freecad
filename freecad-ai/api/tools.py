@@ -7,6 +7,7 @@ from typing import Any, Dict
 FASTAPI_AVAILABLE = False
 FASTAPI_IMPORT_ERROR = None
 
+
 def test_fastapi_compatibility():
     """Test if FastAPI and Pydantic can be imported and used together."""
     try:
@@ -26,13 +27,18 @@ def test_fastapi_compatibility():
 
     except TypeError as e:
         if "Protocols with non-method members" in str(e):
-            return False, f"FastAPI/Pydantic compatibility issue with Python {sys.version_info.major}.{sys.version_info.minor}: {e}", None
+            return (
+                False,
+                f"FastAPI/Pydantic compatibility issue with Python {sys.version_info.major}.{sys.version_info.minor}: {e}",
+                None,
+            )
         else:
             return False, f"FastAPI/Pydantic type error: {e}", None
     except ImportError as e:
         return False, f"FastAPI/Pydantic import error: {e}", None
     except Exception as e:
         return False, f"FastAPI/Pydantic unexpected error: {e}", None
+
 
 # Test compatibility and import
 compatibility_ok, error_msg, imports = test_fastapi_compatibility()
@@ -42,7 +48,10 @@ if compatibility_ok:
     FASTAPI_AVAILABLE = True
     try:
         import FreeCAD
-        FreeCAD.Console.PrintMessage("FreeCAD AI: FastAPI/Pydantic imported successfully for tools module\n")
+
+        FreeCAD.Console.PrintMessage(
+            "FreeCAD AI: FastAPI/Pydantic imported successfully for tools module\n"
+        )
     except ImportError:
         pass
 else:
@@ -56,7 +65,10 @@ else:
 
     try:
         import FreeCAD
-        FreeCAD.Console.PrintWarning(f"FreeCAD AI: FastAPI not available for tools module: {error_msg}\n")
+
+        FreeCAD.Console.PrintWarning(
+            f"FreeCAD AI: FastAPI not available for tools module: {error_msg}\n"
+        )
         FreeCAD.Console.PrintWarning("FreeCAD AI: Tool router will be disabled\n")
     except ImportError:
         print(f"FreeCAD AI: FastAPI not available for tools module: {error_msg}")
@@ -77,18 +89,24 @@ except ImportError:
     except ImportError as e:
         try:
             import FreeCAD
-            FreeCAD.Console.PrintWarning(f"FreeCAD AI: Could not import MCPServer: {e}\n")
+
+            FreeCAD.Console.PrintWarning(
+                f"FreeCAD AI: Could not import MCPServer: {e}\n"
+            )
         except ImportError:
             print(f"FreeCAD AI: Could not import MCPServer: {e}")
+
         # Create a minimal fallback
         class MCPServer:
             def __init__(self):
                 self.tools = {}
 
+
 logger = logging.getLogger(__name__)
 
 # Enhanced model definitions with compatibility checks
 if FASTAPI_AVAILABLE and BaseModel != object:
+
     class ToolRequest(BaseModel):
         parameters: Dict[str, Any] = {}
 
@@ -96,6 +114,7 @@ if FASTAPI_AVAILABLE and BaseModel != object:
         tool_id: str
         status: str
         result: Dict[str, Any]
+
 else:
     # Fallback classes when Pydantic is not available
     class ToolRequest:
@@ -108,14 +127,20 @@ else:
             self.status = status
             self.result = result
 
+
 def create_tool_router(server: MCPServer):
     """Create a router for tool endpoints with enhanced error handling."""
     if not FASTAPI_AVAILABLE:
         try:
             import FreeCAD
-            FreeCAD.Console.PrintWarning("FreeCAD AI: FastAPI not available, tool router disabled\n")
+
+            FreeCAD.Console.PrintWarning(
+                "FreeCAD AI: FastAPI not available, tool router disabled\n"
+            )
             if FASTAPI_IMPORT_ERROR:
-                FreeCAD.Console.PrintWarning(f"FreeCAD AI: Reason: {FASTAPI_IMPORT_ERROR}\n")
+                FreeCAD.Console.PrintWarning(
+                    f"FreeCAD AI: Reason: {FASTAPI_IMPORT_ERROR}\n"
+                )
         except ImportError:
             print("FreeCAD AI: FastAPI not available, tool router disabled")
             if FASTAPI_IMPORT_ERROR:
@@ -125,7 +150,10 @@ def create_tool_router(server: MCPServer):
     if not server:
         try:
             import FreeCAD
-            FreeCAD.Console.PrintWarning("FreeCAD AI: No server provided, tool router disabled\n")
+
+            FreeCAD.Console.PrintWarning(
+                "FreeCAD AI: No server provided, tool router disabled\n"
+            )
         except ImportError:
             print("FreeCAD AI: No server provided, tool router disabled")
         return None
@@ -201,7 +229,10 @@ def create_tool_router(server: MCPServer):
 
         try:
             import FreeCAD
-            FreeCAD.Console.PrintMessage("FreeCAD AI: Tool router created successfully\n")
+
+            FreeCAD.Console.PrintMessage(
+                "FreeCAD AI: Tool router created successfully\n"
+            )
         except ImportError:
             pass
 
@@ -210,8 +241,13 @@ def create_tool_router(server: MCPServer):
     except Exception as e:
         try:
             import FreeCAD
-            FreeCAD.Console.PrintError(f"FreeCAD AI: Failed to create tool router: {e}\n")
-            FreeCAD.Console.PrintError(f"FreeCAD AI: Tool router traceback: {traceback.format_exc()}\n")
+
+            FreeCAD.Console.PrintError(
+                f"FreeCAD AI: Failed to create tool router: {e}\n"
+            )
+            FreeCAD.Console.PrintError(
+                f"FreeCAD AI: Tool router traceback: {traceback.format_exc()}\n"
+            )
         except ImportError:
             print(f"FreeCAD AI: Failed to create tool router: {e}")
             print(f"FreeCAD AI: Tool router traceback: {traceback.format_exc()}")

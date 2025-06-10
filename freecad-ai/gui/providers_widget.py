@@ -121,7 +121,7 @@ class ProvidersWidget(QtWidgets.QWidget):
         self.ai_manager = None
         self.config_manager = None
         self.provider_service = None
-        
+
         # Flag to prevent excessive config saving during loading
         self._loading_config = False
 
@@ -902,7 +902,7 @@ class ProvidersWidget(QtWidgets.QWidget):
         """Load configuration for selected provider."""
         # Set loading flag to prevent excessive config saves
         self._loading_config = True
-        
+
         try:
             # Load API key for the selected provider
             provider_info = self._get_default_provider_by_name(provider_name)
@@ -944,10 +944,16 @@ class ProvidersWidget(QtWidgets.QWidget):
 
                 # Load saved configuration from config manager if available
                 if self.config_manager:
-                    saved_config = self.config_manager.get_provider_config(provider_name)
+                    saved_config = self.config_manager.get_provider_config(
+                        provider_name
+                    )
                     if saved_config:
-                        self.temperature_spin.setValue(saved_config.get("temperature", 0.7))
-                        self.max_tokens_spin.setValue(saved_config.get("max_tokens", 4096))
+                        self.temperature_spin.setValue(
+                            saved_config.get("temperature", 0.7)
+                        )
+                        self.max_tokens_spin.setValue(
+                            saved_config.get("max_tokens", 4096)
+                        )
                         self.timeout_spin.setValue(saved_config.get("timeout", 30))
                         self.thinking_mode_check.setChecked(
                             saved_config.get("thinking_mode", False)
@@ -1016,7 +1022,7 @@ class ProvidersWidget(QtWidgets.QWidget):
         # Skip saving during config loading to prevent excessive saves
         if self._loading_config:
             return
-            
+
         provider_name = self.selected_provider_label.text()
         if provider_name == "None selected" or not model_name:
             return
@@ -1073,7 +1079,7 @@ class ProvidersWidget(QtWidgets.QWidget):
         # Skip saving during config loading to prevent excessive saves
         if self._loading_config:
             return
-            
+
         provider_name = self.selected_provider_label.text()
         if provider_name == "None selected":
             return

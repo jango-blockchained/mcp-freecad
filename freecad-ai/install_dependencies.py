@@ -14,6 +14,7 @@ Usage:
 Author: jango-blockchained
 """
 
+
 def install_mcp_dependencies():
     """Install dependencies for FreeCAD FreeCAD AI with enhanced Python 3.13+ support."""
     import os
@@ -26,7 +27,9 @@ def install_mcp_dependencies():
 
     # Check Python version and compatibility
     python_version = sys.version_info
-    print(f"📍 Python version: {python_version.major}.{python_version.minor}.{python_version.micro}")
+    print(
+        f"📍 Python version: {python_version.major}.{python_version.minor}.{python_version.micro}"
+    )
     print(f"📍 Platform: {platform.system()} {platform.machine()}")
 
     # Python 3.13+ compatibility warnings
@@ -137,7 +140,9 @@ def install_mcp_dependencies():
             },
         ]
 
-        print(f"\n📦 Installing {len(dependencies)} dependencies with enhanced sub-dependency support...")
+        print(
+            f"\n📦 Installing {len(dependencies)} dependencies with enhanced sub-dependency support..."
+        )
         print("-" * 70)
 
         success_count = 0
@@ -194,7 +199,9 @@ def install_mcp_dependencies():
                         print(f"   ✅ Verified {package_name} is importable")
                         success_count += 1
                     except ImportError:
-                        print(f"   ⚠️ {package_name} installed but not importable - may need restart")
+                        print(
+                            f"   ⚠️ {package_name} installed but not importable - may need restart"
+                        )
                         success_count += 1
                 else:
                     print(f"   ❌ Failed to install {package_name}")
@@ -203,7 +210,9 @@ def install_mcp_dependencies():
 
                     # Try alternative installation for critical packages
                     if is_critical:
-                        print(f"   🔄 Trying alternative installation for critical package {package_name}...")
+                        print(
+                            f"   🔄 Trying alternative installation for critical package {package_name}..."
+                        )
 
                         # Try without version constraints but WITH dependencies
                         alt_cmd = [
@@ -214,7 +223,7 @@ def install_mcp_dependencies():
                             "--disable-pip-version-check",
                             "--target",
                             vendor_path,
-                            package_name
+                            package_name,
                         ]
 
                         alt_result = subprocess.run(
@@ -222,19 +231,25 @@ def install_mcp_dependencies():
                         )
 
                         if alt_result.returncode == 0:
-                            print(f"   ✅ Alternative installation of {package_name} succeeded")
+                            print(
+                                f"   ✅ Alternative installation of {package_name} succeeded"
+                            )
                             try:
                                 __import__(package_name)
                                 print(f"   ✅ Verified {package_name} is importable")
                                 success_count += 1
                             except ImportError:
-                                print(f"   ⚠️ {package_name} installed but not importable - may need restart")
+                                print(
+                                    f"   ⚠️ {package_name} installed but not importable - may need restart"
+                                )
                                 success_count += 1
                         else:
                             print(f"   ❌ Alternative installation also failed")
                             critical_failed.append(package_name)
                     else:
-                        print(f"   ⚠️ Optional package {package_name} failed - continuing")
+                        print(
+                            f"   ⚠️ Optional package {package_name} failed - continuing"
+                        )
 
             except subprocess.TimeoutExpired:
                 print(f"   ❌ Installation of {package_name} timed out")
@@ -252,7 +267,9 @@ def install_mcp_dependencies():
             print("🎉 All dependencies installed successfully!")
             print("🔄 Please restart FreeCAD to use the new dependencies.")
         elif critical_failed:
-            print(f"❌ Critical dependencies failed to install: {', '.join(critical_failed)}")
+            print(
+                f"❌ Critical dependencies failed to install: {', '.join(critical_failed)}"
+            )
             print("💡 The addon may not function properly without these dependencies")
             print("🔄 Please restart FreeCAD and try again, or install manually")
         elif success_count > 0:
@@ -284,6 +301,7 @@ def install_mcp_dependencies():
             aiohttp_available = False
             try:
                 import aiohttp
+
                 aiohttp_available = True
                 print("   ✅ aiohttp: Available")
             except ImportError:
@@ -305,25 +323,39 @@ def install_mcp_dependencies():
                 if sub_deps_ok == len(sub_deps):
                     print("   🎉 All aiohttp sub-dependencies verified!")
                 else:
-                    print(f"   ⚠️ {sub_deps_ok}/{len(sub_deps)} aiohttp sub-dependencies available")
-                    print("   💡 Missing sub-dependencies may cause AI provider failures")
+                    print(
+                        f"   ⚠️ {sub_deps_ok}/{len(sub_deps)} aiohttp sub-dependencies available"
+                    )
+                    print(
+                        "   💡 Missing sub-dependencies may cause AI provider failures"
+                    )
                     print("   🔧 Try reinstalling aiohttp without --no-deps flag")
             else:
-                print("   ⚠️ Cannot verify aiohttp sub-dependencies (aiohttp not available)")
+                print(
+                    "   ⚠️ Cannot verify aiohttp sub-dependencies (aiohttp not available)"
+                )
 
         # Python 3.13+ specific guidance
-        if python_version >= (3, 13) and (critical_failed or success_count < len(dependencies)):
+        if python_version >= (3, 13) and (
+            critical_failed or success_count < len(dependencies)
+        ):
             print("\n🐍 Python 3.13+ Troubleshooting:")
-            print("   - Some packages may need newer versions for Python 3.13 compatibility")
+            print(
+                "   - Some packages may need newer versions for Python 3.13 compatibility"
+            )
             print("   - Sub-dependencies are critical for proper functionality")
             print("   - Avoid using --no-deps flag which skips sub-dependencies")
-            print("   - Consider using a virtual environment with compatible package versions")
+            print(
+                "   - Consider using a virtual environment with compatible package versions"
+            )
             print("   - Check package documentation for Python 3.13 support status")
     except Exception as e:
         print(f"❌ Unexpected error: {str(e)}")
         print("💡 Please report this error to the addon developers")
         import traceback
+
         print(f"📋 Traceback: {traceback.format_exc()}")
+
 
 # Run the installer
 if __name__ == "__main__":

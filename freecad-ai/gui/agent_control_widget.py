@@ -898,22 +898,26 @@ class AgentControlWidget(QtWidgets.QWidget):
 
     def _on_provider_changed(self, provider_name, model_name):
         """Handle provider selection change from provider selector."""
-        print(f"AgentControlWidget: Provider changed to {provider_name} with model {model_name}")
+        print(
+            f"AgentControlWidget: Provider changed to {provider_name} with model {model_name}"
+        )
         # Update agent manager if available
-        if self.agent_manager and hasattr(self.agent_manager, 'set_provider'):
+        if self.agent_manager and hasattr(self.agent_manager, "set_provider"):
             try:
                 self.agent_manager.set_provider(provider_name, model_name)
             except Exception as e:
-                print(f"AgentControlWidget: Error setting provider in agent manager: {e}")
+                print(
+                    f"AgentControlWidget: Error setting provider in agent manager: {e}"
+                )
 
     def _on_provider_refresh(self):
         """Handle provider refresh request."""
         print("AgentControlWidget: Provider refresh requested")
         if self.provider_service:
             try:
-                if hasattr(self.provider_service, 'refresh_providers'):
+                if hasattr(self.provider_service, "refresh_providers"):
                     self.provider_service.refresh_providers()
-                elif hasattr(self.provider_service, 'initialize_providers_from_config'):
+                elif hasattr(self.provider_service, "initialize_providers_from_config"):
                     self.provider_service.initialize_providers_from_config()
             except Exception as e:
                 print(f"AgentControlWidget: Error refreshing providers: {e}")
@@ -921,19 +925,21 @@ class AgentControlWidget(QtWidgets.QWidget):
     def set_provider_service(self, provider_service):
         """Set the provider service."""
         self.provider_service = provider_service
-        
+
         # Connect to provider selector
-        if hasattr(self, 'provider_selector'):
+        if hasattr(self, "provider_selector"):
             self.provider_selector.set_provider_service(provider_service)
-        
-        print(f"AgentControlWidget: Provider service set: {provider_service is not None}")
+
+        print(
+            f"AgentControlWidget: Provider service set: {provider_service is not None}"
+        )
 
     def set_config_manager(self, config_manager):
         """Set the config manager."""
         self.config_manager = config_manager
-        
+
         # Connect to provider selector
-        if hasattr(self, 'provider_selector'):
+        if hasattr(self, "provider_selector"):
             self.provider_selector.set_config_manager(config_manager)
-        
+
         print(f"AgentControlWidget: Config manager set: {config_manager is not None}")

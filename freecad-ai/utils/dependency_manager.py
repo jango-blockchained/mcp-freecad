@@ -6,6 +6,7 @@ supporting different FreeCAD versions and installation types.
 
 Based on FreeCAD documentation and community best practices.
 """
+
 import importlib.util
 import os
 import platform
@@ -106,7 +107,9 @@ class DependencyManager:
         self.python_compatibility = check_python_compatibility()
 
         # Log compatibility info
-        self.progress_callback(f"Python version: {self.python_compatibility['version']}")
+        self.progress_callback(
+            f"Python version: {self.python_compatibility['version']}"
+        )
         self.progress_callback(f"Platform: {self.python_compatibility['platform']}")
 
         if self.python_compatibility["known_issues"]:
@@ -235,7 +238,9 @@ class DependencyManager:
                     __import__(import_name)
                     return True
                 except Exception as e:
-                    self.progress_callback(f"Package {package_name} found but import failed: {e}")
+                    self.progress_callback(
+                        f"Package {package_name} found but import failed: {e}"
+                    )
                     return False
             return False
 
@@ -247,20 +252,20 @@ class DependencyManager:
 
     def check_sub_dependencies(self, package_name: str) -> Dict[str, bool]:
         """Check sub-dependencies for a specific package.
-        
+
         Args:
             package_name: Name of the main package to check sub-dependencies for
-            
+
         Returns:
             Dictionary mapping sub-dependency names to availability status
         """
         sub_deps = {}
-        
+
         if package_name == "aiohttp":
             # Check critical aiohttp sub-dependencies
             for sub_dep in ["multidict", "yarl", "aiosignal"]:
                 sub_deps[sub_dep] = self.check_dependency(sub_dep)
-        
+
         return sub_deps
 
     def check_all_dependencies(self) -> Dict[str, bool]:
@@ -294,7 +299,9 @@ class DependencyManager:
         """
         missing = []
         for package_name, available in self.check_all_dependencies().items():
-            if not available and self.REQUIRED_DEPENDENCIES[package_name].get("critical", False):
+            if not available and self.REQUIRED_DEPENDENCIES[package_name].get(
+                "critical", False
+            ):
                 missing.append(package_name)
         return missing
 
@@ -316,7 +323,9 @@ class DependencyManager:
         version_spec = self._get_package_version_spec(package_name)
         package_spec = f"{package_name}{version_spec}"
 
-        self.progress_callback(f"Installing {package_name} (version: {version_spec})...")
+        self.progress_callback(
+            f"Installing {package_name} (version: {version_spec})..."
+        )
         self.progress_callback(f"Description: {package_info['description']}")
 
         try:
@@ -359,7 +368,7 @@ class DependencyManager:
                     capture_output=True,
                     text=True,
                     timeout=timeout,
-                    check=False  # Don't raise exception on non-zero exit
+                    check=False,  # Don't raise exception on non-zero exit
                 )
 
                 # Log output for debugging
@@ -379,36 +388,52 @@ class DependencyManager:
 
                     # Verify the installation worked including sub-dependencies
                     if self.check_dependency(package_name):
-                        self.progress_callback(f"✅ Verified {package_name} is now importable")
+                        self.progress_callback(
+                            f"✅ Verified {package_name} is now importable"
+                        )
 
                         # For aiohttp, also verify critical sub-dependencies
                         if package_name == "aiohttp":
                             sub_deps_ok = True
                             for sub_dep in ["multidict", "yarl", "aiosignal"]:
                                 if not self.check_dependency(sub_dep):
-                                    self.progress_callback(f"⚠️ Sub-dependency {sub_dep} not available after {package_name} installation")
+                                    self.progress_callback(
+                                        f"⚠️ Sub-dependency {sub_dep} not available after {package_name} installation"
+                                    )
                                     sub_deps_ok = False
 
                             if sub_deps_ok:
-                                self.progress_callback(f"✅ All {package_name} sub-dependencies verified")
+                                self.progress_callback(
+                                    f"✅ All {package_name} sub-dependencies verified"
+                                )
                             else:
-                                self.progress_callback(f"⚠️ Some {package_name} sub-dependencies missing - may need manual installation")
+                                self.progress_callback(
+                                    f"⚠️ Some {package_name} sub-dependencies missing - may need manual installation"
+                                )
 
                         return True
                     else:
-                        self.progress_callback(f"⚠️ {package_name} installed but not importable - may need restart")
+                        self.progress_callback(
+                            f"⚠️ {package_name} installed but not importable - may need restart"
+                        )
                         return True  # Consider it successful, restart may be needed
                 else:
-                    self.progress_callback(f"❌ Failed to install {package_name} (exit code: {result.returncode})")
+                    self.progress_callback(
+                        f"❌ Failed to install {package_name} (exit code: {result.returncode})"
+                    )
 
                     # Try alternative installation strategies for critical packages
                     if package_info.get("critical", False):
-                        return self._try_alternative_installation(package_name, vendor_path, timeout)
+                        return self._try_alternative_installation(
+                            package_name, vendor_path, timeout
+                        )
 
                     return False
 
             except subprocess.TimeoutExpired:
-                self.progress_callback(f"❌ Installation of {package_name} timed out after {timeout} seconds")
+                self.progress_callback(
+                    f"❌ Installation of {package_name} timed out after {timeout} seconds"
+                )
                 return False
 
         except Exception as e:
@@ -416,15 +441,21 @@ class DependencyManager:
             self.progress_callback(f"❌ Traceback: {traceback.format_exc()}")
             return False
 
-    def _try_alternative_installation(self, package_name: str, vendor_path: str, timeout: int) -> bool:
+    def _try_alternative_installation(
+        self, package_name: str, vendor_path: str, timeout: int
+    ) -> bool:
         """Try alternative installation strategies for critical packages."""
-        self.progress_callback(f"Trying alternative installation strategies for {package_name}...")
+        self.progress_callback(
+            f"Trying alternative installation strategies for {package_name}..."
+        )
 
         python_exe = self._get_python_exe()
 
         # Strategy 1: Install without version constraints but WITH dependencies
         try:
-            self.progress_callback(f"Trying {package_name} without version constraints...")
+            self.progress_callback(
+                f"Trying {package_name} without version constraints..."
+            )
             cmd = [
                 python_exe,
                 "-m",
@@ -433,13 +464,17 @@ class DependencyManager:
                 "--disable-pip-version-check",
                 "--target",
                 vendor_path,
-                package_name  # No version specification
+                package_name,  # No version specification
             ]
 
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout) 
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=timeout
+            )
 
             if result.returncode == 0:
-                self.progress_callback(f"✅ Alternative installation of {package_name} succeeded")
+                self.progress_callback(
+                    f"✅ Alternative installation of {package_name} succeeded"
+                )
                 return True
 
         except Exception as e:
@@ -460,13 +495,17 @@ class DependencyManager:
                 "--target",
                 vendor_path,
                 "--force-reinstall",
-                package_spec
+                package_spec,
             ]
 
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=timeout
+            )
 
             if result.returncode == 0:
-                self.progress_callback(f"✅ Force reinstall of {package_name} succeeded")
+                self.progress_callback(
+                    f"✅ Force reinstall of {package_name} succeeded"
+                )
                 return True
 
         except Exception as e:
@@ -475,7 +514,9 @@ class DependencyManager:
         # Strategy 3: Try installing sub-dependencies individually for aiohttp
         if package_name == "aiohttp":
             try:
-                self.progress_callback(f"Trying to install {package_name} sub-dependencies individually...")
+                self.progress_callback(
+                    f"Trying to install {package_name} sub-dependencies individually..."
+                )
                 sub_deps = ["multidict", "yarl", "aiosignal"]
 
                 for sub_dep in sub_deps:
@@ -489,17 +530,25 @@ class DependencyManager:
                             "--disable-pip-version-check",
                             "--target",
                             vendor_path,
-                            sub_dep
+                            sub_dep,
                         ]
 
-                        sub_result = subprocess.run(sub_cmd, capture_output=True, text=True, timeout=timeout)
+                        sub_result = subprocess.run(
+                            sub_cmd, capture_output=True, text=True, timeout=timeout
+                        )
                         if sub_result.returncode == 0:
-                            self.progress_callback(f"✅ Sub-dependency {sub_dep} installed")
+                            self.progress_callback(
+                                f"✅ Sub-dependency {sub_dep} installed"
+                            )
                         else:
-                            self.progress_callback(f"⚠️ Sub-dependency {sub_dep} failed to install")
+                            self.progress_callback(
+                                f"⚠️ Sub-dependency {sub_dep} failed to install"
+                            )
 
                 # Now try installing aiohttp again
-                self.progress_callback(f"Retrying {package_name} installation after sub-dependencies...")
+                self.progress_callback(
+                    f"Retrying {package_name} installation after sub-dependencies..."
+                )
                 retry_cmd = [
                     python_exe,
                     "-m",
@@ -508,21 +557,31 @@ class DependencyManager:
                     "--disable-pip-version-check",
                     "--target",
                     vendor_path,
-                    package_name
+                    package_name,
                 ]
 
-                retry_result = subprocess.run(retry_cmd, capture_output=True, text=True, timeout=timeout)
+                retry_result = subprocess.run(
+                    retry_cmd, capture_output=True, text=True, timeout=timeout
+                )
                 if retry_result.returncode == 0:
-                    self.progress_callback(f"✅ {package_name} installation succeeded after sub-dependency installation")
+                    self.progress_callback(
+                        f"✅ {package_name} installation succeeded after sub-dependency installation"
+                    )
                     return True
 
             except Exception as e:
-                self.progress_callback(f"Alternative installation strategy 3 failed: {e}")
+                self.progress_callback(
+                    f"Alternative installation strategy 3 failed: {e}"
+                )
 
-        self.progress_callback(f"❌ All alternative installation strategies failed for {package_name}")
+        self.progress_callback(
+            f"❌ All alternative installation strategies failed for {package_name}"
+        )
         return False
 
-    def install_missing_dependencies(self, timeout: int = 180, critical_only: bool = False) -> bool:
+    def install_missing_dependencies(
+        self, timeout: int = 180, critical_only: bool = False
+    ) -> bool:
         """Install all missing dependencies with enhanced handling.
 
         Args:
@@ -534,7 +593,9 @@ class DependencyManager:
         """
         if critical_only:
             missing = self.get_critical_missing_dependencies()
-            self.progress_callback(f"Installing {len(missing)} critical missing dependencies...")
+            self.progress_callback(
+                f"Installing {len(missing)} critical missing dependencies..."
+            )
         else:
             missing = self.get_missing_dependencies()
             self.progress_callback(f"Installing {len(missing)} missing dependencies...")
@@ -551,22 +612,32 @@ class DependencyManager:
                 success_count += 1
 
         if success_count == len(missing):
-            self.progress_callback(f"✅ Successfully installed all {len(missing)} missing dependencies")
+            self.progress_callback(
+                f"✅ Successfully installed all {len(missing)} missing dependencies"
+            )
             return True
         else:
-            self.progress_callback(f"⚠️ Installed {success_count}/{len(missing)} dependencies")
+            self.progress_callback(
+                f"⚠️ Installed {success_count}/{len(missing)} dependencies"
+            )
 
             # If critical dependencies failed, this is a bigger problem
             failed_critical = []
             for package_name in missing:
-                if not self.check_dependency(package_name) and self.REQUIRED_DEPENDENCIES[package_name].get("critical", False):
+                if not self.check_dependency(
+                    package_name
+                ) and self.REQUIRED_DEPENDENCIES[package_name].get("critical", False):
                     failed_critical.append(package_name)
 
             if failed_critical:
-                self.progress_callback(f"❌ Critical dependencies failed to install: {', '.join(failed_critical)}")
+                self.progress_callback(
+                    f"❌ Critical dependencies failed to install: {', '.join(failed_critical)}"
+                )
                 return False
             else:
-                self.progress_callback("✅ All critical dependencies installed successfully")
+                self.progress_callback(
+                    "✅ All critical dependencies installed successfully"
+                )
                 return True
 
     def auto_install_on_first_run(self) -> bool:
@@ -578,49 +649,77 @@ class DependencyManager:
             critical_missing = self.get_critical_missing_dependencies()
 
             if critical_missing:
-                self.progress_callback(f"Critical dependencies missing: {', '.join(critical_missing)}")
+                self.progress_callback(
+                    f"Critical dependencies missing: {', '.join(critical_missing)}"
+                )
                 self.progress_callback("Attempting automatic installation...")
 
                 # Special handling for aiohttp and its sub-dependencies
                 if "aiohttp" in critical_missing:
-                    self.progress_callback("Detected missing aiohttp - checking sub-dependencies...")
+                    self.progress_callback(
+                        "Detected missing aiohttp - checking sub-dependencies..."
+                    )
 
                     # Check if sub-dependencies are also missing
                     aiohttp_sub_deps = self.check_sub_dependencies("aiohttp")
-                    missing_sub_deps = [dep for dep, available in aiohttp_sub_deps.items() if not available]
+                    missing_sub_deps = [
+                        dep
+                        for dep, available in aiohttp_sub_deps.items()
+                        if not available
+                    ]
 
                     if missing_sub_deps:
-                        self.progress_callback(f"Missing aiohttp sub-dependencies: {', '.join(missing_sub_deps)}")
+                        self.progress_callback(
+                            f"Missing aiohttp sub-dependencies: {', '.join(missing_sub_deps)}"
+                        )
 
                         # Install sub-dependencies first
                         for sub_dep in missing_sub_deps:
                             if sub_dep in self.REQUIRED_DEPENDENCIES:
-                                self.progress_callback(f"Installing sub-dependency: {sub_dep}")
+                                self.progress_callback(
+                                    f"Installing sub-dependency: {sub_dep}"
+                                )
                                 self.install_dependency(sub_dep)
 
                 # Try to install critical dependencies
                 if self.install_missing_dependencies(critical_only=True):
-                    self.progress_callback("✅ Critical dependencies installed successfully")
+                    self.progress_callback(
+                        "✅ Critical dependencies installed successfully"
+                    )
 
                     # Verify sub-dependencies for aiohttp
-                    if "aiohttp" in critical_missing and self.check_dependency("aiohttp"):
+                    if "aiohttp" in critical_missing and self.check_dependency(
+                        "aiohttp"
+                    ):
                         aiohttp_sub_deps = self.check_sub_dependencies("aiohttp")
-                        missing_after_install = [dep for dep, available in aiohttp_sub_deps.items() if not available]
+                        missing_after_install = [
+                            dep
+                            for dep, available in aiohttp_sub_deps.items()
+                            if not available
+                        ]
 
                         if missing_after_install:
-                            self.progress_callback(f"⚠️ Some aiohttp sub-dependencies still missing: {', '.join(missing_after_install)}")
-                            self.progress_callback("Attempting to install missing sub-dependencies...")
+                            self.progress_callback(
+                                f"⚠️ Some aiohttp sub-dependencies still missing: {', '.join(missing_after_install)}"
+                            )
+                            self.progress_callback(
+                                "Attempting to install missing sub-dependencies..."
+                            )
 
                             for sub_dep in missing_after_install:
                                 if sub_dep in self.REQUIRED_DEPENDENCIES:
                                     self.install_dependency(sub_dep)
                         else:
-                            self.progress_callback("✅ All aiohttp sub-dependencies verified")
+                            self.progress_callback(
+                                "✅ All aiohttp sub-dependencies verified"
+                            )
 
                     # Try to install optional dependencies too
                     all_missing = self.get_missing_dependencies()
                     if all_missing:
-                        self.progress_callback("Installing remaining optional dependencies...")
+                        self.progress_callback(
+                            "Installing remaining optional dependencies..."
+                        )
                         self.install_missing_dependencies(critical_only=False)
 
                     return True
@@ -631,7 +730,9 @@ class DependencyManager:
                 # Check for any missing optional dependencies
                 all_missing = self.get_missing_dependencies()
                 if all_missing:
-                    self.progress_callback(f"Optional dependencies missing: {', '.join(all_missing)}")
+                    self.progress_callback(
+                        f"Optional dependencies missing: {', '.join(all_missing)}"
+                    )
                     self.progress_callback("Installing optional dependencies...")
                     return self.install_missing_dependencies(critical_only=False)
                 else:
@@ -640,11 +741,19 @@ class DependencyManager:
                     # Even if all main dependencies are available, check sub-dependencies
                     if self.check_dependency("aiohttp"):
                         aiohttp_sub_deps = self.check_sub_dependencies("aiohttp")
-                        missing_sub_deps = [dep for dep, available in aiohttp_sub_deps.items() if not available]
+                        missing_sub_deps = [
+                            dep
+                            for dep, available in aiohttp_sub_deps.items()
+                            if not available
+                        ]
 
                         if missing_sub_deps:
-                            self.progress_callback(f"⚠️ aiohttp sub-dependencies missing: {', '.join(missing_sub_deps)}")
-                            self.progress_callback("Installing missing sub-dependencies...")
+                            self.progress_callback(
+                                f"⚠️ aiohttp sub-dependencies missing: {', '.join(missing_sub_deps)}"
+                            )
+                            self.progress_callback(
+                                "Installing missing sub-dependencies..."
+                            )
 
                             for sub_dep in missing_sub_deps:
                                 if sub_dep in self.REQUIRED_DEPENDENCIES:
@@ -671,9 +780,12 @@ class DependencyManager:
         }
 
         # Add Python compatibility info
-        info.update({
-            f"python_{key}": str(value) for key, value in self.python_compatibility.items()
-        })
+        info.update(
+            {
+                f"python_{key}": str(value)
+                for key, value in self.python_compatibility.items()
+            }
+        )
 
         return info
 

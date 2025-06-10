@@ -16,46 +16,69 @@ if addon_dir not in sys.path:
 
 def workbench_crash_safe(operation_name):
     """Decorator to wrap workbench methods with comprehensive crash prevention and logging."""
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             try:
-                FreeCAD.Console.PrintMessage(f"FreeCAD AI Workbench: Starting {operation_name}...\n")
+                FreeCAD.Console.PrintMessage(
+                    f"FreeCAD AI Workbench: Starting {operation_name}...\n"
+                )
                 result = func(*args, **kwargs)
-                FreeCAD.Console.PrintMessage(f"FreeCAD AI Workbench: {operation_name} completed successfully\n")
+                FreeCAD.Console.PrintMessage(
+                    f"FreeCAD AI Workbench: {operation_name} completed successfully\n"
+                )
                 return result
             except Exception as e:
-                FreeCAD.Console.PrintError(f"FreeCAD AI Workbench: CRASH PREVENTED in {operation_name}: {e}\n")
-                FreeCAD.Console.PrintError(f"FreeCAD AI Workbench: {operation_name} traceback: {traceback.format_exc()}\n")
-                
+                FreeCAD.Console.PrintError(
+                    f"FreeCAD AI Workbench: CRASH PREVENTED in {operation_name}: {e}\n"
+                )
+                FreeCAD.Console.PrintError(
+                    f"FreeCAD AI Workbench: {operation_name} traceback: {traceback.format_exc()}\n"
+                )
+
                 # Try to show error in GUI if possible
                 try:
-                    if hasattr(FreeCADGui, 'getMainWindow'):
+                    if hasattr(FreeCADGui, "getMainWindow"):
                         main_window = FreeCADGui.getMainWindow()
-                        if main_window and hasattr(main_window, 'statusBar'):
-                            main_window.statusBar().showMessage(f"FreeCAD AI: Error in {operation_name}", 5000)
+                        if main_window and hasattr(main_window, "statusBar"):
+                            main_window.statusBar().showMessage(
+                                f"FreeCAD AI: Error in {operation_name}", 5000
+                            )
                 except Exception:
                     pass
-                
+
                 # Return None or appropriate fallback
                 return None
+
         return wrapper
+
     return decorator
 
 
 def safe_import_with_fallback(import_func, module_name, fallback_value=None):
     """Safely import modules with comprehensive error handling and fallback."""
     try:
-        FreeCAD.Console.PrintMessage(f"FreeCAD AI: Attempting to import {module_name}...\n")
+        FreeCAD.Console.PrintMessage(
+            f"FreeCAD AI: Attempting to import {module_name}...\n"
+        )
         result = import_func()
-        FreeCAD.Console.PrintMessage(f"FreeCAD AI: Successfully imported {module_name}\n")
+        FreeCAD.Console.PrintMessage(
+            f"FreeCAD AI: Successfully imported {module_name}\n"
+        )
         return result
     except ImportError as e:
-        FreeCAD.Console.PrintMessage(f"FreeCAD AI: Import failed for {module_name}: {e}\n")
+        FreeCAD.Console.PrintMessage(
+            f"FreeCAD AI: Import failed for {module_name}: {e}\n"
+        )
         return fallback_value
     except Exception as e:
-        FreeCAD.Console.PrintError(f"FreeCAD AI: CRASH PREVENTED during {module_name} import: {e}\n")
-        FreeCAD.Console.PrintError(f"FreeCAD AI: {module_name} import traceback: {traceback.format_exc()}\n")
+        FreeCAD.Console.PrintError(
+            f"FreeCAD AI: CRASH PREVENTED during {module_name} import: {e}\n"
+        )
+        FreeCAD.Console.PrintError(
+            f"FreeCAD AI: {module_name} import traceback: {traceback.format_exc()}\n"
+        )
         return fallback_value
 
 
@@ -67,8 +90,12 @@ def safe_gui_operation(operation_func, operation_name, fallback_result=None):
         FreeCAD.Console.PrintMessage(f"FreeCAD AI: {operation_name} successful\n")
         return result
     except Exception as e:
-        FreeCAD.Console.PrintError(f"FreeCAD AI: CRASH PREVENTED in {operation_name}: {e}\n")
-        FreeCAD.Console.PrintError(f"FreeCAD AI: {operation_name} traceback: {traceback.format_exc()}\n")
+        FreeCAD.Console.PrintError(
+            f"FreeCAD AI: CRASH PREVENTED in {operation_name}: {e}\n"
+        )
+        FreeCAD.Console.PrintError(
+            f"FreeCAD AI: {operation_name} traceback: {traceback.format_exc()}\n"
+        )
         return fallback_result
 
 
@@ -102,8 +129,11 @@ try:
             OperationsTool,
             PrimitivesTool,
         )
+
         TOOLS_AVAILABLE = TOOLS_LOADED
-        FreeCAD.Console.PrintMessage("FreeCAD AI: Tools imported successfully via absolute imports\n")
+        FreeCAD.Console.PrintMessage(
+            "FreeCAD AI: Tools imported successfully via absolute imports\n"
+        )
     except ImportError as e:
         FreeCAD.Console.PrintMessage(f"FreeCAD AI: Absolute tools import failed: {e}\n")
         TOOLS_IMPORT_ERROR = str(e)
@@ -118,10 +148,15 @@ try:
                 OperationsTool,
                 PrimitivesTool,
             )
+
             TOOLS_AVAILABLE = TOOLS_LOADED
-            FreeCAD.Console.PrintMessage("FreeCAD AI: Tools imported successfully via path modification\n")
+            FreeCAD.Console.PrintMessage(
+                "FreeCAD AI: Tools imported successfully via path modification\n"
+            )
         except ImportError as e2:
-            FreeCAD.Console.PrintMessage(f"FreeCAD AI: Tools import with path modification failed: {e2}\n")
+            FreeCAD.Console.PrintMessage(
+                f"FreeCAD AI: Tools import with path modification failed: {e2}\n"
+            )
             TOOLS_IMPORT_ERROR = str(e2)
 
             # Strategy 3: Try importing individual tools with fallbacks
@@ -130,6 +165,7 @@ try:
                 class FallbackTool:
                     def __init__(self, name):
                         self.name = name
+
                     def __str__(self):
                         return f"Fallback{self.name}"
 
@@ -154,10 +190,14 @@ try:
                     ExportImportTool = FallbackTool("ExportImportTool")
 
                 TOOLS_AVAILABLE = True  # Partial availability with fallbacks
-                FreeCAD.Console.PrintMessage("FreeCAD AI: Tools imported with fallbacks\n")
+                FreeCAD.Console.PrintMessage(
+                    "FreeCAD AI: Tools imported with fallbacks\n"
+                )
 
             except Exception as e3:
-                FreeCAD.Console.PrintWarning(f"FreeCAD AI: Even fallback tools import failed: {e3}\n")
+                FreeCAD.Console.PrintWarning(
+                    f"FreeCAD AI: Even fallback tools import failed: {e3}\n"
+                )
                 TOOLS_AVAILABLE = False
                 TOOLS_IMPORT_ERROR = str(e3)
 
@@ -167,27 +207,33 @@ except Exception as e:
     TOOLS_IMPORT_ERROR = str(e)
 
 if not TOOLS_AVAILABLE:
-    FreeCAD.Console.PrintWarning(f"FreeCAD AI: Tools not available - last error: {TOOLS_IMPORT_ERROR}\n")
+    FreeCAD.Console.PrintWarning(
+        f"FreeCAD AI: Tools not available - last error: {TOOLS_IMPORT_ERROR}\n"
+    )
 
 # Import advanced tools with graceful degradation
 ADVANCED_TOOLS_AVAILABLE = safe_import_with_fallback(
-    lambda: __import__('tools.advanced', fromlist=['ADVANCED_TOOLS_AVAILABLE']).ADVANCED_TOOLS_AVAILABLE,
+    lambda: __import__(
+        "tools.advanced", fromlist=["ADVANCED_TOOLS_AVAILABLE"]
+    ).ADVANCED_TOOLS_AVAILABLE,
     "advanced tools",
-    False
+    False,
 )
 
 # Import resources with graceful degradation
 RESOURCES_AVAILABLE = safe_import_with_fallback(
-    lambda: __import__('resources', fromlist=['RESOURCES_AVAILABLE']).RESOURCES_AVAILABLE,
+    lambda: __import__(
+        "resources", fromlist=["RESOURCES_AVAILABLE"]
+    ).RESOURCES_AVAILABLE,
     "resources",
-    False
+    False,
 )
 
 # Import events with graceful degradation
 EVENTS_AVAILABLE = safe_import_with_fallback(
-    lambda: __import__('events', fromlist=['EVENTS_AVAILABLE']).EVENTS_AVAILABLE,
+    lambda: __import__("events", fromlist=["EVENTS_AVAILABLE"]).EVENTS_AVAILABLE,
     "events",
-    False
+    False,
 )
 
 # Import API with enhanced version conflict handling
@@ -198,8 +244,10 @@ try:
     # Check for FastAPI/Pydantic compatibility issues before importing
     python_version = sys.version_info
     if python_version >= (3, 13):
-        FreeCAD.Console.PrintMessage("FreeCAD AI: Python 3.13+ detected - checking API compatibility...\n")
-        
+        FreeCAD.Console.PrintMessage(
+            "FreeCAD AI: Python 3.13+ detected - checking API compatibility...\n"
+        )
+
         # Test FastAPI/Pydantic compatibility
         try:
             import fastapi
@@ -208,28 +256,41 @@ try:
             # Test basic functionality that often fails with version conflicts
             class TestModel(BaseModel):
                 test_field: str = "test"
-            
-            FreeCAD.Console.PrintMessage("FreeCAD AI: FastAPI/Pydantic compatibility test passed\n")
+
+            FreeCAD.Console.PrintMessage(
+                "FreeCAD AI: FastAPI/Pydantic compatibility test passed\n"
+            )
         except TypeError as e:
             if "Protocols with non-method members" in str(e):
-                FreeCAD.Console.PrintWarning(f"FreeCAD AI: FastAPI/Pydantic compatibility issue detected: {e}\n")
-                FreeCAD.Console.PrintWarning("FreeCAD AI: API module will be disabled due to version conflicts\n")
-                FreeCAD.Console.PrintWarning("FreeCAD AI: Consider updating FastAPI/Pydantic or using Python < 3.13\n")
+                FreeCAD.Console.PrintWarning(
+                    f"FreeCAD AI: FastAPI/Pydantic compatibility issue detected: {e}\n"
+                )
+                FreeCAD.Console.PrintWarning(
+                    "FreeCAD AI: API module will be disabled due to version conflicts\n"
+                )
+                FreeCAD.Console.PrintWarning(
+                    "FreeCAD AI: Consider updating FastAPI/Pydantic or using Python < 3.13\n"
+                )
                 API_IMPORT_ERROR = f"FastAPI/Pydantic compatibility issue: {e}"
                 raise ImportError(API_IMPORT_ERROR)
             else:
-                FreeCAD.Console.PrintWarning(f"FreeCAD AI: FastAPI/Pydantic type error: {e}\n")
+                FreeCAD.Console.PrintWarning(
+                    f"FreeCAD AI: FastAPI/Pydantic type error: {e}\n"
+                )
                 API_IMPORT_ERROR = f"FastAPI/Pydantic type error: {e}"
                 raise ImportError(API_IMPORT_ERROR)
         except ImportError as e:
-            FreeCAD.Console.PrintMessage(f"FreeCAD AI: FastAPI/Pydantic not available: {e}\n")
+            FreeCAD.Console.PrintMessage(
+                f"FreeCAD AI: FastAPI/Pydantic not available: {e}\n"
+            )
             API_IMPORT_ERROR = f"FastAPI/Pydantic not available: {e}"
             raise ImportError(API_IMPORT_ERROR)
 
     # If compatibility check passed or not needed, try importing API
     from api import API_AVAILABLE as API_LOADED
+
     API_AVAILABLE = API_LOADED
-    
+
     if API_AVAILABLE:
         FreeCAD.Console.PrintMessage("FreeCAD AI: API loaded successfully\n")
     else:
@@ -241,28 +302,40 @@ except ImportError as e:
         API_IMPORT_ERROR = str(e)
 except TypeError as e:
     if "Protocols with non-method members" in str(e):
-        FreeCAD.Console.PrintError(f"FreeCAD AI: CRASH PREVENTED - FastAPI/Pydantic compatibility error: {e}\n")
-        FreeCAD.Console.PrintError("FreeCAD AI: This is a known issue with Python 3.13+ and certain library versions\n")
+        FreeCAD.Console.PrintError(
+            f"FreeCAD AI: CRASH PREVENTED - FastAPI/Pydantic compatibility error: {e}\n"
+        )
+        FreeCAD.Console.PrintError(
+            "FreeCAD AI: This is a known issue with Python 3.13+ and certain library versions\n"
+        )
         FreeCAD.Console.PrintError("FreeCAD AI: API functionality will be disabled\n")
         FreeCAD.Console.PrintError("FreeCAD AI: Solutions:\n")
-        FreeCAD.Console.PrintError("  1. Update FastAPI and Pydantic to latest versions\n")
+        FreeCAD.Console.PrintError(
+            "  1. Update FastAPI and Pydantic to latest versions\n"
+        )
         FreeCAD.Console.PrintError("  2. Use Python 3.12 or earlier\n")
-        FreeCAD.Console.PrintError("  3. Use a virtual environment with compatible versions\n")
+        FreeCAD.Console.PrintError(
+            "  3. Use a virtual environment with compatible versions\n"
+        )
     else:
-        FreeCAD.Console.PrintError(f"FreeCAD AI: CRASH PREVENTED - API type error: {e}\n")
+        FreeCAD.Console.PrintError(
+            f"FreeCAD AI: CRASH PREVENTED - API type error: {e}\n"
+        )
     API_AVAILABLE = False
     API_IMPORT_ERROR = str(e)
 except Exception as e:
     FreeCAD.Console.PrintError(f"FreeCAD AI: CRASH PREVENTED - API import error: {e}\n")
-    FreeCAD.Console.PrintError(f"FreeCAD AI: API import traceback: {traceback.format_exc()}\n")
+    FreeCAD.Console.PrintError(
+        f"FreeCAD AI: API import traceback: {traceback.format_exc()}\n"
+    )
     API_AVAILABLE = False
     API_IMPORT_ERROR = str(e)
-    
+
 # Import clients with graceful degradation
 CLIENTS_AVAILABLE = safe_import_with_fallback(
-    lambda: __import__('clients', fromlist=['CLIENTS_AVAILABLE']).CLIENTS_AVAILABLE,
+    lambda: __import__("clients", fromlist=["CLIENTS_AVAILABLE"]).CLIENTS_AVAILABLE,
     "clients",
-    False
+    False,
 )
 
 # Import AI providers with comprehensive fallback strategies and dependency management
@@ -270,42 +343,52 @@ AI_PROVIDERS_AVAILABLE = False
 AI_PROVIDERS_IMPORT_ERROR = None
 DEPENDENCY_INSTALL_ATTEMPTED = False
 
+
 def attempt_dependency_installation():
     """Attempt to install missing dependencies for AI providers."""
     global DEPENDENCY_INSTALL_ATTEMPTED
-    
+
     if DEPENDENCY_INSTALL_ATTEMPTED:
         return False
-    
+
     DEPENDENCY_INSTALL_ATTEMPTED = True
-    
+
     try:
-        FreeCAD.Console.PrintMessage("FreeCAD AI: Attempting automatic dependency installation for AI providers...\n")
-        
+        FreeCAD.Console.PrintMessage(
+            "FreeCAD AI: Attempting automatic dependency installation for AI providers...\n"
+        )
+
         # Try to use the dependency manager
         from utils.dependency_manager import DependencyManager
-        
+
         def progress_callback(message):
             FreeCAD.Console.PrintMessage(f"FreeCAD AI: {message}\n")
-        
+
         manager = DependencyManager(progress_callback)
-        
+
         # Install critical dependencies (like aiohttp)
         success = manager.install_missing_dependencies(critical_only=True)
-        
+
         if success:
-            FreeCAD.Console.PrintMessage("FreeCAD AI: ✅ Dependencies installed - restart FreeCAD to use AI providers\n")
+            FreeCAD.Console.PrintMessage(
+                "FreeCAD AI: ✅ Dependencies installed - restart FreeCAD to use AI providers\n"
+            )
             return True
         else:
-            FreeCAD.Console.PrintWarning("FreeCAD AI: ❌ Some dependencies failed to install\n")
+            FreeCAD.Console.PrintWarning(
+                "FreeCAD AI: ❌ Some dependencies failed to install\n"
+            )
             return False
-            
+
     except ImportError as e:
-        FreeCAD.Console.PrintMessage(f"FreeCAD AI: Could not import dependency manager: {e}\n")
+        FreeCAD.Console.PrintMessage(
+            f"FreeCAD AI: Could not import dependency manager: {e}\n"
+        )
         return False
     except Exception as e:
         FreeCAD.Console.PrintError(f"FreeCAD AI: Dependency installation failed: {e}\n")
         return False
+
 
 try:
     # Strategy 1: Try absolute imports first
@@ -313,25 +396,42 @@ try:
         from ai.providers.claude_provider import ClaudeProvider
         from ai.providers.gemini_provider import GeminiProvider
         from ai.providers.openrouter_provider import OpenRouterProvider
+
         AI_PROVIDERS_AVAILABLE = True
-        FreeCAD.Console.PrintMessage("FreeCAD AI: AI providers imported successfully via absolute imports\n")
+        FreeCAD.Console.PrintMessage(
+            "FreeCAD AI: AI providers imported successfully via absolute imports\n"
+        )
     except ImportError as e:
-        FreeCAD.Console.PrintMessage(f"FreeCAD AI: Absolute AI providers import failed: {e}\n")
+        FreeCAD.Console.PrintMessage(
+            f"FreeCAD AI: Absolute AI providers import failed: {e}\n"
+        )
         AI_PROVIDERS_IMPORT_ERROR = str(e)
 
         # Check if it's a missing dependency issue
         if "aiohttp" in str(e):
-            FreeCAD.Console.PrintWarning("FreeCAD AI: Missing 'aiohttp' dependency detected\n")
-            
+            FreeCAD.Console.PrintWarning(
+                "FreeCAD AI: Missing 'aiohttp' dependency detected\n"
+            )
+
             # Attempt automatic installation
             if attempt_dependency_installation():
-                FreeCAD.Console.PrintMessage("FreeCAD AI: Dependencies installed - AI providers will be available after restart\n")
+                FreeCAD.Console.PrintMessage(
+                    "FreeCAD AI: Dependencies installed - AI providers will be available after restart\n"
+                )
             else:
-                FreeCAD.Console.PrintWarning("FreeCAD AI: Automatic installation failed\n")
+                FreeCAD.Console.PrintWarning(
+                    "FreeCAD AI: Automatic installation failed\n"
+                )
                 FreeCAD.Console.PrintMessage("FreeCAD AI: Manual installation guide:\n")
-                FreeCAD.Console.PrintMessage("  1. Use the Dependencies tab in FreeCAD AI interface\n")
-                FreeCAD.Console.PrintMessage("  2. Or run: pip install aiohttp>=3.8.0\n")
-                FreeCAD.Console.PrintMessage("  3. Restart FreeCAD after installation\n")
+                FreeCAD.Console.PrintMessage(
+                    "  1. Use the Dependencies tab in FreeCAD AI interface\n"
+                )
+                FreeCAD.Console.PrintMessage(
+                    "  2. Or run: pip install aiohttp>=3.8.0\n"
+                )
+                FreeCAD.Console.PrintMessage(
+                    "  3. Restart FreeCAD after installation\n"
+                )
 
         # Strategy 2: Try importing from the current directory structure
         try:
@@ -339,10 +439,15 @@ try:
             from ai.providers.claude_provider import ClaudeProvider
             from ai.providers.gemini_provider import GeminiProvider
             from ai.providers.openrouter_provider import OpenRouterProvider
+
             AI_PROVIDERS_AVAILABLE = True
-            FreeCAD.Console.PrintMessage("FreeCAD AI: AI providers imported successfully via path modification\n")
+            FreeCAD.Console.PrintMessage(
+                "FreeCAD AI: AI providers imported successfully via path modification\n"
+            )
         except ImportError as e2:
-            FreeCAD.Console.PrintMessage(f"FreeCAD AI: AI providers import with path modification failed: {e2}\n")
+            FreeCAD.Console.PrintMessage(
+                f"FreeCAD AI: AI providers import with path modification failed: {e2}\n"
+            )
             AI_PROVIDERS_IMPORT_ERROR = str(e2)
 
             # Strategy 3: Try importing individual providers with fallbacks
@@ -352,6 +457,7 @@ try:
                     def __init__(self, name):
                         self.name = name
                         self.available = False
+
                     def __str__(self):
                         return f"Fallback{self.name}"
 
@@ -371,10 +477,14 @@ try:
                     OpenRouterProvider = FallbackProvider("OpenRouterProvider")
 
                 AI_PROVIDERS_AVAILABLE = True  # Partial availability with fallbacks
-                FreeCAD.Console.PrintMessage("FreeCAD AI: AI providers imported with fallbacks\n")
+                FreeCAD.Console.PrintMessage(
+                    "FreeCAD AI: AI providers imported with fallbacks\n"
+                )
 
             except Exception as e3:
-                FreeCAD.Console.PrintWarning(f"FreeCAD AI: Even fallback AI providers import failed: {e3}\n")
+                FreeCAD.Console.PrintWarning(
+                    f"FreeCAD AI: Even fallback AI providers import failed: {e3}\n"
+                )
                 AI_PROVIDERS_AVAILABLE = False
                 AI_PROVIDERS_IMPORT_ERROR = str(e3)
 
@@ -384,15 +494,21 @@ except Exception as e:
     AI_PROVIDERS_IMPORT_ERROR = str(e)
 
 if not AI_PROVIDERS_AVAILABLE:
-    FreeCAD.Console.PrintWarning(f"FreeCAD AI: AI providers not available - last error: {AI_PROVIDERS_IMPORT_ERROR}\n")
-    
+    FreeCAD.Console.PrintWarning(
+        f"FreeCAD AI: AI providers not available - last error: {AI_PROVIDERS_IMPORT_ERROR}\n"
+    )
+
     # Provide specific guidance based on the error
     if AI_PROVIDERS_IMPORT_ERROR and "aiohttp" in AI_PROVIDERS_IMPORT_ERROR:
         FreeCAD.Console.PrintMessage("FreeCAD AI: 💡 To enable AI providers:\n")
-        FreeCAD.Console.PrintMessage("  1. Open FreeCAD AI interface and go to Dependencies tab\n")
+        FreeCAD.Console.PrintMessage(
+            "  1. Open FreeCAD AI interface and go to Dependencies tab\n"
+        )
         FreeCAD.Console.PrintMessage("  2. Click 'Install Missing Dependencies'\n")
         FreeCAD.Console.PrintMessage("  3. Restart FreeCAD\n")
-        FreeCAD.Console.PrintMessage("  4. Or manually install: pip install aiohttp>=3.8.0\n")
+        FreeCAD.Console.PrintMessage(
+            "  4. Or manually install: pip install aiohttp>=3.8.0\n"
+        )
 
 # Print summary of import status with crash prevention
 try:
@@ -404,15 +520,27 @@ try:
 
     # Core components
     FreeCAD.Console.PrintMessage("Core Components:\n")
-    FreeCAD.Console.PrintMessage(f"  Qt Bindings: {'✓ Available' if HAS_PYSIDE2 else '✗ Missing'}\n")
-    FreeCAD.Console.PrintMessage(f"  Tools: {'✓ Available' if TOOLS_AVAILABLE else '✗ Missing'}\n")
+    FreeCAD.Console.PrintMessage(
+        f"  Qt Bindings: {'✓ Available' if HAS_PYSIDE2 else '✗ Missing'}\n"
+    )
+    FreeCAD.Console.PrintMessage(
+        f"  Tools: {'✓ Available' if TOOLS_AVAILABLE else '✗ Missing'}\n"
+    )
 
     # Optional components
     FreeCAD.Console.PrintMessage("Optional Components:\n")
-    FreeCAD.Console.PrintMessage(f"  Advanced Tools: {'✓ Available' if ADVANCED_TOOLS_AVAILABLE else '✗ Missing'}\n")
-    FreeCAD.Console.PrintMessage(f"  Resources: {'✓ Available' if RESOURCES_AVAILABLE else '✗ Missing'}\n")
-    FreeCAD.Console.PrintMessage(f"  Events: {'✓ Available' if EVENTS_AVAILABLE else '✗ Missing'}\n")
-    FreeCAD.Console.PrintMessage(f"  Clients: {'✓ Available' if CLIENTS_AVAILABLE else '✗ Missing'}\n")
+    FreeCAD.Console.PrintMessage(
+        f"  Advanced Tools: {'✓ Available' if ADVANCED_TOOLS_AVAILABLE else '✗ Missing'}\n"
+    )
+    FreeCAD.Console.PrintMessage(
+        f"  Resources: {'✓ Available' if RESOURCES_AVAILABLE else '✗ Missing'}\n"
+    )
+    FreeCAD.Console.PrintMessage(
+        f"  Events: {'✓ Available' if EVENTS_AVAILABLE else '✗ Missing'}\n"
+    )
+    FreeCAD.Console.PrintMessage(
+        f"  Clients: {'✓ Available' if CLIENTS_AVAILABLE else '✗ Missing'}\n"
+    )
 
     # API and AI components with detailed status
     api_status = "✓ Available" if API_AVAILABLE else "✗ Disabled"
@@ -450,26 +578,38 @@ try:
     if not critical_missing:
         FreeCAD.Console.PrintMessage("  ✅ Core functionality: Available\n")
     else:
-        FreeCAD.Console.PrintMessage(f"  ❌ Core functionality: Missing {', '.join(critical_missing)}\n")
+        FreeCAD.Console.PrintMessage(
+            f"  ❌ Core functionality: Missing {', '.join(critical_missing)}\n"
+        )
 
     if not optional_missing:
         FreeCAD.Console.PrintMessage("  ✅ Extended functionality: Fully available\n")
     else:
-        FreeCAD.Console.PrintMessage(f"  ⚠️ Extended functionality: Missing {', '.join(optional_missing)}\n")
+        FreeCAD.Console.PrintMessage(
+            f"  ⚠️ Extended functionality: Missing {', '.join(optional_missing)}\n"
+        )
 
     # User guidance
     if optional_missing:
         FreeCAD.Console.PrintMessage("\n💡 To enable missing functionality:\n")
-        if not API_AVAILABLE and "Protocols with non-method members" in str(API_IMPORT_ERROR):
-            FreeCAD.Console.PrintMessage("  • API: Update FastAPI/Pydantic or use Python < 3.13\n")
+        if not API_AVAILABLE and "Protocols with non-method members" in str(
+            API_IMPORT_ERROR
+        ):
+            FreeCAD.Console.PrintMessage(
+                "  • API: Update FastAPI/Pydantic or use Python < 3.13\n"
+            )
         if not AI_PROVIDERS_AVAILABLE and "aiohttp" in str(AI_PROVIDERS_IMPORT_ERROR):
-            FreeCAD.Console.PrintMessage("  • AI Providers: Install aiohttp dependency\n")
-            FreeCAD.Console.PrintMessage("    - Use Dependencies tab in FreeCAD AI interface\n")
+            FreeCAD.Console.PrintMessage(
+                "  • AI Providers: Install aiohttp dependency\n"
+            )
+            FreeCAD.Console.PrintMessage(
+                "    - Use Dependencies tab in FreeCAD AI interface\n"
+            )
             FreeCAD.Console.PrintMessage("    - Or run: pip install aiohttp>=3.8.0\n")
             FreeCAD.Console.PrintMessage("    - Then restart FreeCAD\n")
 
     FreeCAD.Console.PrintMessage("=" * 60 + "\n")
-    
+
 except Exception as e:
     FreeCAD.Console.PrintError(f"FreeCAD AI: Error printing import summary: {e}\n")
 
@@ -492,11 +632,13 @@ class MCPShowInterfaceCommand:
         """Activate the interface command with comprehensive error handling."""
         try:
             FreeCAD.Console.PrintMessage("FreeCAD AI: Interface command activated\n")
-            
+
             if not HAS_PYSIDE2:
-                FreeCAD.Console.PrintWarning("FreeCAD AI: No Qt bindings available - cannot show interface\n")
+                FreeCAD.Console.PrintWarning(
+                    "FreeCAD AI: No Qt bindings available - cannot show interface\n"
+                )
                 return
-            
+
             # Get main window safely
             try:
                 main_window = FreeCADGui.getMainWindow()
@@ -504,23 +646,32 @@ class MCPShowInterfaceCommand:
                     FreeCAD.Console.PrintError("FreeCAD AI: Cannot get main window\n")
                     return
             except Exception as e:
-                FreeCAD.Console.PrintError(f"FreeCAD AI: Failed to get main window: {e}\n")
+                FreeCAD.Console.PrintError(
+                    f"FreeCAD AI: Failed to get main window: {e}\n"
+                )
                 return
-            
+
             # Find existing dock widget
             dock_widget_found = False
             try:
                 for widget in main_window.findChildren(QtWidgets.QDockWidget):
-                    if widget.windowTitle() == "FreeCAD AI" or widget.objectName() == "MCPIntegrationDockWidget":
+                    if (
+                        widget.windowTitle() == "FreeCAD AI"
+                        or widget.objectName() == "MCPIntegrationDockWidget"
+                    ):
                         widget.show()
                         widget.raise_()
                         widget.activateWindow()
                         dock_widget_found = True
-                        FreeCAD.Console.PrintMessage("FreeCAD AI: Existing dock widget activated\n")
+                        FreeCAD.Console.PrintMessage(
+                            "FreeCAD AI: Existing dock widget activated\n"
+                        )
                         break
             except Exception as e:
-                FreeCAD.Console.PrintWarning(f"FreeCAD AI: Error searching for existing dock widget: {e}\n")
-            
+                FreeCAD.Console.PrintWarning(
+                    f"FreeCAD AI: Error searching for existing dock widget: {e}\n"
+                )
+
             # If no dock widget found, show informative message
             if not dock_widget_found:
                 try:
@@ -533,14 +684,21 @@ class MCPShowInterfaceCommand:
                         "2. Look on the right side of the interface\n"
                         "3. Restart FreeCAD if issues persist",
                     )
-                    FreeCAD.Console.PrintMessage("FreeCAD AI: Interface activation message shown\n")
+                    FreeCAD.Console.PrintMessage(
+                        "FreeCAD AI: Interface activation message shown\n"
+                    )
                 except Exception as e:
-                    FreeCAD.Console.PrintWarning(f"FreeCAD AI: Could not show activation message: {e}\n")
-                    
+                    FreeCAD.Console.PrintWarning(
+                        f"FreeCAD AI: Could not show activation message: {e}\n"
+                    )
+
         except Exception as e:
             FreeCAD.Console.PrintError(f"FreeCAD AI: Command activation failed: {e}\n")
             import traceback
-            FreeCAD.Console.PrintError(f"FreeCAD AI: Activation traceback: {traceback.format_exc()}\n")
+
+            FreeCAD.Console.PrintError(
+                f"FreeCAD AI: Activation traceback: {traceback.format_exc()}\n"
+            )
 
 
 # Register the command with comprehensive error handling
@@ -555,7 +713,10 @@ try:
 except Exception as e:
     FreeCAD.Console.PrintError(f"FreeCAD AI: Failed to register command: {e}\n")
     import traceback
-    FreeCAD.Console.PrintError(f"FreeCAD AI: Command registration traceback: {traceback.format_exc()}\n")
+
+    FreeCAD.Console.PrintError(
+        f"FreeCAD AI: Command registration traceback: {traceback.format_exc()}\n"
+    )
 
 
 class MCPWorkbench(FreeCADGui.Workbench):
@@ -572,7 +733,9 @@ class MCPWorkbench(FreeCADGui.Workbench):
             self.__class__.Icon = self._get_icon_path()
             FreeCAD.Console.PrintMessage("FreeCAD AI Workbench: Instance created\n")
         except Exception as e:
-            FreeCAD.Console.PrintError(f"FreeCAD AI Workbench: Initialization error: {e}\n")
+            FreeCAD.Console.PrintError(
+                f"FreeCAD AI Workbench: Initialization error: {e}\n"
+            )
 
     @workbench_crash_safe("icon path retrieval")
     def _get_icon_path(self):
@@ -591,37 +754,47 @@ class MCPWorkbench(FreeCADGui.Workbench):
     def Initialize(self):
         """Initialize the workbench GUI components with comprehensive error handling."""
         try:
-            FreeCAD.Console.PrintMessage("FreeCAD AI Workbench: Starting initialization...\n")
+            FreeCAD.Console.PrintMessage(
+                "FreeCAD AI Workbench: Starting initialization...\n"
+            )
 
             # Check if we have the required GUI components
-            if not hasattr(FreeCADGui, 'getMainWindow'):
-                FreeCAD.Console.PrintError("FreeCAD AI Workbench: FreeCADGui.getMainWindow not available\n")
+            if not hasattr(FreeCADGui, "getMainWindow"):
+                FreeCAD.Console.PrintError(
+                    "FreeCAD AI Workbench: FreeCADGui.getMainWindow not available\n"
+                )
                 return
 
             # Define the toolbar commands using the standard FreeCAD method
             safe_gui_operation(
                 lambda: self.appendToolbar("FreeCAD AI", ["MCP_ShowInterface"]),
-                "toolbar creation"
+                "toolbar creation",
             )
-            
+
             # Define menu structure
             safe_gui_operation(
                 lambda: self.appendMenu("FreeCAD AI", ["MCP_ShowInterface"]),
-                "menu creation"
+                "menu creation",
             )
 
             # Create dock widget with error handling
             safe_gui_operation(
-                lambda: self._create_dock_widget_safe(),
-                "dock widget creation"
+                lambda: self._create_dock_widget_safe(), "dock widget creation"
             )
 
-            FreeCAD.Console.PrintMessage("FreeCAD AI Workbench: Initialization complete\n")
+            FreeCAD.Console.PrintMessage(
+                "FreeCAD AI Workbench: Initialization complete\n"
+            )
 
         except Exception as e:
-            FreeCAD.Console.PrintError(f"FreeCAD AI Workbench: Initialization failed: {e}\n")
+            FreeCAD.Console.PrintError(
+                f"FreeCAD AI Workbench: Initialization failed: {e}\n"
+            )
             import traceback
-            FreeCAD.Console.PrintError(f"FreeCAD AI Workbench: Initialization traceback: {traceback.format_exc()}\n")
+
+            FreeCAD.Console.PrintError(
+                f"FreeCAD AI Workbench: Initialization traceback: {traceback.format_exc()}\n"
+            )
 
     @workbench_crash_safe("workbench activation")
     def Activated(self):
@@ -637,7 +810,9 @@ class MCPWorkbench(FreeCADGui.Workbench):
         try:
             FreeCAD.Console.PrintMessage("FreeCAD AI Workbench: Deactivated\n")
         except Exception as e:
-            FreeCAD.Console.PrintError(f"FreeCAD AI Workbench: Deactivation error: {e}\n")
+            FreeCAD.Console.PrintError(
+                f"FreeCAD AI Workbench: Deactivation error: {e}\n"
+            )
 
     def GetClassName(self):
         """Return the workbench class name."""
@@ -647,20 +822,25 @@ class MCPWorkbench(FreeCADGui.Workbench):
     def _create_dock_widget_safe(self):
         """Create and show the dock widget with maximum safety and error handling."""
         try:
-            FreeCAD.Console.PrintMessage("FreeCAD AI: Starting safe dock widget creation...\n")
-            
+            FreeCAD.Console.PrintMessage(
+                "FreeCAD AI: Starting safe dock widget creation...\n"
+            )
+
             if not HAS_PYSIDE2:
-                FreeCAD.Console.PrintMessage("FreeCAD AI: Skipping dock widget creation - no Qt bindings\n")
+                FreeCAD.Console.PrintMessage(
+                    "FreeCAD AI: Skipping dock widget creation - no Qt bindings\n"
+                )
                 return
 
             # Get main window safely
             main_window = safe_gui_operation(
-                lambda: FreeCADGui.getMainWindow(),
-                "main window retrieval"
+                lambda: FreeCADGui.getMainWindow(), "main window retrieval"
             )
-            
+
             if not main_window:
-                FreeCAD.Console.PrintError("FreeCAD AI: Cannot get main window for dock widget\n")
+                FreeCAD.Console.PrintError(
+                    "FreeCAD AI: Cannot get main window for dock widget\n"
+                )
                 return
 
             # Check if dock widget already exists and remove ALL instances (comprehensive cleanup)
@@ -668,18 +848,27 @@ class MCPWorkbench(FreeCADGui.Workbench):
                 existing_widgets = []
                 for widget in main_window.findChildren(QtWidgets.QDockWidget):
                     # Check both objectName and windowTitle to catch all possible instances
-                    if (widget.objectName() == "MCPIntegrationDockWidget" or 
-                        widget.windowTitle() == "FreeCAD AI" or
-                        (hasattr(widget, 'widget') and widget.widget() and 
-                         hasattr(widget.widget(), '__class__') and 
-                         'MCPMainWidget' in str(widget.widget().__class__))):
+                    if (
+                        widget.objectName() == "MCPIntegrationDockWidget"
+                        or widget.windowTitle() == "FreeCAD AI"
+                        or (
+                            hasattr(widget, "widget")
+                            and widget.widget()
+                            and hasattr(widget.widget(), "__class__")
+                            and "MCPMainWidget" in str(widget.widget().__class__)
+                        )
+                    ):
                         existing_widgets.append(widget)
-                
+
                 if existing_widgets:
-                    FreeCAD.Console.PrintMessage(f"FreeCAD AI: Found {len(existing_widgets)} existing dock widget(s), performing comprehensive cleanup...\n")
+                    FreeCAD.Console.PrintMessage(
+                        f"FreeCAD AI: Found {len(existing_widgets)} existing dock widget(s), performing comprehensive cleanup...\n"
+                    )
                     for i, widget in enumerate(existing_widgets):
                         try:
-                            FreeCAD.Console.PrintMessage(f"FreeCAD AI: Removing existing dock widget {i+1}: {widget.objectName()} / {widget.windowTitle()}\n")
+                            FreeCAD.Console.PrintMessage(
+                                f"FreeCAD AI: Removing existing dock widget {i+1}: {widget.objectName()} / {widget.windowTitle()}\n"
+                            )
                             # Hide first to prevent visual glitches
                             widget.hide()
                             # Remove from main window
@@ -687,126 +876,172 @@ class MCPWorkbench(FreeCADGui.Workbench):
                             # Schedule for deletion
                             widget.deleteLater()
                             # Process events after each removal
-                            if hasattr(QtWidgets, 'QApplication') and QtWidgets.QApplication.instance():
+                            if (
+                                hasattr(QtWidgets, "QApplication")
+                                and QtWidgets.QApplication.instance()
+                            ):
                                 QtWidgets.QApplication.processEvents()
                         except Exception as e:
-                            FreeCAD.Console.PrintWarning(f"FreeCAD AI: Error removing existing dock widget {i+1}: {e}\n")
-                    
+                            FreeCAD.Console.PrintWarning(
+                                f"FreeCAD AI: Error removing existing dock widget {i+1}: {e}\n"
+                            )
+
                     # Final event processing to ensure all deletions are complete
-                    if hasattr(QtWidgets, 'QApplication') and QtWidgets.QApplication.instance():
-                        for _ in range(3):  # Multiple processing cycles for thorough cleanup
+                    if (
+                        hasattr(QtWidgets, "QApplication")
+                        and QtWidgets.QApplication.instance()
+                    ):
+                        for _ in range(
+                            3
+                        ):  # Multiple processing cycles for thorough cleanup
                             QtWidgets.QApplication.processEvents()
-                            
-                    FreeCAD.Console.PrintMessage("FreeCAD AI: Comprehensive dock widget cleanup completed\n")
+
+                    FreeCAD.Console.PrintMessage(
+                        "FreeCAD AI: Comprehensive dock widget cleanup completed\n"
+                    )
             except Exception as e:
-                FreeCAD.Console.PrintWarning(f"FreeCAD AI: Error during comprehensive dock widget cleanup: {e}\n")
+                FreeCAD.Console.PrintWarning(
+                    f"FreeCAD AI: Error during comprehensive dock widget cleanup: {e}\n"
+                )
 
             # Import and create the main widget
             try:
                 from gui.main_widget import MCPMainWidget
-                FreeCAD.Console.PrintMessage("FreeCAD AI: MCPMainWidget imported successfully\n")
+
+                FreeCAD.Console.PrintMessage(
+                    "FreeCAD AI: MCPMainWidget imported successfully\n"
+                )
 
                 # Create main widget - this is a QDockWidget itself
                 # IMPORTANT: Do NOT pass main_window as parent, use None
                 dock_widget = safe_gui_operation(
-                    lambda: MCPMainWidget(None),
-                    "main widget creation"
+                    lambda: MCPMainWidget(None), "main widget creation"
                 )
-                
+
                 if not dock_widget:
-                    FreeCAD.Console.PrintError("FreeCAD AI: Failed to create main widget\n")
+                    FreeCAD.Console.PrintError(
+                        "FreeCAD AI: Failed to create main widget\n"
+                    )
                     return
 
                 dock_widget.setObjectName("MCPIntegrationDockWidget")
                 dock_widget.setWindowTitle("FreeCAD AI")
 
                 # Defensive: ensure QtCore.Qt.RightDockWidgetArea is valid
-                dock_area = getattr(QtCore.Qt, 'RightDockWidgetArea', None)
+                dock_area = getattr(QtCore.Qt, "RightDockWidgetArea", None)
                 if dock_area is None:
                     # Fallback: 2 is the standard value for RightDockWidgetArea in Qt
                     dock_area = 2
-                    FreeCAD.Console.PrintWarning("FreeCAD AI: QtCore.Qt.RightDockWidgetArea not found, using fallback value 2\n")
+                    FreeCAD.Console.PrintWarning(
+                        "FreeCAD AI: QtCore.Qt.RightDockWidgetArea not found, using fallback value 2\n"
+                    )
                 else:
-                    FreeCAD.Console.PrintMessage(f"FreeCAD AI: Using QtCore.Qt.RightDockWidgetArea={dock_area}\n")
+                    FreeCAD.Console.PrintMessage(
+                        f"FreeCAD AI: Using QtCore.Qt.RightDockWidgetArea={dock_area}\n"
+                    )
 
                 # Add to main window with error handling
                 try:
                     safe_gui_operation(
                         lambda: main_window.addDockWidget(dock_area, dock_widget),
-                        "dock widget addition to main window"
+                        "dock widget addition to main window",
                     )
-                    FreeCAD.Console.PrintMessage("FreeCAD AI: Successfully added dock widget to main window\n")
+                    FreeCAD.Console.PrintMessage(
+                        "FreeCAD AI: Successfully added dock widget to main window\n"
+                    )
                 except Exception as e:
-                    FreeCAD.Console.PrintError(f"FreeCAD AI: Exception in addDockWidget: {e}\n")
-                    FreeCAD.Console.PrintError(f"FreeCAD AI: dock_widget type: {type(dock_widget)}, repr: {repr(dock_widget)}\n")
+                    FreeCAD.Console.PrintError(
+                        f"FreeCAD AI: Exception in addDockWidget: {e}\n"
+                    )
+                    FreeCAD.Console.PrintError(
+                        f"FreeCAD AI: dock_widget type: {type(dock_widget)}, repr: {repr(dock_widget)}\n"
+                    )
                     FreeCAD.Console.PrintError(f"FreeCAD AI: dock_area: {dock_area}\n")
-                    FreeCAD.Console.PrintError(f"FreeCAD AI: main_window type: {type(main_window)}, repr: {repr(main_window)}\n")
-                    
+                    FreeCAD.Console.PrintError(
+                        f"FreeCAD AI: main_window type: {type(main_window)}, repr: {repr(main_window)}\n"
+                    )
+
                     # Clean up original dock widget before trying fallback
-                    FreeCAD.Console.PrintMessage("FreeCAD AI: Cleaning up original dock widget before fallback...\n")
+                    FreeCAD.Console.PrintMessage(
+                        "FreeCAD AI: Cleaning up original dock widget before fallback...\n"
+                    )
                     try:
                         dock_widget.deleteLater()
-                        if hasattr(QtWidgets, 'QApplication') and QtWidgets.QApplication.instance():
+                        if (
+                            hasattr(QtWidgets, "QApplication")
+                            and QtWidgets.QApplication.instance()
+                        ):
                             QtWidgets.QApplication.processEvents()
                     except Exception:
                         pass
-                    
+
                     # Fallback: Try to re-create the dock widget with main_window as parent
-                    FreeCAD.Console.PrintMessage("FreeCAD AI: Attempting fallback dock widget creation...\n")
+                    FreeCAD.Console.PrintMessage(
+                        "FreeCAD AI: Attempting fallback dock widget creation...\n"
+                    )
                     try:
                         from gui.main_widget import MCPMainWidget
+
                         dock_widget = safe_gui_operation(
                             lambda: MCPMainWidget(main_window),
-                            "main widget creation (main_window parent)"
+                            "main widget creation (main_window parent)",
                         )
                         dock_widget.setObjectName("MCPIntegrationDockWidget")
                         dock_widget.setWindowTitle("FreeCAD AI")
                         safe_gui_operation(
                             lambda: main_window.addDockWidget(dock_area, dock_widget),
-                            "dock widget addition to main window (main_window parent)"
+                            "dock widget addition to main window (main_window parent)",
                         )
-                        FreeCAD.Console.PrintMessage("FreeCAD AI: Successfully added fallback dock widget.\n")
+                        FreeCAD.Console.PrintMessage(
+                            "FreeCAD AI: Successfully added fallback dock widget.\n"
+                        )
                     except Exception as fallback_e:
-                        FreeCAD.Console.PrintError(f"FreeCAD AI: Fallback dock widget creation also failed: {fallback_e}\n")
+                        FreeCAD.Console.PrintError(
+                            f"FreeCAD AI: Fallback dock widget creation also failed: {fallback_e}\n"
+                        )
                         return
 
                 # Show the dock widget
-                safe_gui_operation(
-                    lambda: dock_widget.show(),
-                    "dock widget display"
-                )
+                safe_gui_operation(lambda: dock_widget.show(), "dock widget display")
 
                 # Force dock widget to be visible and raised
-                safe_gui_operation(
-                    lambda: dock_widget.raise_(),
-                    "dock widget raise"
-                )
+                safe_gui_operation(lambda: dock_widget.raise_(), "dock widget raise")
 
                 # Force layout update
                 safe_gui_operation(
-                    lambda: dock_widget.updateGeometry(),
-                    "dock widget geometry update"
+                    lambda: dock_widget.updateGeometry(), "dock widget geometry update"
                 )
 
                 self.dock_widget = dock_widget  # Store persistent reference
 
             except ImportError as e:
-                FreeCAD.Console.PrintError(f"FreeCAD AI: Failed to import MCPMainWidget: {e}\n")
+                FreeCAD.Console.PrintError(
+                    f"FreeCAD AI: Failed to import MCPMainWidget: {e}\n"
+                )
                 # Create minimal fallback dock widget
                 fallback_success = safe_gui_operation(
                     lambda: self._create_fallback_dock_widget(main_window),
-                    "fallback dock widget creation"
+                    "fallback dock widget creation",
                 )
-                
+
                 if fallback_success:
-                    FreeCAD.Console.PrintMessage("FreeCAD AI: Fallback dock widget created\n")
+                    FreeCAD.Console.PrintMessage(
+                        "FreeCAD AI: Fallback dock widget created\n"
+                    )
                 else:
-                    FreeCAD.Console.PrintError("FreeCAD AI: Even fallback dock widget creation failed\n")
+                    FreeCAD.Console.PrintError(
+                        "FreeCAD AI: Even fallback dock widget creation failed\n"
+                    )
 
         except Exception as e:
-            FreeCAD.Console.PrintError(f"FreeCAD AI: Safe dock widget creation failed: {e}\n")
+            FreeCAD.Console.PrintError(
+                f"FreeCAD AI: Safe dock widget creation failed: {e}\n"
+            )
             import traceback
-            FreeCAD.Console.PrintError(f"FreeCAD AI: Safe dock widget traceback: {traceback.format_exc()}\n")
+
+            FreeCAD.Console.PrintError(
+                f"FreeCAD AI: Safe dock widget traceback: {traceback.format_exc()}\n"
+            )
 
     def _create_fallback_dock_widget(self, main_window):
         """Create a minimal fallback dock widget when main widget fails."""
@@ -820,18 +1055,20 @@ class MCPWorkbench(FreeCADGui.Workbench):
             )
             fallback_label.setStyleSheet("padding: 10px; color: #666;")
             fallback_layout.addWidget(fallback_label)
-            
+
             dock_widget = QtWidgets.QDockWidget("FreeCAD AI", main_window)
             dock_widget.setObjectName("MCPIntegrationDockWidget")
             dock_widget.setWidget(fallback_widget)
-            
+
             main_window.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock_widget)
             dock_widget.show()
 
             self.dock_widget = dock_widget  # Store persistent reference
-            
+
             return True
-            
+
         except Exception as e:
-            FreeCAD.Console.PrintError(f"FreeCAD AI: Fallback dock widget creation failed: {e}\n")
+            FreeCAD.Console.PrintError(
+                f"FreeCAD AI: Fallback dock widget creation failed: {e}\n"
+            )
             return False

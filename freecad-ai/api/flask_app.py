@@ -1,6 +1,7 @@
 """
 Flask-based API for FreeCAD AI unified server entrypoint
 """
+
 import os
 import sys
 
@@ -23,5 +24,5 @@ app.register_blueprint(tools_bp)
 app.register_blueprint(resources_bp)
 app.register_blueprint(events_bp)
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
