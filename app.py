@@ -48,7 +48,10 @@ def main():
 
     # Run the server
     try:
-        asyncio.run(server_main(args))
+        # Set config file path from args
+        if args.config:
+            os.environ["CONFIG_FILE"] = args.config
+        asyncio.run(server_main())
     except KeyboardInterrupt:
         print("\nServer stopped by user")
     except Exception as e:

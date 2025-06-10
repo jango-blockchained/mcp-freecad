@@ -110,3 +110,5 @@ dmypy.json
 .cursorindexingignore
 
 freecad-ai/api_keys.enc
+
+freecad-ai/api_keys.enc

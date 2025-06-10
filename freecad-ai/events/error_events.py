@@ -64,18 +64,20 @@ class ErrorEventProvider(EventProvider):
             # Connect to error signals if available
             if hasattr(self.app, "signalError"):
                 self.app.signalError.connect(self._on_error)
-                logger.info("Connected to FreeCAD error signal")                # Try to connect to the Console observer for Python errors
-                if hasattr(self.app, "Gui") and hasattr(self.app.Gui, "getMainWindow"):
-                    try:
-                        # Some FreeCAD versions provide a console viewer with error signals
-                        console = self.app.Gui.getMainWindow().findChild(
-                            "QTextEdit", "Report view"
-                        )
-                        if console and hasattr(console, "signalError"):
-                            console.signalError.connect(self._on_error)
-                            logger.info("Connected to FreeCAD console error signal")
-                    except Exception as console_error:
-                        logger.debug(f"Could not connect to console error signal: {console_error}")
+                logger.info("Connected to FreeCAD error signal")
+                
+            # Try to connect to the Console observer for Python errors
+            if hasattr(self.app, "Gui") and hasattr(self.app.Gui, "getMainWindow"):
+                try:
+                    # Some FreeCAD versions provide a console viewer with error signals
+                    console = self.app.Gui.getMainWindow().findChild(
+                        "QTextEdit", "Report view"
+                    )
+                    if console and hasattr(console, "signalError"):
+                        console.signalError.connect(self._on_error)
+                        logger.info("Connected to FreeCAD console error signal")
+                except Exception as console_error:
+                    logger.debug(f"Could not connect to console error signal: {console_error}")
         except Exception as e:
             logger.error(f"Error setting up FreeCAD error signal handlers: {e}")
 
