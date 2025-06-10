@@ -352,7 +352,7 @@ class ProviderIntegrationService:
 
             # Get all provider configs
             all_configs = {}
-            config_data = self.config_manager.config_data.get("providers", {})
+            config_data = self.config_manager.config.get("providers", {})
 
             for provider_name, config in config_data.items():
                 all_configs[provider_name] = config
@@ -387,7 +387,7 @@ class ProviderIntegrationService:
                     for variant in variants:
                         if variant != keep_variant:
                             self.logger.info(f"Removing duplicate provider entry: {variant}")
-                            del self.config_manager.config_data["providers"][variant]
+                            del self.config_manager.config["providers"][variant]
                             changes_made = True
 
             if changes_made:
@@ -967,7 +967,7 @@ class ProviderIntegrationService:
             
         try:
             # Get the configured default provider
-            default_provider = self.config_manager.config_data.get('connection', {}).get('default_provider')
+            default_provider = self.config_manager.config.get('connection', {}).get('default_provider')
             if not default_provider:
                 return None
                 
@@ -995,9 +995,9 @@ class ProviderIntegrationService:
             resolved_name = self._resolve_provider_name(provider_name)
             
             # Update the configuration
-            if 'connection' not in self.config_manager.config_data:
-                self.config_manager.config_data['connection'] = {}
-            self.config_manager.config_data['connection']['default_provider'] = resolved_name
+            if 'connection' not in self.config_manager.config:
+                self.config_manager.config['connection'] = {}
+            self.config_manager.config['connection']['default_provider'] = resolved_name
             
             # Save the configuration
             self.config_manager.save_config()
