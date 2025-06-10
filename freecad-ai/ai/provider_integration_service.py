@@ -678,14 +678,106 @@ class ProviderIntegrationService:
         # Emit an update callback to refresh any UI components
         self.providers_updated.emit()
 
+    def update_provider_model(self, provider_name: str, model_name: str) -> bool:
+        """Update the model for a specific provider."""
+        try:
+            self.logger.info(f"Updating model for {provider_name} to {model_name}")
+            
+            # Update config manager
+            if self.config_manager:
+                provider_config = self.config_manager.get_provider_config(provider_name)
+                if not provider_config:
+                    provider_config = {}
+                
+                provider_config['model'] = model_name
+                success = self.config_manager.set_provider_config(provider_name, provider_config)
+                
+                if not success:
+                    self.logger.error(f"Failed to save model config for {provider_name}")
+                    return False
+            
+            # Update AI manager provider if it exists
+            normalized_name = self._normalize_provider_name(provider_name)
+            ai_manager_name = f"{normalized_name}_main"
+            
+            if ai_manager_name in self.ai_manager.providers:
+                provider = self.ai_manager.providers[ai_manager_name]
+                if hasattr(provider, 'set_model'):
+                    provider.set_model(model_name)
+                    self.logger.info(f"Updated AI manager provider {ai_manager_name} to model {model_name}")
+                elif hasattr(provider, 'config'):
+                    provider.config['model'] = model_name
+                    self.logger.info(f"Updated AI manager provider config for {ai_manager_name}")
+            
+            # Notify UI components of the change
+            if self._callbacks_enabled:
+                self.provider_status_changed.emit(provider_name, "updated", f"Model changed to {model_name}")
+                self.providers_updated.emit()
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error updating model for {provider_name}: {e}")
+            return False
 
-# Global service instance
-_service_instance = None
+    def get_provider_models(self, provider_name: str) -> List[str]:
+        """Get available models for a provider."""
+        try:
+            # Try to get from AI manager first
+            normalized_name = self._normalize_provider_name(provider_name)
+            ai_manager_name = f"{normalized_name}_main"
+            
+            if ai_manager_name in self.ai_manager.providers:
+                provider = self.ai_manager.providers[ai_manager_name]
+                if hasattr(provider, 'get_available_models'):
+                    models = provider.get_available_models()
+                    if models:
+                        return models
+            
+            # Fallback to default models based on provider type
+            provider_type = self._normalize_provider_name(provider_name)
+            default_models = {
+                'anthropic': ['claude-4-20241120', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'],
+                'openai': ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
+                'google': ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro'],
+                'openrouter': ['anthropic/claude-3.5-sonnet', 'openai/gpt-4o', 'google/gemini-pro']
+            }
+            
+            return default_models.get(provider_type, ['default-model'])
+            
+        except Exception as e:
+            self.logger.error(f"Error getting models for {provider_name}: {e}")
+            return ['default-model']
 
+    def get_current_provider_model(self, provider_name: str) -> str:
+        """Get the currently configured model for a provider."""
+        try:
+            if self.config_manager:
+                provider_config = self.config_manager.get_provider_config(provider_name)
+                if provider_config and 'model' in provider_config:
+                    return provider_config['model']
+            
+            # Fallback to default model
+            return self._get_default_model_for_provider(provider_name)
+            
+        except Exception as e:
+            self.logger.error(f"Error getting current model for {provider_name}: {e}")
+            return self._get_default_model_for_provider(provider_name)
 
-def get_provider_service() -> ProviderIntegrationService:
-    """Get the global provider integration service instance."""
-    global _service_instance
-    if _service_instance is None:
-        _service_instance = ProviderIntegrationService()
-    return _service_instance
+    def refresh_providers(self) -> bool:
+        """Refresh all providers and their configurations."""
+        try:
+            self.logger.info("Refreshing all providers")
+            
+            # Re-initialize providers from config
+            success = self.initialize_providers_from_config()
+            
+            # Emit update signal
+            if self._callbacks_enabled:
+                self.providers_updated.emit()
+            
+            return success
+            
+        except Exception as e:
+            self.logger.error(f"Error refreshing providers: {e}")
+            return False

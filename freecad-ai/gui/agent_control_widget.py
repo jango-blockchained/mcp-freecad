@@ -3,6 +3,7 @@
 from datetime import datetime
 
 from PySide2 import QtCore, QtWidgets
+from .provider_selector_widget import ProviderSelectorWidget
 
 
 class AgentControlWidget(QtWidgets.QWidget):
@@ -12,6 +13,8 @@ class AgentControlWidget(QtWidgets.QWidget):
         super(AgentControlWidget, self).__init__(parent)
 
         self.agent_manager = None
+        self.provider_service = None
+        self.config_manager = None
         self.current_plan = None
         self.execution_queue = []
 
@@ -26,6 +29,9 @@ class AgentControlWidget(QtWidgets.QWidget):
         header = QtWidgets.QLabel("🤖 Agent Control Panel - Agent Mode")
         header.setStyleSheet("font-size: 16px; font-weight: bold; margin: 10px;")
         layout.addWidget(header)
+
+        # Provider Selection Section
+        self._create_provider_selector(layout)
 
         # Command Input Section
         self._create_command_section(layout)
@@ -46,6 +52,19 @@ class AgentControlWidget(QtWidgets.QWidget):
         self._create_history_section(layout)
 
         layout.addStretch()
+
+    def _create_provider_selector(self, layout):
+        """Create provider selection section using shared widget."""
+        provider_group = QtWidgets.QGroupBox("AI Provider Selection")
+        provider_layout = QtWidgets.QHBoxLayout(provider_group)
+
+        # Create the shared provider selector widget
+        self.provider_selector = ProviderSelectorWidget()
+        self.provider_selector.provider_changed.connect(self._on_provider_changed)
+        self.provider_selector.refresh_requested.connect(self._on_provider_refresh)
+        provider_layout.addWidget(self.provider_selector)
+
+        layout.addWidget(provider_group)
 
     def _create_command_section(self, layout):
         """Create command input section."""
@@ -875,3 +894,45 @@ class AgentControlWidget(QtWidgets.QWidget):
             message += "Please check the FreeCAD console for detailed error messages."
 
         QtWidgets.QMessageBox.information(self, "Agent Manager Diagnostic", message)
+
+    def _on_provider_changed(self, provider_name, model_name):
+        """Handle provider selection change from provider selector."""
+        print(f"AgentControlWidget: Provider changed to {provider_name} with model {model_name}")
+        # Update agent manager if available
+        if self.agent_manager and hasattr(self.agent_manager, 'set_provider'):
+            try:
+                self.agent_manager.set_provider(provider_name, model_name)
+            except Exception as e:
+                print(f"AgentControlWidget: Error setting provider in agent manager: {e}")
+
+    def _on_provider_refresh(self):
+        """Handle provider refresh request."""
+        print("AgentControlWidget: Provider refresh requested")
+        if self.provider_service:
+            try:
+                if hasattr(self.provider_service, 'refresh_providers'):
+                    self.provider_service.refresh_providers()
+                elif hasattr(self.provider_service, 'initialize_providers_from_config'):
+                    self.provider_service.initialize_providers_from_config()
+            except Exception as e:
+                print(f"AgentControlWidget: Error refreshing providers: {e}")
+
+    def set_provider_service(self, provider_service):
+        """Set the provider service."""
+        self.provider_service = provider_service
+        
+        # Connect to provider selector
+        if hasattr(self, 'provider_selector'):
+            self.provider_selector.set_provider_service(provider_service)
+        
+        print(f"AgentControlWidget: Provider service set: {provider_service is not None}")
+
+    def set_config_manager(self, config_manager):
+        """Set the config manager."""
+        self.config_manager = config_manager
+        
+        # Connect to provider selector
+        if hasattr(self, 'provider_selector'):
+            self.provider_selector.set_config_manager(config_manager)
+        
+        print(f"AgentControlWidget: Config manager set: {config_manager is not None}")

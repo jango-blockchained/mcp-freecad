@@ -537,7 +537,10 @@ class UnifiedConnectionWidget(QtWidgets.QWidget):
 
             for proc in psutil.process_iter(["pid", "name", "cmdline"]):
                 try:
-                    cmdline = " ".join(proc.info.get("cmdline", []))
+                    cmdline_val = proc.info.get("cmdline", [])
+                    if not isinstance(cmdline_val, (list, tuple)):
+                        cmdline_val = []
+                    cmdline = " ".join(cmdline_val)
                     if "mcp" in cmdline.lower() and "freecad" in cmdline.lower():
                         server_running = True
                         server_pid = proc.info["pid"]

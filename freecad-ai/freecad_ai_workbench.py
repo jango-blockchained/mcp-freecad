@@ -567,6 +567,7 @@ class MCPWorkbench(FreeCADGui.Workbench):
     @workbench_crash_safe("workbench initialization")
     def __init__(self):
         """Initialize the MCP workbench."""
+        self.dock_widget = None  # Persistent reference to dock widget
         try:
             self.__class__.Icon = self._get_icon_path()
             FreeCAD.Console.PrintMessage("FreeCAD AI Workbench: Instance created\n")
@@ -662,14 +663,43 @@ class MCPWorkbench(FreeCADGui.Workbench):
                 FreeCAD.Console.PrintError("FreeCAD AI: Cannot get main window for dock widget\n")
                 return
 
-            # Check if dock widget already exists
+            # Check if dock widget already exists and remove ALL instances (comprehensive cleanup)
             try:
+                existing_widgets = []
                 for widget in main_window.findChildren(QtWidgets.QDockWidget):
-                    if widget.objectName() == "MCPIntegrationDockWidget":
-                        FreeCAD.Console.PrintMessage("FreeCAD AI: Dock widget already exists\n")
-                        return
+                    # Check both objectName and windowTitle to catch all possible instances
+                    if (widget.objectName() == "MCPIntegrationDockWidget" or 
+                        widget.windowTitle() == "FreeCAD AI" or
+                        (hasattr(widget, 'widget') and widget.widget() and 
+                         hasattr(widget.widget(), '__class__') and 
+                         'MCPMainWidget' in str(widget.widget().__class__))):
+                        existing_widgets.append(widget)
+                
+                if existing_widgets:
+                    FreeCAD.Console.PrintMessage(f"FreeCAD AI: Found {len(existing_widgets)} existing dock widget(s), performing comprehensive cleanup...\n")
+                    for i, widget in enumerate(existing_widgets):
+                        try:
+                            FreeCAD.Console.PrintMessage(f"FreeCAD AI: Removing existing dock widget {i+1}: {widget.objectName()} / {widget.windowTitle()}\n")
+                            # Hide first to prevent visual glitches
+                            widget.hide()
+                            # Remove from main window
+                            main_window.removeDockWidget(widget)
+                            # Schedule for deletion
+                            widget.deleteLater()
+                            # Process events after each removal
+                            if hasattr(QtWidgets, 'QApplication') and QtWidgets.QApplication.instance():
+                                QtWidgets.QApplication.processEvents()
+                        except Exception as e:
+                            FreeCAD.Console.PrintWarning(f"FreeCAD AI: Error removing existing dock widget {i+1}: {e}\n")
+                    
+                    # Final event processing to ensure all deletions are complete
+                    if hasattr(QtWidgets, 'QApplication') and QtWidgets.QApplication.instance():
+                        for _ in range(3):  # Multiple processing cycles for thorough cleanup
+                            QtWidgets.QApplication.processEvents()
+                            
+                    FreeCAD.Console.PrintMessage("FreeCAD AI: Comprehensive dock widget cleanup completed\n")
             except Exception as e:
-                FreeCAD.Console.PrintWarning(f"FreeCAD AI: Error checking existing dock widgets: {e}\n")
+                FreeCAD.Console.PrintWarning(f"FreeCAD AI: Error during comprehensive dock widget cleanup: {e}\n")
 
             # Import and create the main widget
             try:
@@ -677,8 +707,9 @@ class MCPWorkbench(FreeCADGui.Workbench):
                 FreeCAD.Console.PrintMessage("FreeCAD AI: MCPMainWidget imported successfully\n")
 
                 # Create main widget - this is a QDockWidget itself
+                # IMPORTANT: Do NOT pass main_window as parent, use None
                 dock_widget = safe_gui_operation(
-                    lambda: MCPMainWidget(main_window),
+                    lambda: MCPMainWidget(None),
                     "main widget creation"
                 )
                 
@@ -689,26 +720,75 @@ class MCPWorkbench(FreeCADGui.Workbench):
                 dock_widget.setObjectName("MCPIntegrationDockWidget")
                 dock_widget.setWindowTitle("FreeCAD AI")
 
+                # Defensive: ensure QtCore.Qt.RightDockWidgetArea is valid
+                dock_area = getattr(QtCore.Qt, 'RightDockWidgetArea', None)
+                if dock_area is None:
+                    # Fallback: 2 is the standard value for RightDockWidgetArea in Qt
+                    dock_area = 2
+                    FreeCAD.Console.PrintWarning("FreeCAD AI: QtCore.Qt.RightDockWidgetArea not found, using fallback value 2\n")
+                else:
+                    FreeCAD.Console.PrintMessage(f"FreeCAD AI: Using QtCore.Qt.RightDockWidgetArea={dock_area}\n")
+
                 # Add to main window with error handling
-                add_success = safe_gui_operation(
-                    lambda: main_window.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock_widget),
-                    "dock widget addition to main window"
-                )
-                
-                if add_success is None:
-                    FreeCAD.Console.PrintError("FreeCAD AI: Failed to add dock widget to main window\n")
-                    # Try to clean up
+                try:
+                    safe_gui_operation(
+                        lambda: main_window.addDockWidget(dock_area, dock_widget),
+                        "dock widget addition to main window"
+                    )
+                    FreeCAD.Console.PrintMessage("FreeCAD AI: Successfully added dock widget to main window\n")
+                except Exception as e:
+                    FreeCAD.Console.PrintError(f"FreeCAD AI: Exception in addDockWidget: {e}\n")
+                    FreeCAD.Console.PrintError(f"FreeCAD AI: dock_widget type: {type(dock_widget)}, repr: {repr(dock_widget)}\n")
+                    FreeCAD.Console.PrintError(f"FreeCAD AI: dock_area: {dock_area}\n")
+                    FreeCAD.Console.PrintError(f"FreeCAD AI: main_window type: {type(main_window)}, repr: {repr(main_window)}\n")
+                    
+                    # Clean up original dock widget before trying fallback
+                    FreeCAD.Console.PrintMessage("FreeCAD AI: Cleaning up original dock widget before fallback...\n")
                     try:
                         dock_widget.deleteLater()
-                    except:
+                        if hasattr(QtWidgets, 'QApplication') and QtWidgets.QApplication.instance():
+                            QtWidgets.QApplication.processEvents()
+                    except Exception:
                         pass
-                    return
+                    
+                    # Fallback: Try to re-create the dock widget with main_window as parent
+                    FreeCAD.Console.PrintMessage("FreeCAD AI: Attempting fallback dock widget creation...\n")
+                    try:
+                        from gui.main_widget import MCPMainWidget
+                        dock_widget = safe_gui_operation(
+                            lambda: MCPMainWidget(main_window),
+                            "main widget creation (main_window parent)"
+                        )
+                        dock_widget.setObjectName("MCPIntegrationDockWidget")
+                        dock_widget.setWindowTitle("FreeCAD AI")
+                        safe_gui_operation(
+                            lambda: main_window.addDockWidget(dock_area, dock_widget),
+                            "dock widget addition to main window (main_window parent)"
+                        )
+                        FreeCAD.Console.PrintMessage("FreeCAD AI: Successfully added fallback dock widget.\n")
+                    except Exception as fallback_e:
+                        FreeCAD.Console.PrintError(f"FreeCAD AI: Fallback dock widget creation also failed: {fallback_e}\n")
+                        return
 
                 # Show the dock widget
                 safe_gui_operation(
                     lambda: dock_widget.show(),
                     "dock widget display"
                 )
+
+                # Force dock widget to be visible and raised
+                safe_gui_operation(
+                    lambda: dock_widget.raise_(),
+                    "dock widget raise"
+                )
+
+                # Force layout update
+                safe_gui_operation(
+                    lambda: dock_widget.updateGeometry(),
+                    "dock widget geometry update"
+                )
+
+                self.dock_widget = dock_widget  # Store persistent reference
 
             except ImportError as e:
                 FreeCAD.Console.PrintError(f"FreeCAD AI: Failed to import MCPMainWidget: {e}\n")
@@ -747,6 +827,8 @@ class MCPWorkbench(FreeCADGui.Workbench):
             
             main_window.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock_widget)
             dock_widget.show()
+
+            self.dock_widget = dock_widget  # Store persistent reference
             
             return True
             

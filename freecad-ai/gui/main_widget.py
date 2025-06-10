@@ -3,6 +3,7 @@
 import FreeCAD
 import traceback
 import functools
+import importlib
 
 # Safe Qt imports with comprehensive fallback to prevent crashes
 try:
@@ -133,13 +134,16 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             self._fully_initialized = False
             self._setup_basic_dock_properties()
             self._create_ultra_minimal_ui()
+            # Automatically initialize the full UI (no click required)
+            if not self._fully_initialized:
+                self._initialize_full_functionality()
             FreeCAD.Console.PrintMessage("FreeCAD AI: Ultra-safe widget created successfully\n")
         except Exception as e:
             FreeCAD.Console.PrintError(f"FreeCAD AI: Even ultra-safe initialization failed: {e}\n")
             try:
                 self.main_widget = QtWidgets.QWidget()
                 self.setWidget(self.main_widget)
-            except:
+            except Exception:
                 pass
 
     @crash_safe_wrapper("dock properties setup")
@@ -180,7 +184,6 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 "border: 2px solid #2196f3; "
                 "border-radius: 8px; "
                 "font-size: 12px; "
-                "cursor: pointer;"
             )
             if hasattr(self.status_label, 'mousePressEvent'):
                 original_mouse_event = self.status_label.mousePressEvent
@@ -209,8 +212,8 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             if hasattr(self, 'status_label') and self.status_label:
                 self.status_label.setText("Initializing full interface...")
                 self.status_label.setStyleSheet(
-                    "padding: 15px; background-color: #fff3e0; border: 2px solid #ff9800; "
-                    "border-radius: 8px; font-size: 12px;"
+                    "padding: 15px; background-color: #ffecb3; color: #f57c00; border-radius: 8px; "
+                    "font-size: 12px;"
                 )
             self._init_services_safe()
             self._setup_full_ui_safe()
@@ -229,7 +232,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                     self.status_label.setText("Limited Mode - Click to retry")
                     self.status_label.setStyleSheet(
                         "padding: 15px; background-color: #ffecb3; color: #f57c00; border-radius: 8px; "
-                        "font-size: 12px; cursor: pointer;"
+                        "font-size: 12px;"
                     )
                 except Exception:
                     pass
@@ -261,29 +264,62 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                         QtWidgets.QApplication.processEvents()
                     old_layout.deleteLater()
                     self.main_widget.setLayout(None)
+            
+            # Create main layout
             layout = QtWidgets.QVBoxLayout()
             layout.setSpacing(2)
             layout.setContentsMargins(2, 2, 2, 2)
             self.main_widget.setLayout(layout)
+            
+            # Set minimum sizes and styling
+            self.main_widget.setMinimumSize(400, 300)
+            self.main_widget.setStyleSheet("background: #e0f7fa;")
+            self.setMinimumWidth(400)
+            self.resize(600, 400)
+            
+            # Create header layout
             header_layout = QtWidgets.QHBoxLayout()
             header_label = QtWidgets.QLabel("🤖 FreeCAD AI")
             header_label.setStyleSheet("font-weight: bold; font-size: 14px;")
             header_layout.addWidget(header_label)
             header_layout.addStretch()
+            
             self.status_label = QtWidgets.QLabel("Setting up...")
             self.status_label.setStyleSheet(
                 "padding: 2px 8px; background-color: #f0f0f0; border-radius: 10px; font-size: 11px;"
             )
             header_layout.addWidget(self.status_label)
             layout.addLayout(header_layout)
+            
+            # Create tab widget with explicit sizing
             self.tab_widget = QtWidgets.QTabWidget()
             if hasattr(self.tab_widget, 'setUsesScrollButtons'):
                 self.tab_widget.setUsesScrollButtons(True)
             if hasattr(self.tab_widget, 'setElideMode') and hasattr(QtCore.Qt, 'ElideRight'):
                 self.tab_widget.setElideMode(QtCore.Qt.ElideRight)
+            
+            # Set explicit size for tab widget to ensure visibility
+            self.tab_widget.setMinimumSize(380, 250)
+            self.tab_widget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+            
             layout.addWidget(self.tab_widget)
+            
+            # Create tabs
             self._create_tabs_ultra_safe()
-            FreeCAD.Console.PrintMessage("FreeCAD AI: Full UI setup complete\n")
+            
+            # Force immediate update and visibility
+            self.main_widget.updateGeometry()
+            self.tab_widget.updateGeometry()
+            
+            # Ensure widgets are visible
+            self.main_widget.show()
+            self.tab_widget.show()
+            
+            # Process events to ensure layout is applied
+            if hasattr(QtWidgets, 'QApplication') and QtWidgets.QApplication.instance():
+                QtWidgets.QApplication.processEvents()
+            
+            FreeCAD.Console.PrintMessage(f"FreeCAD AI: Full UI setup complete. DockWidget size: {self.size()}, MainWidget size: {self.main_widget.size()}, TabWidget size: {self.tab_widget.size()}\n")
         except Exception as e:
             FreeCAD.Console.PrintError(f"FreeCAD AI: Full UI setup failed: {e}\n")
             self._create_fallback_ui()
@@ -293,6 +329,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         """Create tabs with maximum safety and error handling."""
         try:
             FreeCAD.Console.PrintMessage("FreeCAD AI: Creating tabs ultra-safely...\n")
+            
             widget_configs = [
                 ('providers_widget', 'ProvidersWidget', 'Providers'),
                 ('conversation_widget', 'ConversationWidget', 'Chat'),
@@ -303,14 +340,14 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             ]
             for attr_name, class_name, tab_name in widget_configs:
                 try:
-                    module_name = f'gui.{attr_name}'
+                    module_name = 'gui.' + attr_name
                     if 'tools_widget' in attr_name:
                         module_name = 'gui.tools_widget_compact'
                         class_name = 'ToolsWidget'
                     try:
-                        module = __import__(f'.{module_name}', package=__package__, fromlist=[class_name])
+                        module = importlib.import_module('.' + module_name, package=__package__)
                     except (ImportError, ValueError):
-                        module = __import__(module_name, fromlist=[class_name])
+                        module = importlib.import_module(module_name)
                     widget_class = getattr(module, class_name)
                     widget_instance = widget_class()
                     setattr(self, attr_name, widget_instance)
@@ -325,16 +362,18 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                     placeholder_layout.addWidget(error_label)
                     self.tab_widget.addTab(placeholder, tab_name)
                     setattr(self, attr_name, placeholder)
-            FreeCAD.Console.PrintMessage("FreeCAD AI: Tab creation complete\n")
+            
+            FreeCAD.Console.PrintMessage(f"FreeCAD AI: Tab creation complete. Tab count: {self.tab_widget.count()}\n")
         except Exception as e:
             FreeCAD.Console.PrintError(f"FreeCAD AI: Ultra-safe tab creation failed: {e}\n")
-            for name in ['Chat', 'Settings']:
+            # Create simple fallback tabs
+            for name in ['Test', 'Chat', 'Settings']:
                 try:
                     tab = QtWidgets.QWidget()
                     tab_layout = QtWidgets.QVBoxLayout(tab)
                     tab_layout.addWidget(QtWidgets.QLabel(f"{name} - Error loading"))
                     self.tab_widget.addTab(tab, name)
-                except:
+                except Exception:
                     pass
 
     @crash_safe_wrapper("service connections")
@@ -352,6 +391,11 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                     safe_widget_operation(
                         lambda: self.conversation_widget.set_provider_service(self.provider_service),
                         "provider service connection to conversation widget"
+                    )
+                if hasattr(self, 'agent_control_widget') and hasattr(self.agent_control_widget, 'set_provider_service'):
+                    safe_widget_operation(
+                        lambda: self.agent_control_widget.set_provider_service(self.provider_service),
+                        "provider service connection to agent control widget"
                     )
                 if hasattr(self.provider_service, 'provider_status_changed'):
                     safe_signal_connect(
@@ -437,7 +481,8 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                     FreeCAD.Console.PrintMessage(f"FreeCAD AI: Direct import failed: {e}\n")
             if not agent_manager_imported:
                 try:
-                    import os, sys
+                    import os
+                    import sys
                     parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                     if parent_dir not in sys.path:
                         sys.path.insert(0, parent_dir)
@@ -489,7 +534,8 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                     FreeCAD.Console.PrintMessage(f"FreeCAD AI: Direct import failed: {e}\n")
             if not provider_service_imported:
                 try:
-                    import os, sys
+                    import os
+                    import sys
                     parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                     if parent_dir not in sys.path:
                         sys.path.insert(0, parent_dir)

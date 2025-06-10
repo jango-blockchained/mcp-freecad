@@ -18,6 +18,10 @@ loguru>=0.7.0
 # JSON handling for configurations
 jsonschema>=4.0.0
 
+# API support - versions compatible with Python 3.13+
+fastapi>=0.100.0
+pydantic>=2.0.0
+
 # Optional: Cryptography for secure API key storage
 # cryptography>=3.4.0  # Install with: pip install cryptography
 

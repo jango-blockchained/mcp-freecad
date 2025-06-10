@@ -7,6 +7,7 @@ from .conversation_formatter import (
     ConversationFormatter,
     FormatSelectionWidget,
 )
+from .provider_selector_widget import ProviderSelectorWidget
 
 
 class ConversationWidget(QtWidgets.QWidget):
@@ -107,24 +108,24 @@ class ConversationWidget(QtWidgets.QWidget):
         layout.setContentsMargins(10, 10, 10, 10)
 
         # Create sections
-        self._create_provider_selection(layout)
+        self._create_provider_selector(layout)
         self._create_conversation_display(layout)
         self._create_message_input(layout)
         self._create_conversation_controls(layout)
 
-    def _create_provider_selection(self, layout):
-        """Create provider selection section."""
-        provider_group = QtWidgets.QGroupBox("Active Provider")
+    def _create_provider_selector(self, layout):
+        """Create provider selection section using shared widget."""
+        provider_group = QtWidgets.QGroupBox("AI Provider Selection")
         provider_layout = QtWidgets.QHBoxLayout(provider_group)
 
-        # Show active provider status
-        self.provider_status_label = QtWidgets.QLabel("Checking providers...")
-        self.provider_status_label.setStyleSheet("font-weight: bold; padding: 5px;")
-        provider_layout.addWidget(self.provider_status_label)
+        # Create the shared provider selector widget
+        self.provider_selector = ProviderSelectorWidget()
+        self.provider_selector.provider_changed.connect(self._on_provider_changed)
+        self.provider_selector.refresh_requested.connect(self._on_provider_refresh)
+        provider_layout.addWidget(self.provider_selector)
 
+        # Context options
         provider_layout.addStretch()
-
-        # Quick settings
         self.context_check = QtWidgets.QCheckBox("Use CAD Context")
         self.context_check.setChecked(True)
         self.context_check.setToolTip(
@@ -401,23 +402,40 @@ class ConversationWidget(QtWidgets.QWidget):
 
         layout.addLayout(controls_layout)
 
-    def _on_provider_changed(self, provider_name):
-        """Handle provider selection change."""
+    def _on_provider_changed(self, provider_name, model_name):
+        """Handle provider selection change from provider selector."""
+        print(f"ConversationWidget: Provider changed to {provider_name} with model {model_name}")
         self.current_provider = provider_name
-        self._update_provider_status()
-
+        self.current_model = model_name
+        
         # Save the selected provider to settings
         try:
             settings = QtCore.QSettings("FreeCAD", "AI_ConversationWidget")
             settings.setValue("last_selected_provider", provider_name)
+            settings.setValue("last_selected_model", model_name)
             settings.sync()
         except Exception as e:
             print(f"ConversationWidget: Failed to save provider preference: {e}")
+        
+        # Update status in any legacy status label if it exists
+        if hasattr(self, 'provider_status_label'):
+            self.provider_status_label.setText(f"✅ {provider_name}")
+            self.provider_status_label.setStyleSheet(
+                "color: #4CAF50; font-weight: bold; padding: 5px;"
+            )
 
-    def _update_provider_status(self):
-        """Update provider status display."""
-        # This method is simplified since we don't have a combo box anymore
-        self.refresh_providers()
+    def _on_provider_refresh(self):
+        """Handle provider refresh request."""
+        print("ConversationWidget: Provider refresh requested")
+        if self.provider_service:
+            # Trigger a refresh of providers
+            try:
+                if hasattr(self.provider_service, 'refresh_providers'):
+                    self.provider_service.refresh_providers()
+                elif hasattr(self.provider_service, 'initialize_providers_from_config'):
+                    self.provider_service.initialize_providers_from_config()
+            except Exception as e:
+                print(f"ConversationWidget: Error refreshing providers: {e}")
 
     def _load_providers_fallback(self):
         """Load providers directly from config if service is not available."""
@@ -508,6 +526,21 @@ class ConversationWidget(QtWidgets.QWidget):
     def _send_message(self, message):
         """Send message to the AI."""
         if not message.strip():
+            return
+
+        # Get current provider selection from provider selector
+        current_selection = None
+        if hasattr(self, 'provider_selector'):
+            current_selection = self.provider_selector.get_current_selection()
+            if current_selection and current_selection['provider']:
+                self.current_provider = current_selection['provider']
+                self.current_model = current_selection.get('model')
+
+        # Fallback to stored provider if selector not available
+        if not self.current_provider:
+            QtWidgets.QMessageBox.warning(
+                self, "Error", "Please select an AI provider first"
+            )
             return
 
         # Check if agent manager is available for agent mode
@@ -1330,6 +1363,14 @@ RESPONSE STYLE:
                 print(
                     "ConversationWidget: Provider service has no AI manager - using local one"
                 )
+
+            # Connect to provider selector
+            if hasattr(self, 'provider_selector'):
+                self.provider_selector.set_provider_service(provider_service)
+                
+            # Also set config manager if available
+            if self.config_manager and hasattr(self, 'provider_selector'):
+                self.provider_selector.set_config_manager(self.config_manager)
 
             # Initial refresh
             self.refresh_providers()
