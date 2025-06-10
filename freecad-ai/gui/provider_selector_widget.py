@@ -79,15 +79,23 @@ class ProviderSelectorWidget(QtWidgets.QWidget):
         """Set the provider service instance."""
         self.provider_service = provider_service
         
+        # Connect to provider service signals
         if self.provider_service:
             # Connect to provider service signals
             if hasattr(self.provider_service, 'provider_status_changed'):
                 self.provider_service.provider_status_changed.connect(self._on_provider_status_changed)
             if hasattr(self.provider_service, 'providers_updated'):
                 self.provider_service.providers_updated.connect(self._on_providers_updated)
+            if hasattr(self.provider_service, 'provider_selection_changed'):
+                self.provider_service.provider_selection_changed.connect(self._on_external_provider_selection_changed)
             
             # Load current providers
             self._refresh_providers()
+            
+            # Restore current selection if available
+            current_selection = self.provider_service.get_current_provider_selection()
+            if current_selection['provider']:
+                self.set_current_selection(current_selection['provider'], current_selection['model'])
 
     def set_config_manager(self, config_manager):
         """Set the config manager instance."""
@@ -294,6 +302,14 @@ class ProviderSelectorWidget(QtWidgets.QWidget):
     def _on_providers_updated(self):
         """Handle providers list update signal."""
         self._refresh_providers()
+
+    def _on_external_provider_selection_changed(self, provider_name, model_name):
+        """Handle provider selection change from external signal."""
+        if provider_name == self.current_provider and model_name == self.current_model:
+            return  # No change
+        
+        # Update provider selection
+        self.set_current_selection(provider_name, model_name)
 
     def _update_status_indicator(self, status, tooltip):
         """Update the status indicator."""

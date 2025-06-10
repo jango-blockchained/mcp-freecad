@@ -167,6 +167,10 @@ class ProviderIntegrationService:
         self.provider_removed_callbacks: List[Callable] = []
         self.provider_status_changed_callbacks: List[Callable] = []
         self.providers_updated_callbacks: List[Callable] = []
+        self.provider_selection_changed_callbacks: List[Callable] = []
+
+        # Current provider selection for synchronization
+        self.current_provider_selection = {'provider': None, 'model': None}
 
         # Flag to prevent callback calls during early initialization
         self._callbacks_enabled = False
@@ -266,6 +270,28 @@ class ProviderIntegrationService:
 
         return CallbackSignal(self.providers_updated_callbacks)
 
+    @property
+    def provider_selection_changed(self):
+        """Signal-like interface for provider_selection_changed callbacks."""
+
+        class CallbackSignal:
+            def __init__(self, callbacks):
+                self.callbacks = callbacks
+
+            def connect(self, callback):
+                if callback not in self.callbacks:
+                    self.callbacks.append(callback)
+                logging.debug(f"Connected callback to provider_selection_changed: {callback}")
+
+            def emit(self, *args):
+                for callback in self.callbacks:
+                    try:
+                        callback(*args)
+                    except Exception as e:
+                        logging.error(f"Error in provider_selection_changed callback: {e}")
+
+        return CallbackSignal(self.provider_selection_changed_callbacks)
+
     def _setup_config_manager(self):
         """Setup configuration manager integration."""
         try:
@@ -281,6 +307,101 @@ class ProviderIntegrationService:
     def _normalize_provider_name(self, provider_name: str) -> str:
         """Normalize provider name to lowercase for consistent handling."""
         return provider_name.lower()
+
+    def _resolve_provider_name(self, provider_name: str) -> str:
+        """Resolve provider name to the correct format, handling both capitalized and lowercase variants."""
+        if not provider_name:
+            return provider_name
+
+        # Check if we have both formats in config and prefer the enabled one
+        if self.config_manager:
+            lowercase_name = provider_name.lower()
+            capitalized_name = self._get_provider_display_name(lowercase_name)
+
+            # Check which format exists and is enabled
+            lowercase_config = self.config_manager.get_provider_config(lowercase_name)
+            capitalized_config = self.config_manager.get_provider_config(capitalized_name)
+
+            # If both exist, prefer the enabled one
+            if lowercase_config and capitalized_config:
+                if capitalized_config.get("enabled", False) and not lowercase_config.get(
+                    "enabled", False
+                ):
+                    return capitalized_name
+                elif lowercase_config.get("enabled", False) and not capitalized_config.get(
+                    "enabled", False
+                ):
+                    return lowercase_name
+                # If both enabled or both disabled, prefer capitalized format
+                return capitalized_name
+            elif capitalized_config:
+                return capitalized_name
+            elif lowercase_config:
+                return lowercase_name
+
+        # Fallback to display name format
+        return self._get_provider_display_name(provider_name)
+
+    def _cleanup_duplicate_providers(self) -> bool:
+        """Clean up duplicate provider entries in configuration, keeping the enabled ones."""
+        if not self.config_manager:
+            return False
+
+        try:
+            self.logger.info("Cleaning up duplicate provider entries...")
+
+            # Get all provider configs
+            all_configs = {}
+            config_data = self.config_manager.config_data.get("providers", {})
+
+            for provider_name, config in config_data.items():
+                all_configs[provider_name] = config
+
+            # Group by normalized name to find duplicates
+            provider_groups = {}
+            for provider_name in all_configs.keys():
+                normalized = self._normalize_provider_name(provider_name)
+                if normalized not in provider_groups:
+                    provider_groups[normalized] = []
+                provider_groups[normalized].append(provider_name)
+
+            # Process duplicates
+            changes_made = False
+            for normalized_name, variants in provider_groups.items():
+                if len(variants) > 1:
+                    self.logger.info(f"Found duplicate providers for {normalized_name}: {variants}")
+
+                    # Find the best variant to keep
+                    enabled_variants = [v for v in variants if all_configs[v].get("enabled", False)]
+
+                    if enabled_variants:
+                        # Keep the first enabled variant (prefer capitalized)
+                        capitalized_variants = [v for v in enabled_variants if v != v.lower()]
+                        keep_variant = capitalized_variants[0] if capitalized_variants else enabled_variants[0]
+                    else:
+                        # No enabled variants, keep capitalized format if available
+                        capitalized_variants = [v for v in variants if v != v.lower()]
+                        keep_variant = capitalized_variants[0] if capitalized_variants else variants[0]
+
+                    # Remove other variants
+                    for variant in variants:
+                        if variant != keep_variant:
+                            self.logger.info(f"Removing duplicate provider entry: {variant}")
+                            del self.config_manager.config_data["providers"][variant]
+                            changes_made = True
+
+            if changes_made:
+                # Save the cleaned configuration
+                self.config_manager.save_config()
+                self.logger.info("Configuration cleaned up and saved")
+                return True
+            else:
+                self.logger.info("No duplicate providers found")
+                return False
+
+        except Exception as e:
+            self.logger.error(f"Error cleaning up duplicate providers: {e}")
+            return False
 
     def _get_provider_display_name(self, provider_name: str) -> str:
         """Get the display name for a provider (capitalized)."""
@@ -301,6 +422,9 @@ class ProviderIntegrationService:
 
         try:
             self.logger.info("Starting provider initialization from configuration...")
+            
+            # First, clean up any duplicate provider entries
+            self._cleanup_duplicate_providers()
 
             # Get all configured providers (both default and custom)
             all_api_keys = self.config_manager.list_api_keys()
@@ -310,20 +434,22 @@ class ProviderIntegrationService:
 
             # Try to initialize any provider that has an API key
             for provider_key in all_api_keys:
-                normalized_name = self._normalize_provider_name(provider_key)
-                display_name = self._get_provider_display_name(provider_key)
+                # Use the new resolution method to handle name consistency
+                resolved_name = self._resolve_provider_name(provider_key)
+                normalized_name = self._normalize_provider_name(resolved_name)
 
                 api_key = self.config_manager.get_api_key(provider_key)
                 if not api_key:
                     self.logger.warning(f"No API key found for {provider_key}")
                     continue
 
-                # Get provider config - create default if none exists
-                provider_config = self.config_manager.get_provider_config(display_name)
+                # Get provider config using resolved name
+                provider_config = self.config_manager.get_provider_config(resolved_name)
                 if not provider_config:
-                    provider_config = self.config_manager.get_provider_config(
-                        provider_key
-                    )
+                    # Try alternate formats if not found
+                    provider_config = self.config_manager.get_provider_config(provider_key)
+                    if not provider_config:
+                        provider_config = self.config_manager.get_provider_config(normalized_name)
 
                 if not provider_config:
                     # Create default config if none exists
@@ -334,22 +460,25 @@ class ProviderIntegrationService:
                         "timeout": 30,
                         "max_tokens": 4000,
                     }
-                    self.logger.info(f"Created default config for {display_name}")
+                    self.logger.info(f"Created default config for {resolved_name}")
 
-                # Always try to initialize if we have an API key, regardless of enabled status
-                self.logger.info(
-                    f"Attempting to initialize {display_name} with config: {provider_config}"
-                )
-                success = self._initialize_provider(
-                    display_name, api_key, provider_config
-                )
-                if success:
-                    initialized_count += 1
+                # Only initialize if enabled
+                if provider_config.get("enabled", False):
                     self.logger.info(
-                        f"Successfully initialized provider: {display_name}"
+                        f"Attempting to initialize {resolved_name} with config: {provider_config}"
                     )
+                    success = self._initialize_provider(
+                        resolved_name, api_key, provider_config
+                    )
+                    if success:
+                        initialized_count += 1
+                        self.logger.info(
+                            f"Successfully initialized provider: {resolved_name}"
+                        )
+                    else:
+                        self.logger.error(f"Failed to initialize provider: {resolved_name}")
                 else:
-                    self.logger.error(f"Failed to initialize provider: {display_name}")
+                    self.logger.info(f"Skipping disabled provider: {resolved_name}")
 
             self.logger.info(
                 f"Initialized {initialized_count} providers from configuration"
@@ -452,7 +581,9 @@ class ProviderIntegrationService:
             return False
 
         try:
-            normalized_name = self._normalize_provider_name(provider_name)
+            # Use resolved name for consistency
+            resolved_name = self._resolve_provider_name(provider_name)
+            normalized_name = self._normalize_provider_name(resolved_name)
 
             # Save API key to config
             if not self.config_manager.set_api_key(normalized_name, api_key):
@@ -460,14 +591,21 @@ class ProviderIntegrationService:
 
             # Save provider config
             if config:
-                if not self.config_manager.set_provider_config(provider_name, config):
+                if not self.config_manager.set_provider_config(resolved_name, config):
                     return False
 
             # Initialize the provider
             effective_config = config or self.config_manager.get_provider_config(
-                provider_name
+                resolved_name
             )
-            return self._initialize_provider(provider_name, api_key, effective_config)
+            success = self._initialize_provider(resolved_name, api_key, effective_config)
+            
+            # Emit signals only if UI is ready and initialization was successful
+            if success and self._callbacks_enabled:
+                self.provider_added.emit(resolved_name)
+                self.providers_updated.emit()
+                
+            return success
 
         except Exception as e:
             self.logger.error(f"Error adding provider {provider_name}: {e}")
@@ -476,19 +614,23 @@ class ProviderIntegrationService:
     def remove_provider(self, provider_name: str) -> bool:
         """Remove an AI provider."""
         try:
-            normalized_name = self._normalize_provider_name(provider_name)
+            # Use resolved name for consistency
+            resolved_name = self._resolve_provider_name(provider_name)
+            normalized_name = self._normalize_provider_name(resolved_name)
 
             # Remove from AI manager
             ai_manager_name = f"{normalized_name}_main"
             self.ai_manager.remove_provider(ai_manager_name)
 
             # Remove from status tracking
+            if resolved_name in self.provider_status:
+                del self.provider_status[resolved_name]
             if provider_name in self.provider_status:
                 del self.provider_status[provider_name]
 
             # Emit callbacks only if UI is ready
             if self._callbacks_enabled:
-                self.provider_removed.emit(provider_name)
+                self.provider_removed.emit(resolved_name)
                 self.providers_updated.emit()
 
             return True
@@ -682,40 +824,40 @@ class ProviderIntegrationService:
         """Update the model for a specific provider."""
         try:
             self.logger.info(f"Updating model for {provider_name} to {model_name}")
-            
+
             # Update config manager
             if self.config_manager:
                 provider_config = self.config_manager.get_provider_config(provider_name)
                 if not provider_config:
                     provider_config = {}
-                
-                provider_config['model'] = model_name
+
+                provider_config["model"] = model_name
                 success = self.config_manager.set_provider_config(provider_name, provider_config)
-                
+
                 if not success:
                     self.logger.error(f"Failed to save model config for {provider_name}")
                     return False
-            
+
             # Update AI manager provider if it exists
             normalized_name = self._normalize_provider_name(provider_name)
             ai_manager_name = f"{normalized_name}_main"
-            
+
             if ai_manager_name in self.ai_manager.providers:
                 provider = self.ai_manager.providers[ai_manager_name]
-                if hasattr(provider, 'set_model'):
+                if hasattr(provider, "set_model"):
                     provider.set_model(model_name)
                     self.logger.info(f"Updated AI manager provider {ai_manager_name} to model {model_name}")
-                elif hasattr(provider, 'config'):
-                    provider.config['model'] = model_name
+                elif hasattr(provider, "config"):
+                    provider.config["model"] = model_name
                     self.logger.info(f"Updated AI manager provider config for {ai_manager_name}")
-            
+
             # Notify UI components of the change
             if self._callbacks_enabled:
                 self.provider_status_changed.emit(provider_name, "updated", f"Model changed to {model_name}")
                 self.providers_updated.emit()
-            
+
             return True
-            
+
         except Exception as e:
             self.logger.error(f"Error updating model for {provider_name}: {e}")
             return False
@@ -726,40 +868,40 @@ class ProviderIntegrationService:
             # Try to get from AI manager first
             normalized_name = self._normalize_provider_name(provider_name)
             ai_manager_name = f"{normalized_name}_main"
-            
+
             if ai_manager_name in self.ai_manager.providers:
                 provider = self.ai_manager.providers[ai_manager_name]
-                if hasattr(provider, 'get_available_models'):
+                if hasattr(provider, "get_available_models"):
                     models = provider.get_available_models()
                     if models:
                         return models
-            
+
             # Fallback to default models based on provider type
             provider_type = self._normalize_provider_name(provider_name)
             default_models = {
-                'anthropic': ['claude-4-20241120', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'],
-                'openai': ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
-                'google': ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro'],
-                'openrouter': ['anthropic/claude-3.5-sonnet', 'openai/gpt-4o', 'google/gemini-pro']
+                "anthropic": ["claude-4-20241120", "claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022"],
+                "openai": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"],
+                "google": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"],
+                "openrouter": ["anthropic/claude-3.5-sonnet", "openai/gpt-4o", "google/gemini-pro"],
             }
-            
-            return default_models.get(provider_type, ['default-model'])
-            
+
+            return default_models.get(provider_type, ["default-model"])
+
         except Exception as e:
             self.logger.error(f"Error getting models for {provider_name}: {e}")
-            return ['default-model']
+            return ["default-model"]
 
     def get_current_provider_model(self, provider_name: str) -> str:
         """Get the currently configured model for a provider."""
         try:
             if self.config_manager:
                 provider_config = self.config_manager.get_provider_config(provider_name)
-                if provider_config and 'model' in provider_config:
-                    return provider_config['model']
-            
+                if provider_config and "model" in provider_config:
+                    return provider_config["model"]
+
             # Fallback to default model
             return self._get_default_model_for_provider(provider_name)
-            
+
         except Exception as e:
             self.logger.error(f"Error getting current model for {provider_name}: {e}")
             return self._get_default_model_for_provider(provider_name)
@@ -768,16 +910,100 @@ class ProviderIntegrationService:
         """Refresh all providers and their configurations."""
         try:
             self.logger.info("Refreshing all providers")
-            
+
             # Re-initialize providers from config
             success = self.initialize_providers_from_config()
-            
+
             # Emit update signal
             if self._callbacks_enabled:
                 self.providers_updated.emit()
-            
+
             return success
-            
+
         except Exception as e:
             self.logger.error(f"Error refreshing providers: {e}")
+            return False
+
+    def set_current_provider_selection(self, provider_name: str, model_name: str = None) -> bool:
+        """Set the current provider selection and notify all connected widgets."""
+        try:
+            resolved_name = self._resolve_provider_name(provider_name)
+            
+            # Verify the provider exists and is enabled
+            provider_config = self.config_manager.get_provider_config(resolved_name) if self.config_manager else None
+            if not provider_config or not provider_config.get('enabled', False):
+                self.logger.warning(f"Provider {resolved_name} is not enabled or not found")
+                return False
+                
+            # Store the current selection
+            self.current_provider_selection = {
+                'provider': resolved_name,
+                'model': model_name or provider_config.get('model', 'default')
+            }
+            
+            # Update the default provider if this is a manual selection
+            if self.config_manager:
+                self.set_default_provider(resolved_name)
+            
+            # Emit selection change signal to synchronize all provider selector widgets
+            if self._callbacks_enabled:
+                self.provider_selection_changed.emit(resolved_name, self.current_provider_selection['model'])
+                
+            self.logger.info(f"Provider selection updated: {resolved_name} with model {self.current_provider_selection['model']}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error setting provider selection: {e}")
+            return False
+
+    def get_current_provider_selection(self) -> Dict[str, str]:
+        """Get the current provider selection."""
+        return getattr(self, 'current_provider_selection', {'provider': None, 'model': None})
+
+    def get_default_provider(self) -> Optional[str]:
+        """Get the default provider, resolving name conflicts if necessary."""
+        if not self.config_manager:
+            return None
+            
+        try:
+            # Get the configured default provider
+            default_provider = self.config_manager.config_data.get('connection', {}).get('default_provider')
+            if not default_provider:
+                return None
+                
+            # Resolve the name to handle capitalization mismatches
+            resolved_name = self._resolve_provider_name(default_provider)
+            
+            # Verify the provider is enabled and available
+            provider_config = self.config_manager.get_provider_config(resolved_name)
+            if provider_config and provider_config.get('enabled', False):
+                return resolved_name
+            else:
+                self.logger.warning(f"Default provider {resolved_name} is not enabled")
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"Error getting default provider: {e}")
+            return None
+
+    def set_default_provider(self, provider_name: str) -> bool:
+        """Set the default provider, using resolved name format."""
+        if not self.config_manager:
+            return False
+            
+        try:
+            resolved_name = self._resolve_provider_name(provider_name)
+            
+            # Update the configuration
+            if 'connection' not in self.config_manager.config_data:
+                self.config_manager.config_data['connection'] = {}
+            self.config_manager.config_data['connection']['default_provider'] = resolved_name
+            
+            # Save the configuration
+            self.config_manager.save_config()
+            self.logger.info(f"Set default provider to: {resolved_name}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error setting default provider: {e}")
             return False
