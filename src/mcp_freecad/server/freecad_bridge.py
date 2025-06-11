@@ -73,22 +73,107 @@ class FreeCADBridge:
         Returns:
             Tuple of (stdout, stderr)
         """
-        # Create a temporary script
+        # Create a temporary script with proper headless initialization
         fd, temp_path = tempfile.mkstemp(suffix=".py")
         try:
+            # Prepare script with headless initialization wrapper
+            wrapped_script = self._wrap_script_for_headless(script_content)
+            
             with os.fdopen(fd, "w") as f:
-                f.write(script_content)
+                f.write(wrapped_script)
 
-            # Run the script with FreeCAD
-            process = subprocess.run(
-                [self.freecad_path, "-c", temp_path], capture_output=True, text=True
-            )
+            # Set up environment for headless FreeCAD execution
+            env = os.environ.copy()
+            env.update({
+                'DISPLAY': ':99',  # Use virtual display
+                'QT_QPA_PLATFORM': 'offscreen',  # Force Qt offscreen platform
+                'FREECAD_USER_HOME': tempfile.gettempdir(),  # Use temp directory for user data
+                'XVFB_RUN': '1'  # Indicate we're in virtual framebuffer mode
+            })
+
+            # Run the script with FreeCAD in console mode with headless flags
+            cmd = [
+                self.freecad_path,
+                '--console',  # Console mode
+                '--run-python-script', temp_path  # More reliable than -c for scripts
+            ]
+            
+            # Fallback to older syntax if newer flags aren't supported
+            try:
+                process = subprocess.run(
+                    cmd, 
+                    capture_output=True, 
+                    text=True, 
+                    timeout=30,  # Add timeout to prevent hanging
+                    env=env
+                )
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                # Fallback to basic console mode
+                process = subprocess.run(
+                    [self.freecad_path, '-c', temp_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                    env=env
+                )
 
             return process.stdout, process.stderr
+        except subprocess.TimeoutExpired:
+            return "", "Error: FreeCAD script execution timed out"
+        except Exception as e:
+            return "", f"Error executing FreeCAD script: {str(e)}"
         finally:
             # Clean up
             if os.path.exists(temp_path):
                 os.unlink(temp_path)
+
+    def _wrap_script_for_headless(self, script_content: str) -> str:
+        """
+        Wrap the script with proper headless initialization to prevent crashes
+        
+        Args:
+            script_content: The original script content
+            
+        Returns:
+            Script wrapped with headless initialization
+        """
+        wrapper = '''
+# Headless FreeCAD initialization wrapper
+import sys
+import os
+
+# Configure for headless operation
+os.environ['QT_QPA_PLATFORM'] = 'offscreen'
+
+try:
+    # Import FreeCAD with error handling
+    import FreeCAD
+    
+    # Set console mode and disable GUI features
+    if hasattr(FreeCAD, 'Console'):
+        FreeCAD.Console.SetStatus("Log", 1)
+    
+    # Initialize without GUI
+    if hasattr(FreeCAD, 'GuiUp'):
+        FreeCAD.GuiUp = False
+        
+except ImportError as e:
+    print(f"Error importing FreeCAD: {e}")
+    sys.exit(1)
+
+# User script begins here
+try:
+{script_content}
+except Exception as e:
+    print(f"Script execution error: {{e}}")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+'''
+        # Indent the user script properly
+        indented_script = '\n'.join('    ' + line if line.strip() else line 
+                                  for line in script_content.split('\n'))
+        return wrapper.format(script_content=indented_script)
 
     def get_version(self) -> Dict[str, Any]:
         """

@@ -610,8 +610,48 @@ class EnhancedAgentControlWidget(QtWidgets.QWidget):
             self, "Quick Status", "\n".join(status_lines)
         )
 
-    # Include other enhanced methods...
-    # [Previous methods like _create_command_section, etc. would be here with theme support]
+    def _on_provider_changed(self, provider_name, model_name):
+        """Handle provider selection change from provider selector."""
+        print(
+            f"EnhancedAgentControlWidget: Provider changed to {provider_name} with model {model_name}"
+        )
+        # Update agent manager if available
+        if self.agent_manager and hasattr(self.agent_manager, "set_provider"):
+            try:
+                self.agent_manager.set_provider(provider_name, model_name)
+            except Exception as e:
+                print(
+                    f"EnhancedAgentControlWidget: Error setting provider in agent manager: {e}"
+                )
+
+    def _on_provider_refresh(self):
+        """Handle provider refresh request."""
+        print("EnhancedAgentControlWidget: Provider refresh requested")
+        if self.provider_service:
+            try:
+                if hasattr(self.provider_service, "refresh_providers"):
+                    self.provider_service.refresh_providers()
+                elif hasattr(self.provider_service, "initialize_providers_from_config"):
+                    self.provider_service.initialize_providers_from_config()
+            except Exception as e:
+                print(f"EnhancedAgentControlWidget: Error refreshing providers: {e}")
+
+    def _toggle_execution(self):
+        """Toggle execution play/pause."""
+        # TODO: Implement execution toggle
+        print("Toggle execution called")
+
+    def _stop_execution(self):
+        """Stop current execution."""
+        # TODO: Implement execution stop
+        print("Stop execution called")
+
+    def _step_execution(self):
+        """Execute one step."""
+        # TODO: Implement step execution
+        print("Step execution called")
+
+    # Additional methods for enhanced functionality
 
     # Placeholder methods for the rest of the enhanced functionality
     def _create_command_section(self, layout):
@@ -637,16 +677,51 @@ class EnhancedAgentControlWidget(QtWidgets.QWidget):
     # Additional methods for enhanced functionality
     def _filter_queue_by_priority(self, priority):
         """Filter queue display by priority."""
-        pass
+        # TODO: Implement queue filtering
+        print(f"Filter queue by priority: {priority}")
         
     def _edit_queue_item(self):
         """Edit selected queue item."""
-        pass
+        # TODO: Implement queue item editing
+        print("Edit queue item called")
         
     def _set_task_priority(self):
         """Set priority for selected task."""
-        pass
+        # TODO: Implement task priority setting
+        print("Set task priority called")
         
     def _export_settings(self):
         """Export current agent settings."""
-        pass
+        # TODO: Implement settings export
+        print("Export settings called")
+
+    def _clear_queue(self):
+        """Clear the task queue."""
+        # TODO: Implement queue clearing
+        print("Clear queue called")
+
+    def _move_queue_item_up(self):
+        """Move selected queue item up."""
+        # TODO: Implement queue item reordering
+        print("Move queue item up called")
+
+    def _move_queue_item_down(self):
+        """Move selected queue item down."""
+        # TODO: Implement queue item reordering
+        print("Move queue item down called")
+
+    def _remove_queue_item(self):
+        """Remove selected queue item."""
+        # TODO: Implement queue item removal
+        print("Remove queue item called")
+
+    def set_agent_manager(self, agent_manager):
+        """Set the agent manager reference."""
+        self.agent_manager = agent_manager
+
+    def set_provider_service(self, provider_service):
+        """Set the provider service reference."""
+        self.provider_service = provider_service
+        
+        if hasattr(self, 'provider_selector') and provider_service:
+            self.provider_selector.set_provider_service(provider_service)

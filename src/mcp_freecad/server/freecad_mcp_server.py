@@ -378,17 +378,41 @@ async def execute_script_in_freecad(
         # Send progress update before execution
         await ctx.send_progress(0.1, "Sending script to FreeCAD...")
 
-        result = FC_CONNECTION.execute_command("execute_script", {"script": script})
-
-        # Send progress update after sending command
-        await ctx.send_progress(0.4, "Script sent, waiting for execution...")
-
-        # Await if the connection method is async
-        if asyncio.iscoroutine(result):
-            result = await result
+        # Add connection validation and retry logic
+        max_retries = 3
+        retry_count = 0
+        result = None
+        
+        while retry_count < max_retries:
+            try:
+                result = FC_CONNECTION.execute_command("execute_script", {"script": script})
+                
+                # Await if the connection method is async
+                if asyncio.iscoroutine(result):
+                    result = await result
+                    
+                # If we got a result, break out of retry loop
+                if result:
+                    break
+                    
+            except Exception as retry_error:
+                retry_count += 1
+                logger.warning(f"Script execution attempt {retry_count} failed: {retry_error}")
+                
+                if retry_count < max_retries:
+                    await ctx.send_progress(0.2, f"Retrying script execution (attempt {retry_count + 1})...")
+                    await asyncio.sleep(1)  # Brief delay before retry
+                else:
+                    raise retry_error
 
         # Send progress update after execution
         await ctx.send_progress(0.8, "Script executed, processing results...")
+
+        if not result:
+            error_msg = "No result returned from FreeCAD script execution"
+            logger.error(f"FreeCAD script execution failed: {error_msg}")
+            await ctx.send_progress(1.0, f"Error: {error_msg}")
+            raise FastMCPError(f"FreeCAD execution error: {error_msg}")
 
         if "error" in result:
             error_msg = result.get(
