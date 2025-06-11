@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.pyo
+*.pyd
 .Python
 build/
 develop-eggs/
@@ -109,6 +111,7 @@ dmypy.json
 .cursorignore
 .cursorindexingignore
 
+# Encrypted files and sensitive data
 freecad-ai/api_keys.enc
-
-freecad-ai/api_keys.enc
+*.enc
+*.encrypted

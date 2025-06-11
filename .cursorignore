@@ -35,7 +35,9 @@ env/
 *.FCStd1
 *.FCBak
 
-
+# Logs
+*.log
+logs/
 
 # OS specific
 .DS_Store
@@ -68,3 +70,8 @@ uv.lock
 *.AppImage.sha224sum
 *.AppImage.sha1sum
 *.AppImage.md5sum
+
+# Encrypted files and sensitive data
+*.enc
+*.encrypted
+freecad-ai/api_keys.enc

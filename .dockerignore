@@ -45,3 +45,10 @@ Thumbs.db
 *.AppImage.sha224sum
 *.AppImage.sha1sum
 *.AppImage.md5sum
+
+# Encrypted files and sensitive data
+*.enc
+*.encrypted
+freecad-ai/api_keys.enc
+api_keys.json
+**/api_keys.json

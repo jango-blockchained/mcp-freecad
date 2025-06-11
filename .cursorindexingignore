@@ -47,7 +47,8 @@ backups/
 *.igs
 *.FCStd
 *.FCStd1
-*.FCBak*.fcstd
+*.FCBak
+*.fcstd
 *.fcstd1
 *.fcbak
 
@@ -103,58 +104,11 @@ static/large/
 # Large data files
 *.dat
 *.bin
-*.raw*.fcstd
-*.fcstd1
-*.fcbak
-
-# CAD and 3D model files
-*.obj
-*.ply
-*.dae
-*.3mf
-*.amf
-*.x3d
-*.wrl
-
-# Log files
-*.log
-freecad_server_stderr.log
-freecad_server_stdout.log
-mcp-freecad-debug.log
-mcp-freecad-traceback.log
-logs/
-
-# AppImage files and checksums
-*.AppImage
-*.AppImage.*sum
-
-# OS specific files
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Documentation build outputs
-docs/_build/
-docs/build/
-site/
-
-# Assets and media (if large)
-assets/
-media/
-static/large/# Database files
-*.db
-*.sqlite
-*.sqlite3
-
-# Archives and compressed files
-*.zip
-*.tar.gz
-*.tgz
-*.tar.bz2
-*.rar
-*.7z
-
-# Large data files
-*.dat
-*.bin
 *.raw
+
+# Encrypted files and sensitive data
+*.enc
+*.encrypted
+freecad-ai/api_keys.enc
+api_keys.json
+**/api_keys.json
