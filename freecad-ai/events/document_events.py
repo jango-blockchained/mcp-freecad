@@ -4,7 +4,8 @@ from typing import Any, Dict
 
 try:
     from .base import EventProvider
-    from ..utils.safe_async import freecad_safe_emit
+    from .import_utils import safe_import_freecad_util
+    freecad_safe_emit = safe_import_freecad_util('freecad_safe_emit')
 except ImportError:
     # Fallback for when module is loaded by FreeCAD
     import os
@@ -13,8 +14,10 @@ except ImportError:
     addon_dir = os.path.dirname(os.path.dirname(__file__))
     if addon_dir not in sys.path:
         sys.path.insert(0, addon_dir)
+    
     from events.base import EventProvider
-    from utils.safe_async import freecad_safe_emit
+    from events.import_utils import safe_import_freecad_util
+    freecad_safe_emit = safe_import_freecad_util('freecad_safe_emit')
 
 logger = logging.getLogger(__name__)
 
@@ -22,15 +25,16 @@ logger = logging.getLogger(__name__)
 class DocumentEventProvider(EventProvider):
     """Event provider for FreeCAD document events."""
 
-    def __init__(self, freecad_app=None, event_router=None):
+    def __init__(self, freecad_app=None, event_router=None, max_history_size=100):
         """
         Initialize the document event provider.
 
         Args:
             freecad_app: Optional FreeCAD application instance. If None, will try to import FreeCAD.
             event_router: Router for broadcasting events
+            max_history_size: Maximum number of events to keep in history
         """
-        super().__init__()
+        super().__init__(max_history_size)
         self.app = freecad_app
         self.event_router = event_router
 
@@ -54,37 +58,52 @@ class DocumentEventProvider(EventProvider):
             logger.warning("FreeCAD not available, cannot set up signal handlers")
             return
 
+        signals_connected = 0
+        
         try:
             # Connect to document changed signal
             if hasattr(self.app, "signalDocumentChanged"):
-                self.app.signalDocumentChanged.connect(self._on_document_changed)
-                logger.info("Connected to FreeCAD document changed signal")
+                if self._track_signal_connection(self.app.signalDocumentChanged, self._on_document_changed):
+                    signals_connected += 1
+                    logger.debug("Connected to FreeCAD document changed signal")
 
             # Connect to document created signal
             if hasattr(self.app, "signalNewDocument"):
-                self.app.signalNewDocument.connect(self._on_document_created)
-                logger.info("Connected to FreeCAD new document signal")
+                if self._track_signal_connection(self.app.signalNewDocument, self._on_document_created):
+                    signals_connected += 1
+                    logger.debug("Connected to FreeCAD new document signal")
 
             # Connect to document closed signal
             if hasattr(self.app, "signalDeleteDocument"):
-                self.app.signalDeleteDocument.connect(self._on_document_closed)
-                logger.info("Connected to FreeCAD delete document signal")
+                if self._track_signal_connection(self.app.signalDeleteDocument, self._on_document_closed):
+                    signals_connected += 1
+                    logger.debug("Connected to FreeCAD delete document signal")
 
             # Connect to active document changed signal
             if hasattr(self.app, "signalActiveDocument"):
-                self.app.signalActiveDocument.connect(self._on_active_document_changed)
-                logger.info("Connected to FreeCAD active document signal")
+                if self._track_signal_connection(self.app.signalActiveDocument, self._on_active_document_changed):
+                    signals_connected += 1
+                    logger.debug("Connected to FreeCAD active document signal")
 
             # Connect to GUI selection changed signal if available
             if hasattr(self.app, "Gui") and hasattr(self.app.Gui, "Selection"):
                 if hasattr(self.app.Gui.Selection, "signalSelectionChanged"):
-                    self.app.Gui.Selection.signalSelectionChanged.connect(
-                        self._on_selection_changed
-                    )
-                    logger.info("Connected to FreeCAD selection changed signal")
+                    if self._track_signal_connection(self.app.Gui.Selection.signalSelectionChanged, self._on_selection_changed):
+                        signals_connected += 1
+                        logger.debug("Connected to FreeCAD selection changed signal")
+
+            logger.info(f"Connected {signals_connected} FreeCAD document event signals")
 
         except Exception as e:
             logger.error(f"Error setting up FreeCAD signal handlers: {e}")
+            
+    def get_status(self) -> Dict[str, Any]:
+        """Get the current status of the document event provider."""
+        return {
+            "freecad_available": self.app is not None,
+            "signals_connected": len(self._signal_connections),
+            "is_shutdown": self._is_shutdown
+        }
 
     def _on_document_changed(self, doc):
         """Handle document changed event."""

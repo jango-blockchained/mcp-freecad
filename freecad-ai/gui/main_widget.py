@@ -444,8 +444,8 @@ class MCPMainWidget(QtWidgets.QDockWidget):
 
             widget_configs = [
                 ("providers_widget", "ProvidersWidget", "Providers"),
-                ("conversation_widget", "ConversationWidget", "Chat"),
-                ("agent_control_widget", "AgentControlWidget", "Agent"),
+                ("enhanced_conversation_widget", "EnhancedConversationWidget", "Chat"),
+                ("enhanced_agent_control_widget", "EnhancedAgentControlWidget", "Agent"),
                 ("tools_widget", "ToolsWidget", "Tools"),
                 ("unified_connection_widget", "UnifiedConnectionWidget", "Connections"),
                 ("settings_widget", "SettingsWidget", "Settings"),

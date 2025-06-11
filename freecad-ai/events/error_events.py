@@ -6,7 +6,8 @@ from typing import Any, Dict, List, Optional
 
 try:
     from .base import EventProvider
-    from ..utils.safe_async import freecad_safe_emit
+    from .import_utils import safe_import_freecad_util
+    freecad_safe_emit = safe_import_freecad_util('freecad_safe_emit')
 except ImportError:
     # Fallback for when module is loaded by FreeCAD
     import os
@@ -15,7 +16,8 @@ except ImportError:
     if addon_dir not in sys.path:
         sys.path.insert(0, addon_dir)
     from events.base import EventProvider
-    from utils.safe_async import freecad_safe_emit
+    from events.import_utils import safe_import_freecad_util
+    freecad_safe_emit = safe_import_freecad_util('freecad_safe_emit')
 
 logger = logging.getLogger(__name__)
 
@@ -23,18 +25,22 @@ logger = logging.getLogger(__name__)
 class ErrorEventProvider(EventProvider):
     """Event provider for FreeCAD error events."""
 
-    def __init__(self, freecad_app=None, event_router=None):
+    def __init__(self, freecad_app=None, event_router=None, max_history_size=50, install_global_handler=False):
         """
         Initialize the error event provider.
 
         Args:
             freecad_app: Optional FreeCAD application instance. If None, will try to import FreeCAD.
             event_router: Router for broadcasting events
+            max_history_size: Maximum number of errors to keep in history
+            install_global_handler: Whether to install global exception handler (dangerous, default False)
         """
-        super().__init__()
+        super().__init__(max_history_size)
         self.app = freecad_app
         self.event_router = event_router
         self.error_history: List[Dict[str, Any]] = []
+        self.original_excepthook = None
+        self._global_handler_installed = False
 
         if self.app is None:
             try:
@@ -48,11 +54,26 @@ class ErrorEventProvider(EventProvider):
                 )
                 self.app = None
 
-        # Install exception hook to capture unhandled exceptions
-        self.original_excepthook = sys.excepthook
-        sys.excepthook = self._global_exception_handler
+        # Only install global exception handler if explicitly requested
+        if install_global_handler:
+            self._install_global_exception_handler()
 
         self._setup_signal_handlers()
+
+    def _install_global_exception_handler(self):
+        """Install global exception handler if not already installed."""
+        if not self._global_handler_installed and hasattr(sys, 'excepthook'):
+            self.original_excepthook = sys.excepthook
+            sys.excepthook = self._global_exception_handler
+            self._global_handler_installed = True
+            logger.info("Installed global exception handler for error tracking")
+
+    def _uninstall_global_exception_handler(self):
+        """Restore original exception handler."""
+        if self._global_handler_installed and self.original_excepthook:
+            sys.excepthook = self.original_excepthook
+            self._global_handler_installed = False
+            logger.info("Restored original exception handler")
 
     def _setup_signal_handlers(self):
         """Set up signal handlers for FreeCAD error events."""
@@ -119,13 +140,14 @@ class ErrorEventProvider(EventProvider):
 
     def _record_error(self, event_data):
         """Record an error and emit an event."""
-        # Store in history (limit to last 50 errors)
+        # Store in history (limit to configured max size)
         self.error_history.append(event_data)
-        if len(self.error_history) > 50:
+        if len(self.error_history) > self.max_history_size:
             self.error_history.pop(0)
 
         # Emit event safely
-        freecad_safe_emit(self.emit_event, "error", event_data, "error_recorded")
+        if freecad_safe_emit:
+            freecad_safe_emit(self.emit_event, "error", event_data, "error_recorded")
 
     def get_error_history(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """
@@ -168,11 +190,24 @@ class ErrorEventProvider(EventProvider):
 
         self._record_error(error_data)
 
-    def __del__(self):
-        """Clean up resources when the provider is deleted."""
-        # Restore original exception handler
-        if hasattr(self, "original_excepthook"):
-            sys.excepthook = self.original_excepthook
+    def get_status(self) -> Dict[str, Any]:
+        """Get the current status of the error event provider."""
+        return {
+            "freecad_available": self.app is not None,
+            "global_handler_installed": self._global_handler_installed,
+            "signals_connected": len(self._signal_connections),
+            "error_history_size": len(self.error_history),
+            "max_history_size": self.max_history_size,
+            "is_shutdown": self._is_shutdown
+        }
+
+    async def shutdown(self) -> None:
+        """Clean up resources when the provider is shutdown."""
+        # Restore original exception handler first
+        self._uninstall_global_exception_handler()
+        
+        # Then call parent shutdown
+        await super().shutdown()
 
     async def emit_event(self, event_type: str, event_data: Dict[str, Any]) -> None:
         """

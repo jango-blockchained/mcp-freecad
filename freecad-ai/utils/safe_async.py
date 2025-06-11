@@ -10,8 +10,25 @@ import logging
 import threading
 from typing import Any, Callable, Coroutine, Optional
 import concurrent.futures
+import weakref
 
 logger = logging.getLogger(__name__)
+
+# Global thread pool for async operations
+_thread_pool = None
+_thread_pool_lock = threading.Lock()
+
+
+def _get_thread_pool():
+    """Get or create the global thread pool."""
+    global _thread_pool
+    with _thread_pool_lock:
+        if _thread_pool is None or _thread_pool._shutdown:
+            _thread_pool = concurrent.futures.ThreadPoolExecutor(
+                max_workers=2, 
+                thread_name_prefix="freecad_async"
+            )
+    return _thread_pool
 
 
 def safe_create_task(coro: Coroutine[Any, Any, Any], task_name: Optional[str] = None) -> bool:
@@ -79,16 +96,31 @@ def _run_in_thread_pool(coro: Coroutine[Any, Any, Any], task_name: Optional[str]
             except Exception as e:
                 logger.error(f"Error running task {task_name or 'unnamed'} in thread pool: {e}")
                 
-        # Use ThreadPoolExecutor to run the async function
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            executor.submit(run_async_in_thread)
-            # Don't wait for completion - run in background
-            logger.debug(f"Submitted task {task_name or 'unnamed'} to thread pool")
-            return True
+        # Use the global thread pool
+        thread_pool = _get_thread_pool()
+        future = thread_pool.submit(run_async_in_thread)
+        # Store weak reference to avoid blocking shutdown
+        _thread_futures.add(weakref.ref(future))
+        logger.debug(f"Submitted task {task_name or 'unnamed'} to thread pool")
+        return True
             
     except Exception as e:
         logger.error(f"Failed to submit task {task_name or 'unnamed'} to thread pool: {e}")
         return False
+
+
+# Track running futures for cleanup
+_thread_futures = weakref.WeakSet()
+
+
+def cleanup_thread_pool():
+    """Clean up the thread pool and any running futures."""
+    global _thread_pool
+    with _thread_pool_lock:
+        if _thread_pool is not None:
+            logger.info("Shutting down async thread pool")
+            _thread_pool.shutdown(wait=False)
+            _thread_pool = None
 
 
 def safe_emit_event(emit_func: Callable, event_type: str, event_data: Any, context: str = "unknown") -> bool:
@@ -162,3 +194,22 @@ def freecad_safe_emit(emit_func: Callable, event_type: str, event_data: Any, sig
         # Log event loop status for debugging
         status = check_event_loop_status()
         logger.debug(f"Event loop status: {status}")
+
+
+def cleanup_async_resources():
+    """Clean up async resources when shutting down."""
+    cleanup_thread_pool()
+    
+    # Clear any remaining weak references
+    global _thread_futures
+    if '_thread_futures' in globals():
+        _thread_futures.clear()
+    
+    logger.info("Async resource cleanup complete")
+
+
+# Cleanup function - call this during shutdown
+def cleanup_safe_async():
+    """Clean up resources used by safe async utilities."""
+    cleanup_thread_pool()
+    logger.info("Safe async utilities cleaned up")

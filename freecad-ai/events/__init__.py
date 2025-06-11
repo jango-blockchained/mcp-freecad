@@ -75,12 +75,15 @@ __all__ = available_handlers + ["EVENTS_AVAILABLE"]
 
 
 # Convenience functions for setting up the events system
-def create_event_system(freecad_app=None):
+def create_event_system(freecad_app=None, max_history_size=1000, max_error_history=50, max_command_history=100):
     """
     Create and initialize a complete events system.
     
     Args:
         freecad_app: Optional FreeCAD application instance
+        max_history_size: Maximum size for event router history
+        max_error_history: Maximum size for error history
+        max_command_history: Maximum size for command history
         
     Returns:
         Tuple of (EventManager, MCPEventIntegration) or (None, None) if failed
@@ -94,8 +97,13 @@ def create_event_system(freecad_app=None):
         return None, None
     
     try:
-        # Create event manager
-        event_manager = EventManager(freecad_app)
+        # Create event manager with configurable history sizes
+        event_manager = EventManager(
+            freecad_app, 
+            max_history_size=max_history_size,
+            max_error_history=max_error_history,
+            max_command_history=max_command_history
+        )
         
         # Create MCP integration
         mcp_integration = MCPEventIntegration(event_manager)
@@ -111,17 +119,22 @@ def create_event_system(freecad_app=None):
         return None, None
 
 
-async def initialize_event_system(freecad_app=None):
+async def initialize_event_system(freecad_app=None, max_history_size=1000, max_error_history=50, max_command_history=100):
     """
     Create and initialize a complete events system asynchronously.
     
     Args:
         freecad_app: Optional FreeCAD application instance
+        max_history_size: Maximum size for event router history
+        max_error_history: Maximum size for error history
+        max_command_history: Maximum size for command history
         
     Returns:
         Tuple of (EventManager, MCPEventIntegration) or (None, None) if failed
     """
-    event_manager, mcp_integration = create_event_system(freecad_app)
+    event_manager, mcp_integration = create_event_system(
+        freecad_app, max_history_size, max_error_history, max_command_history
+    )
     
     if event_manager is None:
         return None, None

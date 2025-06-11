@@ -7,8 +7,7 @@ and integrates them with the MCP server.
 
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional, Set
-import weakref
+from typing import Any, Dict, List, Optional
 
 try:
     from .event_router import EventRouter
@@ -42,18 +41,23 @@ class EventManager:
     and provides a unified interface for the MCP server.
     """
 
-    def __init__(self, freecad_app=None):
+    def __init__(self, freecad_app=None, max_history_size=1000, max_error_history=50, max_command_history=100):
         """
         Initialize the event manager.
 
         Args:
             freecad_app: Optional FreeCAD application instance
+            max_history_size: Maximum size for event router history
+            max_error_history: Maximum size for error history
+            max_command_history: Maximum size for command history
         """
         self.freecad_app = freecad_app
-        self.event_router = EventRouter()
+        self.event_router = EventRouter(max_history_size)
         self.providers: Dict[str, EventProvider] = {}
         self.is_initialized = False
         self._lock = asyncio.Lock()
+        self.max_error_history = max_error_history
+        self.max_command_history = max_command_history
 
         # Try to import FreeCAD if not provided
         if self.freecad_app is None:
@@ -87,14 +91,17 @@ class EventManager:
                 # Initialize command execution event provider
                 self.providers["command"] = CommandExecutionEventProvider(
                     freecad_app=self.freecad_app,
-                    event_router=self.event_router
+                    event_router=self.event_router,
+                    max_history_size=self.max_command_history
                 )
                 logger.info("Initialized command execution event provider")
 
                 # Initialize error event provider
                 self.providers["error"] = ErrorEventProvider(
                     freecad_app=self.freecad_app,
-                    event_router=self.event_router
+                    event_router=self.event_router,
+                    max_history_size=self.max_error_history,
+                    install_global_handler=False  # Default to safe mode
                 )
                 logger.info("Initialized error event provider")
 
@@ -125,9 +132,9 @@ class EventManager:
             try:
                 if hasattr(provider, "shutdown"):
                     await provider.shutdown()
-                elif hasattr(provider, "__del__"):
-                    provider.__del__()
-                logger.debug(f"Cleaned up {provider_name} provider")
+                    logger.debug(f"Cleaned up {provider_name} provider")
+                else:
+                    logger.warning(f"Provider {provider_name} does not support shutdown")
             except Exception as e:
                 logger.error(f"Error cleaning up {provider_name} provider: {e}")
         
@@ -331,6 +338,37 @@ class EventManager:
             EventProvider instance or None if not found
         """
         return self.providers.get(provider_name)
+
+    def enable_global_error_handler(self, enable: bool = True) -> bool:
+        """
+        Enable or disable the global exception handler for error tracking.
+        
+        Args:
+            enable: Whether to enable the global handler
+            
+        Returns:
+            bool: True if operation was successful
+        """
+        if not self.is_initialized or "error" not in self.providers:
+            logger.error("Error provider not available")
+            return False
+            
+        try:
+            error_provider = self.providers["error"]
+            if enable:
+                if hasattr(error_provider, "_install_global_exception_handler"):
+                    error_provider._install_global_exception_handler()
+                    logger.info("Enabled global exception handler")
+                    return True
+            else:
+                if hasattr(error_provider, "_uninstall_global_exception_handler"):
+                    error_provider._uninstall_global_exception_handler()
+                    logger.info("Disabled global exception handler")
+                    return True
+            return False
+        except Exception as e:
+            logger.error(f"Failed to configure global error handler: {e}")
+            return False
 
     async def emit_custom_event(self, event_type: str, event_data: Dict[str, Any]) -> bool:
         """

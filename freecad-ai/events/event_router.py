@@ -6,9 +6,8 @@ This module provides event routing and broadcasting capabilities for the MCP ser
 
 import asyncio
 import logging
-from typing import Any, Dict, List, Set, Optional, Callable
+from typing import Any, Dict, List, Set, Callable
 import weakref
-import json
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -22,12 +21,16 @@ class EventRouter:
     listeners in a thread-safe manner.
     """
 
-    def __init__(self):
-        """Initialize the event router."""
+    def __init__(self, max_history_size: int = 1000):
+        """Initialize the event router.
+        
+        Args:
+            max_history_size: Maximum number of events to keep in history
+        """
         self.listeners: Dict[str, Set[Callable]] = {}
         self.client_subscriptions: Dict[str, Set[str]] = {}
         self.event_history: List[Dict[str, Any]] = []
-        self.max_history_size = 1000
+        self.max_history_size = max_history_size
         self._lock = asyncio.Lock()
 
     async def add_listener(self, client_id: str, event_types: List[str] = None, callback: Callable = None) -> None:
