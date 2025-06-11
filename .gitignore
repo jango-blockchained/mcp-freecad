@@ -107,6 +107,9 @@ coverage.xml
 .dmypy.json
 dmypy.json
 
+.cursor/
+.cursorignore
+.cursorindexingignore
 .cursor/tasks/
 .cursorignore
 .cursorindexingignore
