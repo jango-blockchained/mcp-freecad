@@ -18,8 +18,27 @@ class PrimitivesTool:
 
     def __init__(self):
         """Initialize the primitives tool."""
-        self.name = "primitives"
-        self.description = "Create basic 3D primitive shapes"
+
+    def _ensure_document_exists(self, name: str = "Untitled") -> object:
+        """
+        Ensure a document exists and return it, creating a new one if necessary.
+
+        This method separates document creation from shape operations to prevent crashes.
+
+        Args:
+            name: Document name to use if creating a new document
+
+        Returns:
+            FreeCAD document object
+        """
+        # First check if active document exists
+        doc = App.ActiveDocument
+        if not doc:
+            # Create new document in a separate step
+            doc = App.newDocument(name)
+            # Wait for document to be fully initialized
+            App.setActiveDocument(doc.Name)
+        return doc
 
     def create_box(
         self,
@@ -42,11 +61,9 @@ class PrimitivesTool:
             Dictionary with creation result
         """
         try:
-            # Get or create active document
-            doc = App.ActiveDocument
-            if not doc:
-                doc = App.newDocument("Untitled")
-
+            # Get or create document using safe method
+            doc = self._ensure_document_exists()
+            
             # Create box
             box = Part.makeBox(length, width, height)
 
@@ -103,11 +120,9 @@ class PrimitivesTool:
             Dictionary with creation result
         """
         try:
-            # Get or create active document
-            doc = App.ActiveDocument
-            if not doc:
-                doc = App.newDocument("Untitled")
-
+            # Get or create document using safe method
+            doc = self._ensure_document_exists()
+            
             # Create cylinder
             cylinder = Part.makeCylinder(radius, height)
 
@@ -162,11 +177,9 @@ class PrimitivesTool:
             Dictionary with creation result
         """
         try:
-            # Get or create active document
-            doc = App.ActiveDocument
-            if not doc:
-                doc = App.newDocument("Untitled")
-
+            # Get or create document using safe method
+            doc = self._ensure_document_exists()
+            
             # Create sphere
             sphere = Part.makeSphere(radius)
 
@@ -227,11 +240,9 @@ class PrimitivesTool:
             Dictionary with creation result
         """
         try:
-            # Get or create active document
-            doc = App.ActiveDocument
-            if not doc:
-                doc = App.newDocument("Untitled")
-
+            # Get or create document using safe method
+            doc = self._ensure_document_exists()
+            
             # Create cone
             cone = Part.makeCone(radius1, radius2, height)
 
@@ -297,11 +308,9 @@ class PrimitivesTool:
             Dictionary with creation result
         """
         try:
-            # Get or create active document
-            doc = App.ActiveDocument
-            if not doc:
-                doc = App.newDocument("Untitled")
-
+            # Get or create document using safe method
+            doc = self._ensure_document_exists()
+            
             # Create torus
             torus = Part.makeTorus(radius1, radius2)
 

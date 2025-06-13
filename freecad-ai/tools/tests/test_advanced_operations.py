@@ -4,7 +4,7 @@ Test suite for AdvancedOperationsTool
 Tests for advanced CAD operations including extrude, revolve, loft,
 sweep, and helix operations.
 
-Author: AI Assistant
+Author: jango-blockchained
 """
 
 import os

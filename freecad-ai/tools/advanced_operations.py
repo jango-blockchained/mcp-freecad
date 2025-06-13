@@ -4,7 +4,7 @@ Advanced Operations Tool
 MCP tool for performing advanced CAD operations in FreeCAD including
 extrude, revolve, loft, sweep, pipe, and helix operations.
 
-Author: AI Assistant
+Author: jango-blockchained
 """
 
 import math

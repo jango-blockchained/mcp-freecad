@@ -8,108 +8,124 @@ import FreeCAD
 
 # Safe Qt imports with comprehensive fallback to prevent crashes
 try:
-    from PySide2 import QtCore, QtWidgets
-
-    HAS_PYSIDE2 = True
-    FreeCAD.Console.PrintMessage("FreeCAD AI: Using PySide2\n")
+    # First try to use the Qt compatibility module
+    from .qt_compatibility import QtCore, QtWidgets, HAS_QT, QT_VERSION
+    if HAS_QT:
+        FreeCAD.Console.PrintMessage(f"FreeCAD AI: Using Qt compatibility layer ({QT_VERSION})\n")
+    else:
+        FreeCAD.Console.PrintWarning("FreeCAD AI: Qt compatibility layer using dummy classes\n")
 except ImportError:
+    # Fallback to original Qt import logic
     try:
-        from PySide import QtCore
-        from PySide import QtGui as QtWidgets
+        from PySide2 import QtCore, QtWidgets
 
-        HAS_PYSIDE2 = False
-        FreeCAD.Console.PrintMessage("FreeCAD AI: Using PySide (fallback)\n")
+        HAS_PYSIDE2 = True
+        # Fix the QT_VERSION_STR issue if it doesn't exist
+        if not hasattr(QtCore, 'QT_VERSION_STR'):
+            try:
+                import PySide2
+                QtCore.QT_VERSION_STR = PySide2.__version__
+            except:
+                QtCore.QT_VERSION_STR = "5.15.0"  # Fallback version
+        FreeCAD.Console.PrintMessage("FreeCAD AI: Using PySide2\n")
     except ImportError:
-        FreeCAD.Console.PrintError(
-            "FreeCAD AI: No Qt bindings available - minimal functionality\n"
-        )
-        HAS_PYSIDE2 = False
+        try:
+            from PySide import QtCore
+            from PySide import QtGui as QtWidgets
 
-        # Create minimal dummy classes to prevent crashes
-        class QtWidgets:
-            class QDockWidget:
-                def __init__(self, *args, **kwargs):
-                    pass
+            HAS_PYSIDE2 = False
+            FreeCAD.Console.PrintMessage("FreeCAD AI: Using PySide (fallback)\n")
+        except ImportError:
+            FreeCAD.Console.PrintError(
+                "FreeCAD AI: No Qt bindings available - minimal functionality\n"
+            )
+            HAS_PYSIDE2 = False
 
-                def setAllowedAreas(self, *args):
-                    pass
+            # Create minimal dummy classes to prevent crashes
+            class QtWidgets:
+                class QDockWidget:
+                    def __init__(self, *args, **kwargs):
+                        pass
 
-                def setFeatures(self, *args):
-                    pass
+                    def setAllowedAreas(self, *args):
+                        pass
 
-                def setWidget(self, widget):
-                    pass
+                    def setFeatures(self, *args):
+                        pass
 
-                def setMinimumWidth(self, width):
-                    pass
+                    def setWidget(self, widget):
+                        pass
 
-                def resize(self, width, height):
-                    pass
+                    def setMinimumWidth(self, width):
+                        pass
 
-            class QWidget:
-                def __init__(self, *args, **kwargs):
-                    pass
+                    def resize(self, width, height):
+                        pass
 
-            class QVBoxLayout:
-                def __init__(self, *args, **kwargs):
-                    pass
+                class QWidget:
+                    def __init__(self, *args, **kwargs):
+                        pass
 
-                def addWidget(self, widget):
-                    pass
+                class QVBoxLayout:
+                    def __init__(self, *args, **kwargs):
+                        pass
 
-                def addLayout(self, layout):
-                    pass
+                    def addWidget(self, widget):
+                        pass
 
-                def setSpacing(self, spacing):
-                    pass
+                    def addLayout(self, layout):
+                        pass
 
-                def setContentsMargins(self, *args):
-                    pass
+                    def setSpacing(self, spacing):
+                        pass
 
-            class QHBoxLayout:
-                def __init__(self, *args, **kwargs):
-                    pass
+                    def setContentsMargins(self, *args):
+                        pass
 
-                def addWidget(self, widget):
-                    pass
+                class QHBoxLayout:
+                    def __init__(self, *args, **kwargs):
+                        pass
 
-                def addStretch(self):
-                    pass
+                    def addWidget(self, widget):
+                        pass
 
-            class QLabel:
-                def __init__(self, *args, **kwargs):
-                    pass
+                    def addStretch(self):
+                        pass
 
-                def setStyleSheet(self, style):
-                    pass
+                class QLabel:
+                    def __init__(self, *args, **kwargs):
+                        pass
 
-                def setText(self, text):
-                    pass
+                    def setStyleSheet(self, style):
+                        pass
 
-            class QTabWidget:
-                def __init__(self, *args, **kwargs):
-                    pass
+                    def setText(self, text):
+                        pass
 
-                def setUsesScrollButtons(self, value):
-                    pass
+                class QTabWidget:
+                    def __init__(self, *args, **kwargs):
+                        pass
 
-                def setElideMode(self, mode):
-                    pass
+                    def setUsesScrollButtons(self, value):
+                        pass
 
-        class QtCore:
-            class Qt:
-                RightDockWidgetArea = None
-                LeftDockWidgetArea = None
-                ElideRight = None
+                    def setElideMode(self, mode):
+                        pass
 
-            class QTimer:
-                @staticmethod
-                def singleShot(interval, callback):
-                    pass
+            class QtCore:
+                class Qt:
+                    RightDockWidgetArea = None
+                    LeftDockWidgetArea = None
+                    ElideRight = None
 
-            class QObject:
-                def __init__(self):
-                    pass
+                class QTimer:
+                    @staticmethod
+                    def singleShot(interval, callback):
+                        pass
+
+                class QObject:
+                    def __init__(self):
+                        pass
 
 
 def crash_safe_wrapper(operation_name):
@@ -693,6 +709,20 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             FreeCAD.Console.PrintMessage(
                 "FreeCAD AI: Safe agent manager initialization...\n"
             )
+            
+            # Try using the wrapper first
+            try:
+                from ..core.agent_manager_wrapper import get_agent_manager, is_agent_manager_available
+                if is_agent_manager_available():
+                    self.agent_manager = get_agent_manager()
+                    FreeCAD.Console.PrintMessage(
+                        "FreeCAD AI: AgentManager initialized via wrapper\n"
+                    )
+                    return
+            except ImportError:
+                pass
+            
+            # Fallback to original initialization
             agent_manager_imported = False
             try:
                 from ..core.agent_manager import AgentManager
@@ -778,6 +808,20 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 )
                 return
             FreeCAD.Console.PrintMessage("FreeCAD AI: Safe provider service setup...\n")
+            
+            # Try using the wrapper first
+            try:
+                from ..ai.provider_service_wrapper import get_provider_service, is_provider_service_available
+                if is_provider_service_available():
+                    self.provider_service = get_provider_service()
+                    FreeCAD.Console.PrintMessage(
+                        "FreeCAD AI: Provider service initialized via wrapper\n"
+                    )
+                    return
+            except ImportError:
+                pass
+            
+            # Fallback to original initialization
             provider_service_imported = False
             try:
                 from ..ai.provider_integration_service import get_provider_service

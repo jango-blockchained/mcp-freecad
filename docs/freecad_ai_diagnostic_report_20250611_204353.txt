@@ -1,0 +1,39 @@
+FreeCAD AI Diagnostic Report
+Generated: 2025-06-12T23:54:15.794227
+==================================================
+
+=== AGENT MANAGER DIAGNOSTICS ===
+
+❌ Agent Manager: NOT AVAILABLE
+   └─ Agent manager instance is None
+   └─ This usually indicates import failure
+   └─ Check FreeCAD console for import errors
+
+==================================================
+
+=== PROVIDER SERVICE DIAGNOSTICS ===
+
+❌ Provider Service: NOT AVAILABLE
+   └─ Provider service instance is None
+
+==================================================
+
+=== TOOLS REGISTRY DIAGNOSTICS ===
+
+❌ Tools Registry: Agent Manager Not Available
+
+==================================================
+
+=== SYSTEM INFORMATION ===
+
+Python Version: 3.13.3 (main, Apr  8 2025, 19:55:40) [GCC 14.2.0]
+Platform: linux
+FreeCAD Version: 1.0.0
+FreeCAD Build: 
+Qt Version: 5.15.16
+PySide2 Version: 5.15.15
+Memory Usage: 403.1 MB
+Working Directory: /home/jango/Git/mcp-freecad
+FREECAD_USER_HOME: Not set
+FREECAD_USER_DATA: Not set
+FREECADPATH: Not set

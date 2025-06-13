@@ -72,9 +72,9 @@
     }
   },
   "ui_settings": {
-    "theme": "dark",
+    "theme": "default",
     "auto_save": false,
-    "log_level": "INFO",
+    "log_level": "DEBUG",
     "show_tooltips": true,
     "confirm_operations": true
   },

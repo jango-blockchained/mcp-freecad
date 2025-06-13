@@ -4,7 +4,7 @@ Advanced Primitives Tool
 MCP tool for creating advanced 3D primitive shapes in FreeCAD including
 tubes, prisms, wedges, and ellipsoids.
 
-Author: AI Assistant
+Author: jango-blockchained
 """
 
 import math
@@ -21,6 +21,27 @@ class AdvancedPrimitivesTool:
         """Initialize the advanced primitives tool."""
         self.name = "advanced_primitives"
         self.description = "Create advanced 3D primitive shapes"
+
+    def _ensure_document_exists(self, name: str = "Untitled") -> object:
+        """
+        Ensure a document exists and return it, creating a new one if necessary.
+
+        This method separates document creation from shape operations to prevent crashes.
+
+        Args:
+            name: Document name to use if creating a new document
+
+        Returns:
+            FreeCAD document object
+        """
+        # First check if active document exists
+        doc = App.ActiveDocument
+        if not doc:
+            # Create new document in a separate step
+            doc = App.newDocument(name)
+            # Wait for document to be fully initialized
+            App.setActiveDocument(doc.Name)
+        return doc
 
     def create_tube(
         self,
@@ -73,9 +94,7 @@ class AdvancedPrimitivesTool:
                 }
 
             # Get or create active document
-            doc = App.ActiveDocument
-            if not doc:
-                doc = App.newDocument("Untitled")
+            doc = self._ensure_document_exists()
 
             # Create outer cylinder
             outer_cylinder = Part.makeCylinder(outer_radius, height)
@@ -171,9 +190,7 @@ class AdvancedPrimitivesTool:
                 }
 
             # Get or create active document
-            doc = App.ActiveDocument
-            if not doc:
-                doc = App.newDocument("Untitled")
+            doc = self._ensure_document_exists()
 
             # Create polygon vertices
             vertices = []
@@ -292,9 +309,7 @@ class AdvancedPrimitivesTool:
                 }
 
             # Get or create active document
-            doc = App.ActiveDocument
-            if not doc:
-                doc = App.newDocument("Untitled")
+            doc = self._ensure_document_exists()
 
             # Calculate taper offset
             angle_rad = math.radians(angle)
@@ -429,9 +444,7 @@ class AdvancedPrimitivesTool:
                 }
 
             # Get or create active document
-            doc = App.ActiveDocument
-            if not doc:
-                doc = App.newDocument("Untitled")
+            doc = self._ensure_document_exists()
 
             # Create unit sphere
             sphere = Part.makeSphere(1.0)

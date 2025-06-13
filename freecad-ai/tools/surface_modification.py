@@ -4,7 +4,7 @@ Surface Modification Tool
 MCP tool for modifying surfaces and edges in FreeCAD for manufacturing-ready designs.
 Includes fillet, chamfer, draft, thickness, and offset operations.
 
-Author: AI Assistant
+Author: jango-blockchained
 """
 
 from typing import Any, Dict, List

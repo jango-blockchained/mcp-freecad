@@ -1,14 +1,5 @@
 {
     "mcpServers": {
-      "freecad-mcp": {
-        "command": "python",
-        "args": [
-          "/home/jango/Git/mcp-freecad/cursor_mcp_server.py"
-        ],
-        "env": {
-          "PYTHONPATH": "/home/jango/Git/mcp-freecad/src"
-        }
-      },
       "memory": {
         "command": "npx",
         "args": [

@@ -4,7 +4,7 @@ Test suite for AdvancedPrimitivesTool
 Tests for creating advanced 3D primitive shapes including tubes, prisms,
 wedges, and ellipsoids.
 
-Author: AI Assistant
+Author: jango-blockchained
 """
 
 import os

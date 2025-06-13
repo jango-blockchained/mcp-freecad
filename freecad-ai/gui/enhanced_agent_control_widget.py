@@ -4,10 +4,10 @@ from datetime import datetime
 import json
 import traceback
 
-from PySide2 import QtCore, QtWidgets, QtGui
+from PySide2 import QtWidgets, QtGui, QtCore
 
 from .provider_selector_widget import ProviderSelectorWidget
-from .theme_system import get_theme_manager, apply_theme_to_widget
+from .theme_system import apply_theme_to_widget
 
 
 class AgentDiagnosticDialog(QtWidgets.QDialog):
@@ -156,7 +156,7 @@ class AgentDiagnosticDialog(QtWidgets.QDialog):
                 if hasattr(self.agent_manager, 'tool_registry'):
                     available_tools = self.agent_manager.get_available_tools()
                     total_tools = sum(len(methods) for methods in available_tools.values())
-                    status_lines.append(f"   ├─ Tool Registry: ✅ Available")
+                    status_lines.append("   ├─ Tool Registry: Available")
                     status_lines.append(f"   │  ├─ Total Tools: {total_tools}")
                     status_lines.append(f"   │  └─ Categories: {len(available_tools)}")
                 else:
@@ -360,9 +360,7 @@ class EnhancedAgentControlWidget(QtWidgets.QWidget):
         """Setup the enhanced user interface."""
         layout = QtWidgets.QVBoxLayout(self)
         layout.setSpacing(10)
-
-        # Header with theme selector
-        self._create_header(layout)
+        layout.setContentsMargins(10, 10, 10, 10)
 
         # Provider Selection Section
         self._create_provider_selector(layout)
@@ -387,28 +385,7 @@ class EnhancedAgentControlWidget(QtWidgets.QWidget):
 
         layout.addStretch()
 
-    def _create_header(self, layout):
-        """Create header with theme controls."""
-        header_group = QtWidgets.QGroupBox()
-        header_layout = QtWidgets.QHBoxLayout(header_group)
-        
-        # Main title
-        title_label = QtWidgets.QLabel("🤖 Enhanced Agent Control Panel")
-        title_label.setStyleSheet("font-size: 16px; font-weight: bold; margin: 10px;")
-        header_layout.addWidget(title_label)
-        
-        header_layout.addStretch()
-        
-        # Theme selector
-        theme_label = QtWidgets.QLabel("Theme:")
-        header_layout.addWidget(theme_label)
-        
-        self.theme_combo = QtWidgets.QComboBox()
-        self.theme_combo.addItems(["Light", "Dark", "Auto"])
-        self.theme_combo.currentTextChanged.connect(self._on_theme_changed)
-        header_layout.addWidget(self.theme_combo)
-        
-        layout.addWidget(header_group)
+
 
     def _create_provider_selector(self, layout):
         """Create provider selection section using shared widget."""
@@ -434,18 +411,75 @@ class EnhancedAgentControlWidget(QtWidgets.QWidget):
         # Play/Pause button
         self.play_pause_btn = QtWidgets.QPushButton("▶ Start")
         self.play_pause_btn.setEnabled(False)
+        self.play_pause_btn.setStyleSheet(
+            """
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                font-weight: bold;
+                padding: 8px 16px;
+                border: none;
+                border-radius: 4px;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+            QPushButton:disabled {
+                background-color: #ccc;
+            }
+        """
+        )
         self.play_pause_btn.clicked.connect(self._toggle_execution)
         primary_layout.addWidget(self.play_pause_btn)
 
         # Stop button
         self.stop_btn = QtWidgets.QPushButton("⏹ Stop")
         self.stop_btn.setEnabled(False)
+        self.stop_btn.setStyleSheet(
+            """
+            QPushButton {
+                background-color: #f44336;
+                color: white;
+                font-weight: bold;
+                padding: 8px 16px;
+                border: none;
+                border-radius: 4px;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #da190b;
+            }
+            QPushButton:disabled {
+                background-color: #ccc;
+            }
+        """
+        )
         self.stop_btn.clicked.connect(self._stop_execution)
         primary_layout.addWidget(self.stop_btn)
 
         # Step button
         self.step_btn = QtWidgets.QPushButton("⏭ Step")
         self.step_btn.setEnabled(False)
+        self.step_btn.setStyleSheet(
+            """
+            QPushButton {
+                background-color: #2196F3;
+                color: white;
+                font-weight: bold;
+                padding: 8px 16px;
+                border: none;
+                border-radius: 4px;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #1976D2;
+            }
+            QPushButton:disabled {
+                background-color: #ccc;
+            }
+        """
+        )
         self.step_btn.setToolTip("Execute one step at a time")
         self.step_btn.clicked.connect(self._step_execution)
         primary_layout.addWidget(self.step_btn)
@@ -458,23 +492,83 @@ class EnhancedAgentControlWidget(QtWidgets.QWidget):
         
         # Enhanced diagnostic button
         self.diagnostic_btn = QtWidgets.QPushButton("🔍 Advanced Diagnostics")
+        self.diagnostic_btn.setStyleSheet(
+            """
+            QPushButton {
+                background-color: #2196F3;
+                color: white;
+                padding: 8px 12px;
+                border: none;
+                border-radius: 4px;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                background-color: #1976D2;
+            }
+        """
+        )
         self.diagnostic_btn.setToolTip("Open comprehensive diagnostic dialog")
         self.diagnostic_btn.clicked.connect(self._show_advanced_diagnostics)
         secondary_layout.addWidget(self.diagnostic_btn)
 
         # Quick status button
         self.quick_status_btn = QtWidgets.QPushButton("⚡ Quick Status")
+        self.quick_status_btn.setStyleSheet(
+            """
+            QPushButton {
+                background-color: #FF9800;
+                color: white;
+                padding: 8px 12px;
+                border: none;
+                border-radius: 4px;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                background-color: #e68900;
+            }
+        """
+        )
         self.quick_status_btn.setToolTip("Show quick status overview")
         self.quick_status_btn.clicked.connect(self._show_quick_status)
         secondary_layout.addWidget(self.quick_status_btn)
 
         # Clear queue button
         self.clear_queue_btn = QtWidgets.QPushButton("🗑️ Clear Queue")
+        self.clear_queue_btn.setStyleSheet(
+            """
+            QPushButton {
+                background-color: #FF9800;
+                color: white;
+                padding: 8px 12px;
+                border: none;
+                border-radius: 4px;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                background-color: #e68900;
+            }
+        """
+        )
         self.clear_queue_btn.clicked.connect(self._clear_queue)
         secondary_layout.addWidget(self.clear_queue_btn)
 
         # Export settings button
         self.export_settings_btn = QtWidgets.QPushButton("📤 Export Settings")
+        self.export_settings_btn.setStyleSheet(
+            """
+            QPushButton {
+                background-color: #9C27B0;
+                color: white;
+                padding: 8px 12px;
+                border: none;
+                border-radius: 4px;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                background-color: #7B1FA2;
+            }
+        """
+        )
         self.export_settings_btn.setToolTip("Export current agent settings")
         self.export_settings_btn.clicked.connect(self._export_settings)
         secondary_layout.addWidget(self.export_settings_btn)
@@ -549,22 +643,7 @@ class EnhancedAgentControlWidget(QtWidgets.QWidget):
 
         layout.addWidget(queue_group)
 
-    def _on_theme_changed(self, theme_name):
-        """Handle theme change."""
-        theme_manager = get_theme_manager()
-        
-        if theme_name == "Light":
-            from .theme_system import Theme
-            theme_manager.set_theme(Theme.LIGHT)
-        elif theme_name == "Dark":
-            from .theme_system import Theme
-            theme_manager.set_theme(Theme.DARK)
-        else:  # Auto
-            from .theme_system import Theme
-            theme_manager.set_theme(Theme.AUTO)
-            
-        # Re-apply theme to this widget
-        apply_theme_to_widget(self)
+
 
     def _show_advanced_diagnostics(self):
         """Show advanced diagnostic dialog."""
@@ -653,26 +732,196 @@ class EnhancedAgentControlWidget(QtWidgets.QWidget):
 
     # Additional methods for enhanced functionality
 
-    # Placeholder methods for the rest of the enhanced functionality
     def _create_command_section(self, layout):
         """Create enhanced command input section."""
-        # Implementation similar to original but with theme support
-        pass
+        command_group = QtWidgets.QGroupBox("Agent Commands")
+        command_layout = QtWidgets.QVBoxLayout(command_group)
+
+        # Command input
+        input_layout = QtWidgets.QHBoxLayout()
+
+        self.command_input = QtWidgets.QLineEdit()
+        self.command_input.setPlaceholderText(
+            "Type a command for the agent (e.g., 'Create a 20x20x10mm box')"
+        )
+        self.command_input.returnPressed.connect(self._send_command)
+        self.command_input.setStyleSheet(
+            """
+            QLineEdit {
+                padding: 8px;
+                font-size: 14px;
+                border: 2px solid #ddd;
+                border-radius: 6px;
+            }
+            QLineEdit:focus {
+                border-color: #007acc;
+            }
+        """
+        )
+        input_layout.addWidget(self.command_input)
+
+        # Send button
+        self.send_btn = QtWidgets.QPushButton("Send")
+        self.send_btn.clicked.connect(self._send_command)
+        self.send_btn.setStyleSheet(
+            """
+            QPushButton {
+                padding: 8px 15px;
+                font-size: 14px;
+                font-weight: bold;
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                border-radius: 6px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+            }
+        """
+        )
+        input_layout.addWidget(self.send_btn)
+
+        command_layout.addLayout(input_layout)
+
+        # Command examples
+        examples_label = QtWidgets.QLabel(
+            "Examples: 'Create a cylinder 20mm radius, 40mm height' • 'Make a gear with 24 teeth' • 'Design a house foundation 12x8x1.5m'"
+        )
+        examples_label.setStyleSheet(
+            "color: #666; font-size: 11px; font-style: italic; margin-top: 5px;"
+        )
+        examples_label.setWordWrap(True)
+        command_layout.addWidget(examples_label)
+
+        layout.addWidget(command_group)
         
     def _create_status_section(self, layout):
-        """Create enhanced status section.""" 
-        # Implementation similar to original but with theme support
-        pass
+        """Create enhanced status section."""
+        status_group = QtWidgets.QGroupBox("Execution Status")
+        status_layout = QtWidgets.QVBoxLayout(status_group)
+
+        # Current state
+        state_layout = QtWidgets.QHBoxLayout()
+        state_layout.addWidget(QtWidgets.QLabel("State:"))
+        self.state_label = QtWidgets.QLabel("Idle")
+        self.state_label.setStyleSheet(
+            """
+            QLabel {
+                font-weight: bold;
+                padding: 5px 10px;
+                background-color: #f0f0f0;
+                border-radius: 4px;
+            }
+        """
+        )
+        state_layout.addWidget(self.state_label)
+        state_layout.addStretch()
+        status_layout.addLayout(state_layout)
+
+        # Current operation
+        op_layout = QtWidgets.QHBoxLayout()
+        op_layout.addWidget(QtWidgets.QLabel("Current Operation:"))
+        self.operation_label = QtWidgets.QLabel("None")
+        self.operation_label.setStyleSheet("color: #666;")
+        op_layout.addWidget(self.operation_label)
+        op_layout.addStretch()
+        status_layout.addLayout(op_layout)
+
+        # Progress bar
+        self.progress_bar = QtWidgets.QProgressBar()
+        self.progress_bar.setVisible(False)
+        status_layout.addWidget(self.progress_bar)
+
+        layout.addWidget(status_group)
         
     def _create_enhanced_safety_section(self, layout):
         """Create enhanced safety settings."""
-        # Implementation with additional safety features
-        pass
+        safety_group = QtWidgets.QGroupBox("Safety Settings")
+        safety_layout = QtWidgets.QVBoxLayout(safety_group)
+
+        # Safety options
+        options_layout = QtWidgets.QGridLayout()
+
+        self.require_approval_cb = QtWidgets.QCheckBox("Require approval for destructive operations")
+        self.require_approval_cb.setChecked(True)
+        options_layout.addWidget(self.require_approval_cb, 0, 0)
+
+        self.auto_rollback_cb = QtWidgets.QCheckBox("Enable automatic rollback on errors")
+        self.auto_rollback_cb.setChecked(True)
+        options_layout.addWidget(self.auto_rollback_cb, 0, 1)
+
+        self.safety_checks_cb = QtWidgets.QCheckBox("Enable geometry safety checks")
+        self.safety_checks_cb.setChecked(True)
+        options_layout.addWidget(self.safety_checks_cb, 1, 0)
+
+        self.backup_before_cb = QtWidgets.QCheckBox("Backup before major operations")
+        self.backup_before_cb.setChecked(True)
+        options_layout.addWidget(self.backup_before_cb, 1, 1)
+
+        safety_layout.addLayout(options_layout)
+
+        # Timeout settings
+        timeout_layout = QtWidgets.QHBoxLayout()
+        timeout_layout.addWidget(QtWidgets.QLabel("Execution Timeout:"))
+        
+        self.timeout_spin = QtWidgets.QSpinBox()
+        self.timeout_spin.setRange(5, 300)
+        self.timeout_spin.setValue(30)
+        self.timeout_spin.setSuffix(" seconds")
+        timeout_layout.addWidget(self.timeout_spin)
+        
+        timeout_layout.addStretch()
+        safety_layout.addLayout(timeout_layout)
+
+        layout.addWidget(safety_group)
         
     def _create_enhanced_history_section(self, layout):
         """Create enhanced history section with filtering."""
-        # Implementation with search and filter capabilities
-        pass
+        history_group = QtWidgets.QGroupBox("Execution History")
+        history_layout = QtWidgets.QVBoxLayout(history_group)
+
+        # History controls
+        controls_layout = QtWidgets.QHBoxLayout()
+        
+        controls_layout.addWidget(QtWidgets.QLabel("Filter:"))
+        
+        self.history_filter = QtWidgets.QComboBox()
+        self.history_filter.addItems(["All", "Successful", "Failed", "Today"])
+        controls_layout.addWidget(self.history_filter)
+        
+        controls_layout.addStretch()
+        
+        # Clear history button
+        self.clear_history_btn = QtWidgets.QPushButton("Clear History")
+        self.clear_history_btn.setStyleSheet(
+            """
+            QPushButton {
+                background-color: #FF9800;
+                color: white;
+                padding: 6px 12px;
+                border: none;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #e68900;
+            }
+        """
+        )
+        self.clear_history_btn.clicked.connect(self._clear_history)
+        controls_layout.addWidget(self.clear_history_btn)
+        
+        history_layout.addLayout(controls_layout)
+
+        # History list
+        self.history_list = QtWidgets.QListWidget()
+        self.history_list.setMaximumHeight(120)
+        self.history_list.setAlternatingRowColors(True)
+        history_layout.addWidget(self.history_list)
+
+        layout.addWidget(history_group)
 
     # Additional methods for enhanced functionality
     def _filter_queue_by_priority(self, priority):
@@ -684,6 +933,16 @@ class EnhancedAgentControlWidget(QtWidgets.QWidget):
         """Edit selected queue item."""
         # TODO: Implement queue item editing
         print("Edit queue item called")
+        
+    def _remove_queue_item(self):
+        """Remove selected queue item."""
+        current_item = self.queue_list.currentItem()
+        if current_item:
+            row = self.queue_list.row(current_item)
+            self.queue_list.takeItem(row)
+            print(f"Removed queue item at row {row}")
+        else:
+            print("No queue item selected for removal")
         
     def _set_task_priority(self):
         """Set priority for selected task."""
@@ -710,10 +969,56 @@ class EnhancedAgentControlWidget(QtWidgets.QWidget):
         # TODO: Implement queue item reordering
         print("Move queue item down called")
 
-    def _remove_queue_item(self):
-        """Remove selected queue item."""
-        # TODO: Implement queue item removal
-        print("Remove queue item called")
+    def _send_command(self):
+        """Send command to agent."""
+        command = self.command_input.text().strip()
+        if not command:
+            return
+            
+        # Add command to history
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        history_item = f"[{timestamp}] {command}"
+        self.history_list.addItem(history_item)
+        
+        # Clear input
+        self.command_input.clear()
+        
+        # Update status
+        self.state_label.setText("Processing")
+        self.operation_label.setText(command[:50] + "..." if len(command) > 50 else command)
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setRange(0, 0)  # Indeterminate progress
+        
+        # TODO: Send to agent manager when available
+        if self.agent_manager:
+            try:
+                # Agent manager integration would go here
+                print(f"Sending command to agent: {command}")
+            except Exception as e:
+                print(f"Error sending command: {e}")
+        else:
+            print(f"Agent manager not available. Command: {command}")
+            
+        # Simulate completion after a moment (remove when real integration is added)
+        QtCore.QTimer.singleShot(2000, self._simulate_command_completion)
+
+    def _simulate_command_completion(self):
+        """Simulate command completion (remove when real integration is added)."""
+        self.state_label.setText("Idle")
+        self.operation_label.setText("None")
+        self.progress_bar.setVisible(False)
+
+    def _clear_history(self):
+        """Clear execution history."""
+        reply = QtWidgets.QMessageBox.question(
+            self,
+            "Clear History",
+            "Are you sure you want to clear the execution history?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+        )
+        
+        if reply == QtWidgets.QMessageBox.Yes:
+            self.history_list.clear()
 
     def set_agent_manager(self, agent_manager):
         """Set the agent manager reference."""

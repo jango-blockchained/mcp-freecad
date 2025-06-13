@@ -42,63 +42,6 @@ class CompactToolButton(QtWidgets.QPushButton):
         )
 
 
-class CollapsibleCategory(QtWidgets.QWidget):
-    """Collapsible category with header button."""
-
-    def __init__(self, title, icon="", parent=None):
-        super().__init__(parent)
-        self.is_collapsed = False
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-
-        # Header button
-        self.header_btn = QtWidgets.QPushButton(f"{icon} {title} ▼")
-        self.header_btn.setCheckable(True)
-        self.header_btn.setChecked(True)
-        self.header_btn.setStyleSheet(
-            """
-            QPushButton {
-                text-align: left;
-                padding: 5px 10px;
-                border: none;
-                background-color: #f5f5f5;
-                font-weight: bold;
-                font-size: 12px;
-            }
-            QPushButton:hover {
-                background-color: #e0e0e0;
-            }
-            QPushButton:checked {
-                background-color: #e3f2fd;
-            }
-        """
-        )
-        self.header_btn.clicked.connect(self._toggle_collapse)
-        layout.addWidget(self.header_btn)
-
-        # Content widget
-        self.content_widget = QtWidgets.QWidget()
-        self.content_layout = QtWidgets.QGridLayout(self.content_widget)
-        self.content_layout.setContentsMargins(5, 5, 5, 5)
-        self.content_layout.setSpacing(2)
-        layout.addWidget(self.content_widget)
-
-        self.title = title
-        self.icon = icon
-
-    def _toggle_collapse(self):
-        """Toggle collapsed state."""
-        self.is_collapsed = not self.is_collapsed
-        self.content_widget.setVisible(not self.is_collapsed)
-        arrow = "▶" if self.is_collapsed else "▼"
-        self.header_btn.setText(f"{self.icon} {self.title} {arrow}")
-
-    def add_button(self, button, row, col):
-        """Add button to grid."""
-        self.content_layout.addWidget(button, row, col)
-
 
 class ToolsWidget(QtWidgets.QWidget):
     """Ultra-compact tools widget with icons."""
@@ -174,45 +117,47 @@ class ToolsWidget(QtWidgets.QWidget):
     def _setup_ui(self):
         """Setup the user interface."""
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setSpacing(2)
-        layout.setContentsMargins(2, 2, 2, 2)
+        layout.setSpacing(10)
+        layout.setContentsMargins(10, 10, 10, 10)
 
-        # Minimal header
-        header_layout = QtWidgets.QHBoxLayout()
-        header_label = QtWidgets.QLabel("🛠️ Tools")
-        header_label.setStyleSheet("font-size: 14px; font-weight: bold;")
-        header_layout.addWidget(header_label)
-
-        # Search box
+        # Standard header with consistent styling
+        header_group = QtWidgets.QGroupBox("FreeCAD Tools")
+        header_layout = QtWidgets.QHBoxLayout(header_group)
+        
+        # Search box with standard styling
         self.search_box = QtWidgets.QLineEdit()
         self.search_box.setPlaceholderText("Search tools...")
-        self.search_box.setMaximumWidth(150)
+        self.search_box.setMaximumWidth(200)
         self.search_box.setStyleSheet(
             """
             QLineEdit {
-                padding: 3px 8px;
-                border: 1px solid #ddd;
-                border-radius: 12px;
-                font-size: 11px;
+                padding: 8px;
+                border: 2px solid #ddd;
+                border-radius: 4px;
+                font-size: 12px;
+            }
+            QLineEdit:focus {
+                border-color: #2196F3;
             }
         """
         )
-        header_layout.addStretch()
+        header_layout.addWidget(QtWidgets.QLabel("Search:"))
         header_layout.addWidget(self.search_box)
+        header_layout.addStretch()
 
-        layout.addLayout(header_layout)
+        layout.addWidget(header_group)
 
-        # Create scroll area
+        # Create scroll area with standard spacing
         scroll = QtWidgets.QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
-        scroll.setStyleSheet("QScrollArea { border: none; }")
+        scroll.setStyleSheet("QScrollArea { border: 1px solid #ddd; border-radius: 4px; }")
 
         scroll_widget = QtWidgets.QWidget()
         scroll_layout = QtWidgets.QVBoxLayout(scroll_widget)
-        scroll_layout.setSpacing(2)
-        scroll_layout.setContentsMargins(0, 0, 0, 0)
+        scroll_layout.setSpacing(10)
+        scroll_layout.setContentsMargins(10, 10, 10, 10)
 
         # Tool categories with icons
         self._create_basic_primitives(scroll_layout)
@@ -231,16 +176,23 @@ class ToolsWidget(QtWidgets.QWidget):
         scroll.setWidget(scroll_widget)
         layout.addWidget(scroll)
 
-        # Ultra-compact status
+        # Standard status with consistent styling
+        status_layout = QtWidgets.QHBoxLayout()
+        status_layout.addWidget(QtWidgets.QLabel("Status:"))
         self.status_label = QtWidgets.QLabel("Ready")
         self.status_label.setStyleSheet(
-            "padding: 2px 8px; background-color: #f0f0f0; border-radius: 10px; font-size: 10px;"
+            "padding: 8px 12px; background-color: #4CAF50; color: white; border-radius: 4px; font-size: 12px; font-weight: bold;"
         )
-        layout.addWidget(self.status_label)
+        status_layout.addWidget(self.status_label)
+        status_layout.addStretch()
+        layout.addLayout(status_layout)
 
     def _create_basic_primitives(self, layout):
         """Create basic primitives section."""
-        category = CollapsibleCategory("Basic Shapes", "□")
+        category = QtWidgets.QGroupBox("□ Basic Shapes")
+        category_layout = QtWidgets.QGridLayout(category)
+        category_layout.setSpacing(5)
+        category_layout.setContentsMargins(10, 10, 10, 10)
 
         tools = [
             ("□", "Box", "Create a box/cube", "create_box"),
@@ -257,13 +209,16 @@ class ToolsWidget(QtWidgets.QWidget):
         for i, (icon, name, tooltip, method) in enumerate(tools):
             btn = CompactToolButton(icon, name, tooltip)
             btn.clicked.connect(create_handler(method))
-            category.add_button(btn, i // 6, i % 6)
+            category_layout.addWidget(btn, i // 6, i % 6)
 
         layout.addWidget(category)
 
     def _create_basic_operations(self, layout):
         """Create basic operations section."""
-        category = CollapsibleCategory("Operations", "⚙")
+        category = QtWidgets.QGroupBox("⚙ Operations")
+        category_layout = QtWidgets.QGridLayout(category)
+        category_layout.setSpacing(5)
+        category_layout.setContentsMargins(10, 10, 10, 10)
 
         tools = [
             ("∪", "Union", "Boolean union", "boolean_union"),
@@ -282,13 +237,16 @@ class ToolsWidget(QtWidgets.QWidget):
         for i, (icon, name, tooltip, method) in enumerate(tools):
             btn = CompactToolButton(icon, name, tooltip)
             btn.clicked.connect(create_handler(method))
-            category.add_button(btn, i // 6, i % 6)
+            category_layout.addWidget(btn, i // 6, i % 6)
 
         layout.addWidget(category)
 
     def _create_measurements(self, layout):
         """Create measurements section."""
-        category = CollapsibleCategory("Measure", "📏")
+        category = QtWidgets.QGroupBox("📏 Measure")
+        category_layout = QtWidgets.QGridLayout(category)
+        category_layout.setSpacing(5)
+        category_layout.setContentsMargins(10, 10, 10, 10)
 
         tools = [
             ("↔", "Distance", "Measure distance", "measure_distance"),
@@ -307,13 +265,16 @@ class ToolsWidget(QtWidgets.QWidget):
         for i, (icon, name, tooltip, method) in enumerate(tools):
             btn = CompactToolButton(icon, name, tooltip)
             btn.clicked.connect(create_handler(method))
-            category.add_button(btn, i // 6, i % 6)
+            category_layout.addWidget(btn, i // 6, i % 6)
 
         layout.addWidget(category)
 
     def _create_import_export(self, layout):
         """Create import/export section."""
-        category = CollapsibleCategory("Import/Export", "📁")
+        category = QtWidgets.QGroupBox("📁 Import/Export")
+        category_layout = QtWidgets.QGridLayout(category)
+        category_layout.setSpacing(5)
+        category_layout.setContentsMargins(10, 10, 10, 10)
 
         tools = [
             ("▼S", "Import STL", "Import STL", "import_stl"),
@@ -332,13 +293,16 @@ class ToolsWidget(QtWidgets.QWidget):
         for i, (icon, name, tooltip, method) in enumerate(tools):
             btn = CompactToolButton(icon, name, tooltip)
             btn.clicked.connect(create_handler(method))
-            category.add_button(btn, i // 6, i % 6)
+            category_layout.addWidget(btn, i // 6, i % 6)
 
         layout.addWidget(category)
 
     def _create_advanced_primitives(self, layout):
         """Create advanced primitives section."""
-        category = CollapsibleCategory("Advanced Shapes", "◈")
+        category = QtWidgets.QGroupBox("◈ Advanced Shapes")
+        category_layout = QtWidgets.QGridLayout(category)
+        category_layout.setSpacing(5)
+        category_layout.setContentsMargins(10, 10, 10, 10)
 
         tools = [
             ("◎", "Tube", "Hollow cylinder", "create_tube"),
@@ -359,13 +323,16 @@ class ToolsWidget(QtWidgets.QWidget):
         for i, (icon, name, tooltip, method) in enumerate(tools):
             btn = CompactToolButton(icon, name, tooltip)
             btn.clicked.connect(create_handler(method))
-            category.add_button(btn, i // 6, i % 6)
+            category_layout.addWidget(btn, i // 6, i % 6)
 
         layout.addWidget(category)
 
     def _create_advanced_operations(self, layout):
         """Create advanced operations section."""
-        category = CollapsibleCategory("Advanced Ops", "⚡")
+        category = QtWidgets.QGroupBox("⚡ Advanced Ops")
+        category_layout = QtWidgets.QGridLayout(category)
+        category_layout.setSpacing(5)
+        category_layout.setContentsMargins(10, 10, 10, 10)
 
         tools = [
             ("⬆", "Extrude", "Extrude profile", "extrude_profile"),
@@ -386,13 +353,16 @@ class ToolsWidget(QtWidgets.QWidget):
         for i, (icon, name, tooltip, method) in enumerate(tools):
             btn = CompactToolButton(icon, name, tooltip)
             btn.clicked.connect(create_handler(method))
-            category.add_button(btn, i // 6, i % 6)
+            category_layout.addWidget(btn, i // 6, i % 6)
 
         layout.addWidget(category)
 
     def _create_surface_modification(self, layout):
         """Create surface modification section."""
-        category = CollapsibleCategory("Surface Mods", "✨")
+        category = QtWidgets.QGroupBox("✨ Surface Mods")
+        category_layout = QtWidgets.QGridLayout(category)
+        category_layout.setSpacing(5)
+        category_layout.setContentsMargins(10, 10, 10, 10)
 
         tools = [
             ("╭", "Fillet", "Round edges", "fillet_edges"),
@@ -413,7 +383,7 @@ class ToolsWidget(QtWidgets.QWidget):
         for i, (icon, name, tooltip, method) in enumerate(tools):
             btn = CompactToolButton(icon, name, tooltip)
             btn.clicked.connect(create_handler(method))
-            category.add_button(btn, i // 6, i % 6)
+            category_layout.addWidget(btn, i // 6, i % 6)
 
         layout.addWidget(category)
 
@@ -422,7 +392,7 @@ class ToolsWidget(QtWidgets.QWidget):
         if category not in self.tools:
             self.status_label.setText(f"❌ {category} not available")
             self.status_label.setStyleSheet(
-                "padding: 2px 8px; background-color: #ffcdd2; border-radius: 10px; font-size: 10px;"
+                "padding: 5px 10px; background-color: #ffcdd2; border-radius: 4px; font-size: 12px;"
             )
             return
 
@@ -430,7 +400,7 @@ class ToolsWidget(QtWidgets.QWidget):
         if not hasattr(tool, method):
             self.status_label.setText(f"❌ {method} not found")
             self.status_label.setStyleSheet(
-                "padding: 2px 8px; background-color: #ffcdd2; border-radius: 10px; font-size: 10px;"
+                "padding: 5px 10px; background-color: #ffcdd2; border-radius: 4px; font-size: 12px;"
             )
             return
 
@@ -447,12 +417,12 @@ class ToolsWidget(QtWidgets.QWidget):
                 if result.get("success"):
                     self.status_label.setText(f"✅ {result.get('message', 'Success')}")
                     self.status_label.setStyleSheet(
-                        "padding: 2px 8px; background-color: #c8e6c9; border-radius: 10px; font-size: 10px;"
+                        "padding: 5px 10px; background-color: #c8e6c9; border-radius: 4px; font-size: 12px;"
                     )
                 else:
                     self.status_label.setText(f"❌ {result.get('message', 'Failed')}")
                     self.status_label.setStyleSheet(
-                        "padding: 2px 8px; background-color: #ffcdd2; border-radius: 10px; font-size: 10px;"
+                        "padding: 5px 10px; background-color: #ffcdd2; border-radius: 4px; font-size: 12px;"
                     )
 
                 # Emit signal
@@ -462,7 +432,7 @@ class ToolsWidget(QtWidgets.QWidget):
                 self.logger.error(f"Error executing {category}.{method}: {e}")
                 self.status_label.setText(f"❌ Error: {str(e)[:30]}...")
                 self.status_label.setStyleSheet(
-                    "padding: 2px 8px; background-color: #ffcdd2; border-radius: 10px; font-size: 10px;"
+                    "padding: 5px 10px; background-color: #ffcdd2; border-radius: 4px; font-size: 12px;"
                 )
 
 

@@ -4,7 +4,7 @@ Test suite for SurfaceModificationTool
 Tests for surface modification operations including fillet, chamfer,
 draft, thickness, and offset operations.
 
-Author: AI Assistant
+Author: jango-blockchained
 """
 
 import os
