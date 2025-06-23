@@ -45,7 +45,9 @@ def workbench_crash_safe(operation_name):
                             main_window.statusBar().showMessage(
                                 f"FreeCAD AI: Error in {operation_name}", 5000
                             )
-                except Exception:
+                except (AttributeError, RuntimeError):
+                    # AttributeError: Missing statusBar or showMessage method
+                    # RuntimeError: GUI object invalid or destroyed
                     pass
 
                 # Return None or appropriate fallback
@@ -897,7 +899,10 @@ class MCPWorkbench(FreeCADGui.Workbench):
                             and QtWidgets.QApplication.instance()
                         ):
                             QtWidgets.QApplication.processEvents()
-                    except Exception:
+                    except (AttributeError, RuntimeError, ImportError):
+                        # AttributeError: Missing Qt application methods
+                        # RuntimeError: Qt application in invalid state
+                        # ImportError: Qt modules not available
                         pass
 
                     # Fallback: Try to re-create the dock widget with main_window as parent

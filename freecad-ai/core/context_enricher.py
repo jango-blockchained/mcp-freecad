@@ -289,7 +289,12 @@ class ContextEnricher:
 
             return detail
 
-        except Exception:
+        except (AttributeError, TypeError, RuntimeError) as e:
+            # AttributeError: FreeCAD object missing expected attributes
+            # TypeError: Invalid type conversion or property access
+            # RuntimeError: FreeCAD object in invalid state
+            import logging
+            logging.getLogger(__name__).debug(f"Failed to extract object detail: {e}")
             return None
 
     def _build_object_tree(self, obj, current_depth=0, max_depth=3) -> Dict[str, Any]:
@@ -357,10 +362,15 @@ class ContextEnricher:
 
                         properties[prop_name] = value
 
-                    except Exception:
-                        pass
+                    except (AttributeError, TypeError, ValueError):
+                        # AttributeError: Property doesn't exist
+                        # TypeError: Property value type conversion issue
+                        # ValueError: Property value invalid
+                        continue
 
-        except Exception:
+        except (AttributeError, TypeError):
+            # AttributeError: Object missing expected attributes
+            # TypeError: Invalid type operations
             pass
 
         return properties

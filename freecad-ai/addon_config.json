@@ -19,29 +19,6 @@
         "output_tokens_per_million": 15.0
       }
     },
-    "openrouter": {
-      "enabled": true,
-      "model": "anthropic/claude-4-opus",
-      "alternative_models": [
-        "openai/gpt-4o",
-        "openai/gpt-4.1",
-        "google/gemini-2.5-pro-preview",
-        "anthropic/claude-opus-4",
-        "deepseek/deepseek-r1",
-        "qwen/qwen3-235b-a22b"
-      ],
-      "temperature": 0.7,
-      "timeout": 30,
-      "max_tokens": 64000,
-      "thinking_mode": true,
-      "context_window": 200000,
-      "pricing": "variable",
-      "free_models": [
-        "deepseek/deepseek-r1",
-        "deepseek/deepseek-v3",
-        "google/gemini-2.5-flash-preview"
-      ]
-    },
     "Google": {
       "enabled": true,
       "model": "gemini-1.5-flash",

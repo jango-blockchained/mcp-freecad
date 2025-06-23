@@ -794,7 +794,9 @@ class EnhancedConversationWidget(QtWidgets.QWidget):
                             wb.MenuText if hasattr(wb, "MenuText") else "Unknown"
                         ),
                     }
-            except Exception:
+            except (AttributeError, ImportError):
+                # AttributeError: Missing workbench attributes
+                # ImportError: Missing workbench modules
                 context["freecad_state"]["active_workbench"] = {
                     "name": "Unknown",
                     "menu_text": "Unknown",

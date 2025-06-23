@@ -107,7 +107,11 @@ class ExportImportTool:
             if directory and not os.path.exists(directory):
                 os.makedirs(directory)
             return True
-        except Exception:
+        except (OSError, PermissionError) as e:
+            # OSError: Directory creation failed
+            # PermissionError: Insufficient permissions
+            import logging
+            logging.getLogger(__name__).warning(f"Failed to create directory for {filepath}: {e}")
             return False
 
     def export_stl(

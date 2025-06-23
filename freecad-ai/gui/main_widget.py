@@ -25,7 +25,9 @@ except ImportError:
             try:
                 import PySide2
                 QtCore.QT_VERSION_STR = PySide2.__version__
-            except:
+            except (ImportError, AttributeError):
+                # ImportError: PySide2 not available
+                # AttributeError: Missing version attribute
                 QtCore.QT_VERSION_STR = "5.15.0"  # Fallback version
         FreeCAD.Console.PrintMessage("FreeCAD AI: Using PySide2\n")
     except ImportError:
@@ -156,7 +158,9 @@ def crash_safe_wrapper(operation_name):
                         args[0].status_label.setStyleSheet(
                             "padding: 2px 8px; background-color: #ffcdd2; color: #c62828; border-radius: 10px; font-size: 11px;"
                         )
-                    except Exception:
+                    except (AttributeError, RuntimeError):
+                        # AttributeError: Missing status_label or setText method
+                        # RuntimeError: Widget already destroyed or invalid
                         pass
                 return None
 
@@ -242,7 +246,9 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             try:
                 self.main_widget = QtWidgets.QWidget()
                 self.setWidget(self.main_widget)
-            except Exception:
+            except (RuntimeError, AttributeError):
+                # RuntimeError: Qt widget creation failed
+                # AttributeError: Missing widget methods
                 pass
 
     @crash_safe_wrapper("dock properties setup")
@@ -349,7 +355,9 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                         "padding: 15px; background-color: #ffecb3; color: #f57c00; border-radius: 8px; "
                         "font-size: 12px;"
                     )
-                except Exception:
+                except (AttributeError, RuntimeError):
+                    # AttributeError: Missing status_label methods
+                    # RuntimeError: Widget destroyed or invalid state
                     pass
 
     @crash_safe_wrapper("services initialization")
@@ -522,7 +530,9 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                     tab_layout = QtWidgets.QVBoxLayout(tab)
                     tab_layout.addWidget(QtWidgets.QLabel(f"{name} - Error loading"))
                     self.tab_widget.addTab(tab, name)
-                except Exception:
+                except (RuntimeError, AttributeError):
+                    # RuntimeError: Qt widget creation/operation failed
+                    # AttributeError: Missing widget method
                     pass
 
     @crash_safe_wrapper("tab change handling")

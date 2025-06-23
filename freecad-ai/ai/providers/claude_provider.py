@@ -243,7 +243,12 @@ Be precise with measurements and technical details."""
                 max_tokens=50,
             )
             return "successful" in test_response.content.lower()
-        except Exception:
+        except (ValueError, ConnectionError, TimeoutError) as e:
+            # ValueError: Invalid API response or configuration
+            # ConnectionError: Network connectivity issues  
+            # TimeoutError: Request timeout
+            import logging
+            logging.getLogger(__name__).debug(f"Claude connection test failed: {e}")
             return False
 
     def enable_thinking_mode(self, budget: int = 2000):

@@ -294,7 +294,12 @@ Be precise with measurements and technical details. When working with visual con
                 temperature=0.1,
             )
             return "successful" in test_response.content.lower()
-        except Exception:
+        except (ValueError, ConnectionError, TimeoutError) as e:
+            # ValueError: Invalid API response or configuration
+            # ConnectionError: Network connectivity issues
+            # TimeoutError: Request timeout
+            import logging
+            logging.getLogger(__name__).debug(f"Gemini connection test failed: {e}")
             return False
 
     def get_model_info(self, model: str = None) -> Dict[str, Any]:

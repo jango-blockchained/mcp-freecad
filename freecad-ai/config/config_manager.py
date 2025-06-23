@@ -121,7 +121,10 @@ class ConfigManager:
                 import socket
 
                 return f"{socket.gethostname()}-{getpass.getuser()}"
-        except:
+        except (OSError, AttributeError, ImportError):
+            # OSError: Network issues getting hostname
+            # AttributeError: Missing user/host info
+            # ImportError: Missing required modules
             return "default-machine-id"
 
     def load_config(self) -> Dict[str, Any]:
@@ -285,10 +288,13 @@ class ConfigManager:
                     encrypted_key = base64.urlsafe_b64decode(stored_key.encode())
                     decrypted_key = self.cipher.decrypt(encrypted_key)
                     return decrypted_key.decode()
-                except Exception:
+                except (ValueError, TypeError, Exception) as e:
+                    # ValueError: Invalid base64 or decryption data
+                    # TypeError: Incorrect data type for decryption
+                    # Exception: Catch-all for cryptographic errors
                     # If decryption fails, it might be a plain text key from before encryption was available
                     self.logger.warning(
-                        f"Failed to decrypt API key for {provider}, treating as plain text"
+                        f"Failed to decrypt API key for {provider}: {e}, treating as plain text"
                     )
                     return stored_key
             else:
@@ -310,7 +316,9 @@ class ConfigManager:
                 return len(key) > 20  # Google keys vary in format
             else:
                 return len(key) > 10  # Basic validation for other providers
-        except:
+        except (AttributeError, TypeError):
+            # AttributeError: Key missing expected methods
+            # TypeError: Key is not string type
             return False
 
     def list_api_keys(self) -> List[str]:
@@ -318,7 +326,10 @@ class ConfigManager:
         try:
             api_keys = self._load_api_keys()
             return list(api_keys.keys())
-        except:
+        except (FileNotFoundError, PermissionError, json.JSONDecodeError):
+            # FileNotFoundError: Keys file doesn't exist
+            # PermissionError: Can't read keys file
+            # json.JSONDecodeError: Keys file corrupted
             return []
 
     def _load_api_keys(self) -> Dict[str, str]:

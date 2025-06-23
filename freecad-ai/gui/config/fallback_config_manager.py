@@ -21,7 +21,10 @@ class FallbackConfigManager:
             try:
                 with open(self.config_file, "r") as f:
                     return json.load(f)
-            except:
+            except (json.JSONDecodeError, IOError, PermissionError):
+                # json.JSONDecodeError: Invalid JSON format
+                # IOError: File read error
+                # PermissionError: No read permission
                 pass
         return {"providers": {}, "connection": {"default_provider": "Anthropic"}}
 
@@ -31,7 +34,10 @@ class FallbackConfigManager:
             with open(self.config_file, "w") as f:
                 json.dump(self.config, f, indent=2)
             return True
-        except:
+        except (IOError, PermissionError, OSError):
+            # IOError: File write error
+            # PermissionError: No write permission
+            # OSError: System-level write error
             return False
 
     def set_provider_config(self, provider, config):
@@ -56,7 +62,11 @@ class FallbackConfigManager:
             with open(self.keys_file, "w") as f:
                 json.dump(api_keys, f, indent=2)
             return True
-        except:
+        except (IOError, PermissionError, json.JSONDecodeError, OSError):
+            # IOError: File read/write error
+            # PermissionError: No file permission
+            # json.JSONDecodeError: Invalid JSON
+            # OSError: System-level file error
             return False
 
     def get_api_key(self, provider):
@@ -66,7 +76,10 @@ class FallbackConfigManager:
                 with open(self.keys_file, "r") as f:
                     api_keys = json.load(f)
                 return api_keys.get(provider)
-        except:
+        except (IOError, PermissionError, json.JSONDecodeError):
+            # IOError: File read error  
+            # PermissionError: No read permission
+            # json.JSONDecodeError: Invalid JSON format
             pass
         return None
 
@@ -87,7 +100,10 @@ class FallbackConfigManager:
                 with open(self.keys_file, "r") as f:
                     api_keys = json.load(f)
                 return list(api_keys.keys())
-        except:
+        except (IOError, PermissionError, json.JSONDecodeError):
+            # IOError: File read error
+            # PermissionError: No read permission  
+            # json.JSONDecodeError: Invalid JSON format
             pass
         return []
 

@@ -61,7 +61,10 @@ def try_import_config_manager():
             spec.loader.exec_module(config_module)
             ConfigManager = config_module.ConfigManager
             return ConfigManager()
-    except Exception:
+    except (ImportError, AttributeError, ModuleNotFoundError):
+        # ImportError: Module import failed
+        # AttributeError: Missing ConfigManager class
+        # ModuleNotFoundError: Module not found
         pass
 
     return None

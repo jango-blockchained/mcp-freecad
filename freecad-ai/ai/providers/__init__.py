@@ -5,6 +5,7 @@ Provides AI provider implementations with lazy loading and dependency management
 Includes automatic dependency installation and enhanced error handling.
 """
 
+import subprocess
 import traceback
 from typing import Any, Dict
 
@@ -208,7 +209,10 @@ def _show_dependency_guidance(missing_dependency, provider_name):
                 if line.strip() and not line.startswith("#"):
                     FreeCAD.Console.PrintMessage(f"   {line}\n")
             FreeCAD.Console.PrintMessage("   ''')\n")
-        except Exception:
+        except (AttributeError, IndexError, TypeError):
+            # AttributeError: Script access issues
+            # IndexError: Script parsing issues
+            # TypeError: Script format issues  
             # Fallback simple script
             FreeCAD.Console.PrintMessage("   import subprocess, sys, os\n")
             FreeCAD.Console.PrintMessage(
@@ -294,7 +298,10 @@ def _show_sub_dependency_guidance(
             f"   subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade', '{main_dependency}'])\n"
         )
         FreeCAD.Console.PrintMessage("   ''')\n")
-    except Exception:
+    except (AttributeError, KeyError, TypeError):
+        # AttributeError: Missing dependency manager attributes
+        # KeyError: Missing dependency information
+        # TypeError: Invalid dependency data format
         # Fallback simple script
         FreeCAD.Console.PrintMessage("   import subprocess, sys\n")
         FreeCAD.Console.PrintMessage(
@@ -503,7 +510,9 @@ def get_available_providers() -> Dict[str, Any]:
                     FreeCAD.Console.PrintWarning(
                         "FreeCAD AI: Use Dependencies tab to fix sub-dependency issues\n"
                     )
-        except Exception:
+        except (ImportError, AttributeError):
+            # ImportError: Missing dependency modules for checking
+            # AttributeError: Missing expected dependency attributes
             pass  # Ignore errors in sub-dependency checking
 
     elif available_count < total_count:
@@ -624,7 +633,10 @@ def install_missing_dependencies():
             "FreeCAD AI: Please install dependencies manually\n"
         )
         return False
-    except Exception as e:
+    except (subprocess.CalledProcessError, PermissionError, FileNotFoundError) as e:
+        # subprocess.CalledProcessError: Installation command failed
+        # PermissionError: Insufficient permissions for installation
+        # FileNotFoundError: pip or python executable not found
         FreeCAD.Console.PrintError(f"FreeCAD AI: Dependency installation error: {e}\n")
         return False
 
@@ -686,7 +698,10 @@ try:
             "FreeCAD AI: 💡 To enable AI providers, install missing dependencies using the Dependencies tab\n"
         )
 
-except Exception as e:
+except (ImportError, AttributeError, NameError) as e:
+    # ImportError: Missing modules during provider initialization
+    # AttributeError: Missing expected provider attributes
+    # NameError: Missing variables during initialization
     FreeCAD.Console.PrintError(
         f"FreeCAD AI: Error during provider initialization: {e}\n"
     )

@@ -158,8 +158,8 @@ except ImportError as e:
             FreeCAD.Console.PrintError(
                 f"FreeCAD AI Addon: Python files in addon directory: {files}\n"
             )
-    except Exception:
-        pass
+    except (OSError, PermissionError) as e:
+        FreeCAD.Console.PrintError(f"FreeCAD AI Addon: Directory access error: {e}\n")
 except Exception as e:
     FreeCAD.Console.PrintError(f"FreeCAD AI Addon: Initialization error: {e}\n")
     import traceback
