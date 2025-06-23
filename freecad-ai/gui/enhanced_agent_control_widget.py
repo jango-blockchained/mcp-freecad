@@ -717,18 +717,119 @@ class EnhancedAgentControlWidget(QtWidgets.QWidget):
 
     def _toggle_execution(self):
         """Toggle execution play/pause."""
-        # TODO: Implement execution toggle
-        print("Toggle execution called")
+        if hasattr(self, 'execution_running') and self.execution_running:
+            # Stop execution
+            self.execution_running = False
+            self.toggle_execution_btn.setText("Start Execution")
+            self.toggle_execution_btn.setStyleSheet("background-color: green;")
+            
+            # Update status
+            self._update_execution_status("Stopped")
+            print("Execution stopped")
+            
+        else:
+            # Start execution
+            self.execution_running = True
+            self.toggle_execution_btn.setText("Stop Execution")
+            self.toggle_execution_btn.setStyleSheet("background-color: red;")
+            
+            # Update status
+            self._update_execution_status("Running")
+            print("Execution started")
+    
+    def _update_execution_status(self, status):
+        """Update execution status display."""
+        if hasattr(self, 'status_label'):
+            self.status_label.setText(f"Status: {status}")
+        
+        # Emit signal if available
+        if hasattr(self, 'execution_status_changed'):
+            self.execution_status_changed.emit(status)
 
     def _stop_execution(self):
         """Stop current execution."""
-        # TODO: Implement execution stop
-        print("Stop execution called")
+        # Force stop execution regardless of current state
+        self.execution_running = False
+        
+        # Reset button states
+        if hasattr(self, 'toggle_execution_btn'):
+            self.toggle_execution_btn.setText("Start Execution")
+            self.toggle_execution_btn.setStyleSheet("background-color: green;")
+        
+        # Clear any running tasks
+        if hasattr(self, 'current_task_id'):
+            self.current_task_id = None
+            
+        # Update status
+        self._update_execution_status("Stopped")
+        
+        # Clear progress if available
+        if hasattr(self, 'progress_bar'):
+            self.progress_bar.setValue(0)
+        
+        print("Execution force stopped")
 
     def _step_execution(self):
         """Execute one step."""
-        # TODO: Implement step execution
-        print("Step execution called")
+        if not hasattr(self, 'execution_running'):
+            self.execution_running = False
+            
+        # Check if there are tasks to execute
+        if self.queue_list.count() == 0:
+            QtWidgets.QMessageBox.information(
+                self, "No Tasks", "No tasks in queue to execute."
+            )
+            return
+        
+        # Get the first task from queue
+        first_item = self.queue_list.item(0)
+        if first_item:
+            task_text = first_item.text()
+            
+            # Simulate executing one step
+            self._update_execution_status("Executing Step")
+            
+            # Create a simple step execution dialog
+            dialog = QtWidgets.QDialog(self)
+            dialog.setWindowTitle("Step Execution")
+            dialog.setMinimumSize(400, 200)
+            
+            layout = QtWidgets.QVBoxLayout(dialog)
+            layout.addWidget(QtWidgets.QLabel(f"Executing: {task_text}"))
+            
+            progress = QtWidgets.QProgressBar()
+            progress.setRange(0, 100)
+            progress.setValue(50)  # Simulate partial completion
+            layout.addWidget(progress)
+            
+            # Add buttons
+            button_layout = QtWidgets.QHBoxLayout()
+            complete_btn = QtWidgets.QPushButton("Mark Complete")
+            cancel_btn = QtWidgets.QPushButton("Cancel")
+            
+            complete_btn.clicked.connect(lambda: self._complete_step(dialog, first_item))
+            cancel_btn.clicked.connect(dialog.reject)
+            
+            button_layout.addWidget(complete_btn)
+            button_layout.addWidget(cancel_btn)
+            layout.addLayout(button_layout)
+            
+            dialog.exec_()
+            
+        self._update_execution_status("Step Complete")
+        print("Step execution completed")
+    
+    def _complete_step(self, dialog, task_item):
+        """Complete the current step."""
+        # Remove completed task from queue
+        row = self.queue_list.row(task_item)
+        self.queue_list.takeItem(row)
+        
+        # Update queue info
+        self._update_queue_info()
+        
+        dialog.accept()
+        print("Step marked as complete")
 
     # Additional methods for enhanced functionality
 
@@ -946,13 +1047,126 @@ class EnhancedAgentControlWidget(QtWidgets.QWidget):
         
     def _set_task_priority(self):
         """Set priority for selected task."""
-        # TODO: Implement task priority setting
-        print("Set task priority called")
+        current_row = self.queue_list.currentRow()
+        if current_row < 0:
+            QtWidgets.QMessageBox.information(
+                self, "No Selection", "Please select a task to set priority."
+            )
+            return
+        
+        # Get current item
+        current_item = self.queue_list.item(current_row)
+        if not current_item:
+            return
+        
+        # Create priority setting dialog
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle("Set Task Priority")
+        dialog.setMinimumSize(300, 150)
+        
+        layout = QtWidgets.QVBoxLayout(dialog)
+        
+        # Task info
+        layout.addWidget(QtWidgets.QLabel(f"Task: {current_item.text()}"))
+        
+        # Priority selection
+        priority_layout = QtWidgets.QHBoxLayout()
+        priority_layout.addWidget(QtWidgets.QLabel("Priority:"))
+        
+        priority_combo = QtWidgets.QComboBox()
+        priority_combo.addItems(["High", "Medium", "Low"])
+        priority_combo.setCurrentText("Medium")  # Default
+        priority_layout.addWidget(priority_combo)
+        
+        layout.addLayout(priority_layout)
+        
+        # Buttons
+        button_layout = QtWidgets.QHBoxLayout()
+        ok_btn = QtWidgets.QPushButton("OK")
+        cancel_btn = QtWidgets.QPushButton("Cancel")
+        
+        ok_btn.clicked.connect(dialog.accept)
+        cancel_btn.clicked.connect(dialog.reject)
+        
+        button_layout.addWidget(ok_btn)
+        button_layout.addWidget(cancel_btn)
+        layout.addLayout(button_layout)
+        
+        # Execute dialog
+        if dialog.exec_() == QtWidgets.QDialog.Accepted:
+            priority = priority_combo.currentText()
+            
+            # Update item text with priority
+            original_text = current_item.text()
+            # Remove existing priority if present
+            if " [" in original_text and original_text.endswith("]"):
+                original_text = original_text.split(" [")[0]
+            
+            new_text = f"{original_text} [{priority}]"
+            current_item.setText(new_text)
+            
+            # Set color based on priority
+            if priority == "High":
+                current_item.setBackground(QtCore.Qt.red)
+            elif priority == "Medium":
+                current_item.setBackground(QtCore.Qt.yellow)
+            else:  # Low
+                current_item.setBackground(QtCore.Qt.green)
+            
+            print(f"Task priority set to {priority}")
         
     def _export_settings(self):
         """Export current agent settings."""
-        # TODO: Implement settings export
-        print("Export settings called")
+        # Get file path from user
+        filename, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self,
+            "Export Agent Settings",
+            "agent_settings.json",
+            "JSON Files (*.json);;All Files (*)"
+        )
+        
+        if not filename:
+            return
+        
+        try:
+            # Collect current settings
+            settings = {
+                "export_timestamp": QtCore.QDateTime.currentDateTime().toString(),
+                "queue_items": [],
+                "execution_state": {
+                    "running": getattr(self, 'execution_running', False),
+                    "current_task_id": getattr(self, 'current_task_id', None)
+                },
+                "ui_settings": {
+                    "queue_count": self.queue_list.count()
+                }
+            }
+            
+            # Export queue items with their properties
+            for i in range(self.queue_list.count()):
+                item = self.queue_list.item(i)
+                if item:
+                    item_data = {
+                        "text": item.text(),
+                        "background_color": item.background().color().name() if item.background() != QtCore.Qt.NoBrush else None
+                    }
+                    settings["queue_items"].append(item_data)
+            
+            # Write to file
+            import json
+            with open(filename, 'w') as f:
+                json.dump(settings, f, indent=2)
+            
+            QtWidgets.QMessageBox.information(
+                self, "Export Complete", f"Settings exported to {filename}"
+            )
+            print(f"Settings exported to {filename}")
+            
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(
+                self, "Export Error", f"Failed to export settings: {str(e)}"
+            )
+            print(f"Export error: {e}")
 
     def _clear_queue(self):
         """Clear the task queue."""

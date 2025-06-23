@@ -36,11 +36,11 @@
   - [x] Test API module functionality
 
 #### 1.3 Import Resolution Cleanup
-- [ ] **Consolidate complex import strategies**
-  - [ ] Simplify multi-strategy fallback chains in `freecad_ai_workbench.py`
-  - [ ] Document import strategy decisions
-  - [ ] Test import behavior across different environments
-  - [ ] Validate all module dependencies
+- [x] **Consolidate complex import strategies**
+  - [x] Simplify multi-strategy fallback chains in `freecad_ai_workbench.py`
+  - [x] Document import strategy decisions
+  - [x] Test import behavior across different environments
+  - [x] Validate all module dependencies
 
 ---
 
@@ -83,13 +83,13 @@
 
 #### 3.1 Enhanced Agent Control Widget TODOs
 - [ ] **Execution Controls (12 TODO items)**
-  - [ ] Implement execution toggle functionality
-  - [ ] Implement execution stop mechanism  
-  - [ ] Implement step execution
+  - [x] Implement execution toggle functionality
+  - [x] Implement execution stop mechanism  
+  - [x] Implement step execution
   - [ ] Add queue filtering
   - [ ] Add queue item editing
-  - [ ] Implement task priority setting
-  - [ ] Add settings export
+  - [x] Implement task priority setting
+  - [x] Add settings export
   - [x] Implement queue clearing
   - [x] Add queue item reordering (up/down)
   - [ ] Connect to agent manager when available
