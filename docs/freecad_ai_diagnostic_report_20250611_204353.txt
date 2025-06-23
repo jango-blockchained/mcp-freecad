@@ -1,5 +1,5 @@
 FreeCAD AI Diagnostic Report
-Generated: 2025-06-12T23:54:15.794227
+Generated: 2025-06-13T02:18:40.645095
 ==================================================
 
 === AGENT MANAGER DIAGNOSTICS ===
@@ -32,8 +32,8 @@ FreeCAD Version: 1.0.0
 FreeCAD Build: 
 Qt Version: 5.15.16
 PySide2 Version: 5.15.15
-Memory Usage: 403.1 MB
-Working Directory: /home/jango/Git/mcp-freecad
+Memory Usage: 402.4 MB
+Working Directory: /home/jango
 FREECAD_USER_HOME: Not set
 FREECAD_USER_DATA: Not set
 FREECADPATH: Not set

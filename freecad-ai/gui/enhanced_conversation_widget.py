@@ -519,12 +519,34 @@ class EnhancedConversationWidget(QtWidgets.QWidget):
         self.search_info_label.setText(f"Search: {current}/{total}")
         
         # TODO: Implement actual highlighting in the text browser
-        # This would require modifying the HTML content or using QTextCursor
+        # Highlight current search match
+        if self.search_matches:
+            cursor = self.conversation_display.textCursor()
+            cursor.setPosition(self.search_matches[self.current_search_index])
+            cursor.movePosition(cursor.Right, cursor.KeepAnchor, len(self.current_search_query))
+            
+            # Set background color for highlight
+            format = cursor.charFormat()
+            format.setBackground(QtCore.Qt.yellow)
+            cursor.setCharFormat(format)
+            
+            # Move viewport to show the highlighted text
+            self.conversation_display.setTextCursor(cursor)
+            self.conversation_display.ensureCursorVisible()
         
     def _clear_search_highlighting(self):
         """Clear search highlighting."""
-        # TODO: Implement clearing of search highlights
-        return
+        # Clear all highlighting by resetting the document format
+        cursor = self.conversation_display.textCursor()
+        cursor.select(cursor.Document)
+        format = cursor.charFormat()
+        format.setBackground(QtCore.Qt.transparent)
+        cursor.setCharFormat(format)
+        
+        # Reset search state
+        self.search_matches = []
+        self.current_search_index = 0
+        self.search_info_label.setText("Search: 0/0")
 
     def _on_send_message(self):
         """Handle send message with enhanced input."""
@@ -894,9 +916,36 @@ class EnhancedConversationWidget(QtWidgets.QWidget):
 
     def _view_history(self):
         """View conversation history in a dialog."""
-        # Import here to avoid circular imports
-        from .conversation_widget import ConversationHistoryDialog
-        dialog = ConversationHistoryDialog(self.conversation_history, self)
+        # Create a simple history dialog
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle("Conversation History")
+        dialog.setMinimumSize(600, 400)
+        
+        layout = QtWidgets.QVBoxLayout(dialog)
+        
+        # Create text display for history
+        text_display = QtWidgets.QTextEdit()
+        text_display.setReadOnly(True)
+        
+        # Add conversation history
+        history_text = ""
+        for entry in self.conversation_history:
+            timestamp = entry.get('timestamp', 'Unknown')
+            role = entry.get('role', 'Unknown')
+            content = entry.get('content', '')
+            history_text += f"[{timestamp}] {role.upper()}:\n{content}\n\n"
+        
+        text_display.setPlainText(history_text)
+        layout.addWidget(text_display)
+        
+        # Add close button
+        button_layout = QtWidgets.QHBoxLayout()
+        close_button = QtWidgets.QPushButton("Close")
+        close_button.clicked.connect(dialog.accept)
+        button_layout.addStretch()
+        button_layout.addWidget(close_button)
+        layout.addLayout(button_layout)
+        
         dialog.exec_()
 
     def _on_provider_changed(self, provider_name, model_name):

@@ -7,6 +7,9 @@ that handles import failures gracefully.
 
 import logging
 import traceback
+import sys
+import os
+import threading
 
 class AgentManagerWrapper:
     """Wrapper that provides agent manager functionality with graceful degradation."""
@@ -16,56 +19,39 @@ class AgentManagerWrapper:
         self._init_agent_manager()
         
     def _init_agent_manager(self):
-        """Initialize the agent manager with comprehensive error handling."""
-        try:
-            # Try multiple import strategies
-            agent_manager_imported = False
-            
-            # Strategy 1: Relative import
+        """Initialize the agent manager with comprehensive error handling and timeout."""
+        def target():
             try:
-                from .agent_manager import AgentManager
-                agent_manager_imported = True
-                logging.info("AgentManager imported via relative path")
-            except ImportError as e:
-                logging.debug(f"Relative import failed: {e}")
-            
-            # Strategy 2: Direct import
-            if not agent_manager_imported:
+                agent_manager_imported = False
+                # Try to import AIManager from ai/ai_manager.py
                 try:
-                    from agent_manager import AgentManager
+                    addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    ai_dir = os.path.join(addon_dir, "ai")
+                    if ai_dir not in sys.path:
+                        sys.path.insert(0, ai_dir)
+                    from ai_manager import AIManager
                     agent_manager_imported = True
-                    logging.info("AgentManager imported via direct path")
-                except ImportError as e:
-                    logging.debug(f"Direct import failed: {e}")
-            
-            # Strategy 3: Absolute import
-            if not agent_manager_imported:
-                try:
-                    import sys
-                    import os
-                    
-                    # Add core directory to path
-                    core_dir = os.path.dirname(__file__)
-                    if core_dir not in sys.path:
-                        sys.path.insert(0, core_dir)
-                    
-                    from agent_manager import AgentManager
-                    agent_manager_imported = True
-                    logging.info("AgentManager imported after path modification")
-                except ImportError as e:
-                    logging.debug(f"Path modification import failed: {e}")
-            
-            if agent_manager_imported:
-                self.agent_manager = AgentManager()
-                logging.info("AgentManager instance created successfully")
-            else:
-                logging.warning("Could not import AgentManager - using fallback")
+                    logging.info("AIManager imported from ai/ai_manager.py")
+                except Exception as e:
+                    logging.error(f"Failed to import AIManager: {e}")
+                    logging.debug(traceback.format_exc())
+                if agent_manager_imported:
+                    self.agent_manager = AIManager()
+                    logging.info("AIManager instance created successfully")
+                else:
+                    logging.warning("Could not import AIManager - using fallback")
+                    self.agent_manager = None
+            except Exception as e:
+                logging.error(f"Agent manager initialization failed: {e}")
+                logging.error(f"Traceback: {traceback.format_exc()}")
                 self.agent_manager = None
-                
-        except Exception as e:
-            logging.error(f"Agent manager initialization failed: {e}")
-            logging.error(f"Traceback: {traceback.format_exc()}")
+        thread = threading.Thread(target=target)
+        thread.start()
+        thread.join(timeout=10)
+        if thread.is_alive():
+            logging.error("AgentManager initialization timed out!")
             self.agent_manager = None
+            # Optionally, kill the thread (not safe in Python, so just warn)
     
     def get_agent_manager(self):
         """Get the agent manager instance."""

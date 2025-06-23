@@ -956,18 +956,71 @@ class EnhancedAgentControlWidget(QtWidgets.QWidget):
 
     def _clear_queue(self):
         """Clear the task queue."""
-        # TODO: Implement queue clearing
-        print("Clear queue called")
+        # Ask for confirmation before clearing
+        reply = QtWidgets.QMessageBox.question(
+            self, 
+            "Clear Queue", 
+            "Are you sure you want to clear all tasks from the queue?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.No
+        )
+        
+        if reply == QtWidgets.QMessageBox.Yes:
+            # Clear the queue list widget
+            self.queue_list.clear()
+            
+            # Clear internal queue data if it exists
+            if hasattr(self, 'task_queue'):
+                self.task_queue.clear()
+            
+            # Update queue info
+            self._update_queue_info()
+            
+            print("Queue cleared successfully")
 
     def _move_queue_item_up(self):
         """Move selected queue item up."""
-        # TODO: Implement queue item reordering
-        print("Move queue item up called")
+        current_row = self.queue_list.currentRow()
+        if current_row > 0:
+            # Get the current item
+            current_item = self.queue_list.takeItem(current_row)
+            
+            # Re-insert it one position up
+            self.queue_list.insertItem(current_row - 1, current_item)
+            
+            # Update selection
+            self.queue_list.setCurrentRow(current_row - 1)
+            
+            # Update internal queue data if it exists
+            if hasattr(self, 'task_queue') and current_row < len(self.task_queue):
+                task = self.task_queue.pop(current_row)
+                self.task_queue.insert(current_row - 1, task)
+            
+            print(f"Moved queue item from position {current_row} to {current_row - 1}")
+        else:
+            print("Cannot move item up - already at top or no item selected")
 
     def _move_queue_item_down(self):
         """Move selected queue item down."""
-        # TODO: Implement queue item reordering
-        print("Move queue item down called")
+        current_row = self.queue_list.currentRow()
+        if current_row >= 0 and current_row < self.queue_list.count() - 1:
+            # Get the current item
+            current_item = self.queue_list.takeItem(current_row)
+            
+            # Re-insert it one position down
+            self.queue_list.insertItem(current_row + 1, current_item)
+            
+            # Update selection
+            self.queue_list.setCurrentRow(current_row + 1)
+            
+            # Update internal queue data if it exists
+            if hasattr(self, 'task_queue') and current_row < len(self.task_queue):
+                task = self.task_queue.pop(current_row)
+                self.task_queue.insert(current_row + 1, task)
+            
+            print(f"Moved queue item from position {current_row} to {current_row + 1}")
+        else:
+            print("Cannot move item down - already at bottom or no item selected")
 
     def _send_command(self):
         """Send command to agent."""

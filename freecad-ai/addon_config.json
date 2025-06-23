@@ -19,27 +19,6 @@
         "output_tokens_per_million": 15.0
       }
     },
-    "openai": {
-      "enabled": true,
-      "model": "anthropic/claude-4-opus",
-      "alternative_models": [
-        "gpt-4.1",
-        "gpt-4-turbo",
-        "gpt-3.5-turbo",
-        "o3",
-        "o4-mini",
-        "o4-mini-high"
-      ],
-      "temperature": 0.7,
-      "timeout": 30,
-      "max_tokens": 32000,
-      "thinking_mode": false,
-      "context_window": 128000,
-      "pricing": {
-        "input_tokens_per_million": 5.0,
-        "output_tokens_per_million": 10.0
-      }
-    },
     "openrouter": {
       "enabled": true,
       "model": "anthropic/claude-4-opus",
@@ -66,6 +45,20 @@
     "Google": {
       "enabled": true,
       "model": "gemini-1.5-flash",
+      "temperature": 0.7,
+      "timeout": 30,
+      "max_tokens": 4000
+    },
+    "OpenAI": {
+      "enabled": true,
+      "model": "gpt-4o-mini",
+      "temperature": 0.7,
+      "timeout": 30,
+      "max_tokens": 4000
+    },
+    "OpenRouter": {
+      "enabled": true,
+      "model": "anthropic/claude-3.5-sonnet",
       "temperature": 0.7,
       "timeout": 30,
       "max_tokens": 4000

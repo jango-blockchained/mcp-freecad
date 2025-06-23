@@ -22,15 +22,15 @@ def test_provider_selector_import():
 
         print("✅ ProviderSelectorWidget imported successfully")
 
-        # Test import of updated conversation widget
-        from gui.conversation_widget import ConversationWidget
+        # Test import of updated enhanced conversation widget
+        from gui.enhanced_conversation_widget import EnhancedConversationWidget
 
-        print("✅ ConversationWidget imported successfully")
+        print("✅ EnhancedConversationWidget imported successfully")
 
-        # Test import of updated agent control widget
-        from gui.agent_control_widget import AgentControlWidget
+        # Test import of updated enhanced agent control widget
+        from gui.enhanced_agent_control_widget import EnhancedAgentControlWidget
 
-        print("✅ AgentControlWidget imported successfully")
+        print("✅ EnhancedAgentControlWidget imported successfully")
 
         return True
 

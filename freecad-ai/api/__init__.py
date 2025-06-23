@@ -60,10 +60,10 @@ def check_fastapi_pydantic_compatibility():
                     )
 
                 # Test model instantiation
-                test_instance = TestModel()
+                _ = TestModel()  # Test creation but don't store unused variable
 
-                # Test router creation
-                router = APIRouter()
+                # Test router creation  
+                _ = APIRouter()  # Test creation but don't store unused variable
 
                 # If we get here, everything should work
                 return True, None
@@ -91,7 +91,7 @@ def check_fastapi_pydantic_compatibility():
                     )
             except ImportError as e:
                 return False, f"FastAPI/Pydantic import error: {e}"
-            except Exception as e:
+            except (AttributeError, ValueError) as e:
                 # For other exceptions, be more permissive
                 return (
                     True,
@@ -107,7 +107,7 @@ def check_fastapi_pydantic_compatibility():
             except ImportError as e:
                 return False, f"Import error: {e}"
 
-    except Exception as e:
+    except (ImportError, ModuleNotFoundError, AttributeError) as e:
         return False, f"Version compatibility check failed: {e}"
 
 
@@ -230,7 +230,7 @@ for module_name, item_name in apis_to_import:
                 )
             except ImportError:
                 print(f"FreeCAD AI: Type error importing {item_name}: {e}")
-    except Exception as e:
+    except (RuntimeError, OSError, SystemError) as e:
         try:
             import FreeCAD
 

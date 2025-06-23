@@ -4,17 +4,23 @@ import os
 import sys
 
 # Ensure the addon directory is in the Python path
+# This block should be as early as possible
 addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if addon_dir not in sys.path:
     sys.path.insert(0, addon_dir)
 
+# Standard library imports
 import json
 import logging
 from typing import Dict
 
-from config.config_manager import ConfigManager
+# Third-party imports
 from PySide2 import QtCore, QtWidgets
+
+# Local application/library specific imports
+from config.config_manager import ConfigManager
 from utils.cad_context_extractor import get_cad_context_extractor
+from utils.dependency_checker import DependencyChecker
 
 
 class SystemPromptsTableModel(QtCore.QAbstractTableModel):
@@ -276,6 +282,7 @@ class SettingsWidget(QtWidgets.QWidget):
         self._create_general_tab()
         self._create_system_prompts_tab()
         self._create_tools_tab()
+        self._create_dependencies_tab()
 
         # Control buttons
         self._create_control_buttons(layout)
@@ -493,6 +500,112 @@ class SettingsWidget(QtWidgets.QWidget):
 
         layout.addStretch()
         self.tab_widget.addTab(tab, "Tool Defaults")
+
+    def _create_dependencies_tab(self):
+        """Create dependencies management tab."""
+        tab = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(tab)
+
+        header_label = QtWidgets.QLabel("Manage Missing Dependencies")
+        header_label.setStyleSheet("font-weight: bold; font-size: 12px;")
+        layout.addWidget(header_label)
+
+        desc_label = QtWidgets.QLabel(
+            "Check for and install any missing Python dependencies required by the addon."
+        )
+        desc_label.setWordWrap(True)
+        desc_label.setStyleSheet("color: #666; font-size: 10px; padding: 5px;")
+        layout.addWidget(desc_label)
+
+        self.missing_deps_list = QtWidgets.QListWidget()
+        self.missing_deps_list.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        layout.addWidget(self.missing_deps_list)
+
+        button_layout = QtWidgets.QHBoxLayout()
+        self.check_deps_btn = QtWidgets.QPushButton("Check for Missing Dependencies")
+        self.check_deps_btn.clicked.connect(self._check_dependencies)
+        button_layout.addWidget(self.check_deps_btn)
+
+        self.install_deps_btn = QtWidgets.QPushButton("Install Selected Dependencies")
+        self.install_deps_btn.clicked.connect(self._install_selected_dependencies)
+        button_layout.addWidget(self.install_deps_btn)
+        layout.addLayout(button_layout)
+
+        self.deps_status_label = QtWidgets.QLabel("Status: Idle")
+        self.deps_status_label.setWordWrap(True)
+        layout.addWidget(self.deps_status_label)
+
+        layout.addStretch()
+        self.tab_widget.addTab(tab, "Dependencies")
+
+    def _check_dependencies(self):
+        """Check for missing dependencies and update the list."""
+        self.deps_status_label.setText("Status: Checking dependencies...")
+        QtWidgets.QApplication.processEvents()  # Ensure UI updates
+
+        try:
+            checker = DependencyChecker()
+            missing = checker.get_missing_dependencies()
+
+            self.missing_deps_list.clear()
+            if missing:
+                for dep in missing:
+                    self.missing_deps_list.addItem(dep)
+                self.deps_status_label.setText(f"Status: Found {len(missing)} missing dependencies.")
+                self.install_deps_btn.setEnabled(True)
+            else:
+                self.deps_status_label.setText("Status: All dependencies are installed.")
+                self.install_deps_btn.setEnabled(False)
+        except Exception as e:
+            self.logger.error(f"Error checking dependencies: {e}")
+            self.deps_status_label.setText(f"Status: Error checking dependencies: {e}")
+            QtWidgets.QMessageBox.warning(self, "Dependency Check Error", str(e))
+
+    def _install_selected_dependencies(self):
+        """Install selected missing dependencies."""
+        selected_items = self.missing_deps_list.selectedItems()
+        if not selected_items:
+            QtWidgets.QMessageBox.information(self, "No Selection", "Please select dependencies to install.")
+            return
+
+        deps_to_install = [item.text() for item in selected_items]
+        
+        self.deps_status_label.setText(f"Status: Installing {', '.join(deps_to_install)}...")
+        QtWidgets.QApplication.processEvents() # Ensure UI updates
+
+        try:
+            checker = DependencyChecker()
+            successfully_installed, failed_to_install = checker.install_dependencies(deps_to_install)
+            
+            # Log the results
+            if successfully_installed:
+                self.logger.info(f"Successfully installed: {', '.join(successfully_installed)}")
+            if failed_to_install:
+                self.logger.warning(f"Failed to install: {', '.join(failed_to_install)}")
+
+            # Update UI based on results
+            if successfully_installed and not failed_to_install:
+                QtWidgets.QMessageBox.information(self, "Installation Complete", 
+                                                  f"Successfully installed: {', '.join(successfully_installed)}."
+                                                  "\\nPlease restart FreeCAD for changes to take full effect.")
+            elif failed_to_install:
+                error_message = f"Installation Report:\n\nSuccessfully installed: {', '.join(successfully_installed) if successfully_installed else 'None'}\nFailed to install: {', '.join(failed_to_install)}\n\nCheck the FreeCAD Report View or console for more details from pip."
+                if not successfully_installed:
+                     error_message += "\\nNo packages were installed successfully."
+                error_message += "\\nSome packages may require a FreeCAD restart even if partially successful."
+                QtWidgets.QMessageBox.warning(self, "Installation Issues", error_message)
+            
+            # Always re-check dependencies to update the list and status
+            self._check_dependencies()
+
+        except Exception as e:
+            self.logger.error(f"Error during installation process in UI: {e}")
+            self.deps_status_label.setText(f"Status: Error during installation: {e}")
+            QtWidgets.QMessageBox.critical(self, "Installation Error", 
+                                         f"An unexpected error occurred: {e}"
+                                         "\\nCheck the FreeCAD Report View or console for details.")
+            # Optionally, re-check dependencies even after an unexpected error
+            self._check_dependencies()
 
     def _create_control_buttons(self, layout):
         """Create control buttons."""

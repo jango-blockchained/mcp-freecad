@@ -9,9 +9,9 @@ __version__ = "1.0.0"
 
 # Import configuration classes
 try:
-    pass
-
-    __all__ = ["ConfigManager", "AddonSettings", "ConfigValidator"]
+    from .config_manager import ConfigManager
+    
+    __all__ = ["ConfigManager"]
 
 except ImportError as e:
     print(f"Configuration components not fully available: {e}")
