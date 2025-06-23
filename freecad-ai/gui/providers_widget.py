@@ -35,8 +35,14 @@ class ProvidersWidget(QtWidgets.QWidget):
 
     def _setup_services(self):
         """Setup AI manager and config manager."""
+        print("DEBUG: Setting up services for ProvidersWidget...")
         self.ai_manager = try_import_ai_manager()
         self.config_manager = try_import_config_manager()
+
+        if self.ai_manager:
+            print(f"DEBUG: AIManager loaded with {len(self.ai_manager.providers)} providers")
+        else:
+            print("DEBUG: AIManager not available")
 
         if self.config_manager is None:
             print(
@@ -70,6 +76,8 @@ class ProvidersWidget(QtWidgets.QWidget):
             except Exception as e:
                 print(f"❌ Even fallback config manager failed: {e}")
                 self.config_manager = None
+        else:
+            print("DEBUG: ConfigManager loaded successfully")
 
     def _setup_ui(self):
         """Setup the user interface."""
@@ -140,10 +148,12 @@ class ProvidersWidget(QtWidgets.QWidget):
         )  # Default column fits content
 
         self.providers_table.setMaximumHeight(150)
+        self.providers_table.setMinimumHeight(100)
         self.providers_table.setSelectionBehavior(
             QtWidgets.QAbstractItemView.SelectRows
         )
         self.providers_table.cellClicked.connect(self._on_provider_selected)
+        self.providers_table.setVisible(True)  # Ensure table is visible
         providers_layout.addWidget(self.providers_table)
 
         layout.addWidget(providers_group)
@@ -428,7 +438,7 @@ class ProvidersWidget(QtWidgets.QWidget):
             is_valid = self.config_manager.validate_api_key(provider_type, key)
             if is_valid:
                 QtWidgets.QMessageBox.information(
-                    self, "Success", f"API key format is valid"
+                    self, "Success", "API key format is valid"
                 )
                 self.api_key_status_label.setText("✅ Valid format")
                 self.api_key_status_label.setStyleSheet(
@@ -436,7 +446,7 @@ class ProvidersWidget(QtWidgets.QWidget):
                 )
             else:
                 QtWidgets.QMessageBox.warning(
-                    self, "Error", f"API key format is invalid"
+                    self, "Error", "API key format is invalid"
                 )
                 self.api_key_status_label.setText("❌ Invalid format")
                 self.api_key_status_label.setStyleSheet(
@@ -446,7 +456,7 @@ class ProvidersWidget(QtWidgets.QWidget):
             # Basic format validation
             if self._basic_key_validation(provider_type, key):
                 QtWidgets.QMessageBox.information(
-                    self, "Success", f"API key format appears valid"
+                    self, "Success", "API key format appears valid"
                 )
                 self.api_key_status_label.setText("✅ Valid format")
                 self.api_key_status_label.setStyleSheet(
@@ -454,7 +464,7 @@ class ProvidersWidget(QtWidgets.QWidget):
                 )
             else:
                 QtWidgets.QMessageBox.warning(
-                    self, "Error", f"API key format is invalid"
+                    self, "Error", "API key format is invalid"
                 )
                 self.api_key_status_label.setText("❌ Invalid format")
                 self.api_key_status_label.setStyleSheet(
@@ -604,6 +614,7 @@ class ProvidersWidget(QtWidgets.QWidget):
 
         # Store default providers in a class attribute
         self.default_providers = default_providers
+        print(f"DEBUG: Created {len(self.default_providers)} default providers")
 
         # Set Anthropic as the default provider if no default is set
         if self.config_manager:
@@ -1273,31 +1284,71 @@ class ProvidersWidget(QtWidgets.QWidget):
 
     def _refresh_providers(self):
         """Refresh providers table."""
+        print("DEBUG: Refreshing providers table...")
         self.providers_table.setRowCount(0)
 
         # Add default providers first
         if hasattr(self, "default_providers"):
+            print(f"DEBUG: Adding {len(self.default_providers)} default providers")
             for provider_info in self.default_providers:
                 self._add_default_provider_to_table(provider_info)
+        else:
+            print("DEBUG: No default_providers attribute found")
 
         # Add custom providers
         if hasattr(self, "custom_providers"):
+            print(f"DEBUG: Adding {len(self.custom_providers)} custom providers")
             for provider_info in self.custom_providers:
                 if not self._provider_in_table(provider_info["name"]):
                     self._add_default_provider_to_table(provider_info)
+        else:
+            print("DEBUG: No custom_providers attribute found")
 
         # Add providers from AI manager if available
         if self.ai_manager:
+            print(f"DEBUG: AI manager has {len(self.ai_manager.providers)} providers: {list(self.ai_manager.providers.keys())}")
             for provider_name, provider in self.ai_manager.providers.items():
                 if not self._provider_in_table(provider_name):
                     self._add_provider_to_table(provider_name, provider)
+        else:
+            print("DEBUG: No AI manager available")
 
         # Also update from provider service if available
         if self.provider_service:
             providers = self.provider_service.get_all_providers()
+            print(f"DEBUG: Provider service has {len(providers)} providers: {list(providers.keys())}")
             for provider_name, provider_info in providers.items():
                 if not self._provider_in_table(provider_name):
                     self._add_provider_info_to_table(provider_name, provider_info)
+        else:
+            print("DEBUG: No provider service available")
+            
+        final_row_count = self.providers_table.rowCount()
+        print(f"DEBUG: Final provider table has {final_row_count} rows")
+        
+        # Fallback: if no providers are shown, add at least the default ones manually
+        if final_row_count == 0:
+            print("DEBUG: No providers in table, adding fallback default providers...")
+            fallback_providers = [
+                {
+                    "name": "Anthropic",
+                    "type": "anthropic", 
+                    "default_model": "claude-3-5-sonnet-20241022",
+                    "status": "Not configured"
+                },
+                {
+                    "name": "OpenAI",
+                    "type": "openai",
+                    "default_model": "gpt-4o-mini", 
+                    "status": "Not configured"
+                }
+            ]
+            
+            for provider_info in fallback_providers:
+                self._add_default_provider_to_table(provider_info)
+                
+            print(f"DEBUG: Added {len(fallback_providers)} fallback providers")
+            print(f"DEBUG: Table now has {self.providers_table.rowCount()} rows")
 
     def _add_default_provider_to_table(self, provider_info):
         """Add default provider to table."""
@@ -1438,14 +1489,29 @@ class ProvidersWidget(QtWidgets.QWidget):
 
     def _load_configuration(self):
         """Load configuration from config manager."""
+        print("DEBUG: Loading configuration...")
         if not self.config_manager:
-            return
+            print("DEBUG: No config manager available")
+            
+        # Ensure default providers are created if not already done
+        if not hasattr(self, "default_providers"):
+            print("DEBUG: Default providers not found, creating them...")
+            self._create_default_providers()
 
         # Refresh providers to show current state
+        print("DEBUG: Refreshing providers from _load_configuration...")
         self._refresh_providers()
 
+    def showEvent(self, event):
+        """Handle show event to refresh providers when widget becomes visible."""
+        super().showEvent(event)
+        print("DEBUG: ProvidersWidget shown, refreshing providers...")
+        # Refresh providers when the widget becomes visible
+        self._refresh_providers()
+        
     def set_provider_service(self, provider_service):
         """Set the provider integration service."""
+        print(f"DEBUG: Setting provider service: {provider_service}")
         self.provider_service = provider_service
 
         if provider_service:
@@ -1461,6 +1527,7 @@ class ProvidersWidget(QtWidgets.QWidget):
             provider_service.providers_updated.connect(self._refresh_providers)
 
             # Initial refresh
+            print("DEBUG: Provider service set, doing initial refresh...")
             self._refresh_providers()
 
     def _on_provider_status_changed(

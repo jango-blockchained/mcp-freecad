@@ -40,6 +40,18 @@ class DependencyChecker:
                 importlib.import_module(import_name)
             except ImportError:
                 missing.append(package_spec)
+            except (TypeError, AttributeError) as e:
+                # Handle Protocol-related errors and other type inspection issues
+                if "Protocols" in str(e) or "issubclass" in str(e):
+                    # Package is installed but has Protocol/typing issues, skip it
+                    continue
+                else:
+                    # Some other error, treat as missing
+                    missing.append(package_spec)
+            except Exception as e:
+                # Handle any other unexpected errors during import
+                print(f"Warning: Unexpected error checking {package_spec}: {e}")
+                missing.append(package_spec)
         return missing
 
     def install_dependencies(self, dependencies_to_install: list[str]) -> tuple[list[str], list[str]]:

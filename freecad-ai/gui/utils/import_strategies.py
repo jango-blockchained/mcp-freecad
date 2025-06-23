@@ -9,8 +9,14 @@ def try_import_ai_manager():
     """Try to import AIManager with fallback strategies."""
     try:
         from ...ai.ai_manager import AIManager
-        return AIManager()
-    except ImportError:
+        ai_manager = AIManager()
+        print(f"DEBUG: Successfully imported AIManager with {len(ai_manager.providers)} providers")
+        return ai_manager
+    except ImportError as e:
+        print(f"DEBUG: Failed to import AIManager: {e}")
+        return None
+    except Exception as e:
+        print(f"DEBUG: Error creating AIManager: {e}")
         return None
 
 
