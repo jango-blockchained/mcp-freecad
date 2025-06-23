@@ -518,7 +518,6 @@ class EnhancedConversationWidget(QtWidgets.QWidget):
         total = len(self.search_matches)
         self.search_info_label.setText(f"Search: {current}/{total}")
         
-        # TODO: Implement actual highlighting in the text browser
         # Highlight current search match
         if self.search_matches:
             cursor = self.conversation_display.textCursor()

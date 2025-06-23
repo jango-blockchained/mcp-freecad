@@ -1027,13 +1027,171 @@ class EnhancedAgentControlWidget(QtWidgets.QWidget):
     # Additional methods for enhanced functionality
     def _filter_queue_by_priority(self, priority):
         """Filter queue display by priority."""
-        # TODO: Implement queue filtering
         print(f"Filter queue by priority: {priority}")
+        
+        # Show/hide items based on priority filter
+        for i in range(self.queue_list.topLevelItemCount()):
+            item = self.queue_list.topLevelItem(i)
+            if not item:
+                continue
+                
+            # Extract priority from item text
+            item_text = item.text(0)  # First column contains task text
+            item_priority = "Medium"  # Default priority
+            
+            # Check if priority is indicated in brackets
+            if " [" in item_text and item_text.endswith("]"):
+                priority_start = item_text.rfind(" [")
+                item_priority = item_text[priority_start + 2:-1]
+            
+            # Show/hide based on filter
+            if priority == "All":
+                item.setHidden(False)
+            else:
+                item.setHidden(item_priority != priority)
+        
+        # Update queue statistics after filtering
+        self._update_queue_info()
         
     def _edit_queue_item(self):
         """Edit selected queue item."""
-        # TODO: Implement queue item editing
         print("Edit queue item called")
+        
+        # Get current selection
+        current_item = self.queue_list.currentItem()
+        if not current_item:
+            QtWidgets.QMessageBox.information(
+                self, "No Selection", "Please select a task to edit."
+            )
+            return
+        
+        # Extract current task information
+        current_text = current_item.text(0) if hasattr(current_item, 'text') else str(current_item.text())
+        current_priority = "Medium"  # Default
+        current_steps = current_item.text(2) if hasattr(current_item, 'text') and current_item.columnCount() > 2 else "1"
+        current_time = current_item.text(3) if hasattr(current_item, 'text') and current_item.columnCount() > 3 else "5 min"
+        
+        # Extract priority if present
+        if " [" in current_text and current_text.endswith("]"):
+            priority_start = current_text.rfind(" [")
+            current_priority = current_text[priority_start + 2:-1]
+            current_text = current_text[:priority_start]
+        
+        # Create edit dialog
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle("Edit Queue Item")
+        dialog.setMinimumSize(500, 300)
+        
+        layout = QtWidgets.QFormLayout(dialog)
+        
+        # Task description
+        task_edit = QtWidgets.QTextEdit()
+        task_edit.setPlainText(current_text)
+        task_edit.setMaximumHeight(100)
+        layout.addRow("Task Description:", task_edit)
+        
+        # Priority
+        priority_combo = QtWidgets.QComboBox()
+        priority_combo.addItems(["High", "Medium", "Low"])
+        priority_combo.setCurrentText(current_priority)
+        layout.addRow("Priority:", priority_combo)
+        
+        # Estimated steps
+        steps_spin = QtWidgets.QSpinBox()
+        steps_spin.setRange(1, 100)
+        steps_spin.setValue(int(current_steps.split()[0]) if current_steps.split()[0].isdigit() else 1)
+        layout.addRow("Estimated Steps:", steps_spin)
+        
+        # Estimated time
+        time_edit = QtWidgets.QLineEdit(current_time)
+        layout.addRow("Estimated Time:", time_edit)
+        
+        # Risk level
+        risk_combo = QtWidgets.QComboBox()
+        risk_combo.addItems(["Low", "Medium", "High"])
+        risk_combo.setCurrentText("Medium")  # Default
+        layout.addRow("Risk Level:", risk_combo)
+        
+        # Buttons
+        button_layout = QtWidgets.QHBoxLayout()
+        save_btn = QtWidgets.QPushButton("Save")
+        cancel_btn = QtWidgets.QPushButton("Cancel")
+        
+        save_btn.clicked.connect(dialog.accept)
+        cancel_btn.clicked.connect(dialog.reject)
+        
+        button_layout.addWidget(save_btn)
+        button_layout.addWidget(cancel_btn)
+        
+        button_widget = QtWidgets.QWidget()
+        button_widget.setLayout(button_layout)
+        layout.addRow(button_widget)
+        
+        # Execute dialog
+        if dialog.exec_() == QtWidgets.QDialog.Accepted:
+            # Update the queue item with new information
+            new_text = task_edit.toPlainText().strip()
+            new_priority = priority_combo.currentText()
+            new_steps = str(steps_spin.value())
+            new_time = time_edit.text().strip()
+            new_risk = risk_combo.currentText()
+            
+            # Update item text with priority
+            display_text = f"{new_text} [{new_priority}]"
+            
+            # Update tree widget columns
+            if hasattr(current_item, 'setText'):
+                if hasattr(current_item, 'columnCount'):
+                    # Tree widget item
+                    current_item.setText(0, display_text)
+                    current_item.setText(1, new_priority)
+                    current_item.setText(2, f"{new_steps} steps")
+                    current_item.setText(3, new_time)
+                    current_item.setText(4, new_risk)
+                else:
+                    # List widget item
+                    current_item.setText(display_text)
+            
+            # Set background color based on priority
+            if new_priority == "High":
+                current_item.setBackground(0, QtGui.QBrush(QtCore.Qt.red))
+            elif new_priority == "Medium":
+                current_item.setBackground(0, QtGui.QBrush(QtCore.Qt.yellow))
+            else:  # Low
+                current_item.setBackground(0, QtGui.QBrush(QtCore.Qt.green))
+            
+            print(f"Queue item updated: {new_text} with priority {new_priority}")
+        
+    def _update_queue_info(self):
+        """Update queue statistics display."""
+        total_items = self.queue_list.topLevelItemCount()
+        visible_items = 0
+        high_priority = 0
+        medium_priority = 0
+        low_priority = 0
+        
+        # Count visible items and priorities
+        for i in range(total_items):
+            item = self.queue_list.topLevelItem(i)
+            if item and not item.isHidden():
+                visible_items += 1
+                
+                # Count by priority
+                item_text = item.text(0)
+                if " [High]" in item_text:
+                    high_priority += 1
+                elif " [Low]" in item_text:
+                    low_priority += 1
+                else:
+                    medium_priority += 1
+        
+        # Update stats label
+        if hasattr(self, 'queue_stats_label'):
+            if visible_items != total_items:
+                stats_text = f"{visible_items}/{total_items} tasks (H:{high_priority} M:{medium_priority} L:{low_priority})"
+            else:
+                stats_text = f"{total_items} tasks (H:{high_priority} M:{medium_priority} L:{low_priority})"
+            self.queue_stats_label.setText(stats_text)
         
     def _remove_queue_item(self):
         """Remove selected queue item."""
