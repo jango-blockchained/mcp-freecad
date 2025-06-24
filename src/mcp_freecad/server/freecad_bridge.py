@@ -188,11 +188,14 @@ except Exception as e:
         script = """
 import json
 import FreeCAD
-print(json.dumps({
-    "version": FreeCAD.Version,
-    "build_date": FreeCAD.BuildDate,
+version = getattr(FreeCAD, "Version", "unknown")
+if callable(version):
+    version = version()
+version_info = {
+    "version": str(version),
     "success": True
-}))
+}
+print(json.dumps(version_info))
 """
 
         stdout, stderr = self.run_script(script)
