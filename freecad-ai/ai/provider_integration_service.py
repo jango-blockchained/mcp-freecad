@@ -430,6 +430,7 @@ class ProviderIntegrationService:
             "anthropic": "Anthropic",
             "openai": "OpenAI",
             "google": "Google",
+            "vertexai": "Google Vertex AI",
             "openrouter": "OpenRouter",
         }
         normalized = self._normalize_provider_name(provider_name)
@@ -527,6 +528,7 @@ class ProviderIntegrationService:
             "anthropic": "claude-4-20241120",
             "openai": "gpt-4o-mini",
             "google": "gemini-1.5-flash",
+            "vertexai": "gemini-1.5-pro",
             "openrouter": "anthropic/claude-3.5-sonnet",
         }
         return model_map.get(provider_name, "default-model")
@@ -544,6 +546,9 @@ class ProviderIntegrationService:
                 "anthropic": "anthropic",  # Use 'anthropic' consistently
                 "claude": "anthropic",  # Map 'claude' to 'anthropic' for backward compatibility
                 "google": "gemini",
+                "vertexai": "vertexai",
+                "google vertex ai": "vertexai",  # Map display name to type
+                "googlevertexai": "vertexai",    # Alternative mapping
                 "openrouter": "openrouter",
             }
 
@@ -925,6 +930,13 @@ class ProviderIntegrationService:
                 ],
                 "openai": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"],
                 "google": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"],
+                "vertexai": [
+                    "gemini-1.5-pro",
+                    "gemini-1.5-flash",
+                    "gemini-1.0-pro",
+                    "text-bison",
+                    "code-bison"
+                ],
                 "openrouter": [
                     "anthropic/claude-3.5-sonnet",
                     "openai/gpt-4o",

@@ -77,6 +77,14 @@ class ProviderSelectorWidget(QtWidgets.QWidget):
         # Services will be set via set_provider_service method
         pass
 
+    def showEvent(self, event):
+        """Handle show event to refresh providers when widget becomes visible."""
+        super().showEvent(event)
+        # Refresh providers when shown for the first time or if empty
+        if not self.available_providers:
+            print("ProviderSelector: Widget shown, refreshing providers...")
+            self._refresh_providers()
+
     def set_provider_service(self, provider_service):
         """Set the provider service instance."""
         self.provider_service = provider_service
@@ -116,20 +124,28 @@ class ProviderSelectorWidget(QtWidgets.QWidget):
 
     def refresh_on_show(self):
         """Refresh providers when widget becomes visible (e.g., tab activation)."""
-        if not self.available_providers and self.provider_service:
+        if not self.available_providers:
             print("ProviderSelector: Refreshing on show")
             self._refresh_providers()
 
     def _refresh_providers(self):
         """Refresh the list of available providers."""
+        print("ProviderSelector: Refreshing providers...")
+        
         if not self.provider_service:
+            print("ProviderSelector: No provider service available")
             self._update_status_indicator("error", "Provider service not available")
+            # Fall back to default providers if no service
+            self._load_fallback_providers()
             return
 
         try:
             # Get active providers from service
             active_providers = self.provider_service.get_active_providers()
             all_providers = self.provider_service.get_all_providers()
+            
+            print(f"ProviderSelector: Active providers: {list(active_providers.keys()) if active_providers else 'None'}")
+            print(f"ProviderSelector: All providers: {list(all_providers.keys()) if all_providers else 'None'}")
 
             # Update available providers dict
             self.available_providers = {}
@@ -139,9 +155,8 @@ class ProviderSelectorWidget(QtWidgets.QWidget):
             self.model_combo.clear()
 
             if not all_providers:
-                self.provider_combo.addItem("No providers configured")
-                self.model_combo.addItem("Configure providers first")
-                self._update_status_indicator("error", "No providers configured")
+                print("ProviderSelector: No providers from service, using fallback")
+                self._load_fallback_providers()
                 return
 
             # Add providers to dropdown
@@ -185,6 +200,61 @@ class ProviderSelectorWidget(QtWidgets.QWidget):
         except Exception as e:
             print(f"ProviderSelector: Error refreshing providers: {e}")
             self._update_status_indicator("error", f"Error: {str(e)}")
+            # Fall back to default providers on error
+            self._load_fallback_providers()
+
+    def _load_fallback_providers(self):
+        """Load fallback default providers when service is unavailable."""
+        print("ProviderSelector: Loading fallback providers")
+        
+        # Clear dropdowns
+        self.provider_combo.clear()
+        self.model_combo.clear()
+        
+        # Default providers that should always be available
+        fallback_providers = {
+            "Anthropic": {
+                "type": "anthropic",
+                "models": ["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022"],
+                "status": "inactive"
+            },
+            "OpenAI": {
+                "type": "openai", 
+                "models": ["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"],
+                "status": "inactive"
+            },
+            "Google": {
+                "type": "google",
+                "models": ["gemini-1.5-pro", "gemini-1.5-flash"],
+                "status": "inactive"
+            },
+            "Google Vertex AI": {
+                "type": "vertexai",
+                "models": ["gemini-1.5-pro", "gemini-1.5-flash", "text-bison"],
+                "status": "inactive"
+            },
+            "OpenRouter": {
+                "type": "openrouter",
+                "models": ["anthropic/claude-3.5-sonnet", "openai/gpt-4o"],
+                "status": "inactive"
+            }
+        }
+        
+        self.available_providers = {}
+        
+        for provider_name, provider_data in fallback_providers.items():
+            self.provider_combo.addItem(provider_name)
+            self.available_providers[provider_name] = {
+                "models": provider_data["models"],
+                "status": provider_data["status"],
+                "info": {"type": provider_data["type"]}
+            }
+        
+        # Select first provider as default
+        if self.provider_combo.count() > 0:
+            self.provider_combo.setCurrentIndex(0)
+            
+        self._update_status_indicator("warning", "Using default providers - configure in Providers tab")
 
     def _get_provider_models(self, provider_name, provider_info):
         """Get available models for a provider."""
@@ -217,6 +287,13 @@ class ProviderSelectorWidget(QtWidgets.QWidget):
                 ],
                 "openai": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"],
                 "google": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"],
+                "vertexai": [
+                    "gemini-1.5-pro",
+                    "gemini-1.5-flash",
+                    "gemini-1.0-pro",
+                    "text-bison",
+                    "code-bison"
+                ],
                 "openrouter": [
                     "anthropic/claude-3.5-sonnet",
                     "openai/gpt-4o",
@@ -298,11 +375,11 @@ class ProviderSelectorWidget(QtWidgets.QWidget):
                         )
                     else:
                         print(
-                            f"ProviderSelector: Failed to update model via provider service"
+                            "ProviderSelector: Failed to update model via provider service"
                         )
                 else:
                     print(
-                        f"ProviderSelector: Provider service doesn't support model updates"
+                        "ProviderSelector: Provider service doesn't support model updates"
                     )
             except Exception as e:
                 print(

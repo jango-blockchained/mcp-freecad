@@ -33,3 +33,4 @@ cryptography>=3.4.0  # Install with: pip install cryptography
 anthropic>=0.3.0
 openai>=1.0.0
 google-generativeai>=0.3.0
+google-cloud-aiplatform>=1.38.0  # For Vertex AI

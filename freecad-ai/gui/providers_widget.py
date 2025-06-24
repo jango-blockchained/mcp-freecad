@@ -565,6 +565,7 @@ class ProvidersWidget(QtWidgets.QWidget):
             "anthropic": "claude-4-20241120",
             "openai": "gpt-4o-mini",
             "google": "gemini-1.5-flash",
+            "vertexai": "gemini-1.5-pro",
             "openrouter": "anthropic/claude-3.5-sonnet",
         }
         return model_map.get(provider_type, "default-model")
@@ -596,6 +597,19 @@ class ProvidersWidget(QtWidgets.QWidget):
                 "type": "google",
                 "models": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"],
                 "default_model": "gemini-1.5-flash",
+                "status": "Not configured",
+            },
+            {
+                "name": "Google Vertex AI",
+                "type": "vertexai",
+                "models": [
+                    "gemini-1.5-pro",
+                    "gemini-1.5-flash",
+                    "gemini-1.0-pro",
+                    "text-bison",
+                    "code-bison"
+                ],
+                "default_model": "gemini-1.5-pro",
                 "status": "Not configured",
             },
             {
@@ -712,6 +726,13 @@ class ProvidersWidget(QtWidgets.QWidget):
                 "claude-3-5-haiku-20241022",
             ],
             "google": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"],
+            "vertexai": [
+                "gemini-1.5-pro",
+                "gemini-1.5-flash", 
+                "gemini-1.0-pro",
+                "text-bison",
+                "code-bison"
+            ],
             "openrouter": [
                 "anthropic/claude-3.5-sonnet",
                 "openai/gpt-4o",
@@ -1340,6 +1361,12 @@ class ProvidersWidget(QtWidgets.QWidget):
                     "name": "OpenAI",
                     "type": "openai",
                     "default_model": "gpt-4o-mini", 
+                    "status": "Not configured"
+                },
+                {
+                    "name": "Google Vertex AI",
+                    "type": "vertexai",
+                    "default_model": "gemini-1.5-pro",
                     "status": "Not configured"
                 }
             ]

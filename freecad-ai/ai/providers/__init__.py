@@ -460,6 +460,11 @@ def get_gemini_provider():
     return _lazy_import_provider("Gemini", "gemini_provider", "GeminiProvider")
 
 
+def get_vertexai_provider():
+    """Get Vertex AI provider class with lazy loading and dependency management."""
+    return _lazy_import_provider("VertexAI", "vertexai_provider", "VertexAIProvider")
+
+
 def get_openrouter_provider():
     """Get OpenRouter provider class with lazy loading and dependency management."""
     return _lazy_import_provider(
@@ -476,6 +481,7 @@ def get_available_providers() -> Dict[str, Any]:
     providers = {
         "Claude": get_claude_provider(),
         "Gemini": get_gemini_provider(),
+        "VertexAI": get_vertexai_provider(),
         "OpenRouter": get_openrouter_provider(),
     }
 
@@ -645,6 +651,7 @@ def install_missing_dependencies():
 # but don't fail if dependencies are missing
 ClaudeProvider = get_claude_provider()
 GeminiProvider = get_gemini_provider()
+VertexAIProvider = get_vertexai_provider()
 OpenRouterProvider = get_openrouter_provider()
 
 # Import MCP integrated provider directly (it has no external dependencies)
@@ -668,6 +675,7 @@ __all__ = [
     "MessageRole",
     "get_claude_provider",
     "get_gemini_provider",
+    "get_vertexai_provider",
     "get_openrouter_provider",
     "get_available_providers",
     "get_provider_errors",

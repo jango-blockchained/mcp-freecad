@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional
 from ai.providers.base_provider import BaseAIProvider as AIProvider
 from ai.providers.claude_provider import ClaudeProvider
 from ai.providers.gemini_provider import GeminiProvider
+from ai.providers.vertexai_provider import VertexAIProvider
 from ai.providers.openrouter_provider import OpenRouterProvider
 
 
@@ -48,6 +49,15 @@ class AIManager:
                     provider = GeminiProvider(api_key, model, **provider_kwargs)
                 else:
                     provider = GeminiProvider(api_key, **provider_kwargs)
+            elif normalized_type == "vertexai":
+                # Vertex AI needs additional configuration (project_id, location)
+                project_id = provider_kwargs.get("project_id")
+                location = provider_kwargs.get("location", "us-central1")
+                if model:
+                    provider = VertexAIProvider(api_key, project_id, location)
+                    provider.model = model
+                else:
+                    provider = VertexAIProvider(api_key, project_id, location)
             elif normalized_type == "openrouter":
                 if model:
                     provider = OpenRouterProvider(api_key, model, **provider_kwargs)

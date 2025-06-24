@@ -91,6 +91,19 @@ class FallbackConfigManager:
             return key.startswith("sk-ant-") and len(key) > 20
         elif provider == "google":
             return len(key) > 20
+        elif provider == "vertexai":
+            # Vertex AI can use service account JSON keys or API keys
+            # Service account keys are JSON format, API keys are strings
+            if key.startswith("{") and key.endswith("}"):
+                # Looks like JSON service account key
+                try:
+                    json.loads(key)
+                    return True
+                except json.JSONDecodeError:
+                    return False
+            else:
+                # Regular API key format
+                return len(key) > 20
         return len(key) > 10
 
     def list_api_keys(self):

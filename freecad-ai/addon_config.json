@@ -39,6 +39,13 @@
       "temperature": 0.7,
       "timeout": 30,
       "max_tokens": 4000
+    },
+    "Google Vertex AI": {
+      "enabled": true,
+      "model": "gemini-1.5-pro",
+      "temperature": 0.7,
+      "timeout": 30,
+      "max_tokens": 4000
     }
   },
   "ui_settings": {
