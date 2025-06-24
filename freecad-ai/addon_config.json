@@ -49,7 +49,7 @@
     }
   },
   "ui_settings": {
-    "theme": "default",
+    "theme": "dark",
     "auto_save": false,
     "log_level": "DEBUG",
     "show_tooltips": true,
