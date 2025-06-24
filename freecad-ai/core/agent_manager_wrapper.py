@@ -22,25 +22,44 @@ class AgentManagerWrapper:
         """Initialize the agent manager with comprehensive error handling and timeout."""
         def target():
             try:
-                agent_manager_imported = False
-                # Try to import AIManager from ai/ai_manager.py
+                # Import both the AI Manager and the core Agent Manager
+                ai_manager = None
+                
+                # First, try to import and create AIManager
                 try:
                     addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                     ai_dir = os.path.join(addon_dir, "ai")
                     if ai_dir not in sys.path:
                         sys.path.insert(0, ai_dir)
-                    from ai_manager import AIManager
-                    agent_manager_imported = True
-                    logging.info("AIManager imported from ai/ai_manager.py")
+                    from agent_manager import AIManager
+                    ai_manager = AIManager()
+                    logging.info("AIManager imported and created from ai/agent_manager.py")
                 except Exception as e:
-                    logging.error(f"Failed to import AIManager: {e}")
+                    logging.error(f"Failed to import/create AIManager: {e}")
                     logging.debug(traceback.format_exc())
-                if agent_manager_imported:
-                    self.agent_manager = AIManager()
-                    logging.info("AIManager instance created successfully")
-                else:
-                    logging.warning("Could not import AIManager - using fallback")
-                    self.agent_manager = None
+                
+                # Then, try to import and create the core AgentManager
+                try:
+                    from .agent_manager import AgentManager
+                    self.agent_manager = AgentManager()
+                    logging.info("Core AgentManager created successfully")
+                    
+                    # Connect the AI Manager to the core Agent Manager if available
+                    if ai_manager and hasattr(self.agent_manager, 'set_ai_provider'):
+                        # Use the AI Manager as the AI provider for the core Agent Manager
+                        self.agent_manager.set_ai_provider(ai_manager)
+                        logging.info("AI Manager connected to core Agent Manager")
+                    
+                except Exception as e:
+                    logging.error(f"Failed to create core AgentManager: {e}")
+                    logging.debug(traceback.format_exc())
+                    # Fallback to just the AI Manager if core Agent Manager fails
+                    if ai_manager:
+                        self.agent_manager = ai_manager
+                        logging.info("Using AI Manager as fallback")
+                    else:
+                        self.agent_manager = None
+                        
             except Exception as e:
                 logging.error(f"Agent manager initialization failed: {e}")
                 logging.error(f"Traceback: {traceback.format_exc()}")
