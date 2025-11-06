@@ -82,54 +82,92 @@ class ProvidersWidget(QtWidgets.QWidget):
             print("DEBUG: ConfigManager loaded successfully")
 
     def _setup_ui(self):
-        """Setup the user interface."""
+        """Setup the user interface with modern styling."""
+        # Import theme system
+        try:
+            from .theme_system import get_theme_manager, get_current_color_scheme
+            theme_manager = get_theme_manager()
+            colors = get_current_color_scheme()
+        except ImportError:
+            theme_manager = None
+            colors = None
+            
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setSpacing(10)
-        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(16)
+        layout.setContentsMargins(16, 16, 16, 16)
 
-        # Create sections with flexible layout
-        self._create_providers_section(layout)
-        self._create_provider_config_section(layout)
-        self._create_control_buttons(layout)
+        # Create sections with modern layout
+        self._create_providers_section(layout, theme_manager, colors)
+        self._create_provider_config_section(layout, theme_manager, colors)
+        self._create_control_buttons(layout, theme_manager, colors)
 
         # Add stretch at the bottom to prevent content from stretching
         layout.addStretch()
 
-    def _create_providers_section(self, layout):
-        """Create providers list and management section."""
+    def _create_providers_section(self, layout, theme_manager=None, colors=None):
+        """Create providers list and management section with modern styling."""
         providers_group = QtWidgets.QGroupBox("AI Providers")
         providers_group.setSizePolicy(
             QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed
         )
+        
+        # Apply modern styling to group box
+        if theme_manager:
+            providers_group.setStyleSheet(theme_manager.stylesheet.get_groupbox_style())
+            
         providers_layout = QtWidgets.QVBoxLayout(providers_group)
+        providers_layout.setSpacing(12)
 
         # Provider controls
         controls_layout = QtWidgets.QHBoxLayout()
-
-        controls_layout.addWidget(QtWidgets.QLabel("Active Providers:"))
+        
+        label = QtWidgets.QLabel("Active Providers:")
+        if colors:
+            label.setStyleSheet(f"color: {colors.get_color('text_secondary')}; font-weight: 500;")
+        controls_layout.addWidget(label)
 
         self.add_provider_btn = QtWidgets.QPushButton("Add Provider")
-        self.add_provider_btn.setStyleSheet(
-            "QPushButton { background-color: #4CAF50; color: white; padding: 6px; }"
-        )
+        self.add_provider_btn.setObjectName("add_provider_success")
+        if theme_manager:
+            self.add_provider_btn.setStyleSheet(theme_manager.stylesheet.get_button_style("success"))
         self.add_provider_btn.clicked.connect(self._add_provider)
         controls_layout.addWidget(self.add_provider_btn)
 
         self.remove_provider_btn = QtWidgets.QPushButton("Remove")
-        self.remove_provider_btn.setStyleSheet(
-            "QPushButton { background-color: #f44336; color: white; padding: 6px; }"
-        )
+        self.remove_provider_btn.setObjectName("remove_provider_danger")
+        if theme_manager:
+            self.remove_provider_btn.setStyleSheet(theme_manager.stylesheet.get_button_style("danger"))
         self.remove_provider_btn.clicked.connect(self._remove_provider)
         controls_layout.addWidget(self.remove_provider_btn)
 
         controls_layout.addStretch()
         providers_layout.addLayout(controls_layout)
 
-        # Provider table with flexible sizing
+        # Provider table with modern styling
         self.providers_table = QtWidgets.QTableWidget(0, 5)
         self.providers_table.setHorizontalHeaderLabels(
             ["Name", "Type", "Model", "Status", "Default"]
         )
+        
+        # Apply modern table styling
+        if colors:
+            self.providers_table.setStyleSheet(f"""
+                QTableWidget {{
+                    background-color: {colors.get_color("background_primary")};
+                    border: 1px solid {colors.get_color("border_light")};
+                    border-radius: 8px;
+                    gridline-color: {colors.get_color("divider")};
+                    selection-background-color: {colors.get_color("primary_container")};
+                    selection-color: {colors.get_color("on_primary_container")};
+                }}
+                QHeaderView::section {{
+                    background-color: {colors.get_color("background_secondary")};
+                    color: {colors.get_color("text_primary")};
+                    padding: 8px;
+                    border: none;
+                    font-weight: 600;
+                }}
+            """)
 
         # Make table flexible
         header = self.providers_table.horizontalHeader()
@@ -160,40 +198,59 @@ class ProvidersWidget(QtWidgets.QWidget):
 
         layout.addWidget(providers_group)
 
-    def _create_provider_config_section(self, layout):
-        """Create integrated provider configuration and API key section."""
+    def _create_provider_config_section(self, layout, theme_manager=None, colors=None):
+        """Create integrated provider configuration and API key section with modern styling."""
         config_group = QtWidgets.QGroupBox("Provider Configuration")
         config_group.setSizePolicy(
             QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed
         )
+        
+        # Apply modern styling
+        if theme_manager:
+            config_group.setStyleSheet(theme_manager.stylesheet.get_groupbox_style())
+            
         config_layout = QtWidgets.QVBoxLayout(config_group)
+        config_layout.setSpacing(12)
 
-        # Provider selection
+        # Provider selection with modern chip style
         selection_layout = QtWidgets.QHBoxLayout()
-        selection_layout.addWidget(QtWidgets.QLabel("Selected Provider:"))
+        label = QtWidgets.QLabel("Selected Provider:")
+        if colors:
+            label.setStyleSheet(f"color: {colors.get_color('text_secondary')}; font-weight: 500;")
+        selection_layout.addWidget(label)
+        
         self.selected_provider_label = QtWidgets.QLabel("None selected")
-        self.selected_provider_label.setStyleSheet("font-weight: bold; color: #2196F3;")
+        if theme_manager:
+            self.selected_provider_label.setStyleSheet(theme_manager.stylesheet.get_chip_style("primary"))
+        else:
+            self.selected_provider_label.setStyleSheet("font-weight: 500; color: #0061a6; padding: 4px 12px; background-color: #d1e4ff; border-radius: 16px;")
         selection_layout.addWidget(self.selected_provider_label)
         selection_layout.addStretch()
         config_layout.addLayout(selection_layout)
 
         # Create tabbed interface for better organization
         self.config_tabs = QtWidgets.QTabWidget()
+        if theme_manager:
+            self.config_tabs.setStyleSheet(theme_manager.stylesheet.get_tab_style())
 
         # Basic Configuration Tab
         basic_tab = QtWidgets.QWidget()
         basic_layout = QtWidgets.QFormLayout(basic_tab)
+        basic_layout.setSpacing(12)
+        basic_layout.setLabelAlignment(QtCore.Qt.AlignRight)
 
         # Model selection
         self.model_combo = QtWidgets.QComboBox()
         self.model_combo.setMinimumWidth(200)
+        if theme_manager:
+            self.model_combo.setStyleSheet(theme_manager.stylesheet.get_combobox_style())
         self.model_combo.currentTextChanged.connect(self._on_model_changed)
         basic_layout.addRow("Model:", self.model_combo)
 
         # Configuration parameters in a grid for better space usage
         params_widget = QtWidgets.QWidget()
         params_layout = QtWidgets.QGridLayout(params_widget)
-        params_layout.setSpacing(10)
+        params_layout.setSpacing(16)
 
         # Temperature
         params_layout.addWidget(QtWidgets.QLabel("Temperature:"), 0, 0)
@@ -201,6 +258,15 @@ class ProvidersWidget(QtWidgets.QWidget):
         self.temperature_spin.setRange(0.0, 2.0)
         self.temperature_spin.setSingleStep(0.1)
         self.temperature_spin.setValue(0.7)
+        if colors:
+            self.temperature_spin.setStyleSheet(f"""
+                QDoubleSpinBox {{
+                    padding: 8px;
+                    border: 1px solid {colors.get_color("border")};
+                    border-radius: 8px;
+                    background-color: {colors.get_color("background_primary")};
+                }}
+            """)
         self.temperature_spin.valueChanged.connect(self._on_config_changed)
         params_layout.addWidget(self.temperature_spin, 0, 1)
 
@@ -209,6 +275,15 @@ class ProvidersWidget(QtWidgets.QWidget):
         self.max_tokens_spin = QtWidgets.QSpinBox()
         self.max_tokens_spin.setRange(100, 8192)
         self.max_tokens_spin.setValue(4096)
+        if colors:
+            self.max_tokens_spin.setStyleSheet(f"""
+                QSpinBox {{
+                    padding: 8px;
+                    border: 1px solid {colors.get_color("border")};
+                    border-radius: 8px;
+                    background-color: {colors.get_color("background_primary")};
+                }}
+            """)
         self.max_tokens_spin.valueChanged.connect(self._on_config_changed)
         params_layout.addWidget(self.max_tokens_spin, 0, 3)
 
@@ -250,12 +325,16 @@ class ProvidersWidget(QtWidgets.QWidget):
         self.api_key_input = QtWidgets.QLineEdit()
         self.api_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
         self.api_key_input.setPlaceholderText("Enter API key for selected provider...")
+        if theme_manager:
+            self.api_key_input.setStyleSheet(theme_manager.stylesheet.get_input_style())
         self.api_key_input.textChanged.connect(self._on_api_key_changed)
         api_key_layout.addWidget(self.api_key_input)
 
         self.api_key_show_btn = QtWidgets.QPushButton("👁")
-        self.api_key_show_btn.setMaximumWidth(30)
+        self.api_key_show_btn.setMaximumWidth(40)
         self.api_key_show_btn.setCheckable(True)
+        if theme_manager:
+            self.api_key_show_btn.setStyleSheet(theme_manager.stylesheet.get_button_style("primary"))
         self.api_key_show_btn.clicked.connect(
             lambda: self._toggle_password_visibility(
                 self.api_key_input, self.api_key_show_btn
@@ -264,10 +343,9 @@ class ProvidersWidget(QtWidgets.QWidget):
         api_key_layout.addWidget(self.api_key_show_btn)
 
         self.api_key_test_btn = QtWidgets.QPushButton("Test")
-        self.api_key_test_btn.setMaximumWidth(60)
-        self.api_key_test_btn.setStyleSheet(
-            "QPushButton { background-color: #2196F3; color: white; padding: 4px; }"
-        )
+        self.api_key_test_btn.setMaximumWidth(80)
+        if theme_manager:
+            self.api_key_test_btn.setStyleSheet(theme_manager.stylesheet.get_button_style("primary"))
         self.api_key_test_btn.clicked.connect(self._test_current_api_key)
         api_key_layout.addWidget(self.api_key_test_btn)
 
@@ -275,9 +353,16 @@ class ProvidersWidget(QtWidgets.QWidget):
 
         # API Key status
         self.api_key_status_label = QtWidgets.QLabel("")
-        self.api_key_status_label.setStyleSheet(
-            "color: #666; font-size: 10px; padding: 2px;"
-        )
+        if colors:
+            self.api_key_status_label.setStyleSheet(f"""
+                color: {colors.get_color("text_secondary")}; 
+                font-size: 11px; 
+                padding: 4px;
+            """)
+        else:
+            self.api_key_status_label.setStyleSheet(
+                "color: #666; font-size: 11px; padding: 4px;"
+            )
         api_layout.addRow("Status:", self.api_key_status_label)
 
         self.config_tabs.addTab(api_tab, "API Key")
@@ -288,17 +373,15 @@ class ProvidersWidget(QtWidgets.QWidget):
         actions_layout = QtWidgets.QHBoxLayout()
 
         self.test_connection_btn = QtWidgets.QPushButton("Test Connection")
-        self.test_connection_btn.setStyleSheet(
-            "QPushButton { background-color: #2196F3; color: white; padding: 8px; }"
-        )
+        if theme_manager:
+            self.test_connection_btn.setStyleSheet(theme_manager.stylesheet.get_button_style("primary"))
         self.test_connection_btn.clicked.connect(self._test_connection)
         actions_layout.addWidget(self.test_connection_btn)
 
         # Retry service connection button for debugging
         self.retry_service_btn = QtWidgets.QPushButton("Retry Service")
-        self.retry_service_btn.setStyleSheet(
-            "QPushButton { background-color: #FF9800; color: white; padding: 8px; }"
-        )
+        if theme_manager:
+            self.retry_service_btn.setStyleSheet(theme_manager.stylesheet.get_button_style("warning"))
         self.retry_service_btn.setToolTip("Try to reconnect to provider service")
         self.retry_service_btn.clicked.connect(self._retry_provider_service)
         actions_layout.addWidget(self.retry_service_btn)
@@ -308,16 +391,30 @@ class ProvidersWidget(QtWidgets.QWidget):
 
         # Status label for configuration changes
         self.config_status_label = QtWidgets.QLabel("")
-        self.config_status_label.setStyleSheet(
-            "color: #4CAF50; font-size: 10px; padding: 2px;"
-        )
+        if colors:
+            self.config_status_label.setStyleSheet(f"""
+                color: {colors.get_color("success")}; 
+                font-size: 11px; 
+                padding: 4px;
+            """)
+        else:
+            self.config_status_label.setStyleSheet(
+                "color: #006e1c; font-size: 11px; padding: 4px;"
+            )
         config_layout.addWidget(self.config_status_label)
 
         # Config manager status
         self.config_manager_status = QtWidgets.QLabel("")
-        self.config_manager_status.setStyleSheet(
-            "color: #666; font-size: 9px; padding: 2px;"
-        )
+        if colors:
+            self.config_manager_status.setStyleSheet(f"""
+                color: {colors.get_color("text_muted")}; 
+                font-size: 10px; 
+                padding: 4px;
+            """)
+        else:
+            self.config_manager_status.setStyleSheet(
+                "color: #73777f; font-size: 10px; padding: 4px;"
+            )
         config_layout.addWidget(self.config_manager_status)
 
         # Update config manager status
@@ -325,36 +422,35 @@ class ProvidersWidget(QtWidgets.QWidget):
 
         layout.addWidget(config_group)
 
-    def _create_control_buttons(self, layout):
-        """Create control buttons."""
+    def _create_control_buttons(self, layout, theme_manager=None, colors=None):
+        """Create control buttons with modern styling."""
         button_layout = QtWidgets.QHBoxLayout()
 
         self.refresh_btn = QtWidgets.QPushButton("Refresh")
+        if theme_manager:
+            self.refresh_btn.setStyleSheet(theme_manager.stylesheet.get_button_style("primary"))
         self.refresh_btn.clicked.connect(self._refresh_providers)
         button_layout.addWidget(self.refresh_btn)
 
         button_layout.addStretch()
 
         self.save_config_btn = QtWidgets.QPushButton("Save Configuration")
-        self.save_config_btn.setStyleSheet(
-            "QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 8px; }"
-        )
+        if theme_manager:
+            self.save_config_btn.setStyleSheet(theme_manager.stylesheet.get_button_style("success"))
         self.save_config_btn.clicked.connect(self._save_configuration)
         button_layout.addWidget(self.save_config_btn)
 
         # Add debug button for troubleshooting
         self.debug_config_btn = QtWidgets.QPushButton("Debug Config")
-        self.debug_config_btn.setStyleSheet(
-            "QPushButton { background-color: #FF9800; color: white; padding: 6px; }"
-        )
+        if theme_manager:
+            self.debug_config_btn.setStyleSheet(theme_manager.stylesheet.get_button_style("warning"))
         self.debug_config_btn.clicked.connect(self._debug_configuration)
         button_layout.addWidget(self.debug_config_btn)
 
         # Add retry config manager button
         self.retry_config_btn = QtWidgets.QPushButton("Retry Config")
-        self.retry_config_btn.setStyleSheet(
-            "QPushButton { background-color: #9C27B0; color: white; padding: 6px; }"
-        )
+        if theme_manager:
+            self.retry_config_btn.setStyleSheet(theme_manager.stylesheet.get_button_style("warning"))
         self.retry_config_btn.clicked.connect(self._retry_config_manager)
         button_layout.addWidget(self.retry_config_btn)
 

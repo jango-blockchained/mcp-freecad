@@ -28,45 +28,72 @@ class ProviderSelectorWidget(QtWidgets.QWidget):
         self._setup_services()
 
     def _setup_ui(self):
-        """Setup the user interface."""
+        """Setup the user interface with modern styling."""
+        # Import theme system
+        try:
+            from .theme_system import get_theme_manager, get_current_color_scheme
+            theme_manager = get_theme_manager()
+            colors = get_current_color_scheme()
+        except ImportError:
+            theme_manager = None
+            colors = None
+            
         layout = QtWidgets.QHBoxLayout(self)
-        layout.setContentsMargins(5, 5, 5, 5)
-        layout.setSpacing(10)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(12)
 
         # Provider label
-        layout.addWidget(QtWidgets.QLabel("Provider:"))
+        provider_label = QtWidgets.QLabel("Provider:")
+        if colors:
+            provider_label.setStyleSheet(f"color: {colors.get_color('text_secondary')}; font-weight: 500;")
+        layout.addWidget(provider_label)
 
-        # Provider selection dropdown
+        # Provider selection dropdown with modern styling
         self.provider_combo = QtWidgets.QComboBox()
-        self.provider_combo.setMinimumWidth(120)
+        self.provider_combo.setMinimumWidth(140)
         self.provider_combo.setToolTip("Select AI provider")
+        if theme_manager:
+            self.provider_combo.setStyleSheet(theme_manager.stylesheet.get_combobox_style())
         self.provider_combo.currentTextChanged.connect(
             self._on_provider_selection_changed
         )
         layout.addWidget(self.provider_combo)
 
         # Model label
-        layout.addWidget(QtWidgets.QLabel("Model:"))
+        model_label = QtWidgets.QLabel("Model:")
+        if colors:
+            model_label.setStyleSheet(f"color: {colors.get_color('text_secondary')}; font-weight: 500;")
+        layout.addWidget(model_label)
 
-        # Model selection dropdown
+        # Model selection dropdown with modern styling
         self.model_combo = QtWidgets.QComboBox()
-        self.model_combo.setMinimumWidth(150)
+        self.model_combo.setMinimumWidth(180)
         self.model_combo.setToolTip("Select model for current provider")
+        if theme_manager:
+            self.model_combo.setStyleSheet(theme_manager.stylesheet.get_combobox_style())
         self.model_combo.currentTextChanged.connect(self._on_model_selection_changed)
         layout.addWidget(self.model_combo)
 
-        # Status indicator
+        # Status indicator with modern chip style
         self.status_label = QtWidgets.QLabel("●")
-        self.status_label.setFixedSize(20, 20)
+        self.status_label.setFixedSize(28, 28)
         self.status_label.setAlignment(QtCore.Qt.AlignCenter)
         self.status_label.setToolTip("Provider connection status")
+        if colors:
+            self.status_label.setStyleSheet(f"""
+                font-size: 16px;
+                border-radius: 14px;
+                background-color: {colors.get_color("background_secondary")};
+            """)
         self._update_status_indicator("unknown", "Checking...")
         layout.addWidget(self.status_label)
 
-        # Refresh button
+        # Refresh button with modern styling
         self.refresh_btn = QtWidgets.QPushButton("⟳")
-        self.refresh_btn.setFixedSize(25, 25)
+        self.refresh_btn.setFixedSize(36, 36)
         self.refresh_btn.setToolTip("Refresh providers")
+        if theme_manager:
+            self.refresh_btn.setStyleSheet(theme_manager.stylesheet.get_compact_button_style("primary"))
         self.refresh_btn.clicked.connect(self._on_refresh_clicked)
         layout.addWidget(self.refresh_btn)
 
@@ -444,18 +471,39 @@ class ProviderSelectorWidget(QtWidgets.QWidget):
         self.set_current_selection(provider_name, model_name)
 
     def _update_status_indicator(self, status, tooltip):
-        """Update the status indicator."""
-        status_colors = {
-            "connected": "#4CAF50",  # Green
-            "active": "#4CAF50",  # Green
-            "warning": "#FF9800",  # Orange
-            "inactive": "#FF9800",  # Orange
-            "error": "#f44336",  # Red
-            "unknown": "#9E9E9E",  # Gray
-        }
+        """Update the status indicator with modern styling."""
+        # Import theme colors
+        try:
+            from .theme_system import get_current_color_scheme
+            colors = get_current_color_scheme()
+            
+            status_colors = {
+                "connected": colors.get_color("status_connected"),
+                "active": colors.get_color("status_connected"),
+                "warning": colors.get_color("status_warning"),
+                "inactive": colors.get_color("status_warning"),
+                "error": colors.get_color("status_error"),
+                "unknown": colors.get_color("status_unknown"),
+            }
+        except ImportError:
+            # Fallback to Material Design 3 light theme colors
+            status_colors = {
+                "connected": "#006e1c",
+                "active": "#006e1c",
+                "warning": "#785900",
+                "inactive": "#785900",
+                "error": "#ba1a1a",
+                "unknown": "#73777f",
+            }
 
-        color = status_colors.get(status, "#9E9E9E")
-        self.status_label.setStyleSheet(f"color: {color}; font-weight: bold;")
+        color = status_colors.get(status, "#73777f")
+        self.status_label.setStyleSheet(f"""
+            color: {color}; 
+            font-weight: bold; 
+            font-size: 16px;
+            border-radius: 14px;
+            background-color: rgba(0, 0, 0, 0.05);
+        """)
         self.status_label.setToolTip(tooltip)
 
     def get_current_selection(self):

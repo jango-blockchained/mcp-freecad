@@ -277,29 +277,58 @@ class MCPMainWidget(QtWidgets.QDockWidget):
 
     @crash_safe_wrapper("ultra-minimal UI creation")
     def _create_ultra_minimal_ui(self):
-        """Create the absolute minimal UI - just clickable text."""
+        """Create the absolute minimal UI with modern styling."""
         try:
+            # Import theme system
+            try:
+                from .theme_system import get_current_color_scheme
+                colors = get_current_color_scheme()
+            except ImportError:
+                colors = None
+                
             self.main_widget = QtWidgets.QWidget()
             self.setWidget(self.main_widget)
             layout = QtWidgets.QVBoxLayout(self.main_widget)
-            layout.setContentsMargins(10, 10, 10, 10)
+            layout.setContentsMargins(16, 16, 16, 16)
+            layout.setSpacing(12)
+            
             title_label = QtWidgets.QLabel("🤖 FreeCAD AI")
-            title_label.setStyleSheet(
-                "font-weight: bold; font-size: 16px; margin-bottom: 10px;"
-            )
+            if colors:
+                title_label.setStyleSheet(f"""
+                    font-weight: 600; 
+                    font-size: 18px; 
+                    color: {colors.get_color("primary")};
+                    margin-bottom: 8px;
+                """)
+            else:
+                title_label.setStyleSheet(
+                    "font-weight: 600; font-size: 18px; margin-bottom: 8px;"
+                )
             layout.addWidget(title_label)
+            
             self.status_label = QtWidgets.QLabel(
                 "Click here to initialize\n\n"
                 "This minimal mode prevents crashes.\n"
                 "Full features load on demand."
             )
-            self.status_label.setStyleSheet(
-                "padding: 15px; "
-                "background-color: #e3f2fd; "
-                "border: 2px solid #2196f3; "
-                "border-radius: 8px; "
-                "font-size: 12px; "
-            )
+            if colors:
+                self.status_label.setStyleSheet(f"""
+                    padding: 20px;
+                    background-color: {colors.get_color("info_container")};
+                    color: {colors.get_color("on_primary_container")};
+                    border: none;
+                    border-radius: 12px;
+                    font-size: 13px;
+                    line-height: 1.5;
+                """)
+            else:
+                self.status_label.setStyleSheet(
+                    "padding: 20px; "
+                    "background-color: #d1e4ff; "
+                    "border: none; "
+                    "border-radius: 12px; "
+                    "font-size: 13px; "
+                )
             if hasattr(self.status_label, "mousePressEvent"):
                 original_mouse_event = self.status_label.mousePressEvent
 
@@ -329,24 +358,51 @@ class MCPMainWidget(QtWidgets.QDockWidget):
         if self._fully_initialized:
             return
         try:
+            # Import theme system
+            try:
+                from .theme_system import get_current_color_scheme
+                colors = get_current_color_scheme()
+            except ImportError:
+                colors = None
+                
             FreeCAD.Console.PrintMessage(
                 "FreeCAD AI: Starting simplified full initialization...\n"
             )
             if hasattr(self, "status_label") and self.status_label:
                 self.status_label.setText("Initializing full interface...")
-                self.status_label.setStyleSheet(
-                    "padding: 15px; background-color: #ffecb3; color: #f57c00; border-radius: 8px; "
-                    "font-size: 12px;"
-                )
+                if colors:
+                    self.status_label.setStyleSheet(f"""
+                        padding: 6px 16px; 
+                        background-color: {colors.get_color("warning_container")}; 
+                        color: {colors.get_color("on_warning_container")};
+                        border-radius: 16px; 
+                        font-size: 12px;
+                        font-weight: 500;
+                    """)
+                else:
+                    self.status_label.setStyleSheet(
+                        "padding: 6px 16px; background-color: #ffdea6; color: #261900; border-radius: 16px; "
+                        "font-size: 12px; font-weight: 500;"
+                    )
             self._init_services_safe()
             self._setup_full_ui_safe()
             self._connect_services_safe()
             self._fully_initialized = True
             if hasattr(self, "status_label") and self.status_label:
                 self.status_label.setText("Ready")
-                self.status_label.setStyleSheet(
-                    "padding: 2px 8px; background-color: #c8e6c9; color: #2e7d32; border-radius: 10px; font-size: 11px;"
-                )
+                if colors:
+                    self.status_label.setStyleSheet(f"""
+                        padding: 6px 16px; 
+                        background-color: {colors.get_color("success_container")}; 
+                        color: {colors.get_color("on_success_container")};
+                        border-radius: 16px; 
+                        font-size: 12px;
+                        font-weight: 500;
+                    """)
+                else:
+                    self.status_label.setStyleSheet(
+                        "padding: 6px 16px; background-color: #97f682; color: #002204; border-radius: 16px; font-size: 12px; font-weight: 500;"
+                    )
             FreeCAD.Console.PrintMessage(
                 "FreeCAD AI: Simplified initialization completed successfully\n"
             )
@@ -383,9 +439,20 @@ class MCPMainWidget(QtWidgets.QDockWidget):
 
     @crash_safe_wrapper("full UI setup")
     def _setup_full_ui_safe(self):
-        """Setup the full UI interface safely."""
+        """Setup the full UI interface safely with modern theme."""
         try:
             FreeCAD.Console.PrintMessage("FreeCAD AI: Setting up full UI safely...\n")
+            
+            # Import theme system
+            try:
+                from .theme_system import get_theme_manager, get_current_color_scheme
+                theme_manager = get_theme_manager()
+                colors = get_current_color_scheme()
+            except ImportError:
+                FreeCAD.Console.PrintWarning("FreeCAD AI: Theme system not available, using fallback\n")
+                theme_manager = None
+                colors = None
+            
             if self.main_widget:
                 old_layout = self.main_widget.layout()
                 if old_layout:
@@ -401,33 +468,59 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                     old_layout.deleteLater()
                     self.main_widget.setLayout(None)
 
-            # Create main layout
+            # Create main layout with modern spacing
             layout = QtWidgets.QVBoxLayout()
-            layout.setSpacing(2)
-            layout.setContentsMargins(2, 2, 2, 2)
+            layout.setSpacing(8)
+            layout.setContentsMargins(16, 16, 16, 16)
             self.main_widget.setLayout(layout)
 
-            # Set minimum sizes and styling
-            self.main_widget.setMinimumSize(400, 300)
-            self.main_widget.setStyleSheet("background: #e0f7fa;")
-            self.setMinimumWidth(400)
-            self.resize(600, 400)
+            # Set minimum sizes and modern styling
+            self.main_widget.setMinimumSize(450, 350)
+            if colors:
+                self.main_widget.setStyleSheet(f"""
+                    QWidget {{
+                        background-color: {colors.get_color("background_primary")};
+                        color: {colors.get_color("text_primary")};
+                    }}
+                """)
+            else:
+                self.main_widget.setStyleSheet("background: #fdfcff;")
+            self.setMinimumWidth(450)
+            self.resize(650, 500)
 
-            # Create header layout
+            # Create header layout with modern styling
             header_layout = QtWidgets.QHBoxLayout()
             header_label = QtWidgets.QLabel("🤖 FreeCAD AI")
-            header_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+            if colors:
+                header_label.setStyleSheet(f"""
+                    font-weight: 600; 
+                    font-size: 18px; 
+                    color: {colors.get_color("primary")};
+                    padding: 4px;
+                """)
+            else:
+                header_label.setStyleSheet("font-weight: 600; font-size: 18px; padding: 4px;")
             header_layout.addWidget(header_label)
             header_layout.addStretch()
 
             self.status_label = QtWidgets.QLabel("Setting up...")
-            self.status_label.setStyleSheet(
-                "padding: 2px 8px; background-color: #f0f0f0; border-radius: 10px; font-size: 11px;"
-            )
+            if colors:
+                self.status_label.setStyleSheet(f"""
+                    padding: 6px 16px; 
+                    background-color: {colors.get_color("secondary_container")}; 
+                    color: {colors.get_color("on_secondary_container")};
+                    border-radius: 16px; 
+                    font-size: 12px;
+                    font-weight: 500;
+                """)
+            else:
+                self.status_label.setStyleSheet(
+                    "padding: 6px 16px; background-color: #d7e3f7; border-radius: 16px; font-size: 12px;"
+                )
             header_layout.addWidget(self.status_label)
             layout.addLayout(header_layout)
 
-            # Create tab widget with explicit sizing
+            # Create tab widget with modern styling
             self.tab_widget = QtWidgets.QTabWidget()
             if hasattr(self.tab_widget, "setUsesScrollButtons"):
                 self.tab_widget.setUsesScrollButtons(True)
@@ -437,10 +530,14 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 self.tab_widget.setElideMode(QtCore.Qt.ElideRight)
 
             # Set explicit size for tab widget to ensure visibility
-            self.tab_widget.setMinimumSize(380, 250)
+            self.tab_widget.setMinimumSize(400, 300)
             self.tab_widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
             )
+            
+            # Apply modern tab styling
+            if theme_manager:
+                self.tab_widget.setStyleSheet(theme_manager.stylesheet.get_tab_style())
 
             layout.addWidget(self.tab_widget)
 
