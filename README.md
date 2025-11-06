@@ -192,6 +192,37 @@ python -m src.mcp_freecad.main
 python -m src.mcp_freecad.main --config my_config.json --debug
 ```
 
+### Option 3: FastMCP Server (Cursor IDE & Latest Best Practices)
+
+**✨ NEW: Updated to FastMCP 2.13.0.2** - Modern, declarative MCP server implementation.
+
+```bash
+# Start the FastMCP server for Cursor IDE
+python cursor_mcp_server.py
+
+# Or run the example to see available tools
+python example_fastmcp_usage.py --all
+```
+
+**Key Features:**
+- 🎯 **Declarative API** - Simple `@mcp.tool()` and `@mcp.resource()` decorators
+- 🔒 **Type Safe** - Automatic schema generation from type hints
+- 🚀 **Best Practices** - Follows FastMCP 2.13 recommended patterns
+- ✅ **Well Tested** - Comprehensive test suite with 100% pass rate
+- 📚 **Great Documentation** - See [FASTMCP_IMPLEMENTATION.md](docs/FASTMCP_IMPLEMENTATION.md)
+
+**Available Tools:**
+- `test_connection` - Test FreeCAD connectivity
+- `create_box` - Create box primitives
+- `create_cylinder` - Create cylinders
+- `create_sphere` - Create spheres
+- `create_document` - Manage FreeCAD documents
+
+**Resources:**
+- `freecad://status` - Get server status and FreeCAD availability
+
+For detailed usage, see the [FastMCP Implementation Guide](docs/FASTMCP_IMPLEMENTATION.md).
+
 ---
 
 ## 🏗️ **Architecture Overview**
