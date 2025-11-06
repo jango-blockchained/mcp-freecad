@@ -44,7 +44,7 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
             return config
         except json.JSONDecodeError as e:
             logger.warning(f"Could not parse config from {config_path}: {e}")
-    
+
     return {
         "server": {
             "name": "mcp-freecad-server",
@@ -69,7 +69,9 @@ def run_fastmcp_server(config: Dict[str, Any]):
     """Run FastMCP-based server (for Cursor IDE and similar)."""
     try:
         from fastmcp import FastMCP
+
         from mcp_freecad.client.freecad_connection_manager import FreeCADConnection
+
         FREECAD_AVAILABLE = True
     except ImportError as e:
         logger.error(f"FastMCP or FreeCAD modules not available: {e}")
@@ -86,26 +88,29 @@ def run_fastmcp_server(config: Dict[str, Any]):
             "server": "freecad-mcp-server",
             "version": __version__,
             "freecad_available": FREECAD_AVAILABLE,
-            "status": "running"
+            "status": "running",
         }
 
     # Tools (callable functions)
     @mcp.tool()
     def test_connection() -> str:
         """Test connection to FreeCAD.
-        
+
         Returns:
             Connection status message
         """
         if not FREECAD_AVAILABLE:
             return "❌ FreeCAD modules not available."
-        
+
         try:
             fc = FreeCADConnection(auto_connect=True)
             if fc.is_connected():
                 connection_type = fc.get_connection_type()
                 version = fc.get_version()
-                return f"✅ FreeCAD connection successful!\nType: {connection_type}\nVersion: {version}"
+                return (
+                    f"✅ FreeCAD connection successful!\n"
+                    f"Type: {connection_type}\nVersion: {version}"
+                )
             else:
                 return "❌ FreeCAD connection failed."
         except Exception as e:
@@ -114,7 +119,7 @@ def run_fastmcp_server(config: Dict[str, Any]):
     @mcp.tool()
     def create_box(length: float, width: float, height: float) -> str:
         """Create a box in FreeCAD.
-        
+
         Args:
             length: Length of the box in mm
             width: Width of the box in mm
@@ -124,7 +129,7 @@ def run_fastmcp_server(config: Dict[str, Any]):
             fc = FreeCADConnection(auto_connect=True)
             if not fc.is_connected():
                 return "❌ FreeCAD connection failed."
-            
+
             box_id = fc.create_box(length=length, width=width, height=height)
             return f"✅ Box created! ID: {box_id}\nSize: {length}x{width}x{height}"
         except Exception as e:
@@ -133,7 +138,7 @@ def run_fastmcp_server(config: Dict[str, Any]):
     @mcp.tool()
     def create_document(name: str) -> str:
         """Create a new FreeCAD document.
-        
+
         Args:
             name: Name of the document
         """
@@ -141,7 +146,7 @@ def run_fastmcp_server(config: Dict[str, Any]):
             fc = FreeCADConnection(auto_connect=True)
             if not fc.is_connected():
                 return "❌ FreeCAD connection failed."
-            
+
             doc_id = fc.create_document(name)
             return f"✅ Document '{name}' created! ID: {doc_id}"
         except Exception as e:
@@ -150,7 +155,7 @@ def run_fastmcp_server(config: Dict[str, Any]):
     @mcp.tool()
     def create_cylinder(radius: float, height: float) -> str:
         """Create a cylinder in FreeCAD.
-        
+
         Args:
             radius: Radius of the cylinder in mm
             height: Height of the cylinder in mm
@@ -159,16 +164,19 @@ def run_fastmcp_server(config: Dict[str, Any]):
             fc = FreeCADConnection(auto_connect=True)
             if not fc.is_connected():
                 return "❌ FreeCAD connection failed."
-            
+
             cylinder_id = fc.create_cylinder(radius=radius, height=height)
-            return f"✅ Cylinder created! ID: {cylinder_id}\nRadius: {radius}, Height: {height}"
+            return (
+                f"✅ Cylinder created! ID: {cylinder_id}\n"
+                f"Radius: {radius}, Height: {height}"
+            )
         except Exception as e:
             return f"❌ Error: {str(e)}"
 
     @mcp.tool()
     def create_sphere(radius: float) -> str:
         """Create a sphere in FreeCAD.
-        
+
         Args:
             radius: Radius of the sphere in mm
         """
@@ -176,7 +184,7 @@ def run_fastmcp_server(config: Dict[str, Any]):
             fc = FreeCADConnection(auto_connect=True)
             if not fc.is_connected():
                 return "❌ FreeCAD connection failed."
-            
+
             sphere_id = fc.create_sphere(radius=radius)
             return f"✅ Sphere created! ID: {sphere_id}\nRadius: {radius}"
         except Exception as e:
@@ -244,7 +252,7 @@ Examples:
   python mcp_server.py --mode standard --debug   # Standard server with debug
         """,
     )
-    
+
     parser.add_argument(
         "--mode",
         choices=["fastmcp", "standard"],

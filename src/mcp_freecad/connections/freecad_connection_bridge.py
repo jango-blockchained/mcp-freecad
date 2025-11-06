@@ -66,14 +66,14 @@ class FreeCADBridge:
     def _wrap_script_for_headless(self, script_content: str) -> str:
         """
         Wrap the script with proper headless initialization to prevent crashes
-        
+
         Args:
             script_content: The original script content
-            
+
         Returns:
             Script wrapped with headless initialization
         """
-        wrapper = '''
+        wrapper = """
 # Headless FreeCAD initialization wrapper
 import sys
 import os
@@ -90,7 +90,7 @@ except Exception as e:
     sys.exit(1)
 
 # Main script follows
-'''
+"""
         return wrapper + script_content
 
     def run_script(self, script_content: str) -> Tuple[str, str]:
@@ -108,43 +108,46 @@ except Exception as e:
         try:
             # Prepare script with headless initialization wrapper
             wrapped_script = self._wrap_script_for_headless(script_content)
-            
+
             with os.fdopen(fd, "w") as f:
                 f.write(wrapped_script)
 
             # Set up environment for headless FreeCAD execution
             env = os.environ.copy()
-            env.update({
-                'DISPLAY': ':99',  # Use virtual display
-                'QT_QPA_PLATFORM': 'offscreen',  # Force Qt offscreen platform
-                'FREECAD_USER_HOME': tempfile.gettempdir(),  # Use temp directory for user data
-                'XVFB_RUN': '1'  # Indicate we're in virtual framebuffer mode
-            })
+            env.update(
+                {
+                    "DISPLAY": ":99",  # Use virtual display
+                    "QT_QPA_PLATFORM": "offscreen",  # Force Qt offscreen platform
+                    "FREECAD_USER_HOME": tempfile.gettempdir(),  # Use temp directory for user data
+                    "XVFB_RUN": "1",  # Indicate we're in virtual framebuffer mode
+                }
+            )
 
             # Run the script with FreeCAD in console mode with headless flags
             cmd = [
                 self.freecad_path,
-                '--console',  # Console mode
-                '--run-python-script', temp_path  # More reliable than -c for scripts
+                "--console",  # Console mode
+                "--run-python-script",
+                temp_path,  # More reliable than -c for scripts
             ]
-            
+
             # Fallback to older syntax if newer flags aren't supported
             try:
                 process = subprocess.run(
-                    cmd, 
-                    capture_output=True, 
-                    text=True, 
+                    cmd,
+                    capture_output=True,
+                    text=True,
                     timeout=30,  # Add timeout to prevent hanging
-                    env=env
+                    env=env,
                 )
             except (subprocess.TimeoutExpired, FileNotFoundError):
                 # Fallback to basic console mode
                 process = subprocess.run(
-                    [self.freecad_path, '-c', temp_path],
+                    [self.freecad_path, "-c", temp_path],
                     capture_output=True,
                     text=True,
                     timeout=30,
-                    env=env
+                    env=env,
                 )
 
             return process.stdout, process.stderr
@@ -240,7 +243,7 @@ print(json.dumps({{"name": doc.Name, "success": True}}))
         # Create document first if needed in a separate operation
         if doc_name is None:
             doc_name = self.create_document("BoxDocument")
-            
+
         # Use existing document
         doc_creation = f'doc = FreeCAD.getDocument("{doc_name}")'
 

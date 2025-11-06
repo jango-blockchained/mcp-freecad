@@ -210,28 +210,34 @@ class FreeCADConnection:
                 f"Attempting to initialize FreeCADBridge with path: {self.freecad_path}"
             )
             self._bridge = FreeCADBridge(self.freecad_path)
-            
+
             # Test the bridge with a simple operation to ensure it works
             try:
                 is_avail = self._bridge.is_available()
                 logger.debug(f"FreeCADBridge.is_available() returned: {is_avail}")
-                
+
                 if is_avail:
                     # Perform a simple test to verify the bridge actually works
                     logger.debug("Testing bridge with simple version check...")
                     version_info = self._bridge.get_version()
                     if version_info.get("success"):
-                        logger.debug(f"Bridge test successful. FreeCAD version: {version_info.get('version')}")
+                        logger.debug(
+                            f"Bridge test successful. FreeCAD version: {version_info.get('version')}"
+                        )
                         return True
                     else:
-                        logger.warning(f"Bridge available but version check failed: {version_info.get('error')}")
+                        logger.warning(
+                            f"Bridge available but version check failed: {version_info.get('error')}"
+                        )
                         return False
-                        
+
                 return False
             except Exception as test_error:
-                logger.warning(f"Bridge initialization succeeded but test failed: {test_error}")
+                logger.warning(
+                    f"Bridge initialization succeeded but test failed: {test_error}"
+                )
                 return False
-                
+
         except Exception as e:
             logger.debug(f"Failed to initialize FreeCADBridge: {e}")
             return False

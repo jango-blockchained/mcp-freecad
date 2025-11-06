@@ -382,25 +382,31 @@ async def execute_script_in_freecad(
         max_retries = 3
         retry_count = 0
         result = None
-        
+
         while retry_count < max_retries:
             try:
-                result = FC_CONNECTION.execute_command("execute_script", {"script": script})
-                
+                result = FC_CONNECTION.execute_command(
+                    "execute_script", {"script": script}
+                )
+
                 # Await if the connection method is async
                 if asyncio.iscoroutine(result):
                     result = await result
-                    
+
                 # If we got a result, break out of retry loop
                 if result:
                     break
-                    
+
             except Exception as retry_error:
                 retry_count += 1
-                logger.warning(f"Script execution attempt {retry_count} failed: {retry_error}")
-                
+                logger.warning(
+                    f"Script execution attempt {retry_count} failed: {retry_error}"
+                )
+
                 if retry_count < max_retries:
-                    await ctx.send_progress(0.2, f"Retrying script execution (attempt {retry_count + 1})...")
+                    await ctx.send_progress(
+                        0.2, f"Retrying script execution (attempt {retry_count + 1})..."
+                    )
                     await asyncio.sleep(1)  # Brief delay before retry
                 else:
                     raise retry_error
