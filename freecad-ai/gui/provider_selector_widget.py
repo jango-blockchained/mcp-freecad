@@ -281,9 +281,9 @@ class ProviderSelectorWidget(QtWidgets.QWidget):
 
             default_models = {
                 "anthropic": [
-                    "claude-4-20241120",
                     "claude-3-5-sonnet-20241022",
                     "claude-3-5-haiku-20241022",
+                    "claude-3-opus-20240229",
                 ],
                 "openai": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"],
                 "google": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"],

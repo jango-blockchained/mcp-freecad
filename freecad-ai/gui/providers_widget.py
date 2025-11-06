@@ -562,7 +562,7 @@ class ProvidersWidget(QtWidgets.QWidget):
     def _get_default_model_for_provider(self, provider_type):
         """Get default model for a provider type."""
         model_map = {
-            "anthropic": "claude-4-20241120",
+            "anthropic": "claude-3-5-sonnet-20241022",
             "openai": "gpt-4o-mini",
             "google": "gemini-1.5-flash",
             "vertexai": "gemini-1.5-pro",
@@ -577,12 +577,12 @@ class ProvidersWidget(QtWidgets.QWidget):
                 "name": "Anthropic",
                 "type": "anthropic",
                 "models": [
-                    "claude-4-20241120",
                     "claude-3-5-sonnet-20241022",
                     "claude-3-5-haiku-20241022",
                     "claude-3-opus-20240229",
+                    "claude-3-haiku-20240307",
                 ],
-                "default_model": "claude-4-20241120",
+                "default_model": "claude-3-5-sonnet-20241022",
                 "status": "Not configured",
             },
             {
@@ -721,9 +721,9 @@ class ProvidersWidget(QtWidgets.QWidget):
         model_map = {
             "openai": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"],
             "anthropic": [
-                "claude-4-20241120",
                 "claude-3-5-sonnet-20241022",
                 "claude-3-5-haiku-20241022",
+                "claude-3-opus-20240229",
             ],
             "google": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"],
             "vertexai": [

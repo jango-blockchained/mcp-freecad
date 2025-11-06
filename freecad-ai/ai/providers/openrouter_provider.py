@@ -29,8 +29,6 @@ class OpenRouterProvider(BaseAIProvider):
     # Supported models through OpenRouter
     OPENROUTER_MODELS = [
         # Anthropic Claude models
-        "anthropic/claude-4-opus",
-        "anthropic/claude-4-sonnet",
         "anthropic/claude-3.5-sonnet",
         "anthropic/claude-3-opus",
         "anthropic/claude-3-haiku",
@@ -54,11 +52,11 @@ class OpenRouterProvider(BaseAIProvider):
         "deepseek/deepseek-v3",
     ]
 
-    # Models that support thinking mode (Claude models)
-    THINKING_MODE_MODELS = ["anthropic/claude-4-opus", "anthropic/claude-4-sonnet"]
+    # Models that support thinking mode (Currently none via OpenRouter)
+    THINKING_MODE_MODELS = []
 
     def __init__(
-        self, api_key: str, model: str = "anthropic/claude-4-sonnet", **kwargs
+        self, api_key: str, model: str = "anthropic/claude-3.5-sonnet", **kwargs
     ):
         """Initialize OpenRouter provider.
 
@@ -69,9 +67,9 @@ class OpenRouterProvider(BaseAIProvider):
         """
         super().__init__(api_key, model, **kwargs)
 
-        # Default to Claude 4 Sonnet for best CAD performance
+        # Default to Claude 3.5 Sonnet for best CAD performance
         if not self.model:
-            self.model = "anthropic/claude-4-sonnet"
+            self.model = "anthropic/claude-3.5-sonnet"
 
         # OpenRouter-specific configuration
         self.max_tokens = kwargs.get("max_tokens", 4000)
@@ -351,7 +349,7 @@ Be precise with measurements and technical details. Adapt your response style ba
             "anthropic/claude": {
                 "provider": "Anthropic",
                 "strengths": ["Complex reasoning", "Code generation", "Long context"],
-                "thinking_mode": "claude-4" in target_model,
+                "thinking_mode": False,
             },
             "openai/gpt": {
                 "provider": "OpenAI",
@@ -382,8 +380,8 @@ Be precise with measurements and technical details. Adapt your response style ba
                 break
 
         # Add specific model details
-        if "claude-4" in target_model:
-            base_info["description"] = "Latest Claude model with advanced reasoning"
+        if "claude-3.5" in target_model or "claude-3-opus" in target_model:
+            base_info["description"] = "Claude model with advanced reasoning"
             base_info["context_window"] = 200000
         elif "gpt-4" in target_model:
             base_info["description"] = "OpenAI's most capable model"
@@ -404,11 +402,11 @@ Be precise with measurements and technical details. Adapt your response style ba
         """Get cost category for a model."""
         if any(
             expensive in model
-            for expensive in ["claude-4-opus", "gpt-4", "gemini-2.5-pro"]
+            for expensive in ["claude-3-opus", "gpt-4", "gemini-2.5-pro"]
         ):
             return "Premium"
         elif any(
-            mid in model for mid in ["claude-4-sonnet", "claude-3.5", "llama-3.1-405b"]
+            mid in model for mid in ["claude-3.5", "llama-3.1-405b"]
         ):
             return "Standard"
         elif any(
@@ -460,8 +458,8 @@ Be precise with measurements and technical details. Adapt your response style ba
         """
         # Approximate costs per 1M tokens (these are rough estimates)
         cost_per_million = {
-            "claude-4-opus": {"input": 15.0, "output": 75.0},
-            "claude-4-sonnet": {"input": 3.0, "output": 15.0},
+            "claude-3-opus": {"input": 15.0, "output": 75.0},
+            "claude-3.5": {"input": 3.0, "output": 15.0},
             "gpt-4": {"input": 10.0, "output": 30.0},
             "gpt-3.5": {"input": 0.5, "output": 1.5},
             "gemini-2.5-pro": {"input": 1.25, "output": 5.0},
