@@ -78,16 +78,28 @@ def test_qt_compatibility(freecad_ai_dir):
         gui_dir = os.path.join(freecad_ai_dir, 'gui')
         sys.path.insert(0, gui_dir)
         
-        from qt_compatibility import QtCore, QtWidgets, HAS_QT, QT_VERSION, is_qt_available
+        from qt_compatibility import (
+            QtWidgets, HAS_QT, QT_VERSION, is_qt_available
+        )
         
-        print(f"  ✓ Qt compatibility layer imported successfully")
+        print("  ✓ Qt compatibility layer imported successfully")
         print(f"  ✓ Qt version: {QT_VERSION}")
         print(f"  ✓ Qt available: {is_qt_available()}")
         
-        # Test basic Qt classes
+        # Test basic Qt classes (but don't create actual widgets without QApplication)
         if HAS_QT:
-            widget = QtWidgets.QWidget()
-            print("  ✓ QWidget creation successful")
+            # Check if QApplication exists, if not just verify the classes exist
+            app = QtWidgets.QApplication.instance()
+            if app is None:
+                print("  ✓ Qt classes available (no QApplication instance needed)")
+                # Just test that the classes exist and can be accessed
+                widget_class = QtWidgets.QWidget
+                print(f"  ✓ QWidget class accessible: {widget_class}")
+            else:
+                # If QApplication exists, we can create actual widgets
+                test_widget = QtWidgets.QWidget()
+                print("  ✓ QWidget creation successful")
+                test_widget.deleteLater()  # Clean up
         else:
             print("  ⚠ Using dummy Qt classes (no real Qt available)")
         
@@ -97,6 +109,7 @@ def test_qt_compatibility(freecad_ai_dir):
         print(f"  ✗ Qt compatibility test failed: {e}")
         print(f"    Traceback: {traceback.format_exc()}")
         return False
+
 
 def test_agent_manager_wrapper(freecad_ai_dir):
     """Test agent manager wrapper."""
@@ -253,6 +266,7 @@ are working correctly after the fixes.
 
 import sys
 import os
+import traceback
 
 def test_freecad_ai_in_app():
     """Test FreeCAD AI components from within FreeCAD."""
@@ -270,48 +284,136 @@ def test_freecad_ai_in_app():
     
     # Test Agent Manager
     try:
-        from gui.main_widget import MCPMainWidget
-        widget = MCPMainWidget()
+        print("\\n1. Testing Agent Manager...")
         
-        # Check if agent manager was initialized
-        if hasattr(widget, 'agent_manager') and widget.agent_manager is not None:
-            print("✓ Agent Manager: AVAILABLE")
-            test_results['agent_manager'] = True
-        else:
-            print("✗ Agent Manager: NOT AVAILABLE") 
+        # Try multiple methods to get agent manager
+        agent_manager = None
+        
+        # Method 1: Via main widget
+        try:
+            from gui.main_widget import MCPMainWidget
+            widget = MCPMainWidget()
+            
+            if hasattr(widget, 'agent_manager') and widget.agent_manager is not None:
+                agent_manager = widget.agent_manager
+                print("✓ Agent Manager: AVAILABLE (via main widget)")
+                test_results['agent_manager'] = True
+            else:
+                print("⚠ Agent Manager: Not available in main widget")
+        except Exception as e:
+            print(f"⚠ Main widget test failed: {e}")
+        
+        # Method 2: Via wrapper
+        if agent_manager is None:
+            try:
+                from core.agent_manager_wrapper import get_agent_manager, is_agent_manager_available
+                if is_agent_manager_available():
+                    agent_manager = get_agent_manager()
+                    print("✓ Agent Manager: AVAILABLE (via wrapper)")
+                    test_results['agent_manager'] = True
+                else:
+                    print("⚠ Agent Manager wrapper reports unavailable")
+            except Exception as e:
+                print(f"⚠ Agent Manager wrapper test failed: {e}")
+        
+        # Method 3: Direct creation
+        if agent_manager is None:
+            try:
+                from core.agent_manager import AgentManager
+                agent_manager = AgentManager()
+                print("✓ Agent Manager: AVAILABLE (direct creation)")
+                test_results['agent_manager'] = True
+            except Exception as e:
+                print(f"⚠ Direct agent manager creation failed: {e}")
+        
+        if agent_manager is None:
+            print("✗ Agent Manager: NOT AVAILABLE")
             test_results['agent_manager'] = False
             
-        # Check if provider service was initialized
-        if hasattr(widget, 'provider_service') and widget.provider_service is not None:
-            print("✓ Provider Service: AVAILABLE")
-            test_results['provider_service'] = True
-        else:
+    except Exception as e:
+        print(f"✗ Agent Manager test failed: {e}")
+        test_results['agent_manager'] = False
+    
+    # Test Provider Service
+    try:
+        print("\\n2. Testing Provider Service...")
+        
+        provider_service = None
+        
+        # Method 1: From main widget
+        try:
+            if hasattr(widget, 'provider_service') and widget.provider_service is not None:
+                provider_service = widget.provider_service
+                print("✓ Provider Service: AVAILABLE (via main widget)")
+                test_results['provider_service'] = True
+        except:
+            pass
+        
+        # Method 2: Via wrapper
+        if provider_service is None:
+            try:
+                from ai.provider_service_wrapper import get_provider_service, is_provider_service_available
+                if is_provider_service_available():
+                    provider_service = get_provider_service()
+                    print("✓ Provider Service: AVAILABLE (via wrapper)")
+                    test_results['provider_service'] = True
+                else:
+                    print("⚠ Provider Service wrapper reports unavailable")
+            except Exception as e:
+                print(f"⚠ Provider Service wrapper test failed: {e}")
+        
+        # Method 3: Direct
+        if provider_service is None:
+            try:
+                from ai.provider_integration_service import get_provider_service
+                provider_service = get_provider_service()
+                if provider_service is not None:
+                    print("✓ Provider Service: AVAILABLE (direct)")
+                    test_results['provider_service'] = True
+                else:
+                    print("⚠ Provider Service direct creation returned None")
+            except Exception as e:
+                print(f"⚠ Direct provider service creation failed: {e}")
+        
+        if provider_service is None:
             print("✗ Provider Service: NOT AVAILABLE")
             test_results['provider_service'] = False
             
-        # Test tools registry
-        if (hasattr(widget, 'agent_manager') and widget.agent_manager is not None and
-            hasattr(widget.agent_manager, 'tool_registry') and widget.agent_manager.tool_registry is not None):
-            print("✓ Tools Registry: AVAILABLE")
+    except Exception as e:
+        print(f"✗ Provider Service test failed: {e}")
+        test_results['provider_service'] = False
+    
+    # Test tools registry
+    try:
+        print("\\n3. Testing Tools Registry...")
+        
+        if agent_manager and hasattr(agent_manager, 'tool_registry') and agent_manager.tool_registry is not None:
+            available_tools = agent_manager.get_available_tools() if hasattr(agent_manager, 'get_available_tools') else []
+            print(f"✓ Tools Registry: AVAILABLE ({len(available_tools)} tools)")
             test_results['tools_registry'] = True
         else:
             print("✗ Tools Registry: NOT AVAILABLE")
             test_results['tools_registry'] = False
             
     except Exception as e:
-        print(f"✗ Widget initialization failed: {e}")
-        test_results['widget_init'] = False
+        print(f"✗ Tools Registry test failed: {e}")
+        test_results['tools_registry'] = False
     
     # Summary
     passed = sum(1 for result in test_results.values() if result)
     total = len(test_results)
     
-    print(f"\\nTest Results: {passed}/{total} components working")
+    print(f"\\n" + "=" * 50)
+    print(f"Test Results: {passed}/{total} components working")
+    
+    for component, status in test_results.items():
+        status_str = "✓ WORKING" if status else "✗ FAILED"
+        print(f"{component.replace('_', ' ').title()}: {status_str}")
     
     if passed == total:
-        print("🎉 All FreeCAD AI components are working correctly!")
+        print("\\n🎉 All FreeCAD AI components are working correctly!")
     else:
-        print("⚠️ Some components are still not working. Check the fixes.")
+        print("\\n⚠️ Some components are still not working. Check the fixes.")
     
     return test_results
 

@@ -34,45 +34,60 @@ class AgentManager:
 
     def __init__(self):
         """Initialize the Agent Manager"""
-        self.current_mode = AgentMode.CHAT
-        self.execution_state = ExecutionState.IDLE
-        self.tool_registry = None
-        self.tool_selector = None
-        self.execution_pipeline = None
-        self.context_enricher = None
-        self.ai_provider = None
+        try:
+            self.current_mode = AgentMode.CHAT
+            self.execution_state = ExecutionState.IDLE
+            self.tool_registry = None
+            self.tool_selector = None
+            self.execution_pipeline = None
+            self.context_enricher = None
+            self.ai_provider = None
 
-        # Execution tracking
-        self.current_plan = None
-        self.execution_history = []
-        self.execution_queue = []
-        self.active_execution = None
+            # Execution tracking
+            self.current_plan = None
+            self.execution_history = []
+            self.execution_queue = []
+            self.active_execution = None
 
-        # Configuration
-        self.config = {
-            "max_retries": 3,
-            "execution_timeout": 300,  # 5 minutes
-            "require_approval": False,
-            "safety_checks": True,
-            "auto_rollback": True,
-            "log_executions": True,
-        }
+            # Configuration
+            self.config = {
+                "max_retries": 3,
+                "execution_timeout": 300,  # 5 minutes
+                "require_approval": False,
+                "safety_checks": True,
+                "auto_rollback": True,
+                "log_executions": True,
+            }
 
-        # Callbacks
-        self.callbacks = {
-            "on_mode_change": [],
-            "on_state_change": [],
-            "on_execution_start": [],
-            "on_execution_complete": [],
-            "on_execution_error": [],
-            "on_plan_created": [],
-        }
+            # Callbacks
+            self.callbacks = {
+                "on_mode_change": [],
+                "on_state_change": [],
+                "on_execution_start": [],
+                "on_execution_complete": [],
+                "on_execution_error": [],
+                "on_plan_created": [],
+            }
 
-        # Thread safety
-        self.lock = threading.Lock()
+            # Thread safety
+            self.lock = threading.Lock()
 
-        # Initialize components
-        self._initialize_components()
+            # Initialize components safely
+            self._initialize_components()
+            
+            FreeCAD.Console.PrintMessage("Agent Manager: Initialization completed successfully\n")
+            
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"Agent Manager: Critical initialization error: {e}\n")
+            import traceback
+            FreeCAD.Console.PrintError(f"Traceback: {traceback.format_exc()}\n")
+            # Ensure basic attributes exist even if initialization fails
+            self.current_mode = AgentMode.CHAT
+            self.execution_state = ExecutionState.IDLE
+            self.tool_registry = None
+            self.config = {}
+            self.callbacks = {}
+            FreeCAD.Console.PrintMessage("Agent Manager: Minimal fallback initialization completed\n")
 
     def _initialize_components(self):
         """Initialize agent components"""

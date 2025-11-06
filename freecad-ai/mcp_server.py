@@ -33,6 +33,57 @@ try:
     MCP_AVAILABLE = True
 except ImportError:
     MCP_AVAILABLE = False
+    # Create dummy classes when MCP is not available
+    class Server:
+        def __init__(self, name):
+            self.name = name
+        
+        def get_capabilities(self):
+            return {}
+        
+        def list_tools(self):
+            def decorator(func):
+                return func
+            return decorator
+        
+        def call_tool(self):
+            def decorator(func):
+                return func
+            return decorator
+        
+        def list_resources(self):
+            def decorator(func):
+                return func
+            return decorator
+        
+        def read_resource(self):
+            def decorator(func):
+                return func
+            return decorator
+        
+        async def run(self, read_stream, write_stream, init_options):
+            raise ImportError("MCP library not available")
+    
+    class InitializationOptions:
+        def __init__(self, **kwargs):
+            pass
+    
+    def stdio_server():
+        class DummyContext:
+            async def __aenter__(self):
+                raise ImportError("MCP library not available")
+            async def __aexit__(self, *args):
+                pass
+        return DummyContext()
+    
+    class Resource:
+        pass
+    
+    class TextContent:
+        pass
+    
+    class Tool:
+        pass
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -847,9 +898,7 @@ class FreeCADMCPServer:
                 InitializationOptions(
                     server_name="freecad-mcp-server",
                     server_version="1.0.0",
-                    capabilities=self.server.get_capabilities(
-                        notification_options=None, experimental_capabilities=None
-                    ),
+                    capabilities=self.server.get_capabilities(),
                 ),
             )
 

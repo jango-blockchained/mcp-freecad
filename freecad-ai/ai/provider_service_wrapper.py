@@ -23,13 +23,24 @@ class ProviderServiceWrapper:
         def target():
             try:
                 provider_service_imported = False
-                # Try to import get_provider_service from ai/provider_integration_service.py
+                # Try to import get_provider_service with multiple strategies
                 try:
                     addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                     ai_dir = os.path.join(addon_dir, "ai")
                     if ai_dir not in sys.path:
                         sys.path.insert(0, ai_dir)
-                    from provider_integration_service import get_provider_service
+                    
+                    # Try different import strategies
+                    try:
+                        from provider_integration_service import get_provider_service
+                    except ImportError:
+                        try:
+                            from ai.provider_integration_service import get_provider_service
+                        except ImportError:
+                            # Last resort - add the specific path and try again
+                            sys.path.insert(0, addon_dir)
+                            from ai.provider_integration_service import get_provider_service
+                    
                     provider_service_imported = True
                     logging.info("Provider service imported from ai/provider_integration_service.py")
                 except Exception as e:
