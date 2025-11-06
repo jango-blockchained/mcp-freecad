@@ -4,7 +4,7 @@ MCP-FreeCAD Integration Module.
 This module provides integration between FreeCAD and the Model Context Protocol (MCP).
 """
 
-__version__ = "0.7.11"
+__version__ = "1.0.0"
 
 # Import core components that don't require heavy dependencies
 from .client.freecad_connection_manager import FreeCADConnection
