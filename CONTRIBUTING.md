@@ -4,7 +4,7 @@ Thank you for your interest in contributing to the MCP-FreeCAD project! This doc
 
 ## Code of Conduct
 
-Please read and follow my Code of Conduct. I expect all contributors to abide by these guidelines to ensure a positive and respectful community.
+Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md). We expect all contributors to abide by these guidelines to ensure a positive and respectful community.
 
 ## Development Environment Setup
 
@@ -23,6 +23,7 @@ Please read and follow my Code of Conduct. I expect all contributors to abide by
 3. **Install Development Dependencies**
    ```bash
    pip install -e .
+   pip install -r requirements-dev.txt
    ```
 
 ## Development Workflow
@@ -43,12 +44,14 @@ Please read and follow my Code of Conduct. I expect all contributors to abide by
 
 4. **Run Tests**
    ```bash
-   python test_mcp_tools.py
+   pytest tests/ -v
    ```
 
 5. **Check Code Style**
    ```bash
-   flake8
+   black --check src tests
+   isort --check-only --profile black src tests
+   flake8 src tests
    ```
 
 ## Pull Request Process
@@ -85,8 +88,12 @@ Please read and follow my Code of Conduct. I expect all contributors to abide by
 
 - Follow PEP 8 guidelines
 - Use 4 spaces for indentation (no tabs)
+- Use Black for code formatting (line length: 88)
+- Use isort for import sorting (profile: black)
 - Use meaningful variable and function names
 - Keep functions small and focused on a single task
+- Add type hints where appropriate
+- Write docstrings for public functions and classes
 
 ### Commit Messages
 

@@ -45,6 +45,10 @@ dev = [
     "coverage>=7.0.0",
 ]
 
+[project.scripts]
+mcp-freecad = "mcp_freecad.main:main"
+mcp-freecad-server = "mcp_server:main"
+
 [project.urls]
 "Homepage" = "https://github.com/jango-blockchained/mcp-freecad"
 "Bug Tracker" = "https://github.com/jango-blockchained/mcp-freecad/issues"

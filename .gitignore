@@ -21,7 +21,10 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-docs/official/
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
+
 # Virtual Environment
 venv/
 ENV/
@@ -29,6 +32,8 @@ env/
 .env
 .venv
 .pytest_cache/
+.tox/
+.nox/
 
 # IDE
 .idea/
@@ -36,14 +41,17 @@ env/
 *.swp
 *.swo
 *~
+.DS_Store
 
 # Jupyter Notebook
 .ipynb_checkpoints
+*.ipynb
 
 # FreeCAD specific
 *.FCStd
 *.FCStd1
 *.FCBak
+squashfs-root/
 
 # Logs
 *.log
@@ -63,7 +71,6 @@ ehthumbs.db
 Thumbs.db
 
 # Project specific
-squashfs-root/
 backups/
 tmp/
 config.json
@@ -75,8 +82,13 @@ api_keys.json
 *.secret
 secrets.json
 .env.local
+*.enc
+*.encrypted
+
 # Lock files
 uv.lock
+poetry.lock
+Pipfile.lock
 
 # Generated files
 mcp-freecad
@@ -84,12 +96,7 @@ scripts/bin/mcp-freecad
 
 # AppImage files
 *.AppImage
-*.AppImage.sha256sum
-*.AppImage.sha512sum
-*.AppImage.sha384sum
-*.AppImage.sha224sum
-*.AppImage.sha1sum
-*.AppImage.md5sum
+*.AppImage.*sum
 
 # Temporary files
 *.tmp
@@ -101,20 +108,22 @@ htmlcov/
 .coverage
 .coverage.*
 coverage.xml
+*.cover
+.hypothesis/
 
-# mypy
+# Type checking
 .mypy_cache/
 .dmypy.json
 dmypy.json
+.pyre/
+.pytype/
 
+# Documentation
+docs/official/
+docs/_build/
+docs/.doctrees/
+
+# Cursor IDE specific
 .cursor/
 .cursorignore
 .cursorindexingignore
-.cursor/tasks/
-.cursorignore
-.cursorindexingignore
-
-# Encrypted files and sensitive data
-freecad-ai/api_keys.enc
-*.enc
-*.encrypted

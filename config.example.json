@@ -1,0 +1,25 @@
+{
+    "server": {
+        "name": "mcp-freecad-server",
+        "version": "1.0.0",
+        "description": "MCP server for FreeCAD integration"
+    },
+    "freecad": {
+        "auto_connect": true,
+        "connection_method": "auto",
+        "host": "localhost",
+        "port": 12345,
+        "freecad_path": "freecad"
+    },
+    "tools": {
+        "enable_primitives": true,
+        "enable_model_manipulation": true,
+        "enable_export_import": true,
+        "enable_measurement": true,
+        "enable_code_generator": true
+    },
+    "logging": {
+        "level": "INFO",
+        "file": "logs/mcp_freecad.log"
+    }
+}

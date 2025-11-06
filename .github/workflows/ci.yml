@@ -1,4 +1,4 @@
-name: CI (Disabled)
+name: CI
 
 on:
   push:
@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [ main ]
   workflow_dispatch:
-    description: 'Manually trigger CI'
 
 jobs:
   test:
@@ -44,10 +43,10 @@ jobs:
         pip install -r requirements-dev.txt
     - name: Check code formatting with Black
       run: |
-        black --check src tests app.py
+        black --check src tests mcp_server.py
     - name: Check imports with isort
       run: |
-        isort --check-only --profile black src tests app.py
+        isort --check-only --profile black src tests mcp_server.py
     - name: Lint with flake8
       run: |
-        flake8 src tests app.py
+        flake8 src tests mcp_server.py

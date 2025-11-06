@@ -186,9 +186,14 @@ cd mcp-freecad
 pip install -r requirements.txt
 
 # Start the MCP server
-python -m src.mcp_freecad.main
+python mcp_server.py
 
-# Or with custom config
+# Or with FastMCP mode (lightweight, ideal for Cursor IDE)
+python mcp_server.py --mode fastmcp
+
+# Or with custom config and debug logging
+python mcp_server.py --config my_config.json --debug
+```
 python -m src.mcp_freecad.main --config my_config.json --debug
 ```
 
