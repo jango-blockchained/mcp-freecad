@@ -93,20 +93,7 @@ class ProviderSelectorWidget(QtWidgets.QWidget):
         self.refresh_btn.setFixedSize(36, 36)
         self.refresh_btn.setToolTip("Refresh providers")
         if theme_manager:
-            # Use primary button style but keep it compact
-            self.refresh_btn.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {colors.get_color("primary") if colors else "#0061a6"};
-                    color: {colors.get_color("on_primary") if colors else "white"};
-                    border: none;
-                    border-radius: 18px;
-                    font-size: 18px;
-                    font-weight: bold;
-                }}
-                QPushButton:hover {{
-                    background-color: {colors.get_color("primary_container") if colors else "#d1e4ff"};
-                }}
-            """)
+            self.refresh_btn.setStyleSheet(theme_manager.stylesheet.get_compact_button_style("primary"))
         self.refresh_btn.clicked.connect(self._on_refresh_clicked)
         layout.addWidget(self.refresh_btn)
 

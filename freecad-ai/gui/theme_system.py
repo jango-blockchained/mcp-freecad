@@ -173,8 +173,13 @@ class StyleSheet:
     def __init__(self, color_scheme: ColorScheme):
         self.colors = color_scheme
 
-    def get_button_style(self, button_type: str = "primary", elevated: bool = True) -> str:
-        """Get button stylesheet with Material Design 3 principles."""
+    def get_button_style(self, button_type: str = "primary", elevated: bool = False) -> str:
+        """Get button stylesheet with Material Design 3 principles.
+        
+        Args:
+            button_type: Type of button (primary, success, warning, danger)
+            elevated: Whether to add shadow elevation (default: False for backward compatibility)
+        """
         color_map = {
             "primary": (self.colors.get_color("button_primary"), self.colors.get_color("on_primary")),
             "success": (self.colors.get_color("button_success"), self.colors.get_color("on_success")),
@@ -211,6 +216,39 @@ class StyleSheet:
         QPushButton:disabled {{
             background-color: {self.colors.get_color("text_muted")};
             color: {self.colors.get_color("background_primary")};
+        }}
+        """
+
+    def get_compact_button_style(self, button_type: str = "primary") -> str:
+        """Get compact circular button stylesheet for icons.
+        
+        Args:
+            button_type: Type of button (primary, success, warning, danger)
+        """
+        color_map = {
+            "primary": (self.colors.get_color("button_primary"), self.colors.get_color("on_primary")),
+            "success": (self.colors.get_color("button_success"), self.colors.get_color("on_success")),
+            "warning": (self.colors.get_color("button_warning"), self.colors.get_color("on_warning")),
+            "danger": (self.colors.get_color("button_danger"), self.colors.get_color("on_error")),
+        }
+
+        base_color, text_color = color_map.get(button_type, (self.colors.get_color("primary"), self.colors.get_color("on_primary")))
+        hover_color = self.colors.get_color("primary_container") if button_type == "primary" else self._lighten_color(base_color, 0.2)
+
+        return f"""
+        QPushButton {{
+            background-color: {base_color};
+            color: {text_color};
+            border: none;
+            border-radius: 50%;
+            font-size: 18px;
+            font-weight: bold;
+        }}
+        QPushButton:hover {{
+            background-color: {hover_color};
+        }}
+        QPushButton:pressed {{
+            background-color: {self._darken_color(base_color, 0.1)};
         }}
         """
 
