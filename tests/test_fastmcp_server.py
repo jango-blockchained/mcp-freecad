@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 @pytest.fixture
 def mock_freecad_connection():
     """Mock FreeCAD connection for testing."""
-    with patch('cursor_mcp_server_fastmcp.FreeCADConnection') as mock_fc:
+    with patch('cursor_mcp_server.FreeCADConnection') as mock_fc:
         mock_instance = MagicMock()
         mock_instance.is_connected.return_value = True
         mock_instance.get_connection_type.return_value = "direct"
@@ -32,7 +32,7 @@ def mock_freecad_connection():
 @pytest.fixture
 def mock_freecad_available():
     """Mock FREECAD_AVAILABLE flag."""
-    with patch('cursor_mcp_server_fastmcp.FREECAD_AVAILABLE', True):
+    with patch('cursor_mcp_server.FREECAD_AVAILABLE', True):
         yield
 
 
@@ -41,12 +41,12 @@ class TestFastMCPServer:
 
     def test_server_import(self):
         """Test that the server can be imported."""
-        import cursor_mcp_server_fastmcp
-        assert cursor_mcp_server_fastmcp.mcp is not None
+        import cursor_mcp_server
+        assert cursor_mcp_server.mcp is not None
 
     def test_test_connection_success(self, mock_freecad_connection, mock_freecad_available):
         """Test successful FreeCAD connection."""
-        from cursor_mcp_server_fastmcp import test_connection
+        from cursor_mcp_server import test_connection
         
         result = test_connection.fn()
         
@@ -57,9 +57,9 @@ class TestFastMCPServer:
 
     def test_test_connection_failure(self, mock_freecad_available):
         """Test failed FreeCAD connection."""
-        from cursor_mcp_server_fastmcp import test_connection
+        from cursor_mcp_server import test_connection
         
-        with patch('cursor_mcp_server_fastmcp.FreeCADConnection') as mock_fc:
+        with patch('cursor_mcp_server.FreeCADConnection') as mock_fc:
             mock_instance = MagicMock()
             mock_instance.is_connected.return_value = False
             mock_fc.return_value = mock_instance
@@ -71,9 +71,9 @@ class TestFastMCPServer:
 
     def test_test_connection_not_available(self):
         """Test connection when FreeCAD is not available."""
-        from cursor_mcp_server_fastmcp import test_connection
+        from cursor_mcp_server import test_connection
         
-        with patch('cursor_mcp_server_fastmcp.FREECAD_AVAILABLE', False):
+        with patch('cursor_mcp_server.FREECAD_AVAILABLE', False):
             result = test_connection.fn()
             
             assert "❌" in result
@@ -81,9 +81,9 @@ class TestFastMCPServer:
 
     def test_test_connection_exception(self, mock_freecad_available):
         """Test connection with exception."""
-        from cursor_mcp_server_fastmcp import test_connection
+        from cursor_mcp_server import test_connection
         
-        with patch('cursor_mcp_server_fastmcp.FreeCADConnection') as mock_fc:
+        with patch('cursor_mcp_server.FreeCADConnection') as mock_fc:
             mock_fc.side_effect = Exception("Connection error")
             
             result = test_connection.fn()
@@ -94,7 +94,7 @@ class TestFastMCPServer:
 
     def test_create_box_success(self, mock_freecad_connection, mock_freecad_available):
         """Test successful box creation."""
-        from cursor_mcp_server_fastmcp import create_box
+        from cursor_mcp_server import create_box
         
         result = create_box.fn(length=10.0, width=20.0, height=30.0)
         
@@ -109,9 +109,9 @@ class TestFastMCPServer:
 
     def test_create_box_not_available(self):
         """Test box creation when FreeCAD is not available."""
-        from cursor_mcp_server_fastmcp import create_box
+        from cursor_mcp_server import create_box
         
-        with patch('cursor_mcp_server_fastmcp.FREECAD_AVAILABLE', False):
+        with patch('cursor_mcp_server.FREECAD_AVAILABLE', False):
             result = create_box.fn(length=10.0, width=20.0, height=30.0)
             
             assert "❌" in result
@@ -119,9 +119,9 @@ class TestFastMCPServer:
 
     def test_create_box_connection_failed(self, mock_freecad_available):
         """Test box creation when connection fails."""
-        from cursor_mcp_server_fastmcp import create_box
+        from cursor_mcp_server import create_box
         
-        with patch('cursor_mcp_server_fastmcp.FreeCADConnection') as mock_fc:
+        with patch('cursor_mcp_server.FreeCADConnection') as mock_fc:
             mock_instance = MagicMock()
             mock_instance.is_connected.return_value = False
             mock_fc.return_value = mock_instance
@@ -133,7 +133,7 @@ class TestFastMCPServer:
 
     def test_create_document_success(self, mock_freecad_connection, mock_freecad_available):
         """Test successful document creation."""
-        from cursor_mcp_server_fastmcp import create_document
+        from cursor_mcp_server import create_document
         
         result = create_document.fn(name="TestDoc")
         
@@ -145,7 +145,7 @@ class TestFastMCPServer:
 
     def test_create_cylinder_success(self, mock_freecad_connection, mock_freecad_available):
         """Test successful cylinder creation."""
-        from cursor_mcp_server_fastmcp import create_cylinder
+        from cursor_mcp_server import create_cylinder
         
         result = create_cylinder.fn(radius=5.0, height=10.0)
         
@@ -161,7 +161,7 @@ class TestFastMCPServer:
 
     def test_create_sphere_success(self, mock_freecad_connection, mock_freecad_available):
         """Test successful sphere creation."""
-        from cursor_mcp_server_fastmcp import create_sphere
+        from cursor_mcp_server import create_sphere
         
         result = create_sphere.fn(radius=7.5)
         
@@ -174,7 +174,7 @@ class TestFastMCPServer:
 
     def test_get_server_status(self):
         """Test server status resource."""
-        from cursor_mcp_server_fastmcp import get_server_status
+        from cursor_mcp_server import get_server_status
         
         status = get_server_status.fn()
         
@@ -188,7 +188,7 @@ class TestFastMCPServer:
 
     def test_all_tools_have_docstrings(self):
         """Test that all tools have proper docstrings."""
-        from cursor_mcp_server_fastmcp import (
+        from cursor_mcp_server import (
             test_connection,
             create_box,
             create_document,
@@ -205,7 +205,7 @@ class TestFastMCPServer:
 
     def test_create_box_with_various_dimensions(self, mock_freecad_connection, mock_freecad_available):
         """Test box creation with different dimensions."""
-        from cursor_mcp_server_fastmcp import create_box
+        from cursor_mcp_server import create_box
         
         test_cases = [
             (1.0, 1.0, 1.0),
@@ -220,9 +220,9 @@ class TestFastMCPServer:
 
     def test_error_handling_in_tools(self, mock_freecad_available):
         """Test that tools handle exceptions gracefully."""
-        from cursor_mcp_server_fastmcp import create_box
+        from cursor_mcp_server import create_box
         
-        with patch('cursor_mcp_server_fastmcp.FreeCADConnection') as mock_fc:
+        with patch('cursor_mcp_server.FreeCADConnection') as mock_fc:
             mock_instance = MagicMock()
             mock_instance.is_connected.return_value = True
             mock_instance.create_box.side_effect = Exception("Creation failed")
@@ -241,14 +241,14 @@ class TestFastMCPServerIntegration:
 
     def test_server_initialization(self):
         """Test that the server initializes correctly."""
-        from cursor_mcp_server_fastmcp import mcp
+        from cursor_mcp_server import mcp
         
         assert mcp is not None
         assert hasattr(mcp, 'run')
 
     def test_multiple_operations(self, mock_freecad_connection, mock_freecad_available):
         """Test multiple operations in sequence."""
-        from cursor_mcp_server_fastmcp import (
+        from cursor_mcp_server import (
             test_connection,
             create_document,
             create_box
