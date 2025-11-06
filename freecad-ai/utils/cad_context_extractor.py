@@ -124,7 +124,7 @@ class CADContextExtractor:
                     version_info.append(f"Build {build_info['BuildRevision']}")
 
             return " ".join(version_info) if version_info else "Unknown"
-        except:
+        except Exception:
             return "Unknown"
 
     def _get_documents_info(self) -> List[Dict[str, Any]]:
@@ -143,7 +143,7 @@ class CADContextExtractor:
                     "modified": getattr(doc, "UndoMode", False),
                 }
                 documents.append(doc_info)
-        except:
+        except Exception:
             pass
 
         return documents
@@ -195,7 +195,7 @@ class CADContextExtractor:
                                 else None
                             ),
                         }
-                    except:
+                    except Exception:
                         pass
 
                 objects_info.append(obj_info)
@@ -207,7 +207,7 @@ class CADContextExtractor:
                 "objects": objects_info,
                 "object_count": len(objects_info),
             }
-        except:
+        except Exception:
             return None
 
     def _get_current_workbench(self) -> Optional[str]:
@@ -223,7 +223,7 @@ class CADContextExtractor:
                     "MenuText",
                     getattr(workbench, "__class__", {}).get("__name__", "Unknown"),
                 )
-        except:
+        except Exception:
             pass
 
         return None
@@ -252,11 +252,11 @@ class CADContextExtractor:
                             if hasattr(shape, "ShapeType")
                             else "Unknown"
                         )
-                    except:
+                    except Exception:
                         pass
 
                 selection_info.append(obj_info)
-        except:
+        except Exception:
             pass
 
         return selection_info
@@ -291,7 +291,7 @@ class CADContextExtractor:
                         "y": round(view_dir.y, 3),
                         "z": round(view_dir.z, 3),
                     }
-        except:
+        except Exception:
             pass
 
         return view_info
@@ -330,7 +330,7 @@ class CADContextExtractor:
             if param_get:
                 preferences["decimal_places"] = param_get.GetInt("Decimals", 2)
 
-        except:
+        except Exception:
             pass
 
         return preferences

@@ -438,7 +438,7 @@ class ConstraintResourceProvider(ResourceProvider):
                             ]:
                                 try:
                                     parameters[prop] = getattr(obj, prop)
-                                except:
+                                except Exception:
                                     pass
 
                         constraint_data["parameters"] = parameters
@@ -569,7 +569,7 @@ class ConstraintResourceProvider(ResourceProvider):
                                 ]:
                                     try:
                                         parameters[prop] = getattr(doc_obj, prop)
-                                    except:
+                                    except Exception:
                                         pass
 
                             constraint_data["parameters"] = parameters

@@ -427,17 +427,17 @@ def extract_freecad_commands(gemini_response: Dict[str, Any]) -> Dict[str, Any]:
                 if "length" in line.lower():
                     try:
                         command_parts["length"] = float(line.split("=")[1].strip())
-                    except:
+                    except Exception:
                         pass
                 if "width" in line.lower():
                     try:
                         command_parts["width"] = float(line.split("=")[1].strip())
-                    except:
+                    except Exception:
                         pass
                 if "height" in line.lower():
                     try:
                         command_parts["height"] = float(line.split("=")[1].strip())
-                    except:
+                    except Exception:
                         pass
 
             elif any(
@@ -447,12 +447,12 @@ def extract_freecad_commands(gemini_response: Dict[str, Any]) -> Dict[str, Any]:
                 if "radius" in line.lower():
                     try:
                         command_parts["radius"] = float(line.split("=")[1].strip())
-                    except:
+                    except Exception:
                         pass
                 if "height" in line.lower():
                     try:
                         command_parts["height"] = float(line.split("=")[1].strip())
-                    except:
+                    except Exception:
                         pass
 
             elif any(
@@ -462,7 +462,7 @@ def extract_freecad_commands(gemini_response: Dict[str, Any]) -> Dict[str, Any]:
                 if "radius" in line.lower():
                     try:
                         command_parts["radius"] = float(line.split("=")[1].strip())
-                    except:
+                    except Exception:
                         pass
 
             elif any(keyword in line.lower() for keyword in ["export", "save"]):
@@ -471,13 +471,13 @@ def extract_freecad_commands(gemini_response: Dict[str, Any]) -> Dict[str, Any]:
                     try:
                         path = line.split("=")[1].strip().strip("\"'")
                         command_parts["path"] = path
-                    except:
+                    except Exception:
                         pass
                 if "format" in line.lower():
                     try:
                         format_type = line.split("=")[1].strip().strip("\"'")
                         command_parts["format"] = format_type
-                    except:
+                    except Exception:
                         pass
 
             # Look for document reference in any command
@@ -485,7 +485,7 @@ def extract_freecad_commands(gemini_response: Dict[str, Any]) -> Dict[str, Any]:
                 try:
                     doc = line.split("=")[1].strip().strip("\"'")
                     command_parts["document"] = doc
-                except:
+                except Exception:
                     pass
 
         if not command_parts.get("type"):

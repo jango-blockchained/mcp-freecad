@@ -217,7 +217,7 @@ Be precise with measurements and technical details. Adapt your response style ba
                         error_json = {}
                         try:
                             error_json = json.loads(error_text)
-                        except:
+                        except json.JSONDecodeError:
                             pass
 
                         error_message = error_json.get("error", {}).get(
@@ -442,7 +442,7 @@ Be precise with measurements and technical details. Adapt your response style ba
                         return data.get("data", [])
                     else:
                         return []
-        except:
+        except Exception:
             # Return static list if API call fails
             return [{"id": model} for model in self.OPENROUTER_MODELS]
 

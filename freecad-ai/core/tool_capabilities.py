@@ -379,7 +379,7 @@ class CapabilityRegistry:
                 return False
 
             return any(obj.Name == obj_name for obj in doc.Objects)
-        except:
+        except Exception:
             return False
 
     def get_all_capabilities(self) -> Dict[str, Dict[str, ToolCapability]]:

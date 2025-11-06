@@ -635,7 +635,7 @@ class UnifiedConnectionWidget(QtWidgets.QWidget):
                         if "mcp" in cmdline.lower() and "freecad" in cmdline.lower():
                             server_running = True
                             break
-                    except:
+                    except Exception:
                         continue
 
             if server_running:

@@ -728,7 +728,7 @@ class ToolParameterDialog(QtWidgets.QDialog):
                     ) and text.startswith("["):
                         try:
                             params[name] = eval(text)
-                        except:
+                        except Exception:
                             params[name] = text
                     else:
                         params[name] = text
