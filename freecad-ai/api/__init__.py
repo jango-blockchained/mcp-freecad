@@ -62,7 +62,7 @@ def check_fastapi_pydantic_compatibility():
                 # Test model instantiation
                 _ = TestModel()  # Test creation but don't store unused variable
 
-                # Test router creation  
+                # Test router creation
                 _ = APIRouter()  # Test creation but don't store unused variable
 
                 # If we get here, everything should work

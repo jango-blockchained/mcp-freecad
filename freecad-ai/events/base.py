@@ -26,11 +26,11 @@ class EventProvider(ABC):
         if not client_id or not isinstance(client_id, str):
             logger.warning(f"Invalid client_id provided: {client_id}")
             return
-            
+
         if self._is_shutdown:
             logger.warning(f"Cannot add listener {client_id}: provider is shutdown")
             return
-            
+
         self.listeners.add(client_id)
         logger.debug(f"Added listener: {client_id}")
 
@@ -44,7 +44,7 @@ class EventProvider(ABC):
         if not client_id or not isinstance(client_id, str):
             logger.warning(f"Invalid client_id provided: {client_id}")
             return
-            
+
         if client_id in self.listeners:
             self.listeners.remove(client_id)
             logger.debug(f"Removed listener: {client_id}")
@@ -52,11 +52,11 @@ class EventProvider(ABC):
     def _track_signal_connection(self, signal, handler) -> bool:
         """
         Track a signal connection for later cleanup.
-        
+
         Args:
             signal: The signal object
             handler: The handler function
-            
+
         Returns:
             bool: True if connection was successful
         """
@@ -72,9 +72,9 @@ class EventProvider(ABC):
         """Shutdown the event provider and clean up resources."""
         if self._is_shutdown:
             return
-            
+
         logger.info(f"Shutting down {self.__class__.__name__}")
-        
+
         # Disconnect all tracked signal connections
         for signal, handler in self._signal_connections:
             try:
@@ -82,7 +82,7 @@ class EventProvider(ABC):
                 logger.debug(f"Disconnected signal handler: {handler.__name__}")
             except Exception as e:
                 logger.warning(f"Failed to disconnect signal handler: {e}")
-        
+
         self._signal_connections.clear()
         self.listeners.clear()
         self._is_shutdown = True

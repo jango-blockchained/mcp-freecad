@@ -75,79 +75,96 @@ __all__ = available_handlers + ["EVENTS_AVAILABLE"]
 
 
 # Convenience functions for setting up the events system
-def create_event_system(freecad_app=None, max_history_size=1000, max_error_history=50, max_command_history=100):
+def create_event_system(
+    freecad_app=None,
+    max_history_size=1000,
+    max_error_history=50,
+    max_command_history=100,
+):
     """
     Create and initialize a complete events system.
-    
+
     Args:
         freecad_app: Optional FreeCAD application instance
         max_history_size: Maximum size for event router history
         max_error_history: Maximum size for error history
         max_command_history: Maximum size for command history
-        
+
     Returns:
         Tuple of (EventManager, MCPEventIntegration) or (None, None) if failed
     """
     if not EVENTS_AVAILABLE:
         try:
             import FreeCAD
+
             FreeCAD.Console.PrintWarning("FreeCAD AI: Events system not available\n")
         except ImportError:
             print("FreeCAD AI: Events system not available")
         return None, None
-    
+
     try:
         # Create event manager with configurable history sizes
         event_manager = EventManager(
-            freecad_app, 
+            freecad_app,
             max_history_size=max_history_size,
             max_error_history=max_error_history,
-            max_command_history=max_command_history
+            max_command_history=max_command_history,
         )
-        
+
         # Create MCP integration
         mcp_integration = MCPEventIntegration(event_manager)
-        
+
         return event_manager, mcp_integration
-        
+
     except Exception as e:
         try:
             import FreeCAD
-            FreeCAD.Console.PrintError(f"FreeCAD AI: Failed to create events system: {e}\n")
+
+            FreeCAD.Console.PrintError(
+                f"FreeCAD AI: Failed to create events system: {e}\n"
+            )
         except ImportError:
             print(f"FreeCAD AI: Failed to create events system: {e}")
         return None, None
 
 
-async def initialize_event_system(freecad_app=None, max_history_size=1000, max_error_history=50, max_command_history=100):
+async def initialize_event_system(
+    freecad_app=None,
+    max_history_size=1000,
+    max_error_history=50,
+    max_command_history=100,
+):
     """
     Create and initialize a complete events system asynchronously.
-    
+
     Args:
         freecad_app: Optional FreeCAD application instance
         max_history_size: Maximum size for event router history
         max_error_history: Maximum size for error history
         max_command_history: Maximum size for command history
-        
+
     Returns:
         Tuple of (EventManager, MCPEventIntegration) or (None, None) if failed
     """
     event_manager, mcp_integration = create_event_system(
         freecad_app, max_history_size, max_error_history, max_command_history
     )
-    
+
     if event_manager is None:
         return None, None
-    
+
     # Initialize the event manager
     success = await event_manager.initialize()
-    
+
     if not success:
         try:
             import FreeCAD
-            FreeCAD.Console.PrintError("FreeCAD AI: Failed to initialize events system\n")
+
+            FreeCAD.Console.PrintError(
+                "FreeCAD AI: Failed to initialize events system\n"
+            )
         except ImportError:
             print("FreeCAD AI: Failed to initialize events system")
         return None, None
-    
+
     return event_manager, mcp_integration

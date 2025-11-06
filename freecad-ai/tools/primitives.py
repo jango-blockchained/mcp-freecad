@@ -63,7 +63,7 @@ class PrimitivesTool:
         try:
             # Get or create document using safe method
             doc = self._ensure_document_exists()
-            
+
             # Create box
             box = Part.makeBox(length, width, height)
 
@@ -122,7 +122,7 @@ class PrimitivesTool:
         try:
             # Get or create document using safe method
             doc = self._ensure_document_exists()
-            
+
             # Create cylinder
             cylinder = Part.makeCylinder(radius, height)
 
@@ -179,7 +179,7 @@ class PrimitivesTool:
         try:
             # Get or create document using safe method
             doc = self._ensure_document_exists()
-            
+
             # Create sphere
             sphere = Part.makeSphere(radius)
 
@@ -242,7 +242,7 @@ class PrimitivesTool:
         try:
             # Get or create document using safe method
             doc = self._ensure_document_exists()
-            
+
             # Create cone
             cone = Part.makeCone(radius1, radius2, height)
 
@@ -310,7 +310,7 @@ class PrimitivesTool:
         try:
             # Get or create document using safe method
             doc = self._ensure_document_exists()
-            
+
             # Create torus
             torus = Part.makeTorus(radius1, radius2)
 

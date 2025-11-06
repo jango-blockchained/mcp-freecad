@@ -37,7 +37,9 @@ class ClaudeProvider(BaseAIProvider):
     # Note: Currently no Claude 3.x models support extended thinking in public API
     THINKING_MODE_MODELS = []
 
-    def __init__(self, api_key: str, model: str = "claude-3-5-sonnet-20241022", **kwargs):
+    def __init__(
+        self, api_key: str, model: str = "claude-3-5-sonnet-20241022", **kwargs
+    ):
         """Initialize Claude provider.
 
         Args:
@@ -240,9 +242,10 @@ Be precise with measurements and technical details."""
             return "successful" in test_response.content.lower()
         except (ValueError, ConnectionError, TimeoutError) as e:
             # ValueError: Invalid API response or configuration
-            # ConnectionError: Network connectivity issues  
+            # ConnectionError: Network connectivity issues
             # TimeoutError: Request timeout
             import logging
+
             logging.getLogger(__name__).debug(f"Claude connection test failed: {e}")
             return False
 

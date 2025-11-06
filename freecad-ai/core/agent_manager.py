@@ -74,12 +74,17 @@ class AgentManager:
 
             # Initialize components safely
             self._initialize_components()
-            
-            FreeCAD.Console.PrintMessage("Agent Manager: Initialization completed successfully\n")
-            
+
+            FreeCAD.Console.PrintMessage(
+                "Agent Manager: Initialization completed successfully\n"
+            )
+
         except Exception as e:
-            FreeCAD.Console.PrintError(f"Agent Manager: Critical initialization error: {e}\n")
+            FreeCAD.Console.PrintError(
+                f"Agent Manager: Critical initialization error: {e}\n"
+            )
             import traceback
+
             FreeCAD.Console.PrintError(f"Traceback: {traceback.format_exc()}\n")
             # Ensure basic attributes exist even if initialization fails
             self.current_mode = AgentMode.CHAT
@@ -87,7 +92,9 @@ class AgentManager:
             self.tool_registry = None
             self.config = {}
             self.callbacks = {}
-            FreeCAD.Console.PrintMessage("Agent Manager: Minimal fallback initialization completed\n")
+            FreeCAD.Console.PrintMessage(
+                "Agent Manager: Minimal fallback initialization completed\n"
+            )
 
     def _initialize_components(self):
         """Initialize agent components"""

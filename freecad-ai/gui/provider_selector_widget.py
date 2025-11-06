@@ -131,7 +131,7 @@ class ProviderSelectorWidget(QtWidgets.QWidget):
     def _refresh_providers(self):
         """Refresh the list of available providers."""
         print("ProviderSelector: Refreshing providers...")
-        
+
         if not self.provider_service:
             print("ProviderSelector: No provider service available")
             self._update_status_indicator("error", "Provider service not available")
@@ -143,9 +143,13 @@ class ProviderSelectorWidget(QtWidgets.QWidget):
             # Get active providers from service
             active_providers = self.provider_service.get_active_providers()
             all_providers = self.provider_service.get_all_providers()
-            
-            print(f"ProviderSelector: Active providers: {list(active_providers.keys()) if active_providers else 'None'}")
-            print(f"ProviderSelector: All providers: {list(all_providers.keys()) if all_providers else 'None'}")
+
+            print(
+                f"ProviderSelector: Active providers: {list(active_providers.keys()) if active_providers else 'None'}"
+            )
+            print(
+                f"ProviderSelector: All providers: {list(all_providers.keys()) if all_providers else 'None'}"
+            )
 
             # Update available providers dict
             self.available_providers = {}
@@ -206,55 +210,57 @@ class ProviderSelectorWidget(QtWidgets.QWidget):
     def _load_fallback_providers(self):
         """Load fallback default providers when service is unavailable."""
         print("ProviderSelector: Loading fallback providers")
-        
+
         # Clear dropdowns
         self.provider_combo.clear()
         self.model_combo.clear()
-        
+
         # Default providers that should always be available
         fallback_providers = {
             "Anthropic": {
                 "type": "anthropic",
                 "models": ["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022"],
-                "status": "inactive"
+                "status": "inactive",
             },
             "OpenAI": {
-                "type": "openai", 
+                "type": "openai",
                 "models": ["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"],
-                "status": "inactive"
+                "status": "inactive",
             },
             "Google": {
                 "type": "google",
                 "models": ["gemini-1.5-pro", "gemini-1.5-flash"],
-                "status": "inactive"
+                "status": "inactive",
             },
             "Google Vertex AI": {
                 "type": "vertexai",
                 "models": ["gemini-1.5-pro", "gemini-1.5-flash", "text-bison"],
-                "status": "inactive"
+                "status": "inactive",
             },
             "OpenRouter": {
                 "type": "openrouter",
                 "models": ["anthropic/claude-3.5-sonnet", "openai/gpt-4o"],
-                "status": "inactive"
-            }
+                "status": "inactive",
+            },
         }
-        
+
         self.available_providers = {}
-        
+
         for provider_name, provider_data in fallback_providers.items():
             self.provider_combo.addItem(provider_name)
             self.available_providers[provider_name] = {
                 "models": provider_data["models"],
                 "status": provider_data["status"],
-                "info": {"type": provider_data["type"]}
+                "info": {"type": provider_data["type"]},
             }
-        
+
         # Select first provider as default
         if self.provider_combo.count() > 0:
             self.provider_combo.setCurrentIndex(0)
-            
-        self._update_status_indicator("warning", "Using default providers - configure in Providers tab")
+
+        self._update_status_indicator(
+            "warning", "Using default providers - configure in Providers tab"
+        )
 
     def _get_provider_models(self, provider_name, provider_info):
         """Get available models for a provider."""
@@ -292,7 +298,7 @@ class ProviderSelectorWidget(QtWidgets.QWidget):
                     "gemini-1.5-flash",
                     "gemini-1.0-pro",
                     "text-bison",
-                    "code-bison"
+                    "code-bison",
                 ],
                 "openrouter": [
                     "anthropic/claude-3.5-sonnet",

@@ -518,7 +518,9 @@ class SettingsWidget(QtWidgets.QWidget):
         layout.addWidget(desc_label)
 
         self.missing_deps_list = QtWidgets.QListWidget()
-        self.missing_deps_list.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.missing_deps_list.setSelectionMode(
+            QtWidgets.QAbstractItemView.ExtendedSelection
+        )
         layout.addWidget(self.missing_deps_list)
 
         button_layout = QtWidgets.QHBoxLayout()
@@ -551,10 +553,14 @@ class SettingsWidget(QtWidgets.QWidget):
             if missing:
                 for dep in missing:
                     self.missing_deps_list.addItem(dep)
-                self.deps_status_label.setText(f"Status: Found {len(missing)} missing dependencies.")
+                self.deps_status_label.setText(
+                    f"Status: Found {len(missing)} missing dependencies."
+                )
                 self.install_deps_btn.setEnabled(True)
             else:
-                self.deps_status_label.setText("Status: All dependencies are installed.")
+                self.deps_status_label.setText(
+                    "Status: All dependencies are installed."
+                )
                 self.install_deps_btn.setEnabled(False)
         except Exception as e:
             self.logger.error(f"Error checking dependencies: {e}")
@@ -565,45 +571,63 @@ class SettingsWidget(QtWidgets.QWidget):
         """Install selected missing dependencies."""
         selected_items = self.missing_deps_list.selectedItems()
         if not selected_items:
-            QtWidgets.QMessageBox.information(self, "No Selection", "Please select dependencies to install.")
+            QtWidgets.QMessageBox.information(
+                self, "No Selection", "Please select dependencies to install."
+            )
             return
 
         deps_to_install = [item.text() for item in selected_items]
-        
-        self.deps_status_label.setText(f"Status: Installing {', '.join(deps_to_install)}...")
-        QtWidgets.QApplication.processEvents() # Ensure UI updates
+
+        self.deps_status_label.setText(
+            f"Status: Installing {', '.join(deps_to_install)}..."
+        )
+        QtWidgets.QApplication.processEvents()  # Ensure UI updates
 
         try:
             checker = DependencyChecker()
-            successfully_installed, failed_to_install = checker.install_dependencies(deps_to_install)
-            
+            successfully_installed, failed_to_install = checker.install_dependencies(
+                deps_to_install
+            )
+
             # Log the results
             if successfully_installed:
-                self.logger.info(f"Successfully installed: {', '.join(successfully_installed)}")
+                self.logger.info(
+                    f"Successfully installed: {', '.join(successfully_installed)}"
+                )
             if failed_to_install:
-                self.logger.warning(f"Failed to install: {', '.join(failed_to_install)}")
+                self.logger.warning(
+                    f"Failed to install: {', '.join(failed_to_install)}"
+                )
 
             # Update UI based on results
             if successfully_installed and not failed_to_install:
-                QtWidgets.QMessageBox.information(self, "Installation Complete", 
-                                                  f"Successfully installed: {', '.join(successfully_installed)}."
-                                                  "\\nPlease restart FreeCAD for changes to take full effect.")
+                QtWidgets.QMessageBox.information(
+                    self,
+                    "Installation Complete",
+                    f"Successfully installed: {', '.join(successfully_installed)}."
+                    "\\nPlease restart FreeCAD for changes to take full effect.",
+                )
             elif failed_to_install:
                 error_message = f"Installation Report:\n\nSuccessfully installed: {', '.join(successfully_installed) if successfully_installed else 'None'}\nFailed to install: {', '.join(failed_to_install)}\n\nCheck the FreeCAD Report View or console for more details from pip."
                 if not successfully_installed:
-                     error_message += "\\nNo packages were installed successfully."
+                    error_message += "\\nNo packages were installed successfully."
                 error_message += "\\nSome packages may require a FreeCAD restart even if partially successful."
-                QtWidgets.QMessageBox.warning(self, "Installation Issues", error_message)
-            
+                QtWidgets.QMessageBox.warning(
+                    self, "Installation Issues", error_message
+                )
+
             # Always re-check dependencies to update the list and status
             self._check_dependencies()
 
         except Exception as e:
             self.logger.error(f"Error during installation process in UI: {e}")
             self.deps_status_label.setText(f"Status: Error during installation: {e}")
-            QtWidgets.QMessageBox.critical(self, "Installation Error", 
-                                         f"An unexpected error occurred: {e}"
-                                         "\\nCheck the FreeCAD Report View or console for details.")
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Installation Error",
+                f"An unexpected error occurred: {e}"
+                "\\nCheck the FreeCAD Report View or console for details.",
+            )
             # Optionally, re-check dependencies even after an unexpected error
             self._check_dependencies()
 

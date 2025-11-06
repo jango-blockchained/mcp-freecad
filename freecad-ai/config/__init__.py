@@ -10,7 +10,7 @@ __version__ = "1.0.0"
 # Import configuration classes
 try:
     from .config_manager import ConfigManager
-    
+
     __all__ = ["ConfigManager"]
 
 except ImportError as e:

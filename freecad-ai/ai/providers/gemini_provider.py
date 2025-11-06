@@ -299,6 +299,7 @@ Be precise with measurements and technical details. When working with visual con
             # ConnectionError: Network connectivity issues
             # TimeoutError: Request timeout
             import logging
+
             logging.getLogger(__name__).debug(f"Gemini connection test failed: {e}")
             return False
 

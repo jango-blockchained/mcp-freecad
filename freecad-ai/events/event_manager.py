@@ -23,7 +23,7 @@ except ImportError:
     addon_dir = os.path.dirname(os.path.dirname(__file__))
     if addon_dir not in sys.path:
         sys.path.insert(0, addon_dir)
-    
+
     from events.event_router import EventRouter
     from events.base import EventProvider
     from events.document_events import DocumentEventProvider
@@ -36,12 +36,18 @@ logger = logging.getLogger(__name__)
 class EventManager:
     """
     Central event manager that coordinates all event providers.
-    
+
     This class manages the lifecycle of event providers, routes events,
     and provides a unified interface for the MCP server.
     """
 
-    def __init__(self, freecad_app=None, max_history_size=1000, max_error_history=50, max_command_history=100):
+    def __init__(
+        self,
+        freecad_app=None,
+        max_history_size=1000,
+        max_error_history=50,
+        max_command_history=100,
+    ):
         """
         Initialize the event manager.
 
@@ -63,6 +69,7 @@ class EventManager:
         if self.freecad_app is None:
             try:
                 import FreeCAD
+
                 self.freecad_app = FreeCAD
                 logger.info("EventManager connected to FreeCAD")
             except ImportError:
@@ -83,8 +90,7 @@ class EventManager:
             try:
                 # Initialize document event provider
                 self.providers["document"] = DocumentEventProvider(
-                    freecad_app=self.freecad_app,
-                    event_router=self.event_router
+                    freecad_app=self.freecad_app, event_router=self.event_router
                 )
                 logger.info("Initialized document event provider")
 
@@ -92,7 +98,7 @@ class EventManager:
                 self.providers["command"] = CommandExecutionEventProvider(
                     freecad_app=self.freecad_app,
                     event_router=self.event_router,
-                    max_history_size=self.max_command_history
+                    max_history_size=self.max_command_history,
                 )
                 logger.info("Initialized command execution event provider")
 
@@ -101,7 +107,7 @@ class EventManager:
                     freecad_app=self.freecad_app,
                     event_router=self.event_router,
                     max_history_size=self.max_error_history,
-                    install_global_handler=False  # Default to safe mode
+                    install_global_handler=False,  # Default to safe mode
                 )
                 logger.info("Initialized error event provider")
 
@@ -134,15 +140,17 @@ class EventManager:
                     await provider.shutdown()
                     logger.debug(f"Cleaned up {provider_name} provider")
                 else:
-                    logger.warning(f"Provider {provider_name} does not support shutdown")
+                    logger.warning(
+                        f"Provider {provider_name} does not support shutdown"
+                    )
             except Exception as e:
                 logger.error(f"Error cleaning up {provider_name} provider: {e}")
-        
+
         self.providers.clear()
 
-    async def add_event_listener(self, 
-                                client_id: str, 
-                                event_types: List[str] = None) -> bool:
+    async def add_event_listener(
+        self, client_id: str, event_types: List[str] = None
+    ) -> bool:
         """
         Add an event listener for a client.
 
@@ -159,7 +167,7 @@ class EventManager:
 
         try:
             await self.event_router.add_listener(client_id, event_types)
-            
+
             # Also add to individual providers
             for provider in self.providers.values():
                 provider.add_listener(client_id)
@@ -171,9 +179,9 @@ class EventManager:
             logger.error(f"Failed to add event listener for {client_id}: {e}")
             return False
 
-    async def remove_event_listener(self, 
-                                   client_id: str, 
-                                   event_types: List[str] = None) -> bool:
+    async def remove_event_listener(
+        self, client_id: str, event_types: List[str] = None
+    ) -> bool:
         """
         Remove an event listener for a client.
 
@@ -190,7 +198,7 @@ class EventManager:
 
         try:
             await self.event_router.remove_listener(client_id, event_types)
-            
+
             # Also remove from individual providers if removing all events
             if event_types is None:
                 for provider in self.providers.values():
@@ -203,10 +211,9 @@ class EventManager:
             logger.error(f"Failed to remove event listener for {client_id}: {e}")
             return False
 
-    async def get_event_history(self, 
-                               client_id: str = None,
-                               event_types: List[str] = None,
-                               limit: int = 100) -> List[Dict[str, Any]]:
+    async def get_event_history(
+        self, client_id: str = None, event_types: List[str] = None, limit: int = 100
+    ) -> List[Dict[str, Any]]:
         """
         Get event history.
 
@@ -224,7 +231,9 @@ class EventManager:
 
         return await self.event_router.get_event_history(client_id, event_types, limit)
 
-    async def get_command_history(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+    async def get_command_history(
+        self, limit: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
         """
         Get command execution history.
 
@@ -240,10 +249,12 @@ class EventManager:
         command_provider = self.providers["command"]
         if hasattr(command_provider, "get_command_history"):
             return command_provider.get_command_history(limit)
-        
+
         return []
 
-    async def get_error_history(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+    async def get_error_history(
+        self, limit: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
         """
         Get error history.
 
@@ -259,13 +270,15 @@ class EventManager:
         error_provider = self.providers["error"]
         if hasattr(error_provider, "get_error_history"):
             return error_provider.get_error_history(limit)
-        
+
         return []
 
-    async def report_error(self, 
-                          error_message: str, 
-                          error_type: str = "manual",
-                          details: Dict[str, Any] = None) -> bool:
+    async def report_error(
+        self,
+        error_message: str,
+        error_type: str = "manual",
+        details: Dict[str, Any] = None,
+    ) -> bool:
         """
         Manually report an error.
 
@@ -306,16 +319,18 @@ class EventManager:
             "freecad_available": self.freecad_app is not None,
             "providers": {},
             "router_stats": self.event_router.get_stats(),
-            "active_listeners": await self.event_router.get_active_listeners()
+            "active_listeners": await self.event_router.get_active_listeners(),
         }
 
         # Get status from each provider
         for name, provider in self.providers.items():
             provider_status = {
                 "type": type(provider).__name__,
-                "listeners": len(provider.listeners) if hasattr(provider, "listeners") else 0
+                "listeners": (
+                    len(provider.listeners) if hasattr(provider, "listeners") else 0
+                ),
             }
-            
+
             # Add provider-specific status
             if hasattr(provider, "get_status"):
                 try:
@@ -342,17 +357,17 @@ class EventManager:
     def enable_global_error_handler(self, enable: bool = True) -> bool:
         """
         Enable or disable the global exception handler for error tracking.
-        
+
         Args:
             enable: Whether to enable the global handler
-            
+
         Returns:
             bool: True if operation was successful
         """
         if not self.is_initialized or "error" not in self.providers:
             logger.error("Error provider not available")
             return False
-            
+
         try:
             error_provider = self.providers["error"]
             if enable:
@@ -370,7 +385,9 @@ class EventManager:
             logger.error(f"Failed to configure global error handler: {e}")
             return False
 
-    async def emit_custom_event(self, event_type: str, event_data: Dict[str, Any]) -> bool:
+    async def emit_custom_event(
+        self, event_type: str, event_data: Dict[str, Any]
+    ) -> bool:
         """
         Emit a custom event through the event system.
 

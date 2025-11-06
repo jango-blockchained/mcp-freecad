@@ -5,6 +5,11 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import FreeCAD
 
+try:
+    import FreeCADGui
+except ImportError:
+    FreeCADGui = None
+
 
 @dataclass
 class ToolInfo:
@@ -568,7 +573,11 @@ class ToolRegistry:
 
         for dep in dependencies:
             # Check various dependency types
-            if dep == "selection" and not FreeCADGui.Selection.getSelection():
+            if (
+                dep == "selection"
+                and FreeCADGui
+                and not FreeCADGui.Selection.getSelection()
+            ):
                 missing.append("No objects selected")
             elif dep == "active_document" and not FreeCAD.ActiveDocument:
                 missing.append("No active document")

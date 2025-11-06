@@ -16,14 +16,14 @@ logger = logging.getLogger(__name__)
 class EventRouter:
     """
     Central event router for broadcasting events to multiple listeners.
-    
+
     This class manages event subscriptions and broadcasts events to all registered
     listeners in a thread-safe manner.
     """
 
     def __init__(self, max_history_size: int = 1000):
         """Initialize the event router.
-        
+
         Args:
             max_history_size: Maximum number of events to keep in history
         """
@@ -33,7 +33,9 @@ class EventRouter:
         self.max_history_size = max_history_size
         self._lock = asyncio.Lock()
 
-    async def add_listener(self, client_id: str, event_types: List[str] = None, callback: Callable = None) -> None:
+    async def add_listener(
+        self, client_id: str, event_types: List[str] = None, callback: Callable = None
+    ) -> None:
         """
         Add a listener for specific event types.
 
@@ -49,10 +51,10 @@ class EventRouter:
             if event_types:
                 for event_type in event_types:
                     self.client_subscriptions[client_id].add(event_type)
-                    
+
                     if event_type not in self.listeners:
                         self.listeners[event_type] = set()
-                    
+
                     if callback:
                         # Use weak reference to avoid memory leaks
                         self.listeners[event_type].add(weakref.ref(callback))
@@ -62,7 +64,9 @@ class EventRouter:
 
         logger.info(f"Added listener {client_id} for events: {event_types or ['all']}")
 
-    async def remove_listener(self, client_id: str, event_types: List[str] = None) -> None:
+    async def remove_listener(
+        self, client_id: str, event_types: List[str] = None
+    ) -> None:
         """
         Remove a listener from specific event types.
 
@@ -85,9 +89,13 @@ class EventRouter:
             if not self.client_subscriptions[client_id]:
                 del self.client_subscriptions[client_id]
 
-        logger.info(f"Removed listener {client_id} from events: {event_types or ['all']}")
+        logger.info(
+            f"Removed listener {client_id} from events: {event_types or ['all']}"
+        )
 
-    async def broadcast_event(self, event_type: str, event_data: Dict[str, Any]) -> None:
+    async def broadcast_event(
+        self, event_type: str, event_data: Dict[str, Any]
+    ) -> None:
         """
         Broadcast an event to all registered listeners.
 
@@ -104,7 +112,7 @@ class EventRouter:
             "type": event_type,
             "data": event_data,
             "timestamp": event_data.get("timestamp"),
-            "listeners_notified": 0
+            "listeners_notified": 0,
         }
 
         async with self._lock:
@@ -115,7 +123,7 @@ class EventRouter:
 
             # Find all listeners for this event type
             interested_clients = []
-            
+
             for client_id, subscriptions in self.client_subscriptions.items():
                 if "*" in subscriptions or event_type in subscriptions:
                     interested_clients.append(client_id)
@@ -143,12 +151,13 @@ class EventRouter:
                 for dead_ref in dead_refs:
                     self.listeners[event_type].discard(dead_ref)
 
-        logger.debug(f"Broadcast {event_type} event to {len(interested_clients)} listeners")
+        logger.debug(
+            f"Broadcast {event_type} event to {len(interested_clients)} listeners"
+        )
 
-    async def get_event_history(self, 
-                               client_id: str = None, 
-                               event_types: List[str] = None, 
-                               limit: int = 100) -> List[Dict[str, Any]]:
+    async def get_event_history(
+        self, client_id: str = None, event_types: List[str] = None, limit: int = 100
+    ) -> List[Dict[str, Any]]:
         """
         Get event history for a client or specific event types.
 
@@ -162,20 +171,20 @@ class EventRouter:
         """
         async with self._lock:
             filtered_events = []
-            
+
             for event in reversed(self.event_history):
                 # Filter by event types if specified
                 if event_types and event["type"] not in event_types:
                     continue
-                
+
                 # Filter by client subscriptions if specified
                 if client_id and client_id in self.client_subscriptions:
                     subscriptions = self.client_subscriptions[client_id]
                     if "*" not in subscriptions and event["type"] not in subscriptions:
                         continue
-                
+
                 filtered_events.append(event)
-                
+
                 if len(filtered_events) >= limit:
                     break
 
@@ -193,7 +202,7 @@ class EventRouter:
                 "total_clients": len(self.client_subscriptions),
                 "clients": dict(self.client_subscriptions),
                 "event_types_with_callbacks": list(self.listeners.keys()),
-                "total_events_in_history": len(self.event_history)
+                "total_events_in_history": len(self.event_history),
             }
 
     def get_stats(self) -> Dict[str, Any]:
@@ -207,7 +216,7 @@ class EventRouter:
             "total_clients": len(self.client_subscriptions),
             "total_event_types": len(self.listeners),
             "events_in_history": len(self.event_history),
-            "max_history_size": self.max_history_size
+            "max_history_size": self.max_history_size,
         }
 
         if self.event_history:

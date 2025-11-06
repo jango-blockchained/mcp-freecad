@@ -212,7 +212,7 @@ def _show_dependency_guidance(missing_dependency, provider_name):
         except (AttributeError, IndexError, TypeError):
             # AttributeError: Script access issues
             # IndexError: Script parsing issues
-            # TypeError: Script format issues  
+            # TypeError: Script format issues
             # Fallback simple script
             FreeCAD.Console.PrintMessage("   import subprocess, sys, os\n")
             FreeCAD.Console.PrintMessage(

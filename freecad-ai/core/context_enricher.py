@@ -294,6 +294,7 @@ class ContextEnricher:
             # TypeError: Invalid type conversion or property access
             # RuntimeError: FreeCAD object in invalid state
             import logging
+
             logging.getLogger(__name__).debug(f"Failed to extract object detail: {e}")
             return None
 

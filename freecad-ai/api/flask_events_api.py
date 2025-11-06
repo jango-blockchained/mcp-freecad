@@ -2,9 +2,7 @@
 Flask-based API for FreeCAD AI events endpoint (migration template)
 """
 
-import json
 import uuid
-from typing import Any, Dict, List, Optional
 
 from flask import Blueprint, Response, abort, jsonify, request, stream_with_context
 
