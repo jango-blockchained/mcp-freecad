@@ -364,7 +364,7 @@ class ProviderIntegrationService:
 
             # Group by normalized name to find duplicates
             provider_groups = {}
-            for provider_name in all_configs.keys():
+            for provider_name in all_configs:
                 normalized = self._normalize_provider_name(provider_name)
                 if normalized not in provider_groups:
                     provider_groups[normalized] = []

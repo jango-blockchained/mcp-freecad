@@ -8,6 +8,7 @@ Author: jango-blockchained
 """
 
 import json
+import logging
 import time
 from typing import Any, Dict, List
 
@@ -18,6 +19,9 @@ from ai.providers.base_provider import (
     BaseAIProvider,
     MessageRole,
 )
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 
 class OpenRouterProvider(BaseAIProvider):
@@ -253,6 +257,7 @@ Be precise with measurements and technical details. Adapt your response style ba
         except Exception as e:
             response_time = time.time() - start_time
             self._update_stats(response_time, error=True)
+            logger.error(f"OpenRouter request failed: {str(e)}")
             raise Exception(f"OpenRouter request failed: {str(e)}")
 
     def _process_response(self, response_data: Dict[str, Any]) -> AIResponse:
@@ -441,9 +446,11 @@ Be precise with measurements and technical details. Adapt your response style ba
                         data = await response.json()
                         return data.get("data", [])
                     else:
+                        logger.warning(f"OpenRouter models list API returned status {response.status}")
                         return []
-        except Exception:
+        except Exception as e:
             # Return static list if API call fails
+            logger.debug(f"Failed to fetch models from OpenRouter API: {e}")
             return [{"id": model} for model in self.OPENROUTER_MODELS]
 
     def estimate_cost(self, input_tokens: int, output_tokens: int) -> Dict[str, float]:
