@@ -6,40 +6,70 @@ from PySide2 import QtCore, QtWidgets
 
 
 class ConnectionStatusCard(QtWidgets.QFrame):
-    """Visual card for connection status display."""
+    """Visual card for connection status display with Material Design 3."""
 
     def __init__(self, title, parent=None):
         super().__init__(parent)
+        
+        # Import theme system
+        try:
+            from .theme_system import get_current_color_scheme
+            self.colors = get_current_color_scheme()
+        except ImportError:
+            self.colors = None
+        
         self.setFrameStyle(QtWidgets.QFrame.Box)
-        self.setStyleSheet(
-            """
-            QFrame {
-                border: 2px solid #ddd;
-                border-radius: 8px;
-                background-color: #f8f9fa;
-                padding: 10px;
-            }
-        """
-        )
+        if self.colors:
+            self.setStyleSheet(f"""
+                QFrame {{
+                    border: 1px solid {self.colors.get_color("border_light")};
+                    border-radius: 16px;
+                    background-color: {self.colors.get_color("background_card")};
+                    padding: 16px;
+                }}
+            """)
+        else:
+            self.setStyleSheet("""
+                QFrame {
+                    border: 1px solid #e7e9f5;
+                    border-radius: 16px;
+                    background-color: #ffffff;
+                    padding: 16px;
+                }
+            """)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setSpacing(5)
+        layout.setSpacing(8)
 
         # Title
         self.title_label = QtWidgets.QLabel(title)
-        self.title_label.setStyleSheet(
-            "font-weight: bold; font-size: 12px; color: #333;"
-        )
+        if self.colors:
+            self.title_label.setStyleSheet(f"""
+                font-weight: 600; 
+                font-size: 14px; 
+                color: {self.colors.get_color("text_primary")};
+            """)
+        else:
+            self.title_label.setStyleSheet(
+                "font-weight: 600; font-size: 14px; color: #1c1b1f;"
+            )
         layout.addWidget(self.title_label)
 
         # Status indicator
         status_layout = QtWidgets.QHBoxLayout()
         self.status_icon = QtWidgets.QLabel("⭕")
-        self.status_icon.setStyleSheet("font-size: 24px;")
+        self.status_icon.setStyleSheet("font-size: 28px;")
         status_layout.addWidget(self.status_icon)
 
         self.status_text = QtWidgets.QLabel("Disconnected")
-        self.status_text.setStyleSheet("font-size: 11px; color: #666;")
+        if self.colors:
+            self.status_text.setStyleSheet(f"""
+                font-size: 13px; 
+                color: {self.colors.get_color("text_secondary")};
+                font-weight: 500;
+            """)
+        else:
+            self.status_text.setStyleSheet("font-size: 13px; color: #49454f; font-weight: 500;")
         status_layout.addWidget(self.status_text)
         status_layout.addStretch()
 
@@ -47,71 +77,124 @@ class ConnectionStatusCard(QtWidgets.QFrame):
 
         # Connection info
         self.info_label = QtWidgets.QLabel("Not connected")
-        self.info_label.setStyleSheet("font-size: 10px; color: #999;")
+        if self.colors:
+            self.info_label.setStyleSheet(f"""
+                font-size: 12px; 
+                color: {self.colors.get_color("text_muted")};
+                line-height: 1.4;
+            """)
+        else:
+            self.info_label.setStyleSheet("font-size: 12px; color: #73777f;")
         self.info_label.setWordWrap(True)
         layout.addWidget(self.info_label)
 
         # Last activity
         self.activity_label = QtWidgets.QLabel("")
-        self.activity_label.setStyleSheet(
-            "font-size: 9px; color: #aaa; font-style: italic;"
-        )
+        if self.colors:
+            self.activity_label.setStyleSheet(f"""
+                font-size: 11px; 
+                color: {self.colors.get_color("text_muted")}; 
+                font-style: italic;
+            """)
+        else:
+            self.activity_label.setStyleSheet(
+                "font-size: 11px; color: #73777f; font-style: italic;"
+            )
         layout.addWidget(self.activity_label)
 
     def set_status(self, status, info="", activity=""):
-        """Update connection status."""
-        if status == "connected":
-            self.status_icon.setText("🟢")
-            self.status_text.setText("Connected")
-            self.setStyleSheet(
-                """
-                QFrame {
-                    border: 2px solid #4CAF50;
-                    border-radius: 8px;
-                    background-color: #f1f8f4;
-                    padding: 10px;
-                }
-            """
-            )
-        elif status == "connecting":
-            self.status_icon.setText("🟡")
-            self.status_text.setText("Connecting...")
-            self.setStyleSheet(
-                """
-                QFrame {
-                    border: 2px solid #FF9800;
-                    border-radius: 8px;
-                    background-color: #fff8f1;
-                    padding: 10px;
-                }
-            """
-            )
-        elif status == "error":
-            self.status_icon.setText("🔴")
-            self.status_text.setText("Error")
-            self.setStyleSheet(
-                """
-                QFrame {
-                    border: 2px solid #f44336;
-                    border-radius: 8px;
-                    background-color: #fdf1f1;
-                    padding: 10px;
-                }
-            """
-            )
-        else:  # disconnected
-            self.status_icon.setText("⭕")
-            self.status_text.setText("Disconnected")
-            self.setStyleSheet(
-                """
-                QFrame {
-                    border: 2px solid #ddd;
-                    border-radius: 8px;
-                    background-color: #f8f9fa;
-                    padding: 10px;
-                }
-            """
-            )
+        """Update connection status with modern styling."""
+        if self.colors:
+            if status == "connected":
+                self.status_icon.setText("🟢")
+                self.status_text.setText("Connected")
+                self.setStyleSheet(f"""
+                    QFrame {{
+                        border: 2px solid {self.colors.get_color("success")};
+                        border-radius: 16px;
+                        background-color: {self.colors.get_color("success_container")};
+                        padding: 16px;
+                    }}
+                """)
+            elif status == "connecting":
+                self.status_icon.setText("🟡")
+                self.status_text.setText("Connecting...")
+                self.setStyleSheet(f"""
+                    QFrame {{
+                        border: 2px solid {self.colors.get_color("warning")};
+                        border-radius: 16px;
+                        background-color: {self.colors.get_color("warning_container")};
+                        padding: 16px;
+                    }}
+                """)
+            elif status == "error":
+                self.status_icon.setText("🔴")
+                self.status_text.setText("Error")
+                self.setStyleSheet(f"""
+                    QFrame {{
+                        border: 2px solid {self.colors.get_color("error")};
+                        border-radius: 16px;
+                        background-color: {self.colors.get_color("error_container")};
+                        padding: 16px;
+                    }}
+                """)
+            else:  # disconnected
+                self.status_icon.setText("⭕")
+                self.status_text.setText("Disconnected")
+                self.setStyleSheet(f"""
+                    QFrame {{
+                        border: 1px solid {self.colors.get_color("border")};
+                        border-radius: 16px;
+                        background-color: {self.colors.get_color("background_secondary")};
+                        padding: 16px;
+                    }}
+                """)
+        else:
+            # Fallback styling when colors are not available
+            if status == "connected":
+                self.status_icon.setText("🟢")
+                self.status_text.setText("Connected")
+                self.setStyleSheet("""
+                    QFrame {
+                        border: 2px solid #006e1c;
+                        border-radius: 16px;
+                        background-color: #97f682;
+                        padding: 16px;
+                    }
+                """)
+            elif status == "connecting":
+                self.status_icon.setText("🟡")
+                self.status_text.setText("Connecting...")
+                self.setStyleSheet("""
+                    QFrame {
+                        border: 2px solid #785900;
+                        border-radius: 16px;
+                        background-color: #ffdea6;
+                        padding: 16px;
+                    }
+                """)
+            elif status == "error":
+                self.status_icon.setText("🔴")
+                self.status_text.setText("Error")
+                self.setStyleSheet("""
+                    QFrame {
+                        border: 2px solid #ba1a1a;
+                        border-radius: 16px;
+                        background-color: #ffdad6;
+                        padding: 16px;
+                    }
+                """)
+            else:  # disconnected
+                self.status_icon.setText("⭕")
+                self.status_text.setText("Disconnected")
+                self.setStyleSheet("""
+                    QFrame {
+                        border: 1px solid #c4c6d0;
+                        border-radius: 16px;
+                        background-color: #f5f5f5;
+                        padding: 16px;
+                    }
+                """)
 
         if info:
             self.info_label.setText(info)
@@ -149,44 +232,65 @@ class ConnectionWidget(QtWidgets.QWidget):
             self.connection_config = {}
 
     def _setup_ui(self):
-        """Setup the user interface."""
+        """Setup the user interface with modern styling."""
+        # Import theme system
+        try:
+            from .theme_system import get_theme_manager, get_current_color_scheme
+            theme_manager = get_theme_manager()
+            colors = get_current_color_scheme()
+        except ImportError:
+            theme_manager = None
+            colors = None
+            
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setSpacing(10)
-        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setSpacing(16)
+        layout.setContentsMargins(16, 16, 16, 16)
 
         # Header with real-time status
         header_layout = QtWidgets.QHBoxLayout()
         header_label = QtWidgets.QLabel("🔌 Connection Manager")
-        header_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+        if colors:
+            header_label.setStyleSheet(f"""
+                font-size: 16px; 
+                font-weight: 600; 
+                color: {colors.get_color("primary")};
+            """)
+        else:
+            header_label.setStyleSheet("font-size: 16px; font-weight: 600;")
         header_layout.addWidget(header_label)
 
         header_layout.addStretch()
 
-        # Real-time connection counter
+        # Real-time connection counter with chip style
         self.active_connections_label = QtWidgets.QLabel("0 active connections")
-        self.active_connections_label.setStyleSheet(
-            "padding: 3px 10px; background-color: #e3f2fd; border-radius: 12px; font-size: 11px;"
-        )
+        if theme_manager:
+            self.active_connections_label.setStyleSheet(theme_manager.stylesheet.get_chip_style("primary"))
+        else:
+            self.active_connections_label.setStyleSheet(
+                "padding: 6px 16px; background-color: #d1e4ff; color: #001d35; border-radius: 16px; font-size: 12px; font-weight: 500;"
+            )
         header_layout.addWidget(self.active_connections_label)
 
         layout.addLayout(header_layout)
 
         # Connection cards grid
-        self._create_connection_cards(layout)
+        self._create_connection_cards(layout, theme_manager, colors)
 
         # Connection control panel
-        self._create_control_panel(layout)
+        self._create_control_panel(layout, theme_manager, colors)
 
         # Activity log
-        self._create_activity_log(layout)
+        self._create_activity_log(layout, theme_manager, colors)
 
         layout.addStretch()
 
-    def _create_connection_cards(self, layout):
-        """Create visual connection status cards."""
+    def _create_connection_cards(self, layout, theme_manager=None, colors=None):
+        """Create visual connection status cards with modern styling."""
         cards_group = QtWidgets.QGroupBox("Active Connections")
+        if theme_manager:
+            cards_group.setStyleSheet(theme_manager.stylesheet.get_groupbox_style())
         cards_layout = QtWidgets.QGridLayout(cards_group)
-        cards_layout.setSpacing(10)
+        cards_layout.setSpacing(12)
 
         # Create cards for different connection types
         connections = [
