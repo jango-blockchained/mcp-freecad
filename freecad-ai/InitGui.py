@@ -169,7 +169,7 @@ except Exception as e:
     )
 
 # Addon metadata for FreeCAD
-__version__ = "0.7.11"
+__version__ = "1.0.0"
 __title__ = "FreeCAD AI"
 __author__ = "jango-blockchained"
 __url__ = "https://github.com/jango-blockchained/mcp-freecad"

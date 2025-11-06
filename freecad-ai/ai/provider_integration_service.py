@@ -364,7 +364,7 @@ class ProviderIntegrationService:
 
             # Group by normalized name to find duplicates
             provider_groups = {}
-            for provider_name in all_configs.keys():
+            for provider_name in all_configs:
                 normalized = self._normalize_provider_name(provider_name)
                 if normalized not in provider_groups:
                     provider_groups[normalized] = []
@@ -525,7 +525,7 @@ class ProviderIntegrationService:
     def _get_default_model_for_provider(self, provider_name: str) -> str:
         """Get default model for a provider type."""
         model_map = {
-            "anthropic": "claude-4-20241120",
+            "anthropic": "claude-3-5-sonnet-20241022",
             "openai": "gpt-4o-mini",
             "google": "gemini-1.5-flash",
             "vertexai": "gemini-1.5-pro",
@@ -924,9 +924,9 @@ class ProviderIntegrationService:
             provider_type = self._normalize_provider_name(provider_name)
             default_models = {
                 "anthropic": [
-                    "claude-4-20241120",
                     "claude-3-5-sonnet-20241022",
                     "claude-3-5-haiku-20241022",
+                    "claude-3-opus-20240229",
                 ],
                 "openai": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"],
                 "google": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"],

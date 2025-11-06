@@ -671,7 +671,7 @@ class ToolParameterDialog(QtWidgets.QDialog):
                     elif name.startswith("point") and text.startswith("["):
                         try:
                             params[name] = eval(text)
-                        except:
+                        except Exception:
                             params[name] = text
                     else:
                         params[name] = text

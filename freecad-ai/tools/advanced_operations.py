@@ -105,7 +105,7 @@ class AdvancedOperationsTool:
                 try:
                     face = Part.Face(wire)
                     extruded_shape = face.extrude(dir_vector * distance)
-                except:
+                except Exception:
                     return {
                         "success": False,
                         "error": "Cannot create face from wire",
@@ -239,7 +239,7 @@ class AdvancedOperationsTool:
                     revolved_shape = face.revolve(
                         App.Vector(*axis_point), axis_vec, math.radians(angle)
                     )
-                except:
+                except Exception:
                     return {
                         "success": False,
                         "error": "Cannot create face from wire",

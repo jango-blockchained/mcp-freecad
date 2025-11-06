@@ -127,7 +127,7 @@ class DependencyManager:
             major = int(version_info[0])
             minor = int(version_info[1])
             return (major, minor)
-        except:
+        except Exception:
             return (0, 21)  # Default to 0.21 if detection fails
 
     def _detect_installation_type(self) -> str:
@@ -146,7 +146,7 @@ class DependencyManager:
                 return "windows_portable"
 
             return "standard"
-        except:
+        except Exception:
             return "standard"
 
     def _get_python_exe(self) -> str:
@@ -201,7 +201,7 @@ class DependencyManager:
             user_dir = FreeCAD.getUserAppDataDir()
             vendor_path = os.path.join(user_dir, "Mod", "vendor")
             return vendor_path
-        except:
+        except Exception:
             # Last resort
             return os.path.join(os.path.expanduser("~"), ".freecad", "vendor")
 

@@ -27,22 +27,17 @@ class ClaudeProvider(BaseAIProvider):
 
     # Supported Claude models
     CLAUDE_MODELS = [
-        "claude-4-opus-20250522",  # Most capable - May 2025
-        "claude-4-sonnet-20250522",  # Best coding - May 2025
-        "claude-3-7-sonnet-20250224",  # Hybrid reasoning - Feb 2025
-        "claude-3-5-sonnet-20241022",  # Reliable baseline - Oct 2024
-        "claude-3-opus-20240229",  # Legacy complex reasoning
-        "claude-3-haiku-20240307",  # Fast and cost-effective
+        "claude-3-5-sonnet-20241022",  # Latest Sonnet - Oct 2024
+        "claude-3-5-haiku-20241022",  # Latest Haiku - Oct 2024
+        "claude-3-opus-20240229",  # Opus - Feb 2024
+        "claude-3-haiku-20240307",  # Haiku - Mar 2024
     ]
 
-    # Models that support thinking mode
-    THINKING_MODE_MODELS = [
-        "claude-4-opus-20250522",
-        "claude-4-sonnet-20250522",
-        "claude-3-7-sonnet-20250224",
-    ]
+    # Models that support thinking mode (extended thinking)
+    # Note: Currently no Claude 3.x models support extended thinking in public API
+    THINKING_MODE_MODELS = []
 
-    def __init__(self, api_key: str, model: str = "claude-4-sonnet-20250522", **kwargs):
+    def __init__(self, api_key: str, model: str = "claude-3-5-sonnet-20241022", **kwargs):
         """Initialize Claude provider.
 
         Args:
@@ -52,9 +47,9 @@ class ClaudeProvider(BaseAIProvider):
         """
         super().__init__(api_key, model, **kwargs)
 
-        # Default to Claude 4 Sonnet for best coding performance
+        # Default to Claude 3.5 Sonnet for best performance
         if not self.model:
-            self.model = "claude-4-sonnet-20250522"
+            self.model = "claude-3-5-sonnet-20241022"
 
         # Claude-specific configuration
         self.max_tokens = kwargs.get("max_tokens", 4000)
@@ -279,28 +274,28 @@ Be precise with measurements and technical details."""
 
         # Add Claude-specific information
         model_details = {
-            "claude-4-opus-20250522": {
-                "description": "Most capable model for complex analysis & research",
-                "release_date": "May 2025",
-                "strengths": ["Complex reasoning", "Research", "Analysis"],
-                "thinking_mode": True,
-            },
-            "claude-4-sonnet-20250522": {
-                "description": "Best coding performance with advanced reasoning",
-                "release_date": "May 2025",
-                "strengths": ["Coding", "Development", "Technical tasks"],
-                "thinking_mode": True,
-            },
-            "claude-3-7-sonnet-20250224": {
-                "description": "Hybrid reasoning with transparent thought process",
-                "release_date": "February 2025",
-                "strengths": ["Extended reasoning", "Problem solving"],
-                "thinking_mode": True,
-            },
             "claude-3-5-sonnet-20241022": {
-                "description": "Reliable baseline with excellent performance",
+                "description": "Most capable Claude 3.5 model with excellent performance",
                 "release_date": "October 2024",
-                "strengths": ["General purpose", "Reliable", "Fast"],
+                "strengths": ["Coding", "Analysis", "General purpose"],
+                "thinking_mode": False,
+            },
+            "claude-3-5-haiku-20241022": {
+                "description": "Fast and efficient Claude 3.5 model",
+                "release_date": "October 2024",
+                "strengths": ["Speed", "Cost-effective", "Quick tasks"],
+                "thinking_mode": False,
+            },
+            "claude-3-opus-20240229": {
+                "description": "Most capable Claude 3 model for complex tasks",
+                "release_date": "February 2024",
+                "strengths": ["Complex reasoning", "Research", "Analysis"],
+                "thinking_mode": False,
+            },
+            "claude-3-haiku-20240307": {
+                "description": "Fast and cost-effective Claude 3 model",
+                "release_date": "March 2024",
+                "strengths": ["Speed", "Cost-effective", "Simple tasks"],
                 "thinking_mode": False,
             },
         }

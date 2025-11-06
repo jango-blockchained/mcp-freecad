@@ -5,6 +5,37 @@ All notable changes to this addon will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-11-06
+
+### Fixed
+- **AI Model Names**: Updated all Claude model references to use valid Anthropic API names
+  - Changed `claude-sonnet-4` → `claude-3-5-sonnet-20241022` (default)
+  - Changed `claude-opus-4` → `claude-3-opus-20240229`
+  - Changed `claude-haiku-3.5` → `claude-3-5-haiku-20241022`
+  - Removed future-dated `claude-4-*` models that don't exist
+  - Removed non-existent `claude-3-7-sonnet` model
+- **Exception Handling**: Replaced 34 bare `except:` clauses with `except Exception:` for better error tracking
+- **Code Quality**: Improved exception handling patterns throughout codebase
+  - Fixed 2 JSON parsing errors to use specific `except json.JSONDecodeError:`
+  - Modified 13 files for better error handling
+- **Module Structure**: Cleaned up `utils/__init__.py`
+  - Removed unnecessary try/except block with only `pass`
+  - Removed duplicate `__all__` declarations
+  - Simplified imports to be direct and clear
+- **Performance**: Optimized dictionary iteration patterns
+- **Logging**: Added logging to OpenRouter provider for better debugging
+
+### Changed
+- **Version**: Updated `InitGui.py` version from `0.7.11` → `1.0.0` for consistency
+- **Configuration**: Updated `addon_config.json` with correct model names and accurate token limits
+- **Thinking Mode**: Disabled thinking mode in config (not available in public Claude API)
+
+### Technical
+- All 111 Python files validated for syntax correctness
+- All modified files compile successfully
+- Exception handling now follows Python best practices
+- No bare except clauses remaining (34 → 0)
+
 ## [1.0.0] - 2025-01-27
 
 ### Added

@@ -23,7 +23,7 @@ try:
         try:
             import PySide2
             QtCore.QT_VERSION_STR = PySide2.__version__
-        except:
+        except Exception:
             QtCore.QT_VERSION_STR = "5.15.0"  # Fallback version
             
     logging.info("Qt Compatibility: Using PySide2")

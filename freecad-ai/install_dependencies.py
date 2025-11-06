@@ -86,7 +86,7 @@ def install_mcp_dependencies():
                 user_dir = FreeCAD.getUserAppDataDir()
                 vendor_path = os.path.join(user_dir, "Mod", "vendor")
                 print("⚠️ Using fallback target directory")
-            except:
+            except Exception:
                 vendor_path = os.path.join(
                     os.path.expanduser("~"), ".freecad", "vendor"
                 )
