@@ -236,21 +236,25 @@ async def run_standard_server(config: Dict[str, Any]):
 
 def main():
     """Main entry point with argument parsing."""
+    from textwrap import dedent
+
     parser = argparse.ArgumentParser(
         description=f"MCP-FreeCAD Server v{__version__}",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Server Modes:
-  fastmcp    Use FastMCP server (lightweight, ideal for Cursor IDE)
-  standard   Use standard MCP server with full tool providers (default)
+        epilog=dedent(
+            """
+            Server Modes:
+              fastmcp    Use FastMCP server (lightweight, ideal for Cursor IDE)
+              standard   Use standard MCP server with full tool providers (default)
 
-Examples:
-  python mcp_server.py                           # Standard server, default config
-  python mcp_server.py --mode fastmcp            # FastMCP server
-  python mcp_server.py --config my.json          # Custom config file
-  python mcp_server.py --debug                   # Debug logging
-  python mcp_server.py --mode standard --debug   # Standard server with debug
-        """,
+            Examples:
+              python mcp_server.py                           # Standard server
+              python mcp_server.py --mode fastmcp            # FastMCP server
+              python mcp_server.py --config my.json          # Custom config
+              python mcp_server.py --debug                   # Debug logging
+              python mcp_server.py --mode standard --debug   # Standard + debug
+            """
+        ),
     )
 
     parser.add_argument(
