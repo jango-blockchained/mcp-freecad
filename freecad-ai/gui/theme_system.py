@@ -1,4 +1,4 @@
-"""Centralized Theme System for FreeCAD AI GUI Components"""
+"""Centralized Theme System for FreeCAD AI GUI Components - Material Design 3"""
 
 from enum import Enum
 from PySide2 import QtWidgets
@@ -20,84 +20,134 @@ class ColorScheme:
         self._load_colors()
 
     def _load_colors(self):
-        """Load colors based on theme."""
+        """Load colors based on theme - Material Design 3 inspired."""
         if self.theme == Theme.LIGHT:
             self.colors = {
-                # Background colors
-                "background_primary": "#ffffff",
-                "background_secondary": "#f8f9fa",
-                "background_tertiary": "#e9ecef",
-                "background_accent": "#e3f2fd",
-                # Text colors
-                "text_primary": "#212529",
-                "text_secondary": "#6c757d",
-                "text_muted": "#adb5bd",
+                # Background colors - Material Design 3 surfaces
+                "background_primary": "#fdfcff",
+                "background_secondary": "#f5f5f5",
+                "background_tertiary": "#eceff1",
+                "background_accent": "#e7f2ff",
+                "background_elevated": "#ffffff",
+                "background_card": "#ffffff",
+                # Text colors - MD3 on-surface variants
+                "text_primary": "#1c1b1f",
+                "text_secondary": "#49454f",
+                "text_muted": "#73777f",
                 "text_inverse": "#ffffff",
-                # Brand colors
-                "primary": "#2196F3",
-                "secondary": "#6c757d",
-                "success": "#4CAF50",
-                "warning": "#FF9800",
-                "error": "#f44336",
-                "info": "#17a2b8",
-                # Chat-specific colors
-                "user_message_bg": "#e3f2fd",
-                "ai_message_bg": "#e8f5e9",
-                "system_message_bg": "#fff3e0",
-                "user_text": "#2196F3",
-                "ai_text": "#4CAF50",
-                "system_text": "#FF9800",
+                "text_on_primary": "#ffffff",
+                # Brand colors - MD3 primary/secondary scheme
+                "primary": "#0061a6",
+                "primary_container": "#d1e4ff",
+                "on_primary": "#ffffff",
+                "on_primary_container": "#001d35",
+                "secondary": "#535f70",
+                "secondary_container": "#d7e3f7",
+                "on_secondary": "#ffffff",
+                "on_secondary_container": "#101c2b",
+                # Semantic colors
+                "success": "#006e1c",
+                "success_container": "#97f682",
+                "on_success": "#ffffff",
+                "on_success_container": "#002204",
+                "warning": "#785900",
+                "warning_container": "#ffdea6",
+                "on_warning": "#ffffff",
+                "on_warning_container": "#261900",
+                "error": "#ba1a1a",
+                "error_container": "#ffdad6",
+                "on_error": "#ffffff",
+                "on_error_container": "#410002",
+                "info": "#0061a6",
+                "info_container": "#d1e4ff",
+                # Chat-specific colors - using MD3 containers
+                "user_message_bg": "#d1e4ff",
+                "ai_message_bg": "#97f682",
+                "system_message_bg": "#ffdea6",
+                "user_text": "#001d35",
+                "ai_text": "#002204",
+                "system_text": "#261900",
                 # UI element colors
-                "border": "#dee2e6",
-                "border_focus": "#2196F3",
-                "button_primary": "#2196F3",
-                "button_success": "#4CAF50",
-                "button_warning": "#FF9800",
-                "button_danger": "#f44336",
+                "border": "#c4c6d0",
+                "border_focus": "#0061a6",
+                "border_light": "#e7e9f5",
+                "divider": "#c4c6d0",
+                "button_primary": "#0061a6",
+                "button_success": "#006e1c",
+                "button_warning": "#785900",
+                "button_danger": "#ba1a1a",
                 # Status colors
-                "status_connected": "#4CAF50",
-                "status_warning": "#FF9800",
-                "status_error": "#f44336",
-                "status_unknown": "#9E9E9E",
+                "status_connected": "#006e1c",
+                "status_warning": "#785900",
+                "status_error": "#ba1a1a",
+                "status_unknown": "#73777f",
+                # Shadows and overlays
+                "shadow": "rgba(0, 0, 0, 0.12)",
+                "overlay": "rgba(0, 0, 0, 0.05)",
             }
-        else:  # DARK theme
+        else:  # DARK theme - Material Design 3 dark surfaces
             self.colors = {
-                # Background colors
-                "background_primary": "#1a1a1a",
-                "background_secondary": "#2d2d2d",
-                "background_tertiary": "#3a3a3a",
-                "background_accent": "#1e3a5f",
-                # Text colors
-                "text_primary": "#ffffff",
-                "text_secondary": "#b3b3b3",
-                "text_muted": "#808080",
-                "text_inverse": "#000000",
-                # Brand colors (slightly adjusted for dark theme)
-                "primary": "#42A5F5",
-                "secondary": "#9e9e9e",
-                "success": "#66BB6A",
-                "warning": "#FFA726",
-                "error": "#EF5350",
-                "info": "#29B6F6",
-                # Chat-specific colors
-                "user_message_bg": "#1e3a5f",
-                "ai_message_bg": "#2e5d33",
-                "system_message_bg": "#4a3326",
-                "user_text": "#42A5F5",
-                "ai_text": "#66BB6A",
-                "system_text": "#FFA726",
+                # Background colors - MD3 dark surfaces
+                "background_primary": "#1c1b1f",
+                "background_secondary": "#2b2930",
+                "background_tertiary": "#44464f",
+                "background_accent": "#003258",
+                "background_elevated": "#2b2930",
+                "background_card": "#2b2930",
+                # Text colors - MD3 on-surface dark
+                "text_primary": "#e6e1e5",
+                "text_secondary": "#cac4d0",
+                "text_muted": "#938f99",
+                "text_inverse": "#1c1b1f",
+                "text_on_primary": "#003258",
+                # Brand colors - MD3 dark primary/secondary
+                "primary": "#a0caff",
+                "primary_container": "#004881",
+                "on_primary": "#003258",
+                "on_primary_container": "#d1e4ff",
+                "secondary": "#bbc7db",
+                "secondary_container": "#3c4858",
+                "on_secondary": "#253140",
+                "on_secondary_container": "#d7e3f7",
+                # Semantic colors - MD3 dark
+                "success": "#7cda64",
+                "success_container": "#005313",
+                "on_success": "#003a09",
+                "on_success_container": "#97f682",
+                "warning": "#f5bf42",
+                "warning_container": "#5d4200",
+                "on_warning": "#3f2e00",
+                "on_warning_container": "#ffdea6",
+                "error": "#ffb4ab",
+                "error_container": "#93000a",
+                "on_error": "#690005",
+                "on_error_container": "#ffdad6",
+                "info": "#a0caff",
+                "info_container": "#004881",
+                # Chat-specific colors - MD3 dark containers
+                "user_message_bg": "#003258",
+                "ai_message_bg": "#003a09",
+                "system_message_bg": "#3f2e00",
+                "user_text": "#d1e4ff",
+                "ai_text": "#97f682",
+                "system_text": "#ffdea6",
                 # UI element colors
-                "border": "#4a4a4a",
-                "border_focus": "#42A5F5",
-                "button_primary": "#42A5F5",
-                "button_success": "#66BB6A",
-                "button_warning": "#FFA726",
-                "button_danger": "#EF5350",
+                "border": "#44464f",
+                "border_focus": "#a0caff",
+                "border_light": "#2b2930",
+                "divider": "#44464f",
+                "button_primary": "#a0caff",
+                "button_success": "#7cda64",
+                "button_warning": "#f5bf42",
+                "button_danger": "#ffb4ab",
                 # Status colors
-                "status_connected": "#66BB6A",
-                "status_warning": "#FFA726",
-                "status_error": "#EF5350",
-                "status_unknown": "#9E9E9E",
+                "status_connected": "#7cda64",
+                "status_warning": "#f5bf42",
+                "status_error": "#ffb4ab",
+                "status_unknown": "#938f99",
+                # Shadows and overlays
+                "shadow": "rgba(0, 0, 0, 0.30)",
+                "overlay": "rgba(255, 255, 255, 0.05)",
             }
 
     def get_color(self, color_name: str) -> str:
@@ -123,82 +173,104 @@ class StyleSheet:
     def __init__(self, color_scheme: ColorScheme):
         self.colors = color_scheme
 
-    def get_button_style(self, button_type: str = "primary") -> str:
-        """Get button stylesheet."""
+    def get_button_style(self, button_type: str = "primary", elevated: bool = True) -> str:
+        """Get button stylesheet with Material Design 3 principles."""
         color_map = {
-            "primary": self.colors.get_color("button_primary"),
-            "success": self.colors.get_color("button_success"),
-            "warning": self.colors.get_color("button_warning"),
-            "danger": self.colors.get_color("button_danger"),
+            "primary": (self.colors.get_color("button_primary"), self.colors.get_color("on_primary")),
+            "success": (self.colors.get_color("button_success"), self.colors.get_color("on_success")),
+            "warning": (self.colors.get_color("button_warning"), self.colors.get_color("on_warning")),
+            "danger": (self.colors.get_color("button_danger"), self.colors.get_color("on_error")),
         }
 
-        base_color = color_map.get(button_type, self.colors.get_color("primary"))
-        hover_color = self._darken_color(base_color, 0.1)
+        base_color, text_color = color_map.get(button_type, (self.colors.get_color("primary"), self.colors.get_color("on_primary")))
+        hover_color = self._lighten_color(base_color, 0.15)
+        pressed_color = self._darken_color(base_color, 0.15)
+
+        shadow = "box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);" if elevated else ""
+        hover_shadow = "box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);" if elevated else ""
 
         return f"""
         QPushButton {{
             background-color: {base_color};
-            color: {self.colors.get_color("text_inverse")};
+            color: {text_color};
             border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            font-weight: bold;
+            padding: 10px 24px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 14px;
+            min-height: 36px;
+            {shadow}
         }}
         QPushButton:hover {{
             background-color: {hover_color};
+            {hover_shadow}
         }}
         QPushButton:pressed {{
-            background-color: {self._darken_color(base_color, 0.2)};
+            background-color: {pressed_color};
         }}
         QPushButton:disabled {{
             background-color: {self.colors.get_color("text_muted")};
+            color: {self.colors.get_color("background_primary")};
         }}
         """
 
     def get_input_style(self) -> str:
-        """Get input field stylesheet."""
+        """Get input field stylesheet with Material Design 3 outlined style."""
         return f"""
-        QLineEdit, QTextEdit {{
+        QLineEdit, QTextEdit, QPlainTextEdit {{
             background-color: {self.colors.get_color("background_primary")};
-            border: 2px solid {self.colors.get_color("border")};
-            border-radius: 4px;
-            padding: 8px;
+            border: 1px solid {self.colors.get_color("border")};
+            border-radius: 8px;
+            padding: 12px 16px;
             color: {self.colors.get_color("text_primary")};
+            font-size: 14px;
+            selection-background-color: {self.colors.get_color("primary_container")};
         }}
-        QLineEdit:focus, QTextEdit:focus {{
-            border-color: {self.colors.get_color("border_focus")};
+        QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {{
+            border: 2px solid {self.colors.get_color("border_focus")};
+            padding: 11px 15px;
+        }}
+        QLineEdit:disabled, QTextEdit:disabled, QPlainTextEdit:disabled {{
+            background-color: {self.colors.get_color("background_secondary")};
+            color: {self.colors.get_color("text_muted")};
         }}
         """
 
     def get_groupbox_style(self) -> str:
-        """Get group box stylesheet."""
+        """Get group box stylesheet with modern card design."""
         return f"""
         QGroupBox {{
-            background-color: {self.colors.get_color("background_secondary")};
-            border: 1px solid {self.colors.get_color("border")};
-            border-radius: 6px;
-            margin-top: 10px;
-            padding-top: 10px;
+            background-color: {self.colors.get_color("background_card")};
+            border: 1px solid {self.colors.get_color("border_light")};
+            border-radius: 12px;
+            margin-top: 16px;
+            padding: 16px;
             color: {self.colors.get_color("text_primary")};
-            font-weight: bold;
+            font-weight: 600;
+            font-size: 14px;
         }}
         QGroupBox::title {{
             subcontrol-origin: margin;
-            left: 10px;
-            padding: 0 5px 0 5px;
+            subcontrol-position: top left;
+            left: 16px;
+            padding: 0 8px 0 8px;
+            background-color: {self.colors.get_color("background_card")};
+            color: {self.colors.get_color("primary")};
         }}
         """
 
     def get_conversation_style(self) -> str:
-        """Get conversation display stylesheet."""
+        """Get conversation display stylesheet with modern styling."""
         return f"""
         QTextBrowser {{
             background-color: {self.colors.get_color("background_primary")};
-            border: 1px solid {self.colors.get_color("border")};
-            border-radius: 4px;
-            padding: 10px;
+            border: 1px solid {self.colors.get_color("border_light")};
+            border-radius: 12px;
+            padding: 16px;
             color: {self.colors.get_color("text_primary")};
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
         }}
         """
 
@@ -222,26 +294,33 @@ class StyleSheet:
         """
 
     def get_tab_style(self) -> str:
-        """Get tab widget stylesheet."""
+        """Get tab widget stylesheet with modern Material Design."""
         return f"""
         QTabWidget::pane {{
-            border: 1px solid {self.colors.get_color("border")};
+            border: none;
             background-color: {self.colors.get_color("background_primary")};
+            border-radius: 12px;
+            margin-top: 8px;
         }}
         QTabBar::tab {{
-            background-color: {self.colors.get_color("background_secondary")};
-            color: {self.colors.get_color("text_primary")};
-            padding: 8px 16px;
-            margin-right: 2px;
-            border-top-left-radius: 4px;
-            border-top-right-radius: 4px;
+            background-color: transparent;
+            color: {self.colors.get_color("text_secondary")};
+            padding: 12px 24px;
+            margin-right: 4px;
+            border: none;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            font-weight: 500;
+            font-size: 14px;
+            min-width: 80px;
         }}
         QTabBar::tab:selected {{
             background-color: {self.colors.get_color("primary")};
-            color: {self.colors.get_color("text_inverse")};
+            color: {self.colors.get_color("text_on_primary")};
         }}
-        QTabBar::tab:hover {{
-            background-color: {self.colors.get_rgba("primary", 0.2)};
+        QTabBar::tab:hover:!selected {{
+            background-color: {self.colors.get_rgba("primary", 0.12)};
+            color: {self.colors.get_color("primary")};
         }}
         """
 
@@ -259,6 +338,98 @@ class StyleSheet:
         b = max(0, int(b * (1 - factor)))
 
         return f"#{r:02x}{g:02x}{b:02x}"
+
+    def _lighten_color(self, hex_color: str, factor: float) -> str:
+        """Lighten a hex color by factor (0.0 to 1.0)."""
+        if hex_color.startswith("#"):
+            hex_color = hex_color[1:]
+
+        r = int(hex_color[0:2], 16)
+        g = int(hex_color[2:4], 16)
+        b = int(hex_color[4:6], 16)
+
+        r = min(255, int(r + (255 - r) * factor))
+        g = min(255, int(g + (255 - g) * factor))
+        b = min(255, int(b + (255 - b) * factor))
+
+        return f"#{r:02x}{g:02x}{b:02x}"
+
+    def get_card_style(self, elevated: bool = True) -> str:
+        """Get card container stylesheet with Material Design elevation."""
+        shadow = """
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            background-color: {bg};
+        """ if elevated else f"background-color: {self.colors.get_color('background_card')};"
+        
+        return f"""
+        QFrame {{
+            {shadow.format(bg=self.colors.get_color('background_card'))}
+            border-radius: 16px;
+            padding: 16px;
+        }}
+        """
+
+    def get_chip_style(self, chip_type: str = "default") -> str:
+        """Get chip/badge stylesheet for status indicators."""
+        type_colors = {
+            "default": (self.colors.get_color("background_secondary"), self.colors.get_color("text_primary")),
+            "primary": (self.colors.get_color("primary_container"), self.colors.get_color("on_primary_container")),
+            "success": (self.colors.get_color("success_container"), self.colors.get_color("on_success_container")),
+            "warning": (self.colors.get_color("warning_container"), self.colors.get_color("on_warning_container")),
+            "error": (self.colors.get_color("error_container"), self.colors.get_color("on_error_container")),
+        }
+        
+        bg_color, text_color = type_colors.get(chip_type, type_colors["default"])
+        
+        return f"""
+        QLabel {{
+            background-color: {bg_color};
+            color: {text_color};
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+        }}
+        """
+
+    def get_combobox_style(self) -> str:
+        """Get combobox dropdown stylesheet."""
+        return f"""
+        QComboBox {{
+            background-color: {self.colors.get_color("background_primary")};
+            border: 1px solid {self.colors.get_color("border")};
+            border-radius: 8px;
+            padding: 10px 32px 10px 16px;
+            color: {self.colors.get_color("text_primary")};
+            font-size: 14px;
+            min-height: 36px;
+        }}
+        QComboBox:hover {{
+            border-color: {self.colors.get_color("primary")};
+        }}
+        QComboBox:focus {{
+            border: 2px solid {self.colors.get_color("border_focus")};
+        }}
+        QComboBox::drop-down {{
+            border: none;
+            width: 32px;
+        }}
+        QComboBox::down-arrow {{
+            image: none;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid {self.colors.get_color("text_secondary")};
+            margin-right: 12px;
+        }}
+        QComboBox QAbstractItemView {{
+            background-color: {self.colors.get_color("background_elevated")};
+            border: 1px solid {self.colors.get_color("border")};
+            border-radius: 8px;
+            padding: 4px;
+            selection-background-color: {self.colors.get_color("primary_container")};
+            selection-color: {self.colors.get_color("on_primary_container")};
+        }}
+        """
 
 
 class ThemeManager:
@@ -318,11 +489,13 @@ class ThemeManager:
             if (
                 "danger" in button.objectName().lower()
                 or "delete" in button.text().lower()
+                or "remove" in button.text().lower()
             ):
                 button.setStyleSheet(self.stylesheet.get_button_style("danger"))
             elif (
                 "success" in button.objectName().lower()
                 or "save" in button.text().lower()
+                or "connect" in button.text().lower()
             ):
                 button.setStyleSheet(self.stylesheet.get_button_style("success"))
             elif "warning" in button.objectName().lower():
@@ -333,9 +506,14 @@ class ThemeManager:
         # Style input fields
         inputs = widget.findChildren(QtWidgets.QLineEdit) + widget.findChildren(
             QtWidgets.QTextEdit
-        )
+        ) + widget.findChildren(QtWidgets.QPlainTextEdit)
         for input_widget in inputs:
             input_widget.setStyleSheet(self.stylesheet.get_input_style())
+
+        # Style combo boxes
+        comboboxes = widget.findChildren(QtWidgets.QComboBox)
+        for combobox in comboboxes:
+            combobox.setStyleSheet(self.stylesheet.get_combobox_style())
 
         # Style group boxes
         groupboxes = widget.findChildren(QtWidgets.QGroupBox)
