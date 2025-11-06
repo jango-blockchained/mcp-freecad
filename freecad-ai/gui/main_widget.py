@@ -10,10 +10,15 @@ import FreeCAD
 try:
     # First try to use the Qt compatibility module
     from .qt_compatibility import QtCore, QtWidgets, HAS_QT, QT_VERSION
+
     if HAS_QT:
-        FreeCAD.Console.PrintMessage(f"FreeCAD AI: Using Qt compatibility layer ({QT_VERSION})\n")
+        FreeCAD.Console.PrintMessage(
+            f"FreeCAD AI: Using Qt compatibility layer ({QT_VERSION})\n"
+        )
     else:
-        FreeCAD.Console.PrintWarning("FreeCAD AI: Qt compatibility layer using dummy classes\n")
+        FreeCAD.Console.PrintWarning(
+            "FreeCAD AI: Qt compatibility layer using dummy classes\n"
+        )
 except ImportError:
     # Fallback to original Qt import logic
     try:
@@ -21,9 +26,10 @@ except ImportError:
 
         HAS_PYSIDE2 = True
         # Fix the QT_VERSION_STR issue if it doesn't exist
-        if not hasattr(QtCore, 'QT_VERSION_STR'):
+        if not hasattr(QtCore, "QT_VERSION_STR"):
             try:
                 import PySide2
+
                 QtCore.QT_VERSION_STR = PySide2.__version__
             except (ImportError, AttributeError):
                 # ImportError: PySide2 not available
@@ -469,7 +475,11 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             widget_configs = [
                 ("providers_widget", "ProvidersWidget", "Providers"),
                 ("enhanced_conversation_widget", "EnhancedConversationWidget", "Chat"),
-                ("enhanced_agent_control_widget", "EnhancedAgentControlWidget", "Agent"),
+                (
+                    "enhanced_agent_control_widget",
+                    "EnhancedAgentControlWidget",
+                    "Agent",
+                ),
                 ("tools_widget", "ToolsWidget", "Tools"),
                 ("unified_connection_widget", "UnifiedConnectionWidget", "Connections"),
                 ("settings_widget", "SettingsWidget", "Settings"),
@@ -719,10 +729,14 @@ class MCPMainWidget(QtWidgets.QDockWidget):
             FreeCAD.Console.PrintMessage(
                 "FreeCAD AI: Safe agent manager initialization...\n"
             )
-            
+
             # Try using the wrapper first
             try:
-                from ..core.agent_manager_wrapper import get_agent_manager, is_agent_manager_available
+                from ..core.agent_manager_wrapper import (
+                    get_agent_manager,
+                    is_agent_manager_available,
+                )
+
                 if is_agent_manager_available():
                     self.agent_manager = get_agent_manager()
                     FreeCAD.Console.PrintMessage(
@@ -731,7 +745,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                     return
             except ImportError:
                 pass
-            
+
             # Fallback to original initialization
             agent_manager_imported = False
             try:
@@ -818,10 +832,14 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                 )
                 return
             FreeCAD.Console.PrintMessage("FreeCAD AI: Safe provider service setup...\n")
-            
+
             # Try using the wrapper first
             try:
-                from ..ai.provider_service_wrapper import get_provider_service, is_provider_service_available
+                from ..ai.provider_service_wrapper import (
+                    get_provider_service,
+                    is_provider_service_available,
+                )
+
                 if is_provider_service_available():
                     self.provider_service = get_provider_service()
                     FreeCAD.Console.PrintMessage(
@@ -830,7 +848,7 @@ class MCPMainWidget(QtWidgets.QDockWidget):
                     return
             except ImportError:
                 pass
-            
+
             # Fallback to original initialization
             provider_service_imported = False
             try:

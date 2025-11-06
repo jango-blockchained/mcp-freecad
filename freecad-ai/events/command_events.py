@@ -5,7 +5,8 @@ from typing import Any, Dict, List, Optional
 try:
     from .base import EventProvider
     from .import_utils import safe_import_freecad_util
-    freecad_safe_emit = safe_import_freecad_util('freecad_safe_emit')
+
+    freecad_safe_emit = safe_import_freecad_util("freecad_safe_emit")
 except ImportError:
     # Fallback for when module is loaded by FreeCAD
     import os
@@ -16,7 +17,8 @@ except ImportError:
         sys.path.insert(0, addon_dir)
     from events.base import EventProvider
     from events.import_utils import safe_import_freecad_util
-    freecad_safe_emit = safe_import_freecad_util('freecad_safe_emit')
+
+    freecad_safe_emit = safe_import_freecad_util("freecad_safe_emit")
 
 logger = logging.getLogger(__name__)
 
@@ -59,20 +61,24 @@ class CommandExecutionEventProvider(EventProvider):
             return
 
         signals_connected = 0
-        
+
         try:
             # Connect to command execution signals if available
             if hasattr(self.app, "Gui") and hasattr(self.app.Gui, "Command"):
                 # Different FreeCAD versions might have different signal names
                 if hasattr(self.app.Gui.Command, "CommandExecuted"):
-                    if self._track_signal_connection(self.app.Gui.Command.CommandExecuted, self._on_command_executed):
+                    if self._track_signal_connection(
+                        self.app.Gui.Command.CommandExecuted, self._on_command_executed
+                    ):
                         signals_connected += 1
                         logger.debug("Connected to FreeCAD command executed signal")
                 elif hasattr(self.app.Gui, "commandExecuted"):
-                    if self._track_signal_connection(self.app.Gui.commandExecuted, self._on_command_executed):
+                    if self._track_signal_connection(
+                        self.app.Gui.commandExecuted, self._on_command_executed
+                    ):
                         signals_connected += 1
                         logger.debug("Connected to FreeCAD command executed signal")
-                        
+
             logger.info(f"Connected {signals_connected} FreeCAD command event signals")
         except Exception as e:
             logger.error(
@@ -97,7 +103,9 @@ class CommandExecutionEventProvider(EventProvider):
 
         # Emit event safely
         if freecad_safe_emit:
-            freecad_safe_emit(self.emit_event, "command_executed", event_data, "command_executed")
+            freecad_safe_emit(
+                self.emit_event, "command_executed", event_data, "command_executed"
+            )
 
     def get_command_history(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """
@@ -120,7 +128,7 @@ class CommandExecutionEventProvider(EventProvider):
             "signals_connected": len(self._signal_connections),
             "command_history_size": len(self.command_history),
             "max_history_size": self.max_history_size,
-            "is_shutdown": self._is_shutdown
+            "is_shutdown": self._is_shutdown,
         }
 
     async def emit_event(self, event_type: str, event_data: Dict[str, Any]) -> None:

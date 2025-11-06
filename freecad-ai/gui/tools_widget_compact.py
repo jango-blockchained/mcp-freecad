@@ -42,7 +42,6 @@ class CompactToolButton(QtWidgets.QPushButton):
         )
 
 
-
 class ToolsWidget(QtWidgets.QWidget):
     """Ultra-compact tools widget with icons."""
 
@@ -123,7 +122,7 @@ class ToolsWidget(QtWidgets.QWidget):
         # Standard header with consistent styling
         header_group = QtWidgets.QGroupBox("FreeCAD Tools")
         header_layout = QtWidgets.QHBoxLayout(header_group)
-        
+
         # Search box with standard styling
         self.search_box = QtWidgets.QLineEdit()
         self.search_box.setPlaceholderText("Search tools...")
@@ -152,7 +151,9 @@ class ToolsWidget(QtWidgets.QWidget):
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
-        scroll.setStyleSheet("QScrollArea { border: 1px solid #ddd; border-radius: 4px; }")
+        scroll.setStyleSheet(
+            "QScrollArea { border: 1px solid #ddd; border-radius: 4px; }"
+        )
 
         scroll_widget = QtWidgets.QWidget()
         scroll_layout = QtWidgets.QVBoxLayout(scroll_widget)

@@ -548,7 +548,7 @@ class ProviderIntegrationService:
                 "google": "gemini",
                 "vertexai": "vertexai",
                 "google vertex ai": "vertexai",  # Map display name to type
-                "googlevertexai": "vertexai",    # Alternative mapping
+                "googlevertexai": "vertexai",  # Alternative mapping
                 "openrouter": "openrouter",
             }
 
@@ -935,7 +935,7 @@ class ProviderIntegrationService:
                     "gemini-1.5-flash",
                     "gemini-1.0-pro",
                     "text-bison",
-                    "code-bison"
+                    "code-bison",
                 ],
                 "openrouter": [
                     "anthropic/claude-3.5-sonnet",

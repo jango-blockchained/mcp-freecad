@@ -9,8 +9,11 @@ def try_import_ai_manager():
     """Try to import AIManager with fallback strategies."""
     try:
         from ...ai.ai_manager import AIManager
+
         ai_manager = AIManager()
-        print(f"DEBUG: Successfully imported AIManager with {len(ai_manager.providers)} providers")
+        print(
+            f"DEBUG: Successfully imported AIManager with {len(ai_manager.providers)} providers"
+        )
         return ai_manager
     except ImportError as e:
         print(f"DEBUG: Failed to import AIManager: {e}")
@@ -25,6 +28,7 @@ def try_import_config_manager():
     # Strategy 1: Relative import
     try:
         from ...config.config_manager import ConfigManager
+
         return ConfigManager()
     except ImportError:
         pass
@@ -32,6 +36,7 @@ def try_import_config_manager():
     # Strategy 2: Absolute import assuming we're in the addon
     try:
         from config.config_manager import ConfigManager
+
         return ConfigManager()
     except ImportError:
         pass
@@ -43,10 +48,11 @@ def try_import_config_manager():
         gui_dir = os.path.dirname(current_dir)
         addon_dir = os.path.dirname(gui_dir)
         config_dir = os.path.join(addon_dir, "config")
-        
+
         if config_dir not in sys.path:
             sys.path.insert(0, config_dir)
         from config_manager import ConfigManager
+
         return ConfigManager()
     except ImportError:
         pass
@@ -60,9 +66,7 @@ def try_import_config_manager():
         config_file = os.path.join(addon_dir, "config", "config_manager.py")
 
         if os.path.exists(config_file):
-            spec = importlib.util.spec_from_file_location(
-                "config_manager", config_file
-            )
+            spec = importlib.util.spec_from_file_location("config_manager", config_file)
             config_module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(config_module)
             ConfigManager = config_module.ConfigManager

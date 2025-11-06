@@ -5,40 +5,39 @@ This module contains tests for all event providers, the event manager,
 and MCP integration components.
 """
 
-import asyncio
 import pytest
 import time
-from unittest.mock import Mock, MagicMock, patch
-from typing import Dict, Any, List
+from unittest.mock import Mock, patch
 
 # Import the events system components
 try:
     from ..events import (
-        EventManager, 
-        EventRouter, 
+        EventManager,
+        EventRouter,
         MCPEventIntegration,
         DocumentEventProvider,
         CommandExecutionEventProvider,
         ErrorEventProvider,
         create_event_system,
-        initialize_event_system
+        initialize_event_system,
     )
 except ImportError:
     import sys
     import os
+
     # Add the parent directory to the path
     parent_dir = os.path.dirname(os.path.dirname(__file__))
     sys.path.insert(0, parent_dir)
-    
+
     from events import (
-        EventManager, 
-        EventRouter, 
+        EventManager,
+        EventRouter,
         MCPEventIntegration,
         DocumentEventProvider,
         CommandExecutionEventProvider,
         ErrorEventProvider,
         create_event_system,
-        initialize_event_system
+        initialize_event_system,
     )
 
 
@@ -58,7 +57,7 @@ class TestEventRouter:
 
         # Add listener
         await event_router.add_listener(client_id, event_types)
-        
+
         # Check that listener was added
         listeners = await event_router.get_active_listeners()
         assert client_id in listeners["clients"]
@@ -66,7 +65,7 @@ class TestEventRouter:
 
         # Remove listener
         await event_router.remove_listener(client_id, event_types)
-        
+
         # Check that listener was removed
         listeners = await event_router.get_active_listeners()
         assert client_id not in listeners["clients"]
@@ -95,7 +94,7 @@ class TestEventRouter:
     async def test_event_history(self, event_router):
         """Test event history functionality."""
         client_id = "test_client_1"
-        
+
         # Add listener for all events
         await event_router.add_listener(client_id, ["*"])
 
@@ -129,7 +128,7 @@ class TestEventManager:
         mock_app.signalNewDocument = Mock()
         mock_app.signalDeleteDocument = Mock()
         mock_app.signalActiveDocument = Mock()
-        
+
         # Mock GUI
         mock_gui = Mock()
         mock_selection = Mock()
@@ -138,7 +137,7 @@ class TestEventManager:
         mock_gui.Command = Mock()
         mock_gui.Command.CommandExecuted = Mock()
         mock_app.Gui = mock_gui
-        
+
         return mock_app
 
     @pytest.fixture
@@ -166,7 +165,7 @@ class TestEventManager:
     async def test_add_remove_listeners(self, event_manager):
         """Test adding and removing event listeners."""
         await event_manager.initialize()
-        
+
         client_id = "test_client_1"
         event_types = ["document_changed"]
 
@@ -182,9 +181,9 @@ class TestEventManager:
     async def test_get_system_status(self, event_manager):
         """Test getting system status."""
         await event_manager.initialize()
-        
+
         status = await event_manager.get_system_status()
-        
+
         assert status["initialized"] is True
         assert status["freecad_available"] is True
         assert "providers" in status
@@ -195,10 +194,10 @@ class TestEventManager:
     async def test_custom_event_emission(self, event_manager):
         """Test emitting custom events."""
         await event_manager.initialize()
-        
+
         event_type = "custom_test_event"
         event_data = {"custom": "data"}
-        
+
         success = await event_manager.emit_custom_event(event_type, event_data)
         assert success
 
@@ -221,12 +220,14 @@ class TestMCPEventIntegration:
         manager = Mock()
         manager.add_event_listener = Mock(return_value=True)
         manager.remove_event_listener = Mock(return_value=True)
-        manager.get_system_status = Mock(return_value={
-            "initialized": True,
-            "providers": {},
-            "router_stats": {},
-            "active_listeners": {}
-        })
+        manager.get_system_status = Mock(
+            return_value={
+                "initialized": True,
+                "providers": {},
+                "router_stats": {},
+                "active_listeners": {},
+            }
+        )
         return manager
 
     @pytest.fixture
@@ -260,7 +261,7 @@ class TestMCPEventIntegration:
     async def test_event_subscriptions(self, mcp_integration):
         """Test event subscription management."""
         client_id = "mcp_test_client"
-        
+
         # Register client first
         await mcp_integration.register_mcp_client(client_id)
 
@@ -286,13 +287,13 @@ class TestMCPEventIntegration:
     async def test_notification_handling(self, mcp_integration):
         """Test event notification handling."""
         client_id = "mcp_test_client"
-        
+
         # Register client
         await mcp_integration.register_mcp_client(client_id)
 
         # Set up custom handler
         handled_events = []
-        
+
         def custom_handler(client_id, event_type, event_data):
             handled_events.append((client_id, event_type, event_data))
 
@@ -313,13 +314,15 @@ class TestMCPEventIntegration:
     async def test_cleanup_inactive_clients(self, mcp_integration):
         """Test cleanup of inactive clients."""
         client_id = "inactive_client"
-        
+
         # Register client
         await mcp_integration.register_mcp_client(client_id)
 
         # Simulate passage of time by modifying last_activity
         async with mcp_integration._lock:
-            mcp_integration.mcp_clients[client_id]["last_activity"] = time.time() - 7200  # 2 hours ago
+            mcp_integration.mcp_clients[client_id]["last_activity"] = (
+                time.time() - 7200
+            )  # 2 hours ago
 
         # Cleanup with 1 hour timeout
         cleaned_up = await mcp_integration.cleanup_inactive_clients(timeout=3600)
@@ -341,7 +344,7 @@ class TestEventProviders:
         mock_app.signalNewDocument = Mock()
         mock_app.signalDeleteDocument = Mock()
         mock_app.signalActiveDocument = Mock()
-        
+
         # Mock GUI
         mock_gui = Mock()
         mock_selection = Mock()
@@ -351,7 +354,7 @@ class TestEventProviders:
         mock_gui.Command = Mock()
         mock_gui.Command.CommandExecuted = Mock()
         mock_app.Gui = mock_gui
-        
+
         return mock_app
 
     @pytest.fixture
@@ -364,14 +367,14 @@ class TestEventProviders:
     def test_document_event_provider_creation(self, mock_freecad, mock_event_router):
         """Test creating a DocumentEventProvider."""
         provider = DocumentEventProvider(mock_freecad, mock_event_router)
-        
+
         assert provider.app == mock_freecad
         assert provider.event_router == mock_event_router
 
     def test_command_event_provider_creation(self, mock_freecad, mock_event_router):
         """Test creating a CommandExecutionEventProvider."""
         provider = CommandExecutionEventProvider(mock_freecad, mock_event_router)
-        
+
         assert provider.app == mock_freecad
         assert provider.event_router == mock_event_router
         assert provider.command_history == []
@@ -379,7 +382,7 @@ class TestEventProviders:
     def test_error_event_provider_creation(self, mock_freecad, mock_event_router):
         """Test creating an ErrorEventProvider."""
         provider = ErrorEventProvider(mock_freecad, mock_event_router)
-        
+
         assert provider.app == mock_freecad
         assert provider.event_router == mock_event_router
         assert provider.error_history == []
@@ -387,10 +390,10 @@ class TestEventProviders:
     def test_command_history(self, mock_freecad, mock_event_router):
         """Test command history functionality."""
         provider = CommandExecutionEventProvider(mock_freecad, mock_event_router)
-        
+
         # Simulate command execution
         provider._on_command_executed("TestCommand")
-        
+
         # Check history
         history = provider.get_command_history()
         assert len(history) == 1
@@ -400,10 +403,10 @@ class TestEventProviders:
     def test_error_reporting(self, mock_freecad, mock_event_router):
         """Test manual error reporting."""
         provider = ErrorEventProvider(mock_freecad, mock_event_router)
-        
+
         # Report an error
         provider.report_error("Test error", "manual", {"detail": "test"})
-        
+
         # Check error history
         history = provider.get_error_history()
         assert len(history) == 1
@@ -415,8 +418,8 @@ class TestEventProviders:
 class TestConvenienceFunctions:
     """Test cases for convenience functions."""
 
-    @patch('events.EventManager')
-    @patch('events.MCPEventIntegration')
+    @patch("events.EventManager")
+    @patch("events.MCPEventIntegration")
     def test_create_event_system(self, mock_mcp_class, mock_manager_class):
         """Test create_event_system function."""
         mock_manager = Mock()
@@ -425,13 +428,13 @@ class TestConvenienceFunctions:
         mock_mcp_class.return_value = mock_mcp
 
         manager, mcp = create_event_system()
-        
+
         assert manager == mock_manager
         assert mcp == mock_mcp
 
     @pytest.mark.asyncio
-    @patch('events.EventManager')
-    @patch('events.MCPEventIntegration')
+    @patch("events.EventManager")
+    @patch("events.MCPEventIntegration")
     async def test_initialize_event_system(self, mock_mcp_class, mock_manager_class):
         """Test initialize_event_system function."""
         mock_manager = Mock()
@@ -441,7 +444,7 @@ class TestConvenienceFunctions:
         mock_mcp_class.return_value = mock_mcp
 
         manager, mcp = await initialize_event_system()
-        
+
         assert manager == mock_manager
         assert mcp == mock_mcp
         mock_manager.initialize.assert_called_once()

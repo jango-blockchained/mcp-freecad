@@ -410,9 +410,7 @@ Be precise with measurements and technical details. Adapt your response style ba
             for expensive in ["claude-3-opus", "gpt-4", "gemini-2.5-pro"]
         ):
             return "Premium"
-        elif any(
-            mid in model for mid in ["claude-3.5", "llama-3.1-405b"]
-        ):
+        elif any(mid in model for mid in ["claude-3.5", "llama-3.1-405b"]):
             return "Standard"
         elif any(
             cheap in model for cheap in ["gpt-3.5", "claude-3-haiku", "mistral-7b"]
@@ -446,7 +444,9 @@ Be precise with measurements and technical details. Adapt your response style ba
                         data = await response.json()
                         return data.get("data", [])
                     else:
-                        logger.warning(f"OpenRouter models list API returned status {response.status}")
+                        logger.warning(
+                            f"OpenRouter models list API returned status {response.status}"
+                        )
                         return []
         except Exception as e:
             # Return static list if API call fails

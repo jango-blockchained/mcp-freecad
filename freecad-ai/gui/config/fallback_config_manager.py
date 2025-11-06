@@ -77,7 +77,7 @@ class FallbackConfigManager:
                     api_keys = json.load(f)
                 return api_keys.get(provider)
         except (IOError, PermissionError, json.JSONDecodeError):
-            # IOError: File read error  
+            # IOError: File read error
             # PermissionError: No read permission
             # json.JSONDecodeError: Invalid JSON format
             pass
@@ -115,7 +115,7 @@ class FallbackConfigManager:
                 return list(api_keys.keys())
         except (IOError, PermissionError, json.JSONDecodeError):
             # IOError: File read error
-            # PermissionError: No read permission  
+            # PermissionError: No read permission
             # json.JSONDecodeError: Invalid JSON format
             pass
         return []

@@ -11,7 +11,7 @@ by avoiding the -m flag which is not supported.
 
 Usage:
 1. Copy this entire script
-2. Paste it into the FreeCAD Python console  
+2. Paste it into the FreeCAD Python console
 3. Press Enter to run
 
 Author: jango-blockchained
@@ -48,6 +48,7 @@ def install_mcp_dependencies():
         # Method 1: FreeCAD 0.22+
         try:
             from freecad.utils import get_python_exe
+
             python_exe = get_python_exe()
             print("✅ Found Python executable using freecad.utils")
         except ImportError:
@@ -57,6 +58,7 @@ def install_mcp_dependencies():
         if not python_exe:
             try:
                 import addonmanager_utilities as utils
+
                 if hasattr(utils, "get_python_exe"):
                     python_exe = utils.get_python_exe()
                     print("✅ Found Python executable using addonmanager_utilities")
@@ -73,6 +75,7 @@ def install_mcp_dependencies():
         # Get target directory
         try:
             import addonmanager_utilities as utils
+
             if hasattr(utils, "get_pip_target_directory"):
                 vendor_path = utils.get_pip_target_directory()
                 print("✅ Found target directory using addonmanager_utilities")
@@ -83,6 +86,7 @@ def install_mcp_dependencies():
         if not vendor_path:
             try:
                 import FreeCAD
+
                 user_dir = FreeCAD.getUserAppDataDir()
                 vendor_path = os.path.join(user_dir, "Mod", "vendor")
                 print("⚠️ Using fallback target directory")
@@ -107,14 +111,14 @@ def install_mcp_dependencies():
                 "critical": True,
             },
             {
-                "name": "multidict", 
+                "name": "multidict",
                 "version": ">=6.0.0",
                 "description": "Multidict implementation",
                 "critical": True,
             },
             {
                 "name": "yarl",
-                "version": ">=1.7.0", 
+                "version": ">=1.7.0",
                 "description": "URL parsing library",
                 "critical": True,
             },
@@ -133,7 +137,7 @@ def install_mcp_dependencies():
             {
                 "name": "mcp",
                 "version": ">=1.1.0",
-                "description": "Model Context Protocol", 
+                "description": "Model Context Protocol",
                 "critical": True,
             },
             {
@@ -164,44 +168,47 @@ def install_mcp_dependencies():
             print(f"   Critical: {'Yes' if is_critical else 'No'}")
 
             installation_success = False
-            
+
             # Method 1: Try programmatic pip (most FreeCAD-compatible)
             try:
                 print("   Trying programmatic pip installation...")
-                
+
                 # Import pip and use it programmatically
                 import pip
-                
+
                 pip_args = [
                     "install",
-                    "--disable-pip-version-check", 
+                    "--disable-pip-version-check",
                     "--target",
                     vendor_path,
                     "--upgrade",
-                    package_spec
+                    package_spec,
                 ]
-                
+
                 # Add Python 3.13+ specific options
                 if python_version >= (3, 13):
                     pip_args.extend(["--use-feature", "2020-resolver"])
                     if package_name in ["aiohttp", "multidict", "yarl", "aiosignal"]:
                         pip_args.append("--pre")
-                
+
                 # Try different pip interfaces
-                if hasattr(pip, 'main'):
+                if hasattr(pip, "main"):
                     # Older pip versions
                     result = pip.main(pip_args)
                     if result == 0:
                         installation_success = True
                         print(f"   ✅ Successfully installed {package_name} (pip.main)")
-                elif hasattr(pip, '_internal'):
-                    # Newer pip versions  
+                elif hasattr(pip, "_internal"):
+                    # Newer pip versions
                     from pip._internal import main as pip_main
+
                     result = pip_main(pip_args)
                     if result == 0:
                         installation_success = True
-                        print(f"   ✅ Successfully installed {package_name} (pip._internal)")
-                
+                        print(
+                            f"   ✅ Successfully installed {package_name} (pip._internal)"
+                        )
+
             except Exception as e:
                 print(f"   ⚠️ Programmatic pip failed: {e}")
 
@@ -210,40 +217,47 @@ def install_mcp_dependencies():
                 try:
                     print("   Trying direct pip executable...")
                     import shutil
-                    
+
                     pip_executable = shutil.which("pip") or shutil.which("pip3")
                     if pip_executable:
                         cmd = [
                             pip_executable,
                             "install",
                             "--disable-pip-version-check",
-                            "--target", 
+                            "--target",
                             vendor_path,
                             "--upgrade",
-                            package_spec
+                            package_spec,
                         ]
-                        
+
                         # Add Python 3.13+ specific options
                         if python_version >= (3, 13):
                             cmd.extend(["--use-feature", "2020-resolver"])
-                            if package_name in ["aiohttp", "multidict", "yarl", "aiosignal"]:
+                            if package_name in [
+                                "aiohttp",
+                                "multidict",
+                                "yarl",
+                                "aiosignal",
+                            ]:
                                 cmd.append("--pre")
-                        
+
                         print(f"   Command: {' '.join(cmd)}")
-                        
+
                         timeout = 180 if python_version >= (3, 13) else 120
                         result = subprocess.run(
                             cmd, capture_output=True, text=True, timeout=timeout
                         )
-                        
+
                         if result.returncode == 0:
                             installation_success = True
-                            print(f"   ✅ Successfully installed {package_name} (direct pip)")
+                            print(
+                                f"   ✅ Successfully installed {package_name} (direct pip)"
+                            )
                         else:
                             print(f"   ⚠️ Direct pip failed: {result.stderr}")
                     else:
                         print("   ⚠️ Direct pip executable not found")
-                        
+
                 except Exception as e:
                     print(f"   ⚠️ Direct pip approach failed: {e}")
 
@@ -251,9 +265,9 @@ def install_mcp_dependencies():
             if not installation_success:
                 try:
                     print("   Trying subprocess with python -c...")
-                    
+
                     # Build pip install command as Python code to avoid -m flag
-                    pip_code = f'''
+                    pip_code = f"""
 import subprocess
 import sys
 result = subprocess.run([
@@ -261,18 +275,23 @@ result = subprocess.run([
     "import pip; pip.main(['install', '--disable-pip-version-check', '--target', '{vendor_path}', '--upgrade', '{package_spec}'])"
 ], capture_output=True, text=True)
 sys.exit(result.returncode)
-'''
-                    
-                    result = subprocess.run([
-                        python_exe, "-c", pip_code
-                    ], capture_output=True, text=True, timeout=120)
-                    
+"""
+
+                    result = subprocess.run(
+                        [python_exe, "-c", pip_code],
+                        capture_output=True,
+                        text=True,
+                        timeout=120,
+                    )
+
                     if result.returncode == 0:
                         installation_success = True
-                        print(f"   ✅ Successfully installed {package_name} (subprocess)")
+                        print(
+                            f"   ✅ Successfully installed {package_name} (subprocess)"
+                        )
                     else:
                         print(f"   ⚠️ Subprocess approach failed: {result.stderr}")
-                        
+
                 except Exception as e:
                     print(f"   ⚠️ Subprocess approach failed: {e}")
 
@@ -286,11 +305,11 @@ sys.exit(result.returncode)
                 except ImportError:
                     print(f"   ⚠️ {package_name} installed but not importable")
                     success_count += 1  # Count as success since it was installed
-                    
+
             else:
                 print(f"   ❌ All installation methods failed for {package_name}")
                 failed_packages.append(package_name)
-                
+
                 if is_critical:
                     print(f"   ⚠️ Critical package {package_name} failed to install")
 
@@ -298,8 +317,10 @@ sys.exit(result.returncode)
         print("\n" + "=" * 60)
         print("📊 INSTALLATION SUMMARY")
         print("=" * 60)
-        print(f"✅ Successfully installed: {success_count}/{len(dependencies)} packages")
-        
+        print(
+            f"✅ Successfully installed: {success_count}/{len(dependencies)} packages"
+        )
+
         if failed_packages:
             print(f"❌ Failed packages: {', '.join(failed_packages)}")
             print("\n💡 For failed packages, you can try:")
@@ -308,15 +329,16 @@ sys.exit(result.returncode)
             print("   3. Using conda/mamba if available")
         else:
             print("🎉 All packages installed successfully!")
-            
+
         print(f"\n📍 Packages installed to: {vendor_path}")
         print("🔄 You may need to restart FreeCAD for changes to take effect.")
-        
+
         return success_count == len(dependencies)
 
     except Exception as e:
         print(f"\n❌ Installation failed with error: {e}")
         import traceback
+
         print(f"💥 Full traceback:\n{traceback.format_exc()}")
         return False
 

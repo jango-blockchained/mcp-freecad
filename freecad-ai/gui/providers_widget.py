@@ -40,7 +40,9 @@ class ProvidersWidget(QtWidgets.QWidget):
         self.config_manager = try_import_config_manager()
 
         if self.ai_manager:
-            print(f"DEBUG: AIManager loaded with {len(self.ai_manager.providers)} providers")
+            print(
+                f"DEBUG: AIManager loaded with {len(self.ai_manager.providers)} providers"
+            )
         else:
             print("DEBUG: AIManager not available")
 
@@ -607,7 +609,7 @@ class ProvidersWidget(QtWidgets.QWidget):
                     "gemini-1.5-flash",
                     "gemini-1.0-pro",
                     "text-bison",
-                    "code-bison"
+                    "code-bison",
                 ],
                 "default_model": "gemini-1.5-pro",
                 "status": "Not configured",
@@ -728,10 +730,10 @@ class ProvidersWidget(QtWidgets.QWidget):
             "google": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"],
             "vertexai": [
                 "gemini-1.5-pro",
-                "gemini-1.5-flash", 
+                "gemini-1.5-flash",
                 "gemini-1.0-pro",
                 "text-bison",
-                "code-bison"
+                "code-bison",
             ],
             "openrouter": [
                 "anthropic/claude-3.5-sonnet",
@@ -1327,7 +1329,9 @@ class ProvidersWidget(QtWidgets.QWidget):
 
         # Add providers from AI manager if available
         if self.ai_manager:
-            print(f"DEBUG: AI manager has {len(self.ai_manager.providers)} providers: {list(self.ai_manager.providers.keys())}")
+            print(
+                f"DEBUG: AI manager has {len(self.ai_manager.providers)} providers: {list(self.ai_manager.providers.keys())}"
+            )
             for provider_name, provider in self.ai_manager.providers.items():
                 if not self._provider_in_table(provider_name):
                     self._add_provider_to_table(provider_name, provider)
@@ -1337,43 +1341,45 @@ class ProvidersWidget(QtWidgets.QWidget):
         # Also update from provider service if available
         if self.provider_service:
             providers = self.provider_service.get_all_providers()
-            print(f"DEBUG: Provider service has {len(providers)} providers: {list(providers.keys())}")
+            print(
+                f"DEBUG: Provider service has {len(providers)} providers: {list(providers.keys())}"
+            )
             for provider_name, provider_info in providers.items():
                 if not self._provider_in_table(provider_name):
                     self._add_provider_info_to_table(provider_name, provider_info)
         else:
             print("DEBUG: No provider service available")
-            
+
         final_row_count = self.providers_table.rowCount()
         print(f"DEBUG: Final provider table has {final_row_count} rows")
-        
+
         # Fallback: if no providers are shown, add at least the default ones manually
         if final_row_count == 0:
             print("DEBUG: No providers in table, adding fallback default providers...")
             fallback_providers = [
                 {
                     "name": "Anthropic",
-                    "type": "anthropic", 
+                    "type": "anthropic",
                     "default_model": "claude-3-5-sonnet-20241022",
-                    "status": "Not configured"
+                    "status": "Not configured",
                 },
                 {
                     "name": "OpenAI",
                     "type": "openai",
-                    "default_model": "gpt-4o-mini", 
-                    "status": "Not configured"
+                    "default_model": "gpt-4o-mini",
+                    "status": "Not configured",
                 },
                 {
                     "name": "Google Vertex AI",
                     "type": "vertexai",
                     "default_model": "gemini-1.5-pro",
-                    "status": "Not configured"
-                }
+                    "status": "Not configured",
+                },
             ]
-            
+
             for provider_info in fallback_providers:
                 self._add_default_provider_to_table(provider_info)
-                
+
             print(f"DEBUG: Added {len(fallback_providers)} fallback providers")
             print(f"DEBUG: Table now has {self.providers_table.rowCount()} rows")
 
@@ -1519,7 +1525,7 @@ class ProvidersWidget(QtWidgets.QWidget):
         print("DEBUG: Loading configuration...")
         if not self.config_manager:
             print("DEBUG: No config manager available")
-            
+
         # Ensure default providers are created if not already done
         if not hasattr(self, "default_providers"):
             print("DEBUG: Default providers not found, creating them...")
@@ -1535,7 +1541,7 @@ class ProvidersWidget(QtWidgets.QWidget):
         print("DEBUG: ProvidersWidget shown, refreshing providers...")
         # Refresh providers when the widget becomes visible
         self._refresh_providers()
-        
+
     def set_provider_service(self, provider_service):
         """Set the provider integration service."""
         print(f"DEBUG: Setting provider service: {provider_service}")
@@ -1722,4 +1728,3 @@ class ProvidersWidget(QtWidgets.QWidget):
                 "Error",
                 "Failed to load config manager. Check console for details.",
             )
-

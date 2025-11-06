@@ -7,7 +7,8 @@ from typing import Any, Dict, List, Optional
 try:
     from .base import EventProvider
     from .import_utils import safe_import_freecad_util
-    freecad_safe_emit = safe_import_freecad_util('freecad_safe_emit')
+
+    freecad_safe_emit = safe_import_freecad_util("freecad_safe_emit")
 except ImportError:
     # Fallback for when module is loaded by FreeCAD
     import os
@@ -17,7 +18,8 @@ except ImportError:
         sys.path.insert(0, addon_dir)
     from events.base import EventProvider
     from events.import_utils import safe_import_freecad_util
-    freecad_safe_emit = safe_import_freecad_util('freecad_safe_emit')
+
+    freecad_safe_emit = safe_import_freecad_util("freecad_safe_emit")
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +27,13 @@ logger = logging.getLogger(__name__)
 class ErrorEventProvider(EventProvider):
     """Event provider for FreeCAD error events."""
 
-    def __init__(self, freecad_app=None, event_router=None, max_history_size=50, install_global_handler=False):
+    def __init__(
+        self,
+        freecad_app=None,
+        event_router=None,
+        max_history_size=50,
+        install_global_handler=False,
+    ):
         """
         Initialize the error event provider.
 
@@ -62,7 +70,7 @@ class ErrorEventProvider(EventProvider):
 
     def _install_global_exception_handler(self):
         """Install global exception handler if not already installed."""
-        if not self._global_handler_installed and hasattr(sys, 'excepthook'):
+        if not self._global_handler_installed and hasattr(sys, "excepthook"):
             self.original_excepthook = sys.excepthook
             sys.excepthook = self._global_exception_handler
             self._global_handler_installed = True
@@ -86,7 +94,7 @@ class ErrorEventProvider(EventProvider):
             if hasattr(self.app, "signalError"):
                 self.app.signalError.connect(self._on_error)
                 logger.info("Connected to FreeCAD error signal")
-                
+
             # Try to connect to the Console observer for Python errors
             if hasattr(self.app, "Gui") and hasattr(self.app.Gui, "getMainWindow"):
                 try:
@@ -98,7 +106,9 @@ class ErrorEventProvider(EventProvider):
                         console.signalError.connect(self._on_error)
                         logger.info("Connected to FreeCAD console error signal")
                 except Exception as console_error:
-                    logger.debug(f"Could not connect to console error signal: {console_error}")
+                    logger.debug(
+                        f"Could not connect to console error signal: {console_error}"
+                    )
         except Exception as e:
             logger.error(f"Error setting up FreeCAD error signal handlers: {e}")
 
@@ -198,14 +208,14 @@ class ErrorEventProvider(EventProvider):
             "signals_connected": len(self._signal_connections),
             "error_history_size": len(self.error_history),
             "max_history_size": self.max_history_size,
-            "is_shutdown": self._is_shutdown
+            "is_shutdown": self._is_shutdown,
         }
 
     async def shutdown(self) -> None:
         """Clean up resources when the provider is shutdown."""
         # Restore original exception handler first
         self._uninstall_global_exception_handler()
-        
+
         # Then call parent shutdown
         await super().shutdown()
 

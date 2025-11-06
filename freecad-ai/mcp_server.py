@@ -33,57 +33,65 @@ try:
     MCP_AVAILABLE = True
 except ImportError:
     MCP_AVAILABLE = False
+
     # Create dummy classes when MCP is not available
     class Server:
         def __init__(self, name):
             self.name = name
-        
+
         def get_capabilities(self):
             return {}
-        
+
         def list_tools(self):
             def decorator(func):
                 return func
+
             return decorator
-        
+
         def call_tool(self):
             def decorator(func):
                 return func
+
             return decorator
-        
+
         def list_resources(self):
             def decorator(func):
                 return func
+
             return decorator
-        
+
         def read_resource(self):
             def decorator(func):
                 return func
+
             return decorator
-        
+
         async def run(self, read_stream, write_stream, init_options):
             raise ImportError("MCP library not available")
-    
+
     class InitializationOptions:
         def __init__(self, **kwargs):
             pass
-    
+
     def stdio_server():
         class DummyContext:
             async def __aenter__(self):
                 raise ImportError("MCP library not available")
+
             async def __aexit__(self, *args):
                 pass
+
         return DummyContext()
-    
+
     class Resource:
         pass
-    
+
     class TextContent:
         pass
-    
+
     class Tool:
         pass
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -99,14 +107,14 @@ class FreeCADMCPServer:
         self.freecad_available = False
         self.tools_available = False
         self.events_available = False
-        
+
         # Events system components
         self.event_manager = None
         self.mcp_integration = None
 
         # Try to initialize FreeCAD
         self._init_freecad()
-        
+
         # Try to initialize events system
         self._init_events_system()
 
@@ -146,7 +154,7 @@ class FreeCADMCPServer:
         """Initialize the events system."""
         try:
             from events import create_event_system, EVENTS_AVAILABLE
-            
+
             if EVENTS_AVAILABLE:
                 self.event_manager, self.mcp_integration = create_event_system()
                 if self.event_manager and self.mcp_integration:
@@ -156,7 +164,7 @@ class FreeCADMCPServer:
                     logger.warning("Failed to create events system components")
             else:
                 logger.warning("Events system not available")
-                
+
         except ImportError as e:
             logger.warning(f"Failed to import events system: {e}")
 
@@ -479,97 +487,99 @@ class FreeCADMCPServer:
 
             # Events system tools
             if self.events_available:
-                tools.extend([
-                    Tool(
-                        name="subscribe_to_events",
-                        description="Subscribe to FreeCAD events",
-                        inputSchema={
-                            "type": "object",
-                            "properties": {
-                                "client_id": {
-                                    "type": "string",
-                                    "description": "Unique client identifier",
+                tools.extend(
+                    [
+                        Tool(
+                            name="subscribe_to_events",
+                            description="Subscribe to FreeCAD events",
+                            inputSchema={
+                                "type": "object",
+                                "properties": {
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Unique client identifier",
+                                    },
+                                    "event_types": {
+                                        "type": "array",
+                                        "items": {"type": "string"},
+                                        "description": "List of event types to subscribe to (document_changed, command_executed, error, selection_changed, etc.). Leave empty for all events.",
+                                    },
                                 },
-                                "event_types": {
-                                    "type": "array",
-                                    "items": {"type": "string"},
-                                    "description": "List of event types to subscribe to (document_changed, command_executed, error, selection_changed, etc.). Leave empty for all events.",
+                                "required": ["client_id"],
+                            },
+                        ),
+                        Tool(
+                            name="get_event_history",
+                            description="Get recent event history",
+                            inputSchema={
+                                "type": "object",
+                                "properties": {
+                                    "event_types": {
+                                        "type": "array",
+                                        "items": {"type": "string"},
+                                        "description": "Filter by specific event types",
+                                    },
+                                    "limit": {
+                                        "type": "number",
+                                        "description": "Maximum number of events to return (default: 50)",
+                                    },
                                 },
                             },
-                            "required": ["client_id"],
-                        },
-                    ),
-                    Tool(
-                        name="get_event_history",
-                        description="Get recent event history",
-                        inputSchema={
-                            "type": "object",
-                            "properties": {
-                                "event_types": {
-                                    "type": "array",
-                                    "items": {"type": "string"},
-                                    "description": "Filter by specific event types",
-                                },
-                                "limit": {
-                                    "type": "number",
-                                    "description": "Maximum number of events to return (default: 50)",
+                        ),
+                        Tool(
+                            name="get_command_history",
+                            description="Get recent command execution history",
+                            inputSchema={
+                                "type": "object",
+                                "properties": {
+                                    "limit": {
+                                        "type": "number",
+                                        "description": "Maximum number of commands to return (default: 20)",
+                                    },
                                 },
                             },
-                        },
-                    ),
-                    Tool(
-                        name="get_command_history",
-                        description="Get recent command execution history",
-                        inputSchema={
-                            "type": "object",
-                            "properties": {
-                                "limit": {
-                                    "type": "number",
-                                    "description": "Maximum number of commands to return (default: 20)",
+                        ),
+                        Tool(
+                            name="get_error_history",
+                            description="Get recent error history",
+                            inputSchema={
+                                "type": "object",
+                                "properties": {
+                                    "limit": {
+                                        "type": "number",
+                                        "description": "Maximum number of errors to return (default: 10)",
+                                    },
                                 },
                             },
-                        },
-                    ),
-                    Tool(
-                        name="get_error_history",
-                        description="Get recent error history",
-                        inputSchema={
-                            "type": "object",
-                            "properties": {
-                                "limit": {
-                                    "type": "number",
-                                    "description": "Maximum number of errors to return (default: 10)",
-                                },
+                        ),
+                        Tool(
+                            name="get_events_system_status",
+                            description="Get the status of the events system",
+                            inputSchema={
+                                "type": "object",
+                                "properties": {},
                             },
-                        },
-                    ),
-                    Tool(
-                        name="get_events_system_status",
-                        description="Get the status of the events system",
-                        inputSchema={
-                            "type": "object",
-                            "properties": {},
-                        },
-                    ),
-                    Tool(
-                        name="emit_custom_event",
-                        description="Emit a custom event",
-                        inputSchema={
-                            "type": "object",
-                            "properties": {
-                                "event_type": {
-                                    "type": "string",
-                                    "description": "Type of the custom event",
+                        ),
+                        Tool(
+                            name="emit_custom_event",
+                            description="Emit a custom event",
+                            inputSchema={
+                                "type": "object",
+                                "properties": {
+                                    "event_type": {
+                                        "type": "string",
+                                        "description": "Type of the custom event",
+                                    },
+                                    "event_data": {
+                                        "type": "object",
+                                        "description": "Event data as JSON object",
+                                    },
                                 },
-                                "event_data": {
-                                    "type": "object",
-                                    "description": "Event data as JSON object",
-                                },
+                                "required": ["event_type", "event_data"],
                             },
-                            "required": ["event_type", "event_data"],
-                        },
-                    ),
-                ])
+                        ),
+                    ]
+                )
 
             return tools
 
@@ -771,94 +781,114 @@ class FreeCADMCPServer:
             # Events system tools
             elif name == "subscribe_to_events":
                 if not self.events_available:
-                    result = {"success": False, "message": "Events system not available"}
+                    result = {
+                        "success": False,
+                        "message": "Events system not available",
+                    }
                 else:
                     client_id = arguments["client_id"]
                     event_types = arguments.get("event_types", None)
-                    
+
                     # Register client if not already registered
-                    await self.mcp_integration.register_mcp_client(client_id, {
-                        "name": f"MCP Client {client_id}",
-                        "subscribed_at": asyncio.get_event_loop().time()
-                    })
-                    
+                    await self.mcp_integration.register_mcp_client(
+                        client_id,
+                        {
+                            "name": f"MCP Client {client_id}",
+                            "subscribed_at": asyncio.get_event_loop().time(),
+                        },
+                    )
+
                     # Subscribe to events
-                    success = await self.mcp_integration.subscribe_to_events(client_id, event_types)
+                    success = await self.mcp_integration.subscribe_to_events(
+                        client_id, event_types
+                    )
                     if success:
                         result = {
-                            "success": True, 
-                            "message": f"Subscribed client {client_id} to events: {event_types or 'all'}"
+                            "success": True,
+                            "message": f"Subscribed client {client_id} to events: {event_types or 'all'}",
                         }
                     else:
-                        result = {"success": False, "message": "Failed to subscribe to events"}
+                        result = {
+                            "success": False,
+                            "message": "Failed to subscribe to events",
+                        }
 
             elif name == "get_event_history":
                 if not self.events_available:
-                    result = {"success": False, "message": "Events system not available"}
+                    result = {
+                        "success": False,
+                        "message": "Events system not available",
+                    }
                 else:
                     event_types = arguments.get("event_types", None)
                     limit = arguments.get("limit", 50)
-                    
+
                     history = await self.event_manager.get_event_history(
                         event_types=event_types, limit=limit
                     )
-                    result = {
-                        "success": True,
-                        "events": history,
-                        "count": len(history)
-                    }
+                    result = {"success": True, "events": history, "count": len(history)}
 
             elif name == "get_command_history":
                 if not self.events_available:
-                    result = {"success": False, "message": "Events system not available"}
+                    result = {
+                        "success": False,
+                        "message": "Events system not available",
+                    }
                 else:
                     limit = arguments.get("limit", 20)
-                    
+
                     history = await self.event_manager.get_command_history(limit=limit)
                     result = {
                         "success": True,
                         "commands": history,
-                        "count": len(history)
+                        "count": len(history),
                     }
 
             elif name == "get_error_history":
                 if not self.events_available:
-                    result = {"success": False, "message": "Events system not available"}
+                    result = {
+                        "success": False,
+                        "message": "Events system not available",
+                    }
                 else:
                     limit = arguments.get("limit", 10)
-                    
+
                     history = await self.event_manager.get_error_history(limit=limit)
-                    result = {
-                        "success": True,
-                        "errors": history,
-                        "count": len(history)
-                    }
+                    result = {"success": True, "errors": history, "count": len(history)}
 
             elif name == "get_events_system_status":
                 if not self.events_available:
-                    result = {"success": False, "message": "Events system not available"}
+                    result = {
+                        "success": False,
+                        "message": "Events system not available",
+                    }
                 else:
                     status = await self.event_manager.get_system_status()
-                    result = {
-                        "success": True,
-                        "status": status
-                    }
+                    result = {"success": True, "status": status}
 
             elif name == "emit_custom_event":
                 if not self.events_available:
-                    result = {"success": False, "message": "Events system not available"}
+                    result = {
+                        "success": False,
+                        "message": "Events system not available",
+                    }
                 else:
                     event_type = arguments["event_type"]
                     event_data = arguments["event_data"]
-                    
-                    success = await self.event_manager.emit_custom_event(event_type, event_data)
+
+                    success = await self.event_manager.emit_custom_event(
+                        event_type, event_data
+                    )
                     if success:
                         result = {
                             "success": True,
-                            "message": f"Emitted custom event: {event_type}"
+                            "message": f"Emitted custom event: {event_type}",
                         }
                     else:
-                        result = {"success": False, "message": "Failed to emit custom event"}
+                        result = {
+                            "success": False,
+                            "message": "Failed to emit custom event",
+                        }
 
             else:
                 result = {"success": False, "message": f"Unknown tool: {name}"}

@@ -121,14 +121,15 @@ except ImportError:
 TOOLS_AVAILABLE = False
 TOOLS_IMPORT_ERROR = None
 
+
 def import_tools_safely():
     """Import tools using a simplified, predictable strategy."""
     global TOOLS_AVAILABLE, TOOLS_IMPORT_ERROR
-    
+
     # Ensure addon directory is in path
     if addon_dir not in sys.path:
         sys.path.insert(0, addon_dir)
-    
+
     try:
         # Try direct import with clear error handling
         from tools import TOOLS_AVAILABLE as TOOLS_LOADED
@@ -138,38 +139,42 @@ def import_tools_safely():
             OperationsTool,
             PrimitivesTool,
         )
-        
+
         TOOLS_AVAILABLE = TOOLS_LOADED
         FreeCAD.Console.PrintMessage("FreeCAD AI: Tools imported successfully\n")
         return True
-        
+
     except ImportError as e:
         TOOLS_IMPORT_ERROR = str(e)
         FreeCAD.Console.PrintMessage(f"FreeCAD AI: Tools import failed: {e}\n")
-        
+
         # Create minimal fallback tools for graceful degradation
         global PrimitivesTool, OperationsTool, MeasurementsTool, ExportImportTool
-        
+
         class FallbackTool:
             def __init__(self, name):
                 self.name = name
+
             def __str__(self):
                 return f"Fallback{self.name}"
-        
+
         PrimitivesTool = FallbackTool("PrimitivesTool")
         OperationsTool = FallbackTool("OperationsTool")
         MeasurementsTool = FallbackTool("MeasurementsTool")
         ExportImportTool = FallbackTool("ExportImportTool")
-        
+
         TOOLS_AVAILABLE = True  # Partial availability with fallbacks
-        FreeCAD.Console.PrintMessage("FreeCAD AI: Tools using fallback implementations\n")
+        FreeCAD.Console.PrintMessage(
+            "FreeCAD AI: Tools using fallback implementations\n"
+        )
         return False
-        
+
     except Exception as e:
         TOOLS_IMPORT_ERROR = str(e)
         FreeCAD.Console.PrintError(f"FreeCAD AI: Critical tools import error: {e}\n")
         TOOLS_AVAILABLE = False
         return False
+
 
 # Execute the import
 import_tools_safely()
@@ -208,44 +213,55 @@ EVENTS_AVAILABLE = safe_import_with_fallback(
 API_AVAILABLE = False
 API_IMPORT_ERROR = None
 
+
 def import_api_safely():
     """Import API with simplified compatibility checking."""
     global API_AVAILABLE, API_IMPORT_ERROR
-    
+
     try:
         # Quick compatibility check for Python 3.13+
         python_version = sys.version_info
         if python_version >= (3, 13):
             # Test basic FastAPI/Pydantic functionality
             try:
-                import fastapi
                 from pydantic import BaseModel
+
                 # Simple test
                 class TestModel(BaseModel):
                     test_field: str = "test"
+
                 FreeCAD.Console.PrintMessage("FreeCAD AI: API compatibility verified\n")
             except (TypeError, ImportError) as e:
                 if "Protocols with non-method members" in str(e):
                     # This is a known compatibility warning with Python 3.13+ that doesn't prevent functionality
-                    API_IMPORT_ERROR = f"Python 3.13+ compatibility warning (non-blocking): {e}"
-                    FreeCAD.Console.PrintWarning(f"FreeCAD AI: API compatibility warning - {API_IMPORT_ERROR}\n")
-                    FreeCAD.Console.PrintMessage("FreeCAD AI: Continuing with API load despite warning...\n")
+                    API_IMPORT_ERROR = (
+                        f"Python 3.13+ compatibility warning (non-blocking): {e}"
+                    )
+                    FreeCAD.Console.PrintWarning(
+                        f"FreeCAD AI: API compatibility warning - {API_IMPORT_ERROR}\n"
+                    )
+                    FreeCAD.Console.PrintMessage(
+                        "FreeCAD AI: Continuing with API load despite warning...\n"
+                    )
                     # Don't return False here - continue with API loading
                 else:
                     # Continue trying despite minor issues
-                    FreeCAD.Console.PrintMessage(f"FreeCAD AI: API compatibility warning: {e}\n")
-        
+                    FreeCAD.Console.PrintMessage(
+                        f"FreeCAD AI: API compatibility warning: {e}\n"
+                    )
+
         # Import the API module
         from api import API_AVAILABLE as API_LOADED
+
         API_AVAILABLE = API_LOADED
-        
+
         if API_AVAILABLE:
             FreeCAD.Console.PrintMessage("FreeCAD AI: API loaded successfully\n")
         else:
             FreeCAD.Console.PrintMessage("FreeCAD AI: API module reports unavailable\n")
-        
+
         return API_AVAILABLE
-        
+
     except (ImportError, TypeError, AttributeError) as e:
         API_IMPORT_ERROR = str(e)
         FreeCAD.Console.PrintMessage(f"FreeCAD AI: API not available: {e}\n")
@@ -256,6 +272,7 @@ def import_api_safely():
         FreeCAD.Console.PrintError(f"FreeCAD AI: Unexpected API import error: {e}\n")
         API_AVAILABLE = False
         return False
+
 
 # Execute API import
 import_api_safely()
