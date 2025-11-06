@@ -35,7 +35,7 @@ except ImportError:
 # Strategy 2: Try PySide6 if PySide2 failed
 if not HAS_QT:
     try:
-        from PySide6 import QtCore, QtWidgets, QtGui
+        from PySide6 import QtCore, QtWidgets, QtGui  # noqa: F811
 
         HAS_QT = True
         QT_VERSION = "PySide6"
@@ -46,7 +46,7 @@ if not HAS_QT:
 # Strategy 3: Try PyQt5 if both PySide versions failed
 if not HAS_QT:
     try:
-        from PyQt5 import QtCore, QtWidgets, QtGui
+        from PyQt5 import QtCore, QtWidgets, QtGui  # noqa: F811
 
         HAS_QT = True
         QT_VERSION = "PyQt5"
@@ -57,10 +57,10 @@ if not HAS_QT:
 # Strategy 4: Try PySide (legacy) as last resort
 if not HAS_QT:
     try:
-        from PySide import QtCore
-        from PySide import QtGui as QtWidgets  # PySide uses QtGui for widgets
+        from PySide import QtCore  # noqa: F811
+        from PySide import QtGui as QtWidgets  # noqa: F811
 
-        QtGui = QtWidgets  # For compatibility
+        QtGui = QtWidgets  # For compatibility  # noqa: F811
         HAS_QT = True
         QT_VERSION = "PySide"
         logging.info("Qt Compatibility: Using PySide (legacy)")

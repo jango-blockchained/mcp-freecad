@@ -51,7 +51,7 @@ try:
             current_dir = os.path.dirname(os.path.abspath(__file__))
             if current_dir not in sys.path:
                 sys.path.insert(0, current_dir)
-            from freecad_ai_workbench import MCPWorkbench
+            from freecad_ai_workbench import MCPWorkbench  # noqa: F811
 
             workbench_imported = True
             FreeCAD.Console.PrintMessage(
@@ -68,7 +68,7 @@ try:
             parent_dir = os.path.dirname(addon_dir)
             if parent_dir not in sys.path:
                 sys.path.insert(0, parent_dir)
-            from freecad_ai_workbench import MCPWorkbench
+            from freecad_ai_workbench import MCPWorkbench  # noqa: F811
 
             workbench_imported = True
             FreeCAD.Console.PrintMessage(
